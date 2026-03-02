@@ -138,8 +138,12 @@
         }
         
         @keyframes flashMessage { 
-            0% { background-color: rgba(255, 152, 0, 0.3); transform: scale(1.02); } 
-            100% { background-color: transparent; transform: scale(1); } 
+            0% { background-color: rgba(255, 152, 0, 0.6) !important; transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 152, 0, 0.5) !important; } 
+            100% { background-color: transparent; transform: scale(1); box-shadow: none; } 
+        }
+
+        .flash-active {
+            animation: flashMessage 1.5s ease-out !important;
         }
         
         @keyframes fadeStatus { 
@@ -915,7 +919,7 @@ box-shadow: var(--received-shadow);
             border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 -2px 15px rgba(255, 109, 0, 0.15), 0 8px 25px rgba(0,0,0,0.4); /* ADDED: Unfocused Glow */
             transform: scale(0.96);
             transform-origin: bottom center;
             transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); /* Professional expansion */
@@ -930,7 +934,7 @@ box-shadow: var(--received-shadow);
             border-radius: 26px; /* Slightly less round when active */
             background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); /* Darken on focus */
             border-color: var(--accent);
-            box-shadow: 0 8px 25px rgba(255, 109, 0, 0.25);
+            box-shadow: 0 -2px 20px rgba(255, 109, 0, 0.3), 0 8px 25px rgba(255, 109, 0, 0.25); /* ENHANCED: Focused Glow */
         }
         
         .input-box { 
@@ -1646,6 +1650,7 @@ box-shadow: var(--received-shadow);
             window.isEmojiTrayOpen = false;
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+            if(history.state && history.state.modal === 'emoji') history.back();
             mInput.focus(); 
         } else {
             // Open Emoji Picker 
@@ -1658,6 +1663,7 @@ box-shadow: var(--received-shadow);
                 document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
                 document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
                 window.scrollToBottom();
+                pushModalState('emoji');
             }, 50); 
         }
     };
@@ -1907,7 +1913,10 @@ box-shadow: var(--received-shadow);
     if (inputContainerObj) {
         inputContainerObj.addEventListener('touchmove', (e) => {
             // Strictly stop page scroll/drag when touching the capsule (unless scrolling the text inside or emoji picker)
-            if(e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('#emoji-tray') && !e.target.closest('emoji-picker')) {
+            const path = e.composedPath ? e.composedPath() : [];
+            const isEmojiPicker = path.some(el => el.tagName === 'EMOJI-PICKER') || e.target.closest('emoji-picker');
+
+            if(e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('#emoji-tray') && !isEmojiPicker) {
                 e.preventDefault(); 
                 e.stopPropagation();
             }
@@ -2536,17 +2545,19 @@ box-shadow: var(--received-shadow);
                         // Prevents random jumping when reading older messages and a new one arrives.
                         if (didRemoveMessage) {
                             // Do not scroll on unsend, maintain position if up high
-                            if (!isNearBottom) {
-                                chatFlow.style.overflowAnchor = 'auto'; /* Fixed unsend scroll glitch */
-                            }
-                        } else if (isNearBottom || (!isNewIncoming && hasVisualChanges && !window.isLoadingMore)) {
-                            // Smooth glide only if already at bottom or if I AM THE SENDER
+                            chatFlow.style.overflowAnchor = 'auto';
+                        } else if (!isNewIncoming && hasVisualChanges && !window.isLoadingMore) {
+                            // Smooth glide only if I AM THE SENDER
                             requestAnimationFrame(() => window.scrollToBottom(true));
                         } else if (isNewIncoming) {
-                            // Someone else sent it and I am scrolled up. DO NOT JUMP.
-                            chatFlow.style.overflowAnchor = 'auto'; /* Fixed incoming scroll glitch */
-                            scrollBtn.classList.add('new-msg');
-                            scrollBtn.style.display = 'flex';
+                            if (isNearBottom) {
+                                requestAnimationFrame(() => window.scrollToBottom(true));
+                            } else {
+                                // Someone else sent it and I am scrolled up. DO NOT JUMP.
+                                chatFlow.style.overflowAnchor = 'auto'; /* Fixed incoming scroll glitch */
+                                scrollBtn.classList.add('new-msg');
+                                scrollBtn.style.display = 'flex';
+                            }
                         } else {
                             // Lock scroll position securely if loading older messages
                             chatFlow.style.overflowAnchor = 'auto'; /* Fixed background update glitch */
@@ -3545,9 +3556,9 @@ box-shadow: var(--received-shadow);
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const bubble = el.querySelector('.bubble') || el.closest('.bubble');
                 if(bubble) {
-                    bubble.style.animation = 'none';
-                    bubble.offsetHeight; 
-                    bubble.style.animation = 'flashMessage 1s ease';
+                    bubble.classList.remove('flash-active');
+                    void bubble.offsetWidth; // Trigger reflow
+                    bubble.classList.add('flash-active');
                 }
             }
         }
@@ -4265,6 +4276,11 @@ box-shadow: var(--received-shadow);
             if(el && el.style.display === m.style) {
                 el.style.display = 'none';
                 modalClosed = true;
+                if(m.id === 'emoji-tray') {
+                    window.isEmojiTrayOpen = false;
+                    document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                    document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                }
             }
         });
         
