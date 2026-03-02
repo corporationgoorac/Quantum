@@ -362,6 +362,15 @@
         return null; 
     }
 
+    // --- REALTIME READ RECEIPT FUNCTION ---
+    window.markChatAsRead = function(chatId) {
+        if (!chatId || !myUid) return;
+        db.collection("chats").doc(chatId).update({
+            [`unreadCount.${myUid}`]: 0,
+            seen: true
+        }).catch(e => console.warn("Could not mark read:", e));
+    };
+
     function listenToInbox() {
         if(!myUid) return;
         if(inboxListener) inboxListener();
@@ -405,6 +414,19 @@
             const results = await Promise.all(chatPromises);
             currentChatData = results.filter(c => c !== null); 
             
+            // --- INSTANTLY MARK READ IF CHAT IS ACTIVELY OPEN ---
+            currentChatData.forEach(c => {
+                if (window.currentActiveChatId === c.id) {
+                    let count = c.chat.unreadCount && c.chat.unreadCount[myUid] !== undefined ? Number(c.chat.unreadCount[myUid]) : 0;
+                    let unseen = (c.chat.lastSender !== myUid && c.chat.seen === false);
+                    if (count > 0 || unseen) {
+                        window.markChatAsRead(c.id);
+                        if (c.chat.unreadCount) c.chat.unreadCount[myUid] = 0;
+                        c.chat.seen = true;
+                    }
+                }
+            });
+
             currentChatData.sort((a,b) => {
                 if (a.isPinned && !b.isPinned) return -1;
                 if (!a.isPinned && b.isPinned) return 1;
@@ -464,7 +486,7 @@
             item.setAttribute("ontouchstart", `startLongPress(this, '${id}', ${isPinned}, '${safeUserStr}')`);
             item.setAttribute("ontouchend", "endLongPress(this)");
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
-            item.setAttribute("onclick", `enterChat(event, '${u.username}')`); 
+            item.setAttribute("onclick", `enterChat(event, '${u.username}', '${id}')`); 
 
             item.innerHTML = `
                 <div class="pfp-container">
@@ -543,8 +565,12 @@
     window.endLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
 
     // --- NEW ENTER CHAT LOGIC WITH MODAL & TOOLBAR COLOR SYNC & COMPONENT STOPPING ---
-    window.enterChat = function(e, username) {
+    window.enterChat = function(e, username, chatId) {
         if(isLongPress || (e && e.target.closest('button'))) return;
+
+        // --- MARK READ INSTANTLY ---
+        window.currentActiveChatId = chatId;
+        if (chatId) window.markChatAsRead(chatId);
 
         const modal = document.getElementById('chat-modal');
         const nav = document.querySelector('main-navbar');
@@ -596,6 +622,10 @@
         document.body.style.width = '100%';
         document.body.style.height = '100%';
 
+        // --- FIX FOR IFRAME BACKGROUND RESIZE ON KEYBOARD ---
+        // Lock modal to exact window height to prevent relative vh squishing inside iframe
+        modal.style.height = window.innerHeight + 'px';
+
         // 5. Apply External Theme dynamically from chatTheme.js
         const applyThemeColor = () => {
             const parentThemeMeta = document.querySelector('meta[name="theme-color"]');
@@ -613,6 +643,12 @@
 
     // --- NEW CLOSE CHAT MODAL LOGIC (RESTORES COMPONENTS) ---
     window.closeChatModal = function(shouldGoBack) {
+        // --- ENSURE CHAT IS MARKED READ ON CLOSE TOO ---
+        if (window.currentActiveChatId) {
+            window.markChatAsRead(window.currentActiveChatId);
+            window.currentActiveChatId = null; 
+        }
+
         const modal = document.getElementById('chat-modal');
         const nav = document.querySelector('main-navbar');
 
@@ -641,7 +677,7 @@
             document.body.style.width = '';
             document.body.style.height = '';
             
-            modal.style.height = '100%';
+            modal.style.height = '100%'; // Reset to default relative state
             modal.style.top = '0';
         }, 400); 
 
@@ -778,11 +814,9 @@
         const handleKeyboardResize = () => {
             const modal = document.getElementById('chat-modal');
             if (modal.classList.contains('active')) {
-                // FIXED: Do not shrink the modal height which causes the chat background image to resize
-                // Force full 100vh layout; chat.html will manage its internal scrolling on focus dynamically
-                modal.style.height = '100vh'; 
-                modal.style.top = '0px'; 
-                window.scrollTo(0, 0);
+                // FIXED: Do not shrink the modal height which causes the chat background image to resize inside iframe
+                // The modal height is now hard-locked in `enterChat` to prevent squishing.
+                window.scrollTo(0, 0); // Keep just this to prevent parent window scroll bleed
             }
         };
         window.visualViewport.addEventListener('resize', handleKeyboardResize);
