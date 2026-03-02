@@ -271,6 +271,32 @@
         }
     })();
 
+    // --- NEW: RESTORE CACHED IFRAMES ON LOAD TO KEEP 0MS AFTER RELOAD ---
+    (function restoreOpenedChats() {
+        try {
+            const openedChats = JSON.parse(localStorage.getItem('goorac_opened_chats') || '[]');
+            const modal = document.getElementById('chat-modal');
+            openedChats.forEach(username => {
+                if (!document.getElementById('chat-frame-' + username)) {
+                    let frame = document.createElement('iframe');
+                    frame.id = 'chat-frame-' + username;
+                    frame.className = 'cached-chat-frame';
+                    frame.style.width = '100%';
+                    frame.style.height = '100%';
+                    frame.style.border = 'none';
+                    frame.style.position = 'absolute';
+                    frame.style.top = '0';
+                    frame.style.left = '0';
+                    frame.style.background = '#000';
+                    frame.style.display = 'none'; // Hidden until opened
+                    frame.style.webkitOverflowScrolling = 'touch';
+                    frame.src = `chat.html?user=${username}`;
+                    modal.appendChild(frame);
+                }
+            });
+        } catch(e) { console.warn("Failed to restore iframes", e); }
+    })();
+
     // --- FIREBASE INIT ---
     // 1. Check for shared init function (from config.js)
     if (typeof window.initFirebaseCore === 'function') {
@@ -615,6 +641,16 @@
             frame.style.webkitOverflowScrolling = 'touch';
             try { frame.src = `chat.html?user=${username}`; } catch(err) {}
             modal.appendChild(frame);
+
+            // --- NEW: SAVE TO LOCAL STORAGE FOR NEXT RELOAD ---
+            try {
+                let openedChats = JSON.parse(localStorage.getItem('goorac_opened_chats') || '[]');
+                if (!openedChats.includes(username)) {
+                    openedChats.push(username);
+                    if (openedChats.length > 10) openedChats.shift(); // Keep memory usage safe (last 10 chats)
+                    localStorage.setItem('goorac_opened_chats', JSON.stringify(openedChats));
+                }
+            } catch(e) {}
         }
 
         // Only display the selected chat's iframe
