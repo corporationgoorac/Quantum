@@ -27,7 +27,8 @@
 
     <script>
         // 🚀 INSTANT ICON FONT CACHE FIX (Saves icons to local storage for 0ms visual load)
-        const cachedIcons = localStorage.getItem('goorac_icons_css_cache');
+        // UPGRADED: Now fetches the actual font file as Base64 so there is zero delay!
+        const cachedIcons = localStorage.getItem('goorac_icons_css_cache_v2'); // Changed cache key for the new format
         if (cachedIcons) {
             const style = document.createElement('style');
             style.innerHTML = cachedIcons;
@@ -35,8 +36,31 @@
         } else {
             fetch('https://fonts.googleapis.com/icon?family=Material+Icons-Round')
                 .then(response => response.text())
-                .then(css => {
-                    localStorage.setItem('goorac_icons_css_cache', css);
+                .then(async css => {
+                    // Extract the actual WOFF2 font URL from the CSS
+                    const urlMatch = css.match(/url\((https:\/\/[^)]+)\)/);
+                    if (urlMatch && urlMatch[1]) {
+                        try {
+                            const fontRes = await fetch(urlMatch[1]);
+                            const blob = await fontRes.blob();
+                            const reader = new FileReader();
+                            reader.onloadend = function() {
+                                const base64data = reader.result;
+                                // Replace external URL with base64 data string
+                                const finalCss = css.replace(urlMatch[1], base64data);
+                                localStorage.setItem('goorac_icons_css_cache_v2', finalCss);
+                                const style = document.createElement('style');
+                                style.innerHTML = finalCss;
+                                document.head.appendChild(style);
+                            };
+                            reader.readAsDataURL(blob);
+                            return; // Wait for reader to finish
+                        } catch(err) {
+                            console.error("Font blob fetch failed", err);
+                        }
+                    }
+                    // Fallback
+                    localStorage.setItem('goorac_icons_css_cache_v2', css);
                     const style = document.createElement('style');
                     style.innerHTML = css;
                     document.head.appendChild(style);
@@ -714,10 +738,24 @@
         /* ==========================================================================
            FOUT ICON TEXT FLASH FIX (Pure CSS logic)
            ========================================================================== */
-        .material-icons-round { color: transparent !important; text-shadow: none !important; }
-        body.fonts-ready .material-icons-round { color: inherit !important; }
-        body.fonts-ready .msg-icon { color: #fff !important; }
-        body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; }
+        /* COMMENTED OUT ORIGINAL HIDING LOGIC TO PREVENT FLASHING & LAYOUT SHIFTS AS REQUESTED
+        /* .material-icons-round { color: transparent !important; text-shadow: none !important; } */
+        /* body.fonts-ready .material-icons-round { color: inherit !important; } */
+        /* body.fonts-ready .msg-icon { color: #fff !important; } */
+        /* body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; } */
+
+        /* INSTEAD: Added max-width and overflow hidden so fallback text doesn't stretch the layout */
+        .material-icons-round {
+            color: inherit !important;
+            max-width: 1em; 
+            overflow: hidden;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .msg-icon { color: #fff !important; }
+        .moments-fab .material-icons-round { color: var(--accent) !important; }
     </style>
 
     <script>
@@ -748,7 +786,7 @@
         document.body.classList.add('fonts-ready');
     });
     // Fallback if cached icons are already loaded instantly
-    if (localStorage.getItem('goorac_icons_css_cache')) {
+    if (localStorage.getItem('goorac_icons_css_cache_v2')) {
         document.body.classList.add('fonts-ready');
     }
 </script>
