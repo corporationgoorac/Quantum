@@ -12,6 +12,8 @@
     <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
     <link rel="manifest" href="manifest.json">
 
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons-Round">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -739,11 +741,11 @@
         /* ==========================================================================
            FOUT ICON TEXT FLASH FIX (Pure CSS logic)
            ========================================================================== */
-        /* COMMENTED OUT ORIGINAL HIDING LOGIC TO PREVENT FLASHING & LAYOUT SHIFTS AS REQUESTED
-        /* .material-icons-round { color: transparent !important; text-shadow: none !important; } */
-        /* body.fonts-ready .material-icons-round { color: inherit !important; } */
-        /* body.fonts-ready .msg-icon { color: #fff !important; } */
-        /* body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; } */
+        /* 🚀 UNCOMMENTED TO FIX SPAN TEXT FLASHING BEFORE FONT LOAD */
+        .material-icons-round { color: transparent !important; text-shadow: none !important; }
+        body.fonts-ready .material-icons-round { color: inherit !important; text-shadow: inherit !important; }
+        body.fonts-ready .msg-icon { color: #fff !important; }
+        body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; }
 
         /* INSTEAD: Added max-width and overflow hidden so fallback text doesn't stretch the layout */
         .material-icons-round {
@@ -777,6 +779,15 @@
         if (preloadedData && preloadedData.msgState && preloadedData.msgState.unreadTotal && preloadedData.msgState.unreadTotal > 0) {
             document.write('<style>#header-msg-btn { display: flex !important; } #header-msg-count { opacity: 1 !important; transform: scale(1) !important; }</style>');
         }
+
+        // 🚀 ADDED: Request Notification Permission immediately to avoid late delays
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    console.log('Notification permission checked:', permission);
+                });
+            }
+        });
     </script>
 </head>
 
@@ -1262,6 +1273,9 @@
     }
 
     function startLiveCounters(uid) {
+        // 🚀 ADDED: Flag to prevent special effects from triggering on initial page load
+        let isInitialLoad = true; 
+        
         db.collection("chats")
             .where("participants", "array-contains", uid)
             .orderBy("lastTimestamp", "desc")
@@ -1293,8 +1307,8 @@
                     }
                 }
 
-                // --- GREETING DETECTION LOGIC ---
-                if (latest && latestDoc && latest.lastSender !== uid) {
+                // --- GREETING DETECTION LOGIC (Now safely skips initial load) ---
+                if (!isInitialLoad && latest && latestDoc && latest.lastSender !== uid) {
                     let txt = latest.lastMessage || latest.text || latest.message || "";
                     if (window.checkGreeting) window.checkGreeting(txt, latest.lastSenderName || "Someone", latestDoc.id);
                 }
@@ -1317,6 +1331,9 @@
                     card.classList.remove('has-count'); pfp.innerHTML = `<div>MSG</div>`;
                 }
                 saveHomeState();
+                
+                // 🚀 Set false so subsequent snapshot updates trigger the greeting 
+                isInitialLoad = false; 
             });
 
         db.collection("call_logs")
@@ -1344,6 +1361,33 @@
                 saveHomeState();
             });
     }
+
+    // 🚀 ADDED: PWA Install Prompt Listener
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default mini-infobar
+        e.preventDefault();
+        // Stash the event
+        deferredPrompt = e;
+        
+        // Only show button if we haven't already
+        if (!document.getElementById('pwa-install-btn')) {
+            const installBtn = document.createElement('button');
+            installBtn.id = 'pwa-install-btn';
+            installBtn.innerText = 'Install App';
+            // Styling it directly at the bottom
+            installBtn.style.cssText = 'position:fixed;bottom:130px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;border:none;padding:12px 24px;border-radius:24px;font-weight:900;z-index:10000;box-shadow:0 8px 20px rgba(0, 210, 255, 0.4);animation:popInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);';
+            
+            installBtn.onclick = async () => {
+                installBtn.style.display = 'none';
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            };
+            document.body.appendChild(installBtn);
+        }
+    });
+
 </script>
 </body>
 </html>
