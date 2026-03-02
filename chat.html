@@ -1896,7 +1896,8 @@ box-shadow: var(--received-shadow);
     window.addEventListener('scroll', lockViewportAndHeader, { passive: true });
     
     // Unyielding lock loop while input is active to fight older browser behavior
-    setInterval(() => {
+    // FIX: Assigned to variable so it doesn't break scrolling
+    window.globalScrollLockInt = setInterval(() => {
         if (document.activeElement === mInput || window.scrollY > 0 || document.body.scrollTop > 0) {
             window.scrollTo(0, 0);
             document.documentElement.scrollTop = 0;
@@ -1908,15 +1909,16 @@ box-shadow: var(--received-shadow);
     // FIX FOR INPUT BOUNCE & MODAL BACK BUTTON
     // =========================================
 
-    // BLOCK PAGE SCROLL WHEN DRAGGING THE CAPSULE UP (But allow scrolling for Emoji tray & TextArea)
+    // BLOCK PAGE SCROLL WHEN DRAGGING THE CAPSULE UP (But allow scrolling for Emoji tray, TextArea & Chat Flow)
     const inputContainerObj = document.querySelector('.input-area-container');
     if (inputContainerObj) {
         inputContainerObj.addEventListener('touchmove', (e) => {
-            // Strictly stop page scroll/drag when touching the capsule (unless scrolling the text inside or emoji picker)
+            // Strictly stop page scroll/drag when touching the capsule (unless scrolling the text inside, emoji picker, or main chat)
             const path = e.composedPath ? e.composedPath() : [];
             const isEmojiPicker = path.some(el => el.tagName === 'EMOJI-PICKER') || e.target.closest('emoji-picker');
+            const isChatFlow = path.some(el => el.id === 'chat-flow') || e.target.closest('#chat-flow'); // NEW FIX FOR SCROLLING BUG
 
-            if(e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('#emoji-tray') && !isEmojiPicker) {
+            if(e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('#emoji-tray') && !isEmojiPicker && !isChatFlow) {
                 e.preventDefault(); 
                 e.stopPropagation();
             }
@@ -1971,7 +1973,10 @@ box-shadow: var(--received-shadow);
     sendBtnUI.addEventListener('mousedown', handleSendClick);
     sendBtnUI.addEventListener('touchstart', handleSendClick);
 
-    // Auto-Resize Textarea
+    // Auto-Resize Textarea & THROTTLED TYPING LOGIC
+    window.typingTimeoutObj = null;
+    window.isCurrentlyTyping = false;
+
     mInput.addEventListener('input', function() {
         this.style.height = 'auto'; 
         this.style.height = (this.scrollHeight) + 'px';
@@ -1985,8 +1990,18 @@ box-shadow: var(--received-shadow);
             document.querySelector('.plus-btn').style.display = 'none';
             document.getElementById('emoji-toggle-left').style.display = 'flex';
             document.getElementById('emoji-toggle-right').style.display = 'none';
-            // Send Typing Indicator
-            rdb.ref(`typing/${chatId}/${myUid}`).set(true);
+            
+            // SMART TYPING THROTTLE (Saves Network)
+            if(!window.isCurrentlyTyping) {
+                window.isCurrentlyTyping = true;
+                rdb.ref(`typing/${chatId}/${myUid}`).set(true);
+            }
+            clearTimeout(window.typingTimeoutObj);
+            window.typingTimeoutObj = setTimeout(() => {
+                window.isCurrentlyTyping = false;
+                rdb.ref(`typing/${chatId}/${myUid}`).set(false);
+            }, 3000);
+
         } else {
             sendBtnUI.classList.remove('active');
             micWrapper.style.display = 'flex';
@@ -1994,6 +2009,9 @@ box-shadow: var(--received-shadow);
             document.querySelector('.plus-btn').style.display = 'flex';
             document.getElementById('emoji-toggle-left').style.display = 'none';
             document.getElementById('emoji-toggle-right').style.display = 'flex';
+            
+            window.isCurrentlyTyping = false;
+            clearTimeout(window.typingTimeoutObj);
             rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         }
         
@@ -2142,7 +2160,23 @@ box-shadow: var(--received-shadow);
         document.querySelector('.input-area').classList.add('force-expand'); // Expands the capsule smoothly
         if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); // Auto swap icon logic internally
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
-        // FIX: Aggressively lock header and scroll when keyboard opens
+        
+        // FIX FOR EMOJI PICKER SCROLLING ISSUE
+        // Pause the aggressive global locker for a brief moment while the keyboard expands
+        if(window.globalScrollLockInt) clearInterval(window.globalScrollLockInt);
+        
+        // Temporarily relock rapidly to prevent jumping
+        window.globalScrollLockInt = setInterval(() => {
+            if (document.activeElement === mInput || window.scrollY > 0 || document.body.scrollTop > 0) {
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            }
+        }, 100);
+        
+        // Let it chill out after 1.5s so scroll works properly
+        setTimeout(() => { clearInterval(window.globalScrollLockInt); }, 1500);
+
         lockViewportAndHeader();
         setTimeout(lockViewportAndHeader, 50);
         setTimeout(lockViewportAndHeader, 300); // Double fallback for slower animations
@@ -2734,18 +2768,25 @@ box-shadow: var(--received-shadow);
         */
 
         // ========================================================================================
-        // NEW SMART VIRTUAL DOM DIFFING (Fixes "Render all messages every time" and flickering)
+        // NEW SMART VIRTUAL DOM DIFFING & MISSING MESSAGE FIX
         // ========================================================================================
         let tempContainer = document.createElement('div');
         let originalContainer = container;
         container = tempContainer; // Hijack DOM target so renderMessage goes to Temp
 
         const sorted = Array.from(messagesMap.entries())
-            .filter(([id, data]) => data.timestamp)
+            // FIX FOR DISAPPEARING MESSAGES: Don't drop messages if timestamp is temporarily null
+            .filter(([id, data]) => data) 
             .sort((a, b) => {
-                const tA = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
-                const tB = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
-                return tA(a[1]) - tB(b[1]);
+                // Safely extract the most accurate timestamp available
+                const getT = (data) => {
+                    if (data.timestamp && typeof data.timestamp.toMillis === 'function') return data.timestamp.toMillis();
+                    if (data.timestamp && typeof data.timestamp.toDate === 'function') return data.timestamp.toDate().getTime();
+                    if (data.timestampIso) return new Date(data.timestampIso).getTime();
+                    if (typeof data.timestamp === 'number') return data.timestamp; // Numeric fallback
+                    return Date.now(); // Absolute fallback for brand new unsynced optimistic messages
+                };
+                return getT(a[1]) - getT(b[1]);
             });
 
         let lastDateLabel = "";
@@ -2761,7 +2802,16 @@ box-shadow: var(--received-shadow);
         }
 
         sorted.forEach(([id, data], index) => {
-            const msgDate = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestampIso);
+            // Safe date extraction for the divider logic
+            let msgDate = new Date();
+            if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                msgDate = data.timestamp.toDate();
+            } else if (data.timestampIso) {
+                msgDate = new Date(data.timestampIso);
+            } else if (typeof data.timestamp === 'number') {
+                msgDate = new Date(data.timestamp);
+            }
+
             const msgTime = msgDate.getTime();
 
             const dateLabel = getDateDivider(msgDate);
@@ -2786,10 +2836,23 @@ box-shadow: var(--received-shadow);
             const prevMsg = index > 0 ? sorted[index - 1][1] : null;
             const nextMsg = index + 1 < sorted.length ? sorted[index + 1][1] : null;
 
-            const isFirstInGroup = !prevMsg || prevMsg.sender !== data.sender || (msgDate - (prevMsg.timestamp.toDate ? prevMsg.timestamp.toDate() : new Date(prevMsg.timestampIso))) > 300000;
-            const isLastInGroup = !nextMsg || nextMsg.sender !== data.sender || ((nextMsg.timestamp.toDate ? nextMsg.timestamp.toDate() : new Date(nextMsg.timestampIso)) - msgDate) > 300000;
+            // Safe grouping logic
+            const getGroupTime = (m) => {
+                 if(m.timestamp && typeof m.timestamp.toDate === 'function') return m.timestamp.toDate().getTime();
+                 if(m.timestampIso) return new Date(m.timestampIso).getTime();
+                 return Date.now();
+            };
 
-            renderMessage(data, id, id === lastSeenMsgId, isFirstInGroup, isLastInGroup);
+            const isFirstInGroup = !prevMsg || prevMsg.sender !== data.sender || (msgTime - getGroupTime(prevMsg)) > 300000;
+            const isLastInGroup = !nextMsg || nextMsg.sender !== data.sender || (getGroupTime(nextMsg) - msgTime) > 300000;
+
+            // Normalize timestamp to ensure renderMessage doesn't crash on new optimistic ones
+            const safeData = {...data};
+            if (!safeData.timestamp || typeof safeData.timestamp.toDate !== 'function') {
+                safeData.timestamp = { toDate: () => msgDate };
+            }
+
+            renderMessage(safeData, id, id === lastSeenMsgId, isFirstInGroup, isLastInGroup);
         });
 
         // Restore original container reference
@@ -3365,7 +3428,7 @@ box-shadow: var(--received-shadow);
     function getDateDivider(date) {
         const today = new Date();
         const yesterday = new Date();
-        yesterday.setDate(today.getDate() - 1);
+        yester.setDate(today.getDate() - 1);
         if (date.toDateString() === today.toDateString()) return "Today";
         if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
         return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -3626,22 +3689,41 @@ box-shadow: var(--received-shadow);
     async function sendImageMessage(imageUrl) {
         popSound.play().catch(e => {});
         window.scrollToBottom(true);
-
-        let msgData = {
-            text: "", 
-            sender: myUid, 
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            replyTo: replyingTo, 
-            seen: false, 
-            reactions: {},
-            imageUrl: imageUrl
+        
+        // OPTIMISTIC LOCAL RENDER
+        const tempId = "temp_" + Date.now();
+        const optimisticMsg = {
+            id: tempId, text: "", sender: myUid, 
+            timestamp: { toDate: () => new Date() },
+            replyTo: replyingTo, seen: false, reactions: {}, imageUrl: imageUrl
         };
+        messagesMap.set(tempId, optimisticMsg);
+        renderAll();
+        window.scrollToBottom(true);
+
+        const rText = replyingTo; 
         cancelInteraction();
-        await db.collection("chats").doc(chatId).collection("messages").add(msgData);
-        updateLastMsg("📷 Image");
+        
+        // EXTREME SPEED BATCH
+        const batch = db.batch();
+        const msgRef = db.collection("chats").doc(chatId).collection("messages").doc();
+        const chatRef = db.collection("chats").doc(chatId);
+
+        batch.set(msgRef, {
+            text: "", sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            replyTo: rText, seen: false, reactions: {}, imageUrl: imageUrl
+        });
+
+        batch.set(chatRef, {
+            lastMessage: "📷 Image", lastSender: myUid,
+            lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
+        }, { merge: true });
+
+        batch.commit().catch(e=>{});
+
         updateInboxCacheLocal(chatId, "📷 Image", myUid, false); // INBOX SYNC
         sendPushNotification("📷 Sent you an image");
-        window.scrollToBottom(true);
     }
 
     async function sendFileMessage(fileUrl, metadata) {
@@ -3649,25 +3731,44 @@ box-shadow: var(--received-shadow);
         window.scrollToBottom(true);
         const caption = metadata.caption || "";
         
-        let msgData = {
-            text: caption,
-            sender: myUid, 
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            replyTo: replyingTo, 
-            seen: false, 
-            reactions: {},
-            fileUrl: fileUrl,
-            fileMeta: metadata
+        // OPTIMISTIC LOCAL RENDER
+        const tempId = "temp_" + Date.now();
+        const optimisticMsg = {
+            id: tempId, text: caption, sender: myUid, 
+            timestamp: { toDate: () => new Date() },
+            replyTo: replyingTo, seen: false, reactions: {}, fileUrl: fileUrl, fileMeta: metadata
         };
+        messagesMap.set(tempId, optimisticMsg);
+        renderAll();
+        window.scrollToBottom(true);
+
+        const rText = replyingTo;
         cancelInteraction();
-        await db.collection("chats").doc(chatId).collection("messages").add(msgData);
+        
+        // EXTREME SPEED BATCH
+        const batch = db.batch();
+        const msgRef = db.collection("chats").doc(chatId).collection("messages").doc();
+        const chatRef = db.collection("chats").doc(chatId);
+
+        batch.set(msgRef, {
+            text: caption, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            replyTo: rText, seen: false, reactions: {}, fileUrl: fileUrl, fileMeta: metadata
+        });
+
         let label = "📄 File";
         if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video Message";
         else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎤 Voice Message";
-        updateLastMsg(caption ? label + " " + caption : label);
+        
+        batch.set(chatRef, {
+            lastMessage: caption ? label + " " + caption : label, lastSender: myUid,
+            lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
+        }, { merge: true });
+
+        batch.commit().catch(e=>{});
+
         updateInboxCacheLocal(chatId, caption ? label + " " + caption : label, myUid, false); // INBOX SYNC
         sendPushNotification(caption ? label + " " + caption : label);
-        window.scrollToBottom(true);
     }
 
     async function sendMsg() {
@@ -3684,6 +3785,17 @@ box-shadow: var(--received-shadow);
         // Trigger Effects
         checkKeywords(text);
         
+        // OPTIMISTIC RENDER (0ms Delay)
+        const tempId = "temp_" + Date.now();
+        const optimisticMsg = {
+            id: tempId, text: text, sender: myUid, 
+            timestamp: { toDate: () => new Date() }, // Immediate local fallback
+            replyTo: replyingTo, seen: false, reactions: {}
+        };
+        messagesMap.set(tempId, optimisticMsg);
+        renderAll();
+        window.scrollToBottom(true);
+        
         mInput.value = "";
         mInput.style.height = 'auto'; 
         sendBtnUI.classList.remove('active'); 
@@ -3695,29 +3807,48 @@ box-shadow: var(--received-shadow);
         
         emojiTray.style.display = 'none';
         attachmentMenu.style.display = 'none';
+        
+        window.isCurrentlyTyping = false;
+        clearTimeout(window.typingTimeoutObj);
         rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         mInput.focus(); 
 
         if (editModeId) {
             const idToEdit = editModeId; editModeId = null;
             cancelInteraction(); 
-            await db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true });
+            // FIRE AND FORGET
+            db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true }).catch(e=>{});
         } else {
             const rText = replyingTo; cancelInteraction(); 
             window.scrollToBottom(true);
-            let msgData = {
-                text, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            
+            // EXTREME SPEED SINGLE BATCH PACKET (Fix for 20kbps logic)
+            const batch = db.batch();
+            const msgRef = db.collection("chats").doc(chatId).collection("messages").doc();
+            const chatRef = db.collection("chats").doc(chatId);
+
+            batch.set(msgRef, {
+                text, sender: myUid, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 replyTo: rText, seen: false, reactions: {}
-            };
-            await db.collection("chats").doc(chatId).collection("messages").add(msgData);
-            updateLastMsg(text);
+            });
+            
+            batch.set(chatRef, {
+                lastMessage: text, lastSender: myUid,
+                lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
+            }, { merge: true });
+
+            // FIRE AND FORGET - Let Firebase queue it in the background
+            batch.commit().catch(err => console.error("Network delayed sync", err));
+
             updateInboxCacheLocal(chatId, text, myUid, false); // INBOX SYNC
             sendPushNotification(text);
         }
-        window.scrollToBottom(true);
     }
 
     async function updateLastMsg(msgText) {
+        // Now mostly handled via batch, kept here only as safety fallback
         await db.collection("chats").doc(chatId).set({
             lastMessage: msgText, 
             lastSender: myUid,
@@ -3776,7 +3907,9 @@ box-shadow: var(--received-shadow);
             renderAll(); 
         }
         
-        await db.collection("chats").doc(chatId).collection("messages").doc(idToDelete).delete();
+        // FIRE AND FORGET delete
+        db.collection("chats").doc(chatId).collection("messages").doc(idToDelete).delete().catch(e=>{});
+        
         const snapshot = await db.collection("chats").doc(chatId).collection("messages").orderBy("timestamp", "desc").limit(1).get();
         if (!snapshot.empty) {
             const lastMsg = snapshot.docs[0].data();
@@ -3795,7 +3928,8 @@ box-shadow: var(--received-shadow);
                 txt = txt ? `${icon} ${txt}` : `${icon} ${label}`;
             }
             
-            await db.collection("chats").doc(chatId).update({ lastMessage: txt, lastSender: lastMsg.sender, lastTimestamp: lastMsg.timestamp });
+            // Update last message in background
+            db.collection("chats").doc(chatId).update({ lastMessage: txt, lastSender: lastMsg.sender, lastTimestamp: lastMsg.timestamp }).catch(e=>{});
             updateInboxCacheLocal(chatId, txt, lastMsg.sender, false); // INBOX SYNC
         }
     }
@@ -3908,12 +4042,14 @@ box-shadow: var(--received-shadow);
         triggerReactionPop(id, emoji);
         vibrate(30); 
 
+        let isRemoving = false;
         if(messagesMap.has(id)) {
             let msg = messagesMap.get(id);
             if(!msg.reactions) msg.reactions = {};
 
             if(msg.reactions[myUid] && msg.reactions[myUid].emoji === emoji) {
                  delete msg.reactions[myUid];
+                 isRemoving = true;
             } else if (emoji !== '') {
                  msg.reactions[myUid] = { emoji: emoji, timestamp: Date.now() };
             }
@@ -3922,16 +4058,13 @@ box-shadow: var(--received-shadow);
             updateReactionDOM(id, msg.reactions);
         }
 
-        // 2. Firebase Update
+        // 2. EXTREME SPEED FIRE AND FORGET
         const msgRef = db.collection("chats").doc(chatId).collection("messages").doc(id);
-        const doc = await msgRef.get();
-        const data = doc.data();
-        let currentReaction = (data.reactions && data.reactions[myUid]) ? data.reactions[myUid].emoji : null;
 
-        if (currentReaction === emoji) {
-            await msgRef.update({ [`reactions.${myUid}`]: firebase.firestore.FieldValue.delete() });
+        if (isRemoving) {
+            msgRef.update({ [`reactions.${myUid}`]: firebase.firestore.FieldValue.delete() }).catch(()=>{});
         } else {
-            await msgRef.update({ [`reactions.${myUid}`]: { emoji: emoji, timestamp: Date.now() } });
+            msgRef.update({ [`reactions.${myUid}`]: { emoji: emoji, timestamp: Date.now() } }).catch(()=>{});
         }
     }
 
