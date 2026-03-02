@@ -1162,7 +1162,8 @@
                         // This allows you to send private messages directly to them later.
                         await beamsClient.addDeviceInterest(user.uid); 
 
-                        console.log('✅ Pusher Beams successfully registered and subscribed!');
+                        // ✅ Updated console log to verify it grabbed the correct UID
+                        console.log('✅ Pusher Beams successfully registered and subscribed to UID:', user.uid);
                     } catch (error) {
                         console.error('❌ Pusher Beams registration failed:', error);
                     }
