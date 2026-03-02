@@ -40,6 +40,9 @@
             --bg: #000000;
             --bg-gradient: radial-gradient(circle at 50% 30%, #111111 0%, #000000 70%);
             
+            /* External Theme Fallback */
+            --mobileToolbarBg: rgba(20, 20, 20, 0.75);
+
             /* Header transparency and blur */
             --header-bg: rgba(10, 10, 10, 0.90);
             --header-blur: blur(25px);
@@ -883,38 +886,45 @@ box-shadow: var(--received-shadow);
            9. INPUT AREA (PROFESSIONAL REDESIGN)
            ========================================= */
         .input-area-container { 
-            background: var(--mobileToolbarBg); /* Sleeker Glassmorphism */
-            border-top: 1px solid rgba(255, 255, 255, 0.05); 
+            background: transparent; /* Remove old blocky background */
+            border-top: 1px solid transparent; 
             padding-bottom: env(safe-area-inset-bottom, 10px); 
             flex-shrink: 0; 
             width: 100%; 
             z-index: 1000; 
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
             position: relative; /* Essential for overlay */
+            margin-top: auto; /* Fix for older mobiles hanging */
         }
         
         .input-area { 
-            padding: 10px 14px; /* Spacing */
+            margin: 8px 12px;
+            padding: 4px 8px; /* Capsule padding */
             display: flex; 
             align-items: flex-end; /* Bottom alignment */
-            gap: 12px; 
+            gap: 8px; 
+            background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75));
+            border-radius: 30px; /* Capsule shape */
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+        .input-area:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 8px 25px rgba(255, 109, 0, 0.2);
         }
         
         .input-box { 
             flex: 1; 
-            background: rgba(255, 255, 255, 0.08); /* Clean pill container */
-            border-radius: 26px; /* Perfect pill shape */
-            padding: 6px 16px; 
-            border: 1px solid transparent; 
+            background: transparent !important; /* Remove inner pill background */
+            border-radius: 0; 
+            padding: 0; 
+            border: none !important; 
             display: flex; 
             align-items: center; 
-            min-height: 44px; 
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.3s ease; 
-        }
-        .input-box:focus-within { 
-            border-color: var(--accent); /* Subtle brand border */
-            background: rgba(255, 255, 255, 0.12); 
+            min-height: 40px; 
+            box-shadow: none !important;
         }
 
         .msg-input { 
@@ -922,7 +932,7 @@ box-shadow: var(--received-shadow);
             background: transparent; 
             border: none; 
             color: white; 
-            padding: 8px 0; 
+            padding: 8px 4px; 
             font-size: 15px; 
             resize: none; 
             max-height: 140px; 
@@ -931,18 +941,18 @@ box-shadow: var(--received-shadow);
         }
         
         .plus-btn { 
-            background: rgba(255, 255, 255, 0.1); /* Solid subtle button */
+            background: rgba(255, 255, 255, 0.08); /* Solid subtle button inside capsule */
             border-radius: 50%;
             font-size: 24px; 
             color: var(--accent); 
             cursor: pointer; 
-            height: 36px; 
-            width: 36px;  
+            height: 38px; 
+            width: 38px;  
             display: flex; 
             align-items: center; 
             justify-content: center;
             align-self: flex-end; 
-            margin-bottom: 4px; 
+            margin-bottom: 3px; 
             transition: transform 0.2s var(--ease-elastic), background 0.2s; 
         }
         .plus-btn:active { transform: rotate(90deg); background: rgba(255,255,255,0.2); }
@@ -953,14 +963,14 @@ box-shadow: var(--received-shadow);
             font-weight: 700; 
             font-size: 1rem; 
             padding: 0 4px; 
-            height: 44px; 
+            height: 38px; 
             display: none; 
             align-items: center; 
             color: #555; 
             pointer-events: none; 
             transition: all 0.2s ease; 
             align-self: flex-end; 
-            margin-bottom: 0px; 
+            margin-bottom: 3px; 
         }
         .send-btn.active { 
             color: var(--accent); 
@@ -973,15 +983,16 @@ box-shadow: var(--received-shadow);
 
         /* === MIC BUTTON & RECORDING UI === */
         .mic-btn-wrapper {
-            width: 44px; height: 44px;
+            width: 38px; height: 38px;
             display: flex; align-items: center; justify-content: center;
             position: relative;
             z-index: 100;
             align-self: flex-end; 
+            margin-bottom: 3px;
         }
 
         .mic-btn {
-            width: 44px; height: 44px;
+            width: 38px; height: 38px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
             background: transparent; color: var(--accent); /* Cleaner mic */
@@ -1947,6 +1958,14 @@ box-shadow: var(--received-shadow);
             window.scrollToBottom();
         });
     }
+
+    // NEW ADDITION: Fallback resize listener for older mobiles to prevent hanging
+    window.addEventListener('resize', () => {
+        if (!window.visualViewport || /android/i.test(navigator.userAgent)) {
+            document.getElementById('main-app').style.height = window.innerHeight + 'px';
+            window.scrollToBottom();
+        }
+    });
 
     function vibrate(pattern = 50) { 
         if (navigator.vibrate) navigator.vibrate(pattern); 
@@ -3453,8 +3472,8 @@ box-shadow: var(--received-shadow);
         cancelInteraction();
         await db.collection("chats").doc(chatId).collection("messages").add(msgData);
         let label = "📄 File";
-        if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video";
-        else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎵 Audio";
+        if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video Message";
+        else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎤 Voice Message";
         updateLastMsg(caption ? label + " " + caption : label);
         updateInboxCacheLocal(chatId, caption ? label + " " + caption : label, myUid, false); // INBOX SYNC
         sendPushNotification(caption ? label + " " + caption : label);
