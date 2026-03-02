@@ -759,6 +759,54 @@
         }
         .msg-icon { color: #fff !important; }
         .moments-fab .material-icons-round { color: var(--accent) !important; }
+
+        /* ==========================================================================
+           CUSTOM NOTIFICATION BOTTOM SHEET
+           ========================================================================== */
+        .notif-sheet-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 100001;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+        }
+        .notif-sheet-overlay.show { opacity: 1; pointer-events: all; }
+
+        .notif-sheet {
+            position: fixed; bottom: -100%; left: 0; right: 0;
+            background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px;
+            padding: 30px 25px max(30px, env(safe-area-inset-bottom));
+            z-index: 100002; transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .notif-sheet.show { bottom: 0; }
+        
+        .notif-sheet-icon {
+            width: 60px; height: 60px; background: var(--accent-dim); color: var(--accent);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+        }
+        .notif-sheet-icon .material-icons-round {
+            font-size: 32px; color: var(--accent) !important;
+        }
+        .notif-sheet-title { font-size: 1.3rem; font-weight: 800; color: #fff; margin-bottom: 10px; }
+        .notif-sheet-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 25px; }
+        
+        .notif-sheet-actions { display: flex; gap: 15px; width: 100%; }
+        .notif-btn-decline {
+            flex: 1; padding: 14px 0; border-radius: 16px; background: #1a1a1a;
+            color: #fff; font-weight: 700; border: 1px solid var(--border); cursor: pointer;
+            transition: 0.2s ease;
+        }
+        .notif-btn-decline:active { transform: scale(0.95); background: #222; }
+        .notif-btn-allow {
+            flex: 1; padding: 14px 0; border-radius: 16px; background: var(--accent);
+            color: #000; font-weight: 800; border: none; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); transition: 0.2s ease;
+        }
+        .notif-btn-allow:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3); }
+
     </style>
 
     <script>
@@ -780,14 +828,39 @@
             document.write('<style>#header-msg-btn { display: flex !important; } #header-msg-count { opacity: 1 !important; transform: scale(1) !important; }</style>');
         }
 
-        // 🚀 ADDED: Request Notification Permission immediately to avoid late delays
+        // 🚀 ADDED: Request Notification Permission immediately via CUSTOM BOTTOM SHEET
         document.addEventListener('DOMContentLoaded', () => {
-            if ('Notification' in window && Notification.permission === 'default') {
+            const hasAsked = localStorage.getItem('goorac_notif_asked');
+            if ('Notification' in window && Notification.permission === 'default' && !hasAsked) {
+                // Wait just a moment for the DOM to settle, then show custom sheet fast
+                setTimeout(() => {
+                    const sheet = document.getElementById('notif-sheet');
+                    const overlay = document.getElementById('notif-sheet-overlay');
+                    if(sheet && overlay) {
+                        overlay.classList.add('show');
+                        sheet.classList.add('show');
+                    }
+                }, 600);
+            }
+        });
+        
+        window.handleNotifDecline = function() {
+            localStorage.setItem('goorac_notif_asked', 'true');
+            document.getElementById('notif-sheet').classList.remove('show');
+            document.getElementById('notif-sheet-overlay').classList.remove('show');
+        };
+
+        window.handleNotifAllow = function() {
+            localStorage.setItem('goorac_notif_asked', 'true');
+            document.getElementById('notif-sheet').classList.remove('show');
+            document.getElementById('notif-sheet-overlay').classList.remove('show');
+            
+            if ('Notification' in window) {
                 Notification.requestPermission().then(permission => {
                     console.log('Notification permission checked:', permission);
                 });
             }
-        });
+        };
     </script>
 </head>
 
@@ -927,6 +1000,18 @@
 <call-notifier></call-notifier>
 <view-notes id="note-viewer"></view-notes>
 
+<div id="notif-sheet-overlay" class="notif-sheet-overlay"></div>
+<div id="notif-sheet" class="notif-sheet">
+    <div class="notif-sheet-icon">
+        <span class="material-icons-round">notifications_active</span>
+    </div>
+    <div class="notif-sheet-title">Turn on Notifications</div>
+    <div class="notif-sheet-desc">Stay updated with instant alerts for new messages, moments, and calls from your friends.</div>
+    <div class="notif-sheet-actions">
+        <button class="notif-btn-decline" onclick="handleNotifDecline()">Not Now</button>
+        <button class="notif-btn-allow" onclick="handleNotifAllow()">Allow</button>
+    </div>
+</div>
 <script>
     if (preloadedData) {
         document.addEventListener('DOMContentLoaded', () => {
