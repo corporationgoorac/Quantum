@@ -1017,19 +1017,19 @@ class ViewNotes extends HTMLElement {
                                 try {
                                     const senderName = userData.name || user.displayName || 'User';
                                     const senderPfp = userData.photoURL || user.photoURL || 'https://via.placeholder.com/65';
+                                    const deepLink = `https://www.goorac.biz/chat.html`;
                                     
                                     // Make sure to replace '/send-pusher-notification' with your actual server endpoint
                                     // that handles triggering Pusher events on your backend.
-                                    fetch('/send-pusher-notification', {
+                                    fetch('https://pish-uigm.onrender.com/send-push', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
-                                            toUid: this.currentNote.uid,
+                                            targetUid: this.currentNote.uid,
                                             title: `New Like ❤️`,
                                             body: `${senderName} liked your note: "${this.currentNote.text || 'Audio Note'}"`,
                                             icon: senderPfp,
-                                            type: 'like',
-                                            noteId: this.currentNote.id
+                                            click_action: deepLink
                                         })
                                     }).catch(e => console.error("Pusher Notification API failed:", e));
 
@@ -1166,18 +1166,18 @@ class ViewNotes extends HTMLElement {
                 const user = firebase.auth().currentUser;
                 const senderName = user.displayName || "User";
                 const senderPfp = user.photoURL || 'https://via.placeholder.com/65';
+                const deepLink = `https://www.goorac.biz/chat.html`;
 
                 // Make sure to replace '/send-pusher-notification' with your backend endpoint
-                fetch('/send-pusher-notification', {
+                fetch('https://pish-uigm.onrender.com/send-push', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        toUid: targetUid,
+                        targetUid: targetUid,
                         title: `New Reply from ${senderName} 💬`,
                         body: text,
                         icon: senderPfp,
-                        type: 'chat_reply',
-                        chatId: chatId
+                        click_action: deepLink
                     })
                 }).catch(e => console.error("Pusher Notification API failed:", e));
 
