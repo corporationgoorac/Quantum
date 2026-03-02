@@ -1010,6 +1010,42 @@ class ViewNotes extends HTMLElement {
                                     isSeen: false
                                 });
                                 batch.update(receiverRef, { unreadCount: firebase.firestore.FieldValue.increment(1) });
+                                
+                                // ==========================================================
+                                // ---> NEW CODE ADDED: PUSHER NOTIFICATION DISPATCH (LIKE)
+                                // ==========================================================
+                                try {
+                                    const senderName = userData.name || user.displayName || 'User';
+                                    const senderPfp = userData.photoURL || user.photoURL || 'https://via.placeholder.com/65';
+                                    
+                                    // Make sure to replace '/send-pusher-notification' with your actual server endpoint
+                                    // that handles triggering Pusher events on your backend.
+                                    fetch('/send-pusher-notification', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            toUid: this.currentNote.uid,
+                                            title: `New Like ❤️`,
+                                            body: `${senderName} liked your note: "${this.currentNote.text || 'Audio Note'}"`,
+                                            icon: senderPfp,
+                                            type: 'like',
+                                            noteId: this.currentNote.id
+                                        })
+                                    }).catch(e => console.error("Pusher Notification API failed:", e));
+
+                                    // If you use standard Pusher client channels directly instead:
+                                    if (window.pusherChannel) {
+                                        window.pusherChannel.trigger('client-new-notification', {
+                                            toUid: this.currentNote.uid,
+                                            title: `New Like ❤️`,
+                                            body: `${senderName} liked your note`,
+                                            icon: senderPfp
+                                        });
+                                    }
+                                } catch (pushErr) {
+                                    console.error("Pusher logic failed to execute:", pushErr);
+                                }
+                                // ==========================================================
                             }
                         }
 
@@ -1122,6 +1158,42 @@ class ViewNotes extends HTMLElement {
                 seen: false, 
                 [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
             }, { merge: true });
+
+            // ==========================================================
+            // ---> NEW CODE ADDED: PUSHER NOTIFICATION DISPATCH (REPLY)
+            // ==========================================================
+            try {
+                const user = firebase.auth().currentUser;
+                const senderName = user.displayName || "User";
+                const senderPfp = user.photoURL || 'https://via.placeholder.com/65';
+
+                // Make sure to replace '/send-pusher-notification' with your backend endpoint
+                fetch('/send-pusher-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        toUid: targetUid,
+                        title: `New Reply from ${senderName} 💬`,
+                        body: text,
+                        icon: senderPfp,
+                        type: 'chat_reply',
+                        chatId: chatId
+                    })
+                }).catch(e => console.error("Pusher Notification API failed:", e));
+
+                // If you use standard Pusher client channels directly instead:
+                if (window.pusherChannel) {
+                    window.pusherChannel.trigger('client-new-notification', {
+                        toUid: targetUid,
+                        title: `New Reply from ${senderName}`,
+                        body: text,
+                        icon: senderPfp
+                    });
+                }
+            } catch (pushErr) {
+                console.error("Pusher logic failed to execute:", pushErr);
+            }
+            // ==========================================================
 
         } catch(e) {
             console.error("Failed to send reply", e);
