@@ -94,13 +94,13 @@
         }
         
         html, body {
-            height: 100%;
-            width: 100%;
+            height: 100vh !important; /* STRICT LOCK FOR BACKGROUND RESIZING */
+            width: 100vw !important;
             overflow: hidden !important; /* FORCED NO SCROLL TO PREVENT HEADER HIDING */
             background-color: var(--bg);
             background-image: var(--bg-gradient); 
             background-size: cover;
-            background-position: center;
+            background-position: center top;
             background-repeat: no-repeat;
             position: fixed !important; /* CRITICAL FIX FOR OLDER ANDROIDS/IOS */
             left: 0 !important; 
@@ -108,6 +108,7 @@
             overscroll-behavior: none;
             margin: 0;
             padding: 0;
+            touch-action: none; /* Prevent body swipe dragging */
         }
 
         body { 
@@ -437,6 +438,7 @@
             background: transparent; 
             overscroll-behavior-y: contain; 
             position: relative;
+            touch-action: pan-y !important; /* Enable scrolling inside chat */
             
             /* KEY FIX FOR JUMPING: Anchor Scroll */
             overflow-anchor: auto;
@@ -899,25 +901,35 @@ box-shadow: var(--received-shadow);
             z-index: 1000; 
             position: relative; /* Essential for overlay */
             margin-top: auto; /* Fix for older mobiles hanging */
+            touch-action: none; /* PREVENT SCROLLING PAGE WHEN DRAGGING CAPSULE */
         }
         
         .input-area { 
-            margin: 8px 12px;
+            margin: 12px 24px; /* Compact mode default */
             padding: 4px 8px; /* Capsule padding */
             display: flex; 
             align-items: flex-end; /* Bottom alignment */
             gap: 8px; 
             background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75));
-            border-radius: 30px; /* Capsule shape */
+            border-radius: 40px; /* Fully rounded Capsule shape */
             border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
+            transform: scale(0.96);
+            transform-origin: bottom center;
+            transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); /* Professional expansion */
+            touch-action: none; /* Prevent accidental page scrolls */
         }
-        .input-area:focus-within {
+        
+        /* EXPANDED CAPSULE STATE (Focused) */
+        .input-area:focus-within, .input-area.force-expand {
+            margin: 8px 12px; /* Expands to full width */
+            transform: scale(1);
+            border-radius: 26px; /* Slightly less round when active */
+            background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); /* Darken on focus */
             border-color: var(--accent);
-            box-shadow: 0 8px 25px rgba(255, 109, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(255, 109, 0, 0.25);
         }
         
         .input-box { 
@@ -943,6 +955,7 @@ box-shadow: var(--received-shadow);
             max-height: 140px; 
             overflow-y: auto; 
             line-height: 1.4; 
+            touch-action: pan-y; /* Allow internal scrolling for long text */
         }
         
         .plus-btn { 
@@ -1779,7 +1792,9 @@ box-shadow: var(--received-shadow);
         const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         const app = document.getElementById('main-app');
         if(app) app.style.height = vh + 'px';
-        document.body.style.height = vh + 'px';
+        
+        // Keep body fixed at 100vh so background doesn't shrink
+        document.body.style.height = '100vh'; 
         
         // Force scroll positions to 0 instantly so header never disappears
         window.scrollTo(0, 0);
@@ -1805,6 +1820,16 @@ box-shadow: var(--received-shadow);
             document.body.scrollTop = 0;
         }
     }, 100);
+
+    // BLOCK PAGE SCROLL WHEN DRAGGING THE CAPSULE UP
+    const inputContainerObj = document.querySelector('.input-area-container');
+    if (inputContainerObj) {
+        inputContainerObj.addEventListener('touchmove', (e) => {
+            if(e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault(); // Stop page scroll when dragging the capsule
+            }
+        }, { passive: false });
+    }
 
     // Double Tap Background to Scroll
     document.addEventListener('dblclick', (e) => {
@@ -2003,6 +2028,7 @@ box-shadow: var(--received-shadow);
     function goToPulse() { if(targetUsername) window.location.href = `pulse.html?user=${targetUsername}`; }
     
     mInput.addEventListener("focus", () => { 
+        document.querySelector('.input-area').classList.add('force-expand'); // Expands the capsule smoothly
         if(emojiTray.style.display === 'block') closeEmojiTray();
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
         // FIX: Aggressively lock header and scroll when keyboard opens
@@ -2012,6 +2038,7 @@ box-shadow: var(--received-shadow);
     });
     
     mInput.addEventListener("blur", () => {
+        document.querySelector('.input-area').classList.remove('force-expand'); // Shrinks the capsule smoothly
         // Reset safely when keyboard closes
         setTimeout(lockViewportAndHeader, 100);
     });
