@@ -186,6 +186,7 @@
             flex-direction: column;
             will-change: transform;
             contain: strict;
+            overflow: hidden; /* Prevent native scroll conflicts while panning */
         }
 
         #chat-modal.active {
@@ -568,6 +569,9 @@
     window.enterChat = function(e, username, chatId) {
         if(isLongPress || (e && e.target.closest('button'))) return;
 
+        // --- CAPTURE INITIAL FULL SCREEN HEIGHT ---
+        window.initialScreenHeight = window.innerHeight;
+
         // --- MARK READ INSTANTLY ---
         window.currentActiveChatId = chatId;
         if (chatId) window.markChatAsRead(chatId);
@@ -589,7 +593,12 @@
             frame.id = 'chat-frame-' + username;
             frame.className = 'cached-chat-frame';
             frame.style.width = '100%';
-            frame.style.height = '100%';
+            
+            // STRICTLY LOCK HEIGHT SO BACKGROUND DOESN'T SQUISH
+            frame.style.height = window.initialScreenHeight + 'px';
+            frame.style.minHeight = window.initialScreenHeight + 'px';
+            frame.style.maxHeight = window.initialScreenHeight + 'px';
+            
             frame.style.border = 'none';
             frame.style.position = 'absolute';
             frame.style.top = '0';
@@ -600,9 +609,12 @@
             modal.appendChild(frame);
         }
 
-        // Only display the selected chat's iframe
+        // Only display the selected chat's iframe and lock all background sizes
         document.querySelectorAll('#chat-frame, .cached-chat-frame').forEach(f => {
             f.style.display = 'none';
+            f.style.height = window.initialScreenHeight + 'px';
+            f.style.minHeight = window.initialScreenHeight + 'px';
+            f.style.maxHeight = window.initialScreenHeight + 'px';
         });
         frame.style.display = 'block';
 
@@ -622,9 +634,9 @@
         document.body.style.width = '100%';
         document.body.style.height = '100%';
 
-        // --- FIX FOR IFRAME BACKGROUND RESIZE ON KEYBOARD ---
-        // Lock modal to exact window height to prevent relative vh squishing inside iframe
-        modal.style.height = window.innerHeight + 'px';
+        // Lock modal to exact window height to start
+        modal.style.height = (window.visualViewport ? window.visualViewport.height : window.initialScreenHeight) + 'px';
+        if (window.visualViewport) modal.style.top = window.visualViewport.offsetTop + 'px';
 
         // 5. Apply External Theme dynamically from chatTheme.js
         const applyThemeColor = () => {
@@ -679,6 +691,7 @@
             
             modal.style.height = '100%'; // Reset to default relative state
             modal.style.top = '0';
+            modal.scrollTop = 0; // Reset internal pan
         }, 400); 
 
         if(shouldGoBack && window.location.hash === "#quantum-chat") {
@@ -809,14 +822,26 @@
         }
     }, 1500);
 
-    // --- UPDATED: Visual Viewport API fixes to prevent chat background resize issue ---
+    // --- UPDATED: Visual Viewport API fixes to prevent chat background resize AND keep input visible ---
     if (window.visualViewport) {
         const handleKeyboardResize = () => {
             const modal = document.getElementById('chat-modal');
             if (modal.classList.contains('active')) {
-                // FIXED: Do not shrink the modal height which causes the chat background image to resize inside iframe
-                // The modal height is now hard-locked in `enterChat` to prevent squishing.
-                window.scrollTo(0, 0); // Keep just this to prevent parent window scroll bleed
+                const vvHeight = window.visualViewport.height;
+                const offsetTop = window.visualViewport.offsetTop;
+                
+                // 1. Shrink the modal wrapper strictly to the visible area above the keyboard
+                modal.style.height = vvHeight + 'px';
+                modal.style.top = offsetTop + 'px';
+                
+                // 2. Pan the modal down so the bottom of the locked-height iframe (where the input is) is visible
+                if (window.initialScreenHeight && vvHeight < window.initialScreenHeight) {
+                    modal.scrollTop = window.initialScreenHeight - vvHeight;
+                } else {
+                    modal.scrollTop = 0;
+                }
+
+                window.scrollTo(0, 0); // Keep parent window from bleeding scroll
             }
         };
         window.visualViewport.addEventListener('resize', handleKeyboardResize);
