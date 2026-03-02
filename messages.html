@@ -4,8 +4,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <title>Goorac | Quantum Inbox</title>
+    <meta name="theme-color" content="#000000"> <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
 
@@ -169,6 +168,32 @@
         #search-results { display: none; background: #000; min-height: 100vh; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; }
+
+        /* FULL SCREEN CHAT MODAL CSS */
+        #chat-modal {
+            position: fixed;
+            top: 0;
+            left: 100%; /* Start completely off-screen to the right */
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 999999;
+            transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+            display: none; /* Hidden until clicked */
+            flex-direction: column;
+        }
+
+        #chat-modal.active {
+            transform: translateX(-100%); /* Slide into view */
+        }
+
+        #chat-frame {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -208,6 +233,10 @@
         <button class="btn-action del-btn-big" id="confirm-delete">Erase History For Both</button>
         <button class="btn-action cancel-btn" onclick="closeDeleteMenu(true)">Close Options</button>
     </div>
+</div>
+
+<div id="chat-modal">
+    <iframe id="chat-frame" src="about:blank"></iframe>
 </div>
 
 <script src="components/navbar.js" defer></script>
@@ -507,9 +536,74 @@
     window.cancelLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
     window.endLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
 
+    // --- NEW ENTER CHAT LOGIC WITH MODAL & TOOLBAR COLOR SYNC ---
     window.enterChat = function(e, username) {
-        if(isLongPress || e.target.closest('button')) return;
-        window.location.href = `chat.html?user=${username}`;
+        if(isLongPress || (e && e.target.closest('button'))) return;
+
+        const modal = document.getElementById('chat-modal');
+        const frame = document.getElementById('chat-frame');
+        const nav = document.querySelector('main-navbar');
+
+        // 1. Set the URL
+        frame.src = `chat.html?user=${username}`;
+
+        // 2. Wait for the iframe to load, then steal its toolbar color
+        frame.onload = function() {
+            try {
+                const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+                const chatThemeMeta = iframeDoc.querySelector('meta[name="theme-color"]');
+                if (chatThemeMeta) {
+                    const chatColor = chatThemeMeta.getAttribute('content');
+                    let parentThemeMeta = document.querySelector('meta[name="theme-color"]');
+                    if(parentThemeMeta) {
+                        parentThemeMeta.setAttribute('content', chatColor);
+                    }
+                }
+            } catch (error) {
+                console.warn("Could not read iframe color:", error);
+            }
+        };
+
+        // 3. Hide bottom navigation
+        if(nav) nav.classList.add('hide-nav');
+
+        // 4. Open the modal with slide animation
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; 
+        }, 10);
+
+        // 5. Add history state for hardware back button support
+        history.pushState({ chatOpen: true }, "", "#quantum-chat");
+    };
+
+    // --- NEW CLOSE CHAT MODAL LOGIC ---
+    window.closeChatModal = function(shouldGoBack) {
+        const modal = document.getElementById('chat-modal');
+        const frame = document.getElementById('chat-frame');
+        const nav = document.querySelector('main-navbar');
+
+        modal.classList.remove('active');
+        
+        // Show bottom navigation again
+        if(nav) nav.classList.remove('hide-nav');
+
+        // Reset System Color back to your Inbox default
+        const parentThemeMeta = document.querySelector('meta[name="theme-color"]');
+        if (parentThemeMeta) {
+            parentThemeMeta.setAttribute('content', '#000000'); // Assuming #000000 is your default
+        }
+
+        setTimeout(() => {
+            modal.style.display = 'none';
+            frame.src = 'about:blank'; // Clears chat to save memory
+            document.body.style.overflow = 'auto';
+        }, 400); 
+
+        if(shouldGoBack && window.location.hash === "#quantum-chat") {
+            history.back();
+        }
     };
 
     window.visitProfile = function(e, username) { e.stopPropagation(); window.location.href = `userProfile.html?user=${username}`; };
@@ -529,7 +623,15 @@
         if(nav) nav.classList.add('hide-nav');
     }
 
-    window.onpopstate = (e) => { if(document.getElementById('delete-menu').classList.contains('active')) closeDeleteMenu(false); };
+    // --- UPDATED POPSTATE TO HANDLE BOTH MODALS ---
+    window.onpopstate = (e) => { 
+        if(document.getElementById('delete-menu').classList.contains('active')) {
+            closeDeleteMenu(false); 
+        }
+        if(document.getElementById('chat-modal').classList.contains('active')) {
+            closeChatModal(false);
+        }
+    };
 
     async function togglePin(chatId, isPinned) {
         closeDeleteMenu(true);
@@ -543,7 +645,9 @@
         document.getElementById('delete-menu').classList.remove('active');
         document.getElementById('overlay').style.display = 'none';
         const nav = document.querySelector('main-navbar');
-        if(nav) nav.classList.remove('hide-nav');
+        if(nav && !document.getElementById('chat-modal').classList.contains('active')) {
+            nav.classList.remove('hide-nav');
+        }
         if(shouldGoBack && window.location.hash === "#menu") history.back();
     }
 
