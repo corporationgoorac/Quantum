@@ -6,7 +6,7 @@
     // ==========================================
     const SUPABASE_URL = "https://ekgsgltykakwopcfyxqu.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrZ3NnbHR5a2Frd29wY2Z5eHF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY3NDcsImV4cCI6MjA4NTg1Mjc0N30.gsh7Zb6JEJcDx_CzVbrPsfcaiyDvl8ws-gUNsQQFWLc";
-    const THEME_COLOR = "#0095f6"; // Changed to a professional Blue (Messenger style) or keep Orange
+    const THEME_COLOR = "#0095f6"; // Messenger Blue
     const STORAGE_BUCKET = "public-files"; 
     // ==========================================
 
@@ -55,77 +55,112 @@
             <style>
                 :host { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: block; }
                 
-                /* --- Overlay & Animation --- */
+                /* --- Overlay & Animation (Image Picker Style) --- */
                 #fp-overlay {
                     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0,0,0,0.6); z-index: 10000;
-                    display: none; justify-content: center; align-items: flex-end;
-                    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-                    opacity: 0; transition: opacity 0.3s ease;
+                    background: #000000; z-index: 10000;
+                    display: none; flex-direction: column;
+                    opacity: 0; transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
                 }
                 #fp-overlay.open { display: flex; opacity: 1; }
 
-                /* --- Main Card --- */
+                /* --- IG STORY STYLE PROGRESS BAR --- */
+                .fp-progress-container {
+                    position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+                    background: rgba(255,255,255,0.2); z-index: 100;
+                    display: none;
+                }
+                .fp-progress-bar {
+                    height: 100%; width: 0%;
+                    background: ${THEME_COLOR};
+                    transition: width 0.2s ease-out;
+                    box-shadow: 0 0 8px ${THEME_COLOR};
+                }
+
+                /* --- Main Card (Full Screen) --- */
                 .fp-card {
-                    width: 100%; max-width: 480px; height: 85vh;
-                    background: #1c1c1c;
-                    border-top-left-radius: 24px; border-top-right-radius: 24px;
+                    width: 100%; height: 100%;
+                    background: #0c0c0c;
                     display: flex; flex-direction: column; overflow: hidden;
-                    box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-                    transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
                     position: relative;
                 }
-                #fp-overlay.open .fp-card { transform: translateY(0); }
 
                 /* --- Header --- */
                 .fp-header {
-                    padding: 18px 20px; 
                     display: flex; justify-content: space-between; align-items: center;
-                    color: white; font-weight: 600; font-size: 1.1rem;
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
-                    background: rgba(30,30,30,0.8);
+                    padding: 20px 20px; 
+                    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+                    position: absolute; top: 0; left: 0; width: 100%; z-index: 20;
+                    box-sizing: border-box; margin-top: 4px; pointer-events: none;
                 }
+                .fp-header > * { pointer-events: auto; }
+                
                 .fp-close-btn { 
-                    background: rgba(255,255,255,0.1); border: none; color: #ccc; 
-                    width: 30px; height: 30px; border-radius: 50%; display: flex; 
-                    align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer;
-                    transition: background 0.2s;
+                    background: rgba(255,255,255,0.1); border: none; color: white; 
+                    width: 44px; height: 44px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; backdrop-filter: blur(12px);
+                    transition: all 0.2s ease;
                 }
-                .fp-close-btn:active { background: rgba(255,255,255,0.2); }
+                .fp-close-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+                .fp-close-btn:active { transform: scale(0.95); }
+                .fp-close-btn svg { width: 24px; height: 24px; fill: white; }
+
+                #fp-header-title { 
+                    color: white; font-weight: 600; font-size: 1.1rem; 
+                    letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+                }
+
+                /* --- Send Button (Icon only, Image Picker style) --- */
+                .fp-btn-send { 
+                    background: ${THEME_COLOR}; color: white; border: none; 
+                    width: 44px; height: 44px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; box-shadow: 0 4px 15px rgba(0, 149, 246, 0.4);
+                    transition: all 0.2s ease;
+                }
+                .fp-btn-send svg { width: 20px; height: 20px; fill: white; margin-left: 2px; }
+                .fp-btn-send:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0, 149, 246, 0.6); }
+                .fp-btn-send:active:not(:disabled) { transform: scale(0.95); filter: brightness(0.9); }
+                .fp-btn-send:disabled { background: #333; box-shadow: none; cursor: not-allowed; opacity: 0.5; }
+
+                #fp-send-text { display: none; }
 
                 /* --- Preview Area --- */
                 .fp-preview-container {
-                    flex: 1; padding: 20px; overflow-y: auto;
-                    display: flex; flex-direction: column; align-items: center;
-                    gap: 20px;
+                    flex: 1; padding: 80px 20px 120px 20px; overflow-y: auto;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    gap: 20px; background: #000;
                 }
 
                 /* Video Preview */
                 .fp-video-wrapper { 
-                    width: 100%; max-height: 35vh; border-radius: 16px; overflow: hidden; 
-                    background: #000; display:none; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    width: 100%; max-height: 55vh; border-radius: 20px; overflow: hidden; 
+                    background: #000; display:none; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
                 }
                 video { width: 100%; height: 100%; object-fit: contain; }
 
                 /* File Icon Preview */
                 .fp-file-icon-wrapper {
-                    width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 24px;
+                    width: 140px; height: 140px; background: rgba(255,255,255,0.05); border-radius: 30px;
                     display: none; align-items: center; justify-content: center;
-                    font-size: 3.5rem; color: #fff; border: 1px solid rgba(255,255,255,0.1);
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-top: 20px;
+                    font-size: 4rem; color: #fff; border: 1px solid rgba(255,255,255,0.1);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
                 }
                 
                 /* File Meta Info */
-                .fp-file-info-box { text-align: center; width: 100%; padding: 0 10px; }
-                .fp-file-name { color: white; font-weight: 600; margin-bottom: 6px; word-break: break-word; font-size: 1.05rem; line-height: 1.3;}
-                .fp-file-meta { color: #888; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;}
+                .fp-file-info-box { text-align: center; width: 100%; padding: 0 10px; margin-bottom: 20px; }
+                .fp-file-name { color: white; font-weight: 600; margin-bottom: 8px; word-break: break-word; font-size: 1.1rem; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.5);}
+                .fp-file-meta { color: #a0a0a0; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;}
 
-                /* --- Trimmer UI --- */
+                /* --- Trimmer UI (Glassmorphic) --- */
                 .fp-trimmer-box {
-                    width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 16px;
-                    display: none; border: 1px solid rgba(255,255,255,0.08); margin-top: auto;
+                    width: 95%; max-width: 500px; padding: 20px; 
+                    background: rgba(20, 20, 20, 0.85); border-radius: 25px;
+                    display: none; border: 1px solid rgba(255,255,255,0.1); 
+                    backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
                 }
-                .fp-trim-label { font-size: 0.75rem; color: #aaa; margin-bottom: 14px; display: flex; justify-content: space-between; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+                .fp-trim-label { font-size: 0.8rem; color: #ccc; margin-bottom: 15px; display: flex; justify-content: space-between; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
                 .fp-range-wrapper { position: relative; height: 36px; padding: 0 10px; }
                 input[type=range] {
                     position: absolute; pointer-events: none; -webkit-appearance: none;
@@ -133,76 +168,81 @@
                 }
                 input[type=range]::-webkit-slider-thumb {
                     pointer-events: auto; -webkit-appearance: none;
-                    width: 12px; height: 28px; background: #fff; 
-                    border-radius: 4px; cursor: ew-resize; 
-                    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-                    transform: translateY(-12px); /* Center thumb */
+                    width: 16px; height: 16px; background: #fff; 
+                    border-radius: 50%; cursor: ew-resize; 
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+                    transform: translateY(-6px);
                 }
                 .fp-track-bg {
                     position: absolute; top: 16px; height: 4px; width: calc(100% - 20px); 
                     background: rgba(255,255,255,0.1); border-radius: 2px;
                 }
                 .fp-track-fill {
-                    position: absolute; top: 16px; height: 4px; background: ${THEME_COLOR}; z-index: 2;
+                    position: absolute; top: 16px; height: 4px; background: ${THEME_COLOR}; z-index: 2; border-radius: 2px;
                 }
 
-                /* --- Input & Footer --- */
-                .fp-caption-box { padding: 15px 20px; background: #1c1c1c; border-top: 1px solid rgba(255,255,255,0.05); }
+                /* --- Caption Input (Matches Toolbar) --- */
+                .fp-caption-box { 
+                    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+                    width: 95%; max-width: 500px; z-index: 20; padding: 0;
+                }
                 .fp-caption-input {
-                    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;
-                    padding: 14px; border-radius: 14px; font-size: 1rem; outline: none; transition: all 0.2s;
-                    box-sizing: border-box;
+                    width: 100%; background: rgba(20, 20, 20, 0.85); border: 1px solid rgba(255,255,255,0.1); color: white;
+                    padding: 16px 24px; border-radius: 30px; font-size: 1rem; outline: none; transition: all 0.3s;
+                    box-sizing: border-box; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.7);
                 }
-                .fp-caption-input:focus { border-color: ${THEME_COLOR}; background: rgba(0,0,0,0.4); }
+                .fp-caption-input:focus { border-color: ${THEME_COLOR}; background: rgba(30, 30, 30, 0.95); }
 
-                .fp-footer { 
-                    padding: 15px 20px 30px 20px; display: flex; gap: 12px; justify-content: space-between; 
-                    background: #1c1c1c;
+                /* --- Loading Spinner --- */
+                .fp-loading {
+                    position: absolute; top:0; left:0; width:100%; height:100%;
+                    background: rgba(0,0,0,0.8); display: none; z-index: 50;
+                    justify-content: center; align-items: center; flex-direction: column; color: white;
+                    backdrop-filter: blur(8px);
                 }
-                .fp-btn {
-                    padding: 14px; border-radius: 14px; font-weight: 600; border: none; cursor: pointer; font-size: 1rem;
-                    transition: transform 0.1s; flex: 1; text-align: center;
+                .fp-spinner {
+                    width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1);
+                    border-top: 4px solid ${THEME_COLOR}; border-radius: 50%;
+                    animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite; margin-bottom: 20px;
                 }
-                .fp-btn:active { transform: scale(0.98); }
-                .fp-btn-cancel { background: rgba(255,255,255,0.08); color: #fff; max-width: 100px;}
-                
-                .fp-btn-send { 
-                    background: ${THEME_COLOR}; color: white; 
-                    display: flex; align-items: center; justify-content: center; gap: 8px;
-                    position: relative; overflow: hidden;
-                    box-shadow: 0 4px 15px rgba(0, 149, 246, 0.3); /* Matches theme color glow */
-                }
-                .fp-btn-send:disabled { background: #333; color: #777; box-shadow: none; cursor: not-allowed; }
-
-                /* --- Upload Progress Bar (Inside Button) --- */
-                .fp-btn-progress {
-                    position: absolute; bottom: 0; left: 0; height: 4px; background: rgba(255,255,255,0.5); 
-                    width: 0%; transition: width 0.3s ease;
-                }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                .fp-loading-text { font-weight: 600; font-size: 1rem; letter-spacing: 1px; color: #ddd; text-align: center; padding: 0 20px;}
 
                 /* --- Toast Notification --- */
                 .fp-toast {
-                    position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-10px);
+                    position: absolute; top: 90px; left: 50%; transform: translateX(-50%) translateY(-10px);
                     background: rgba(20, 20, 20, 0.95); color: white; padding: 12px 24px;
                     border-radius: 30px; font-size: 0.9rem; pointer-events: none;
-                    opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-                    border: 1px solid rgba(255,255,255,0.1);
-                    display: flex; align-items: center; gap: 8px; z-index: 100;
-                    box-shadow: 0 8px 20px rgba(0,0,0,0.4); font-weight: 500;
+                    opacity: 0; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+                    border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; z-index: 100;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-weight: 500;
                 }
                 .fp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
                 #fp-file-input { display: none; }
+                .fp-btn-cancel { display: none; } /* Hidden in this UI layout */
             </style>
 
             <input type="file" id="fp-file-input" style="display:none !important">
 
             <div id="fp-overlay">
+                
+                <div class="fp-progress-container" id="fp-progress-container">
+                    <div class="fp-progress-bar" id="fp-bar"></div>
+                </div>
+
                 <div class="fp-card">
                     
                     <div class="fp-header">
-                        <span id="fp-header-title">Preview</span>
-                        <button class="fp-close-btn" id="fp-close">✕</button>
+                        <button class="fp-close-btn" id="fp-close">
+                            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        </button>
+                        <span id="fp-header-title">Studio</span>
+                        <button class="fp-btn-send" id="fp-send">
+                            <span id="fp-send-text">Send</span>
+                            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                        <button class="fp-btn fp-btn-cancel" id="fp-cancel" style="display:none;">Cancel</button>
                     </div>
 
                     <div class="fp-toast" id="fp-toast"><span></span></div>
@@ -234,13 +274,11 @@
                         <input type="text" class="fp-caption-input" id="fp-caption" placeholder="Add a caption..." autocomplete="off">
                     </div>
 
-                    <div class="fp-footer">
-                        <button class="fp-btn fp-btn-cancel" id="fp-cancel">Cancel</button>
-                        <button class="fp-btn fp-btn-send" id="fp-send">
-                            <span id="fp-send-text">Send</span>
-                            <div class="fp-btn-progress" id="fp-bar"></div>
-                        </button>
+                    <div class="fp-loading" id="fp-loading">
+                        <div class="fp-spinner"></div>
+                        <span class="fp-loading-text" id="fp-loading-text">Optimizing Video...</span>
                     </div>
+
                 </div>
             </div>
             `;
@@ -260,23 +298,18 @@
             }
 
             // --- HISTORY HANDLING FIX ---
-            // When user clicks Close/Cancel, we manually go back in history.
-            // This triggers 'popstate', which then actually hides the UI.
             const triggerBack = () => {
                 if (this.isOpen) {
-                    history.back(); // This will trigger the popstate listener below
+                    history.back(); 
                 } else {
-                    this.hideUI(); // Fallback
+                    this.hideUI(); 
                 }
             };
 
             closeBtn.addEventListener('click', triggerBack);
             cancelBtn.addEventListener('click', triggerBack);
-            overlay.addEventListener('click', (e) => { if(e.target === overlay) triggerBack(); });
 
-            // Listen for browser Back Button (or history.back() called above)
             window.addEventListener('popstate', (event) => {
-                // If we are open, and the state changes (pop), we must close UI
                 if (this.isOpen) {
                     this.hideUI();
                 }
@@ -347,6 +380,7 @@
             this.querySelector('#fp-icon-wrap').style.display = 'none';
             this.querySelector('#fp-trimmer').style.display = 'none';
             this.querySelector('#fp-video-el').src = '';
+            this.querySelector('#fp-progress-container').style.display = 'none';
 
             const mime = file.type;
             const sizeStr = (file.size / (1024*1024)).toFixed(2) + " MB";
@@ -389,7 +423,6 @@
             // Open UI and Push History
             this.isOpen = true;
             overlay.classList.add('open');
-            // Crucial: We push state so Back Button works
             window.history.pushState({ filePickerOpen: true }, "");
         }
 
@@ -398,7 +431,7 @@
             const icon = this.querySelector('#fp-type-emoji');
             wrap.style.display = 'flex';
             wrap.style.borderColor = color;
-            wrap.style.boxShadow = `0 10px 30px ${color}20`; 
+            wrap.style.boxShadow = `0 10px 30px ${color}30`; 
             icon.innerText = emoji;
         }
 
@@ -408,6 +441,64 @@
             toast.classList.add('show');
             if(this.toastTimeout) clearTimeout(this.toastTimeout);
             this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // ==========================================
+        // 📉 VIDEO COMPRESSION ALGORITHM
+        // Note: Client-side video compression strips audio 
+        // and records in 1x real-time speed.
+        // ==========================================
+        async compressVideo(file) {
+            return new Promise((resolve) => {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.muted = true;
+                
+                video.play().then(() => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Downscale to 480p max resolution for huge size reduction
+                    const MAX_HEIGHT = 480;
+                    let w = video.videoWidth;
+                    let h = video.videoHeight;
+                    if (h > MAX_HEIGHT) {
+                        w = Math.floor(w * (MAX_HEIGHT / h));
+                        h = MAX_HEIGHT;
+                    }
+                    canvas.width = w; canvas.height = h;
+
+                    const stream = canvas.captureStream(30);
+                    // Compress bitrate heavily (500 kbps)
+                    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm', videoBitsPerSecond: 500000 });
+                    const chunks = [];
+                    
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        // Create new compressed File object
+                        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.webm", { type: 'video/webm' });
+                        resolve(compressedFile);
+                    };
+                    
+                    recorder.start();
+                    
+                    const drawFrame = () => {
+                        if (video.paused || video.ended) {
+                            recorder.stop();
+                            return;
+                        }
+                        ctx.drawImage(video, 0, 0, w, h);
+                        requestAnimationFrame(drawFrame);
+                    };
+                    drawFrame();
+                    
+                    video.onended = () => recorder.stop();
+                }).catch(() => {
+                    // If video fails to play/compress, upload original
+                    resolve(file); 
+                });
+            });
         }
 
         async uploadFile() {
@@ -423,31 +514,55 @@
 
             this.isUploading = true;
             const sendBtn = this.querySelector('#fp-send');
-            const sendText = this.querySelector('#fp-send-text');
+            const loadingScreen = this.querySelector('#fp-loading');
+            const loadingText = this.querySelector('#fp-loading-text');
+            const progressContainer = this.querySelector('#fp-progress-container');
             const bar = this.querySelector('#fp-bar');
             
             sendBtn.disabled = true;
-            sendText.innerText = "Uploading...";
-            bar.style.width = "20%"; 
+            loadingScreen.style.display = "flex";
+            progressContainer.style.display = "block";
+            bar.style.width = "5%"; 
 
-            const file = this.selectedFile;
-            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+            let fileToUpload = this.selectedFile;
+
+            // Trigger compression if it's a video
+            if (this.fileType === 'video') {
+                loadingText.innerText = "Optimizing Video...\n(Takes real-time, please wait)";
+                fileToUpload = await this.compressVideo(this.selectedFile);
+            }
+
+            loadingText.innerText = "Uploading to Cloud...";
+            bar.style.width = "40%"; 
+
+            const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_');
             const fileName = `${Date.now()}_${cleanName}`;
 
             try {
-                const { data, error } = await this.sbClient.storage.from(STORAGE_BUCKET).upload(fileName, file, { cacheControl: '3600', upsert: false });
+                // Supabase doesn't natively support XHR upload progress events yet 
+                // for standard uploads, so we simulate the bar filling up smoothly.
+                let simulatedProgress = 40;
+                const progressInterval = setInterval(() => {
+                    if (simulatedProgress < 90) {
+                        simulatedProgress += 5;
+                        bar.style.width = simulatedProgress + "%";
+                    }
+                }, 300);
+
+                const { data, error } = await this.sbClient.storage.from(STORAGE_BUCKET).upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
+
+                clearInterval(progressInterval);
 
                 if (error) throw error;
                 bar.style.width = "100%";
-                sendText.innerText = "Sent!";
 
                 const { data: publicData } = this.sbClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
                 const downloadUrl = publicData.publicUrl;
                 const caption = this.querySelector('#fp-caption').value;
 
                 let metadata = {
-                    name: file.name,
-                    size: file.size,
+                    name: fileToUpload.name,
+                    size: fileToUpload.size,
                     type: this.fileType,
                     caption: caption
                 };
@@ -463,7 +578,6 @@
                     bubbles: true, composed: true
                 }));
 
-                // FIX: Don't just close(), go back in history to clean the state
                 setTimeout(() => { 
                     if(this.isOpen) history.back(); 
                 }, 400);
@@ -471,10 +585,10 @@
             } catch (error) {
                 console.error('Upload error:', error);
                 this.showToast("Upload failed");
-                sendText.innerText = "Retry";
                 bar.style.width = "0%";
                 sendBtn.disabled = false;
             } finally {
+                loadingScreen.style.display = "none";
                 if(!sendBtn.disabled) this.isUploading = false;
             }
         }
@@ -484,15 +598,13 @@
             if(fileInput) fileInput.click();
         }
 
-        // This method strictly hides the UI and resets state.
-        // It should NOT call history.back(). History events call THIS.
         hideUI() {
             this.isOpen = false;
             this.querySelector('#fp-overlay').classList.remove('open');
             this.querySelector('#fp-file-input').value = '';
             this.querySelector('#fp-caption').value = '';
             this.querySelector('#fp-bar').style.width = '0%';
-            this.querySelector('#fp-send-text').innerText = "Send";
+            this.querySelector('#fp-progress-container').style.display = 'none';
             this.selectedFile = null;
             this.isUploading = false;
             this.querySelector('#fp-send').disabled = false;
