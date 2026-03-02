@@ -37,10 +37,6 @@
             style.innerHTML = cachedIcons;
             document.head.appendChild(style);
         } else {
-            // 🚀 FIXED: CORS ERROR BYPASS
-            // Google blocks JS fetching of fonts. Commented out the fetch block to fix the red errors
-            // without removing a single line of code as requested.
-            /*
             fetch('https://fonts.googleapis.com/icon?family=Material+Icons-Round')
                 .then(response => response.text())
                 .then(async css => {
@@ -72,7 +68,6 @@
                     style.innerHTML = css;
                     document.head.appendChild(style);
                 }).catch(e => console.error("Icon cache failed", e));
-            */
         }
     </script>
 
@@ -764,64 +759,6 @@
         }
         .msg-icon { color: #fff !important; }
         .moments-fab .material-icons-round { color: var(--accent) !important; }
-
-        /* 🚀 ADDED: ANTI-GLITCH & LAYOUT SHIFT FIXES */
-        .msg-icon { min-width: 26px; min-height: 26px; font-size: 26px !important; display: flex !important; line-height: 1; }
-        .material-icons-round { 
-            min-width: 1em; min-height: 1em; line-height: 1; letter-spacing: normal; 
-            text-transform: none; white-space: nowrap; word-wrap: normal; direction: ltr; 
-            -webkit-font-feature-settings: 'liga'; 
-        }
-        view-notes, view-moments, main-navbar { display: block; contain: content; }
-        #notes-container { min-height: 95px; box-sizing: border-box; }
-
-        /* 🚀 ADDED: CUSTOM BOTTOM SHEET CSS */
-        .bottom-sheet-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); z-index: 100000;
-            display: flex; align-items: flex-end; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-        }
-        .bottom-sheet-overlay.show { opacity: 1; pointer-events: all; }
-        .bottom-sheet {
-            background: #111; width: 100%; border-radius: 24px 24px 0 0;
-            padding: 30px 20px calc(20px + env(safe-area-inset-bottom)); 
-            border-top: 1px solid var(--border);
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-align: center;
-        }
-        .bottom-sheet-overlay.show .bottom-sheet { transform: translateY(0); }
-        .bs-icon { 
-            width: 50px; height: 50px; background: rgba(0, 210, 255, 0.1); color: var(--accent); 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-            margin: 0 auto 15px; font-size: 28px; 
-        }
-        .bottom-sheet h3 { margin: 0 0 10px; color: #fff; font-size: 1.2rem; }
-        .bottom-sheet p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 25px; line-height: 1.5; }
-        .bs-actions { display: flex; flex-direction: column; gap: 12px; }
-        .bs-btn-allow { background: var(--accent); color: #000; font-weight: 800; border: none; padding: 15px; border-radius: 16px; font-size: 1rem; cursor: pointer; transition: transform 0.2s; }
-        .bs-btn-allow:active { transform: scale(0.96); }
-        .bs-btn-deny { background: transparent; color: var(--text-dim); font-weight: 600; border: none; padding: 10px; font-size: 0.9rem; cursor: pointer; }
-        
-        /* 🚀 NEW: MOMENTS FULL-SCREEN OVERRIDE FIX */
-        /* Forces the modal to ignore body padding and mobile browser URL bars */
-        view-moments .m-full-modal, view-moments .c-overlay, .m-full-modal, .c-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            height: 100dvh !important; /* The magic property for mobile iOS/Android address bars */
-            z-index: 999999 !important; /* Above everything */
-            margin: 0 !important;
-            padding: 0 !important;
-            transform: none !important; /* Prevent parent transforms from shifting the fixed position */
-            box-sizing: border-box !important;
-            overflow: hidden !important;
-        }
     </style>
 
     <script>
@@ -844,7 +781,6 @@
         }
 
         // 🚀 ADDED: Request Notification Permission immediately to avoid late delays
-        /* 🚀 ORIGINAL LINE COMMENTED OUT TO NOT REMOVE IT, REPLACED BY CUSTOM SHEET LOGIC
         document.addEventListener('DOMContentLoaded', () => {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
@@ -852,47 +788,10 @@
                 });
             }
         });
-        */
-
-        // 🚀 NEW CUSTOM BOTTOM SHEET NOTIFICATION LOGIC
-        document.addEventListener('DOMContentLoaded', () => {
-            if ('Notification' in window && Notification.permission === 'default') {
-                if (localStorage.getItem('goorac_notif_prompt_dismissed') !== 'true') {
-                    setTimeout(() => {
-                        const sheet = document.getElementById('notif-permission-sheet');
-                        if (sheet) sheet.classList.add('show');
-                    }, 1500); // Small 1.5s delay feels highly professional
-                }
-            }
-        });
-
-        window.requestNativeNotifications = function() {
-            Notification.requestPermission().then(permission => {
-                console.log('Notification permission checked:', permission);
-                document.getElementById('notif-permission-sheet').classList.remove('show');
-            });
-        };
-
-        window.dismissNotifications = function() {
-            localStorage.setItem('goorac_notif_prompt_dismissed', 'true');
-            document.getElementById('notif-permission-sheet').classList.remove('show');
-        };
     </script>
 </head>
 
 <body oncontextmenu="return false;"> 
-
-<div id="notif-permission-sheet" class="bottom-sheet-overlay">
-    <div class="bottom-sheet">
-        <div class="bs-icon"><span class="material-icons-round">notifications_active</span></div>
-        <h3>Enable Notifications</h3>
-        <p>Stay updated with instant alerts for new messages, calls, and moments from your quantum network.</p>
-        <div class="bs-actions">
-            <button class="bs-btn-allow" onclick="requestNativeNotifications()">Allow Notifications</button>
-            <button class="bs-btn-deny" onclick="dismissNotifications()">Don't show again</button>
-        </div>
-    </div>
-</div>
 
 <script>
     document.fonts.ready.then(() => {
