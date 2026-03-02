@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <link rel="manifest" href="/manifest.json">
-    <link rel="preload" href="chat.html" as="document">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="theme-color" content="#000000"> <title>Goorac | Quantum Inbox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
 
@@ -169,35 +169,6 @@
         #search-results { display: none; background: #000; min-height: 100vh; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; }
-
-        /* FULL SCREEN CHAT MODAL CSS */
-        #chat-modal {
-            position: fixed;
-            top: 0;
-            left: 100%; /* Start completely off-screen to the right */
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 999999;
-            transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
-            display: none; /* Hidden until clicked */
-            flex-direction: column;
-            will-change: transform;
-            contain: strict;
-        }
-
-        #chat-modal.active {
-            transform: translateX(-100%); /* Slide into view */
-        }
-
-        #chat-frame {
-            flex: 1;
-            border: none;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            -webkit-overflow-scrolling: touch;
-        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -237,10 +208,6 @@
         <button class="btn-action del-btn-big" id="confirm-delete">Erase History For Both</button>
         <button class="btn-action cancel-btn" onclick="closeDeleteMenu(true)">Close Options</button>
     </div>
-</div>
-
-<div id="chat-modal">
-    <iframe id="chat-frame" src="about:blank"></iframe>
 </div>
 
 <script src="components/navbar.js" defer></script>
@@ -540,94 +507,9 @@
     window.cancelLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
     window.endLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
 
-    // --- NEW ENTER CHAT LOGIC WITH MODAL & TOOLBAR COLOR SYNC ---
     window.enterChat = function(e, username) {
-        if(isLongPress || (e && e.target.closest('button'))) return;
-
-        const modal = document.getElementById('chat-modal');
-        const frame = document.getElementById('chat-frame');
-        const nav = document.querySelector('main-navbar');
-
-        // 1. Set the URL FIRST to trigger network loading while UI is transitioning
-        // Using replace() to keep history clean for hardware back button
-        try {
-            frame.contentWindow.location.replace(`chat.html?user=${username}`);
-        } catch(err) {
-            frame.src = `chat.html?user=${username}`;
-        }
-
-        // 2. Hide bottom navigation
-        if(nav) nav.classList.add('hide-nav');
-
-        // 3. Open the modal with slide animation immediately
-        modal.style.display = 'flex';
-        // Force Reflow
-        modal.offsetHeight; 
-        
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden'; 
-        
-        // Lock parent background
-        document.body.style.position = 'fixed';
-        document.body.style.width = '100%';
-        document.body.style.height = '100%';
-
-        // 4. Wait for the iframe to load, then steal its toolbar color
-        frame.onload = function() {
-            try {
-                const iframeDoc = frame.contentDocument || frame.contentWindow.document;
-                const chatThemeMeta = iframeDoc.querySelector('meta[name="theme-color"]');
-                if (chatThemeMeta) {
-                    const chatColor = chatThemeMeta.getAttribute('content');
-                    let parentThemeMeta = document.querySelector('meta[name="theme-color"]');
-                    if(parentThemeMeta) {
-                        parentThemeMeta.setAttribute('content', chatColor);
-                    }
-                }
-            } catch (error) {
-                console.warn("Could not read iframe color:", error);
-            }
-        };
-
-        // 5. Add history state for hardware back button support
-        history.pushState({ chatOpen: true }, "", "#quantum-chat");
-    };
-
-    // --- NEW CLOSE CHAT MODAL LOGIC ---
-    window.closeChatModal = function(shouldGoBack) {
-        const modal = document.getElementById('chat-modal');
-        const frame = document.getElementById('chat-frame');
-        const nav = document.querySelector('main-navbar');
-
-        modal.classList.remove('active');
-        
-        // Show bottom navigation again
-        if(nav) nav.classList.remove('hide-nav');
-
-        // Reset System Color back to your Inbox default
-        const parentThemeMeta = document.querySelector('meta[name="theme-color"]');
-        if (parentThemeMeta) {
-            parentThemeMeta.setAttribute('content', '#000000'); // Assuming #000000 is your default
-        }
-
-        setTimeout(() => {
-            modal.style.display = 'none';
-            
-            // use replace to keep history clean on close
-            try { frame.contentWindow.location.replace('about:blank'); } catch(e) { frame.src = 'about:blank'; }
-            
-            document.body.style.overflow = 'auto';
-            document.body.style.position = '';
-            document.body.style.width = '';
-            document.body.style.height = '';
-            
-            modal.style.height = '100%';
-            modal.style.top = '0';
-        }, 400); 
-
-        if(shouldGoBack && window.location.hash === "#quantum-chat") {
-            history.back();
-        }
+        if(isLongPress || e.target.closest('button')) return;
+        window.location.href = `chat.html?user=${username}`;
     };
 
     window.visitProfile = function(e, username) { e.stopPropagation(); window.location.href = `userProfile.html?user=${username}`; };
@@ -647,15 +529,7 @@
         if(nav) nav.classList.add('hide-nav');
     }
 
-    // --- UPDATED POPSTATE TO HANDLE BOTH MODALS ---
-    window.onpopstate = (e) => { 
-        if(document.getElementById('delete-menu').classList.contains('active')) {
-            closeDeleteMenu(false); 
-        }
-        if(document.getElementById('chat-modal').classList.contains('active')) {
-            closeChatModal(false);
-        }
-    };
+    window.onpopstate = (e) => { if(document.getElementById('delete-menu').classList.contains('active')) closeDeleteMenu(false); };
 
     async function togglePin(chatId, isPinned) {
         closeDeleteMenu(true);
@@ -669,9 +543,7 @@
         document.getElementById('delete-menu').classList.remove('active');
         document.getElementById('overlay').style.display = 'none';
         const nav = document.querySelector('main-navbar');
-        if(nav && !document.getElementById('chat-modal').classList.contains('active')) {
-            nav.classList.remove('hide-nav');
-        }
+        if(nav) nav.classList.remove('hide-nav');
         if(shouldGoBack && window.location.hash === "#menu") history.back();
     }
 
@@ -686,6 +558,8 @@
             
             try {
                 // === 2. CRITICAL: DELETE CHAT DOCUMENT FIRST ===
+                // Separating this from the batch ensures the chat disappears from the Inbox
+                // instantly, even if the message deletion batch limit (500) is hit later.
                 await db.collection("chats").doc(cid).delete();
 
                 // === 3. SUB-RESOURCE CLEANUP ===
@@ -697,6 +571,8 @@
                 if (!msgs.empty) {
                     const batch = db.batch();
                     let count = 0;
+                    // Prevent Batch Limit Crash (>500 ops makes the whole batch fail)
+                    // We cap it at 480 to be safe.
                     msgs.docs.forEach((d, index) => {
                         if (index < 480) { 
                             batch.delete(d.ref);
@@ -742,29 +618,6 @@
         if(hour < 24) return `${hour}h ago`;
         if(day < 7) return `${day}d ago`;
         return date.toLocaleDateString();
-    }
-
-    // --- ADDED: Prefetch chat.html into browser disk cache for 0ms loads ---
-    setTimeout(() => {
-        if (!localStorage.getItem('goorac_chat_cached')) {
-            fetch('chat.html').then(r => r.text()).then(() => {
-                localStorage.setItem('goorac_chat_cached', 'true');
-            }).catch(e => console.warn("Cache prefetch failed", e));
-        }
-    }, 1500);
-
-    // --- ADDED: Visual Viewport API to aggressively lock screen against Keyboard shifting ---
-    if (window.visualViewport) {
-        const handleKeyboardResize = () => {
-            const modal = document.getElementById('chat-modal');
-            if (modal.classList.contains('active')) {
-                modal.style.height = window.visualViewport.height + 'px';
-                modal.style.top = window.visualViewport.offsetTop + 'px';
-                window.scrollTo(0, 0);
-            }
-        };
-        window.visualViewport.addEventListener('resize', handleKeyboardResize);
-        window.visualViewport.addEventListener('scroll', handleKeyboardResize);
     }
 </script>
 </body>
