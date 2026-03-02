@@ -1016,8 +1016,9 @@ class ViewNotes extends HTMLElement {
                                 // ==========================================================
                                 try {
                                     const senderName = userData.name || user.displayName || 'User';
+                                    const senderUsername = userData.username || user.displayName || 'User';
                                     const senderPfp = userData.photoURL || user.photoURL || 'https://via.placeholder.com/65';
-                                    const deepLink = `https://www.goorac.biz/chat.html`;
+                                    const deepLink = `https://www.goorac.biz/chat.html?user=${senderUsername}`;
                                     
                                     // Make sure to replace '/send-pusher-notification' with your actual server endpoint
                                     // that handles triggering Pusher events on your backend.
@@ -1163,10 +1164,20 @@ class ViewNotes extends HTMLElement {
             // ---> NEW CODE ADDED: PUSHER NOTIFICATION DISPATCH (REPLY)
             // ==========================================================
             try {
-                const user = firebase.auth().currentUser;
-                const senderName = user.displayName || "User";
-                const senderPfp = user.photoURL || 'https://via.placeholder.com/65';
-                const deepLink = `https://www.goorac.biz/chat.html`;
+                // Fetch the sender's username for the deep link
+                const userDoc = await this.db.collection('users').doc(myUid).get();
+                let senderUsername = "User";
+                let senderName = "User";
+                let senderPfp = 'https://via.placeholder.com/65';
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    senderUsername = userData.username || "User";
+                    senderName = userData.name || userData.username || "User";
+                    senderPfp = userData.photoURL || 'https://via.placeholder.com/65';
+                }
+
+                const deepLink = `https://www.goorac.biz/chat.html?user=${senderUsername}`;
 
                 // Make sure to replace '/send-pusher-notification' with your backend endpoint
                 fetch('https://pish-uigm.onrender.com/send-push', {
