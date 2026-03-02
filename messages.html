@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <link rel="manifest" href="/manifest.json">
+    <link rel="preload" href="chat.html" as="document">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="theme-color" content="#000000"> <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
@@ -545,7 +546,13 @@
         const nav = document.querySelector('main-navbar');
 
         // 1. Set the URL
-        frame.src = `chat.html?user=${username}`;
+        // CHANGED: Using replace() stops the iframe from creating its own history entry
+        // frame.src = `chat.html?user=${username}`;
+        try {
+            frame.contentWindow.location.replace(`chat.html?user=${username}`);
+        } catch(err) {
+            frame.src = `chat.html?user=${username}`;
+        }
 
         // 2. Wait for the iframe to load, then steal its toolbar color
         frame.onload = function() {
@@ -572,6 +579,11 @@
         setTimeout(() => {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden'; 
+            
+            // ADDED: Forcefully lock parent background so keyboard doesn't push it up
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.height = '100%';
         }, 10);
 
         // 5. Add history state for hardware back button support
@@ -597,8 +609,20 @@
 
         setTimeout(() => {
             modal.style.display = 'none';
-            frame.src = 'about:blank'; // Clears chat to save memory
+            
+            // CHANGED: use replace to keep history clean on close
+            // frame.src = 'about:blank'; // Clears chat to save memory
+            try { frame.contentWindow.location.replace('about:blank'); } catch(e) { frame.src = 'about:blank'; }
+            
             document.body.style.overflow = 'auto';
+            // ADDED: Unlock parent background
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.height = '';
+            
+            // ADDED: Reset any visual viewport adjustments
+            modal.style.height = '100%';
+            modal.style.top = '0';
         }, 400); 
 
         if(shouldGoBack && window.location.hash === "#quantum-chat") {
@@ -722,6 +746,30 @@
         if(hour < 24) return `${hour}h ago`;
         if(day < 7) return `${day}d ago`;
         return date.toLocaleDateString();
+    }
+
+    // --- ADDED: Prefetch chat.html into browser disk cache for 0ms loads ---
+    setTimeout(() => {
+        if (!localStorage.getItem('goorac_chat_cached')) {
+            fetch('chat.html').then(r => r.text()).then(() => {
+                localStorage.setItem('goorac_chat_cached', 'true');
+            }).catch(e => console.warn("Cache prefetch failed", e));
+        }
+    }, 1500);
+
+    // --- ADDED: Visual Viewport API to aggressively lock screen against Keyboard shifting ---
+    if (window.visualViewport) {
+        const handleKeyboardResize = () => {
+            const modal = document.getElementById('chat-modal');
+            if (modal.classList.contains('active')) {
+                // Lock modal to exact visible height when keyboard is up
+                modal.style.height = window.visualViewport.height + 'px';
+                modal.style.top = window.visualViewport.offsetTop + 'px';
+                window.scrollTo(0, 0);
+            }
+        };
+        window.visualViewport.addEventListener('resize', handleKeyboardResize);
+        window.visualViewport.addEventListener('scroll', handleKeyboardResize);
     }
 </script>
 </body>
