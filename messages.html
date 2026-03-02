@@ -182,6 +182,8 @@
             transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
             display: none; /* Hidden until clicked */
             flex-direction: column;
+            will-change: transform;
+            contain: strict;
         }
 
         #chat-modal.active {
@@ -193,6 +195,7 @@
             border: none;
             width: 100%;
             height: 100%;
+            background: #000;
             -webkit-overflow-scrolling: touch;
         }
     </style>
@@ -545,16 +548,31 @@
         const frame = document.getElementById('chat-frame');
         const nav = document.querySelector('main-navbar');
 
-        // 1. Set the URL
-        // CHANGED: Using replace() stops the iframe from creating its own history entry
-        // frame.src = `chat.html?user=${username}`;
+        // 1. Set the URL FIRST to trigger network loading while UI is transitioning
+        // Using replace() to keep history clean for hardware back button
         try {
             frame.contentWindow.location.replace(`chat.html?user=${username}`);
         } catch(err) {
             frame.src = `chat.html?user=${username}`;
         }
 
-        // 2. Wait for the iframe to load, then steal its toolbar color
+        // 2. Hide bottom navigation
+        if(nav) nav.classList.add('hide-nav');
+
+        // 3. Open the modal with slide animation immediately
+        modal.style.display = 'flex';
+        // Force Reflow
+        modal.offsetHeight; 
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; 
+        
+        // Lock parent background
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+
+        // 4. Wait for the iframe to load, then steal its toolbar color
         frame.onload = function() {
             try {
                 const iframeDoc = frame.contentDocument || frame.contentWindow.document;
@@ -570,21 +588,6 @@
                 console.warn("Could not read iframe color:", error);
             }
         };
-
-        // 3. Hide bottom navigation
-        if(nav) nav.classList.add('hide-nav');
-
-        // 4. Open the modal with slide animation
-        modal.style.display = 'flex';
-        setTimeout(() => {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden'; 
-            
-            // ADDED: Forcefully lock parent background so keyboard doesn't push it up
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
-            document.body.style.height = '100%';
-        }, 10);
 
         // 5. Add history state for hardware back button support
         history.pushState({ chatOpen: true }, "", "#quantum-chat");
@@ -610,17 +613,14 @@
         setTimeout(() => {
             modal.style.display = 'none';
             
-            // CHANGED: use replace to keep history clean on close
-            // frame.src = 'about:blank'; // Clears chat to save memory
+            // use replace to keep history clean on close
             try { frame.contentWindow.location.replace('about:blank'); } catch(e) { frame.src = 'about:blank'; }
             
             document.body.style.overflow = 'auto';
-            // ADDED: Unlock parent background
             document.body.style.position = '';
             document.body.style.width = '';
             document.body.style.height = '';
             
-            // ADDED: Reset any visual viewport adjustments
             modal.style.height = '100%';
             modal.style.top = '0';
         }, 400); 
@@ -686,8 +686,6 @@
             
             try {
                 // === 2. CRITICAL: DELETE CHAT DOCUMENT FIRST ===
-                // Separating this from the batch ensures the chat disappears from the Inbox
-                // instantly, even if the message deletion batch limit (500) is hit later.
                 await db.collection("chats").doc(cid).delete();
 
                 // === 3. SUB-RESOURCE CLEANUP ===
@@ -699,8 +697,6 @@
                 if (!msgs.empty) {
                     const batch = db.batch();
                     let count = 0;
-                    // Prevent Batch Limit Crash (>500 ops makes the whole batch fail)
-                    // We cap it at 480 to be safe.
                     msgs.docs.forEach((d, index) => {
                         if (index < 480) { 
                             batch.delete(d.ref);
@@ -762,7 +758,6 @@
         const handleKeyboardResize = () => {
             const modal = document.getElementById('chat-modal');
             if (modal.classList.contains('active')) {
-                // Lock modal to exact visible height when keyboard is up
                 modal.style.height = window.visualViewport.height + 'px';
                 modal.style.top = window.visualViewport.offsetTop + 'px';
                 window.scrollTo(0, 0);
