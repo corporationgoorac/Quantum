@@ -96,16 +96,18 @@
         html, body {
             height: 100%;
             width: 100%;
-            overflow: hidden; /* Prevent body scroll, handle in chat-flow */
+            overflow: hidden !important; /* FORCED NO SCROLL TO PREVENT HEADER HIDING */
             background-color: var(--bg);
-            background-image: var(--bg-gradient); /* Will be overridden dynamically by JS if bg.png exists */
+            background-image: var(--bg-gradient); 
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            position: fixed; /* Fix for iOS rubber-banding */
-            left: 0; 
-            top: 0;
+            position: fixed !important; /* CRITICAL FIX FOR OLDER ANDROIDS/IOS */
+            left: 0 !important; 
+            top: 0 !important;
             overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
         }
 
         body { 
@@ -217,8 +219,9 @@
             height: 100vh; 
             height: 100dvh; 
             width: 100%; 
-            position: absolute; 
-            top: 0; left: 0; 
+            position: fixed !important; /* CRITICAL FIX: FORCES APP TO IGNORE BROWSER SCROLL */
+            top: 0 !important; 
+            left: 0 !important; 
             overflow: hidden;
         }
 
@@ -226,8 +229,10 @@
            5. HEADER STYLES (Optimized for Mobile)
            ========================================= */
         header { 
-            position: absolute; 
-            top: 0; left: 0; right: 0;
+            position: absolute !important; /* STRICT POSITIONING */
+            top: 0 !important; 
+            left: 0 !important; 
+            right: 0 !important;
             padding: 0 10px;
             padding-top: calc(env(safe-area-inset-top) + 6px);
             height: calc(60px + env(safe-area-inset-top));
@@ -957,28 +962,36 @@ box-shadow: var(--received-shadow);
         }
         .plus-btn:active { transform: rotate(90deg); background: rgba(255,255,255,0.2); }
         
+        /* NEW PROFESSIONAL SEND ICON BUTTON */
         .send-btn { 
-            background: transparent; 
+            background: var(--accent); 
             border: none; 
-            font-weight: 700; 
-            font-size: 1rem; 
-            padding: 0 4px; 
+            border-radius: 50%;
+            min-width: 38px;
+            width: 38px;
             height: 38px; 
             display: none; 
             align-items: center; 
-            color: #555; 
+            justify-content: center;
+            color: #fff; 
+            font-weight: 700; 
+            padding: 0; 
             pointer-events: none; 
-            transition: all 0.2s ease; 
+            transition: all 0.3s var(--ease-spring); 
             align-self: flex-end; 
             margin-bottom: 3px; 
+            box-shadow: 0 4px 15px rgba(255, 109, 0, 0);
         }
         .send-btn.active { 
-            color: var(--accent); 
             cursor: pointer; 
             pointer-events: auto; 
-            text-shadow: 0 0 15px var(--accent);
+            box-shadow: 0 4px 15px var(--accent);
             transform: scale(1.05);
             display: flex !important;
+        }
+        .send-btn span {
+            font-size: 20px;
+            margin-left: 3px; /* visual center for send icon */
         }
 
         /* === MIC BUTTON & RECORDING UI === */
@@ -1546,7 +1559,9 @@ box-shadow: var(--received-shadow);
             <div class="input-box" id="msg-input-box">
                 <textarea id="m-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
             </div>
-            <button id="send-btn" class="send-btn">Send</button>
+            <button id="send-btn" class="send-btn">
+                <span class="material-icons-round">send</span>
+            </button>
             <div id="mic-btn-wrapper" class="mic-btn-wrapper">
                 <div id="mic-btn" class="mic-btn">
                     <span class="material-icons-round">mic</span>
@@ -1756,9 +1771,41 @@ box-shadow: var(--received-shadow);
     })();
 
     // =========================================
-    //  13. EVENT LISTENERS & INTERACTION
+    //  13. EVENT LISTENERS & INTERACTION (WITH STRICT VIEWPORT FIX)
     // =========================================
     
+    // AGGRESSIVE VIEWPORT ANCHOR (Fixes header hiding and input hanging)
+    function lockViewportAndHeader() {
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const app = document.getElementById('main-app');
+        if(app) app.style.height = vh + 'px';
+        document.body.style.height = vh + 'px';
+        
+        // Force scroll positions to 0 instantly so header never disappears
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        document.body.style.top = '0px'; 
+        
+        window.scrollToBottom();
+    }
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', lockViewportAndHeader);
+        window.visualViewport.addEventListener('scroll', lockViewportAndHeader);
+    }
+    window.addEventListener('resize', lockViewportAndHeader);
+    window.addEventListener('scroll', lockViewportAndHeader, { passive: true });
+    
+    // Unyielding lock loop while input is active to fight older browser behavior
+    setInterval(() => {
+        if (document.activeElement === mInput || window.scrollY > 0 || document.body.scrollTop > 0) {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }
+    }, 100);
+
     // Double Tap Background to Scroll
     document.addEventListener('dblclick', (e) => {
         if (e.target.id === 'chat-flow' || e.target.id === 'messages-container') {
@@ -1949,28 +1996,6 @@ box-shadow: var(--received-shadow);
         }
     }
 
-    // Viewport Handling for Mobile Keyboards
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-            const viewportHeight = window.visualViewport.height;
-            document.getElementById('main-app').style.height = viewportHeight + 'px';
-            // FIX: Keep body top at 0 to prevent the header from hiding when keyboard opens
-            document.body.style.top = '0px'; 
-            window.scrollTo(0, 0); // Force viewport to top
-            window.scrollToBottom();
-        });
-    }
-
-    // NEW ADDITION: Fallback resize listener for older mobiles to prevent hanging
-    window.addEventListener('resize', () => {
-        if (!window.visualViewport || /android/i.test(navigator.userAgent)) {
-            document.getElementById('main-app').style.height = window.innerHeight + 'px';
-            document.body.style.top = '0px'; // FIX: Keep body top at 0
-            window.scrollTo(0, 0); // Force viewport to top
-            window.scrollToBottom();
-        }
-    });
-
     function vibrate(pattern = 50) { 
         if (navigator.vibrate) navigator.vibrate(pattern); 
     }
@@ -1980,9 +2005,15 @@ box-shadow: var(--received-shadow);
     mInput.addEventListener("focus", () => { 
         if(emojiTray.style.display === 'block') closeEmojiTray();
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
-        // FIX: Force scroll to top so header remains visible when keyboard opens on old devices
-        setTimeout(() => { window.scrollTo(0, 0); document.body.scrollTop = 0; }, 50);
-        setTimeout(() => { window.scrollTo(0, 0); }, 300); // Double fallback for slower animations
+        // FIX: Aggressively lock header and scroll when keyboard opens
+        lockViewportAndHeader();
+        setTimeout(lockViewportAndHeader, 50);
+        setTimeout(lockViewportAndHeader, 300); // Double fallback for slower animations
+    });
+    
+    mInput.addEventListener("blur", () => {
+        // Reset safely when keyboard closes
+        setTimeout(lockViewportAndHeader, 100);
     });
 
     function closeEmojiTray() {
