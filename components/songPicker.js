@@ -4,6 +4,8 @@ class SongPicker extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         // SPEED: Controller to kill network requests instantly
         this.fetchController = null; 
+        // NEW: Track original theme color for mobile top bar
+        this.originalThemeColor = null; 
     }
 
     connectedCallback() {
@@ -319,6 +321,19 @@ class SongPicker extends HTMLElement {
                     if(!profile.timeContext[currentHour]) profile.timeContext[currentHour] = {};
                     profile.timeContext[currentHour][genre] = (profile.timeContext[currentHour][genre] || 0) + weight;
                 }
+                // --- NEW ML: Day of week and keyword tracking ---
+                const dayOfWeek = new Date().getDay();
+                profile.days = profile.days || {};
+                profile.days[dayOfWeek] = profile.days[dayOfWeek] || {};
+                if (genre) {
+                    profile.days[dayOfWeek][genre] = (profile.days[dayOfWeek][genre] || 0) + weight;
+                }
+                profile.keywords = profile.keywords || {};
+                if (song.trackName) {
+                    const words = song.trackName.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                    words.forEach(w => profile.keywords[w] = (profile.keywords[w] || 0) + (weight * 0.5));
+                }
+                // --- END NEW ML ---
                 this.DB.setUserProfile(profile);
             },
 
@@ -329,16 +344,31 @@ class SongPicker extends HTMLElement {
                 const getTop = (obj) => Object.entries(obj).sort(([,a], [,b]) => b - a).map(([k]) => k);
                 const topArtists = getTop(profile.artists);
                 const timeSpecificGenres = profile.timeContext[currentHour] ? getTop(profile.timeContext[currentHour]) : [];
-
+                
+                // --- NEW ML: Expanded contextual inference ---
+                const dayOfWeek = new Date().getDay();
+                const daySpecificGenres = profile.days && profile.days[dayOfWeek] ? getTop(profile.days[dayOfWeek]) : [];
+                const topKeywords = profile.keywords ? getTop(profile.keywords) : [];
                 const dice = Math.random();
                 let query = "";
                 let reason = "Top Hits";
 
-                if (dice < 0.3 && timeSpecificGenres.length > 0) {
+                if (dice < 0.2 && daySpecificGenres.length > 0) {
+                    query = daySpecificGenres[0] + " hits";
+                    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                    reason = dayNames[dayOfWeek] + " Vibes • " + daySpecificGenres[0];
+                } 
+                else if (dice < 0.35 && topKeywords.length > 0) {
+                    const kw = topKeywords[Math.floor(Math.random() * Math.min(topKeywords.length, 3))];
+                    query = kw + " music";
+                    reason = "Curated For You • " + kw.charAt(0).toUpperCase() + kw.slice(1);
+                }
+                // --- END NEW ML ---
+                else if (dice < 0.5 && timeSpecificGenres.length > 0) {
                     query = timeSpecificGenres[0] + " hits";
                     reason = getTimeGreeting() + " • " + timeSpecificGenres[0];
                 } 
-                else if (dice < 0.6 && topArtists.length > 0) {
+                else if (dice < 0.8 && topArtists.length > 0) {
                     const artist = topArtists[Math.floor(Math.random() * Math.min(topArtists.length, 3))];
                     query = "Best of " + artist;
                     reason = "Because you like " + artist;
@@ -417,7 +447,9 @@ class SongPicker extends HTMLElement {
         const lastSession = this.DB.getLastSession();
         // NOTE: We only restore session if it was recent AND not "For You"
         // If it was "For You", we prefer the fresh 'already loaded' batch
-        if (lastSession && (Date.now() - lastSession.timestamp < 86400000)) {
+        
+        // --- NEW: Do NOT restore if the last session had a query. This ensures 0ms own suggestions. ---
+        if (lastSession && (Date.now() - lastSession.timestamp < 86400000) && !lastSession.query) {
             
             // If the last session was 'For You', we allow restoring if it has content
             // This is crucial for "load fastly" on re-open.
@@ -472,8 +504,27 @@ class SongPicker extends HTMLElement {
     }
 
     open() {
+        // --- NEW: Inject Mobile Theme Color on Open ---
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) {
+            this.originalThemeColor = metaTheme.getAttribute('content');
+            metaTheme.setAttribute('content', '#000000');
+        } else {
+            this.originalThemeColor = null;
+            const newMeta = document.createElement('meta');
+            newMeta.name = 'theme-color';
+            newMeta.content = '#000000';
+            newMeta.id = 'injected-theme-color-song-picker';
+            document.head.appendChild(newMeta);
+        }
+        // --- END NEW ---
+
         this.classList.add('active');
         history.pushState({ modalOpen: true }, "", "");
+        
+        // --- NEW: Force clean input to avoid past suggestions ---
+        this.searchInput.value = '';
+        
         const restored = this.restoreState();
         // If NOT restored (cache expired or empty), switchTab will trigger fetch
         if (!restored) {
@@ -487,6 +538,15 @@ class SongPicker extends HTMLElement {
             this.fetchController.abort();
             this.fetchController = null;
         }
+
+        // --- NEW: Restore Mobile Theme Color on Close ---
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (this.originalThemeColor !== null && metaTheme) {
+            metaTheme.setAttribute('content', this.originalThemeColor);
+        } else if (metaTheme && metaTheme.id === 'injected-theme-color-song-picker') {
+            metaTheme.remove();
+        }
+        // --- END NEW ---
 
         // Save session state explicitly so "open" can be fast next time
         this.DB.saveSession(
@@ -504,6 +564,9 @@ class SongPicker extends HTMLElement {
         this.player.pause();
         this.updateIcons(false);
         if (history.state && history.state.modalOpen) history.back();
+        
+        // --- NEW: Automatically start pre-fetching 0ms suggestions for next open ---
+        this.runBackgroundUpdate(true);
     }
 
     confirmSelection() {
@@ -824,8 +887,16 @@ class SongPicker extends HTMLElement {
         this.DB.trackInteraction(song, 3);
         this.DB.addToHistory(song); 
         
+        // --- NEW: Instant audio fetching priority override ---
+        this.player.preload = "auto";
         this.player.src = song.previewUrl;
-        this.player.play().catch(e => console.warn("Playback Error"));
+        this.player.load(); // Force immediate network priority for the audio track
+        
+        const playPromise = this.player.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => console.warn("Playback Error: Instant play prevented by browser restrictions", e));
+        }
+        // --- END NEW ---
         
         root.getElementById('miniPlayer').classList.add('show');
         this.updateIcons(true);
