@@ -225,39 +225,6 @@ class MainNavbar extends HTMLElement {
                 transform: scale(1);
             }
 
-            /* ==========================================================================
-               PULSE ICON ENHANCEMENTS
-               ========================================================================== */
-            .pulse-icon-container {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 32px;
-                width: 32px;
-            }
-
-            .nav-item .pulse-graphic {
-                color: var(--pulse-color);
-                animation: pulse-skel 2.5s infinite ease-in-out;
-            }
-
-            .nav-item.active .pulse-graphic {
-                filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
-                animation: pulse-skel-active 1.5s infinite ease-in-out;
-            }
-
-            @keyframes pulse-skel {
-                0%, 100% { opacity: 0.5; transform: scale(1); }
-                50% { opacity: 0.9; transform: scale(1.05); }
-            }
-
-            @keyframes pulse-skel-active {
-                0% { transform: scale(1.1); filter: brightness(1); }
-                50% { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 15px rgba(0, 210, 255, 0.8)); }
-                100% { transform: scale(1.1); filter: brightness(1); }
-            }
-
             /* Subtle Active Indicator Dot */
             .nav-item::after {
                 content: '';
@@ -295,11 +262,9 @@ class MainNavbar extends HTMLElement {
                 <span class="material-icons-round">explore</span>
                 <span>Explore</span>
             </a>
-            <a href="pulseLobby.html" class="nav-item" aria-label="Pulse Lobby">
-                <div class="pulse-icon-container">
-                    <span class="material-icons-round pulse-graphic">graphic_eq</span>
-                </div>
-                <span>Pulse</span>
+            <a href="bites.html" class="nav-item" aria-label="Bites">
+                <span class="material-icons-round">restaurant</span>
+                <span>Bites</span>
             </a>
             <a href="calls.html" class="nav-item" aria-label="Calls">
                 <span class="material-icons-round">phone</span>
