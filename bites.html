@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Goorac | Quantum Bites</title>
     
-    <script src="config.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
     <script src="components/navbar.js" defer></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons-Round" rel="stylesheet">
     
@@ -202,96 +197,31 @@
     <div class="search-results" id="search-results-container">
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; opacity:0.5; padding: 40px;">
             <span class="material-icons-round" style="font-size: 48px; margin-bottom:15px;">travel_explore</span>
-            <p style="text-align: center; font-size: 0.9rem; font-weight: 600;">Search anything. The algorithm learns your interests instantly.</p>
+            <p style="text-align: center; font-size: 0.9rem; font-weight: 600;">Explore the global news feed instantly.</p>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 1. FIREBASE & STATE INITIALIZATION ---
-    if (typeof window.initFirebaseCore === 'function') {
-        window.initFirebaseCore();
-    } else if (!firebase.apps.length && window.firebaseConfig) {
-        firebase.initializeApp(window.firebaseConfig);
-    }
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-    
-    let myUid = null;
-    let userInterests = {}; // The Brain (Loaded from Firebase)
-    let seenBites = new Set(); // Prevent duplicates
+    // --- 1. CONFIGURATION ---
+    let seenBites = new Set(); 
     let isFetching = false;
-    let viewTimers = {}; // 5-second Intersection timers
+    const DEFAULT_TOPICS = ["World News", "Tech", "Science", "Space", "Nature"];
 
-    // Default algorithm topics if user is brand new
-    const DEFAULT_TOPICS = ["world news", "technology", "sports", "entertainment"];
-
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            myUid = user.uid;
-            await loadMachineLearningProfile();
-            initEngine();
-        } else {
-            window.location.href = "login.html";
-        }
-    });
-
-    // --- 2. THE MACHINE LEARNING BRAIN ---
-    async function loadMachineLearningProfile() {
-        try {
-            const doc = await db.collection("users").doc(myUid).get();
-            if(doc.exists && doc.data().bitesProfile) {
-                userInterests = doc.data().bitesProfile;
-            }
-        } catch(e) { console.error("ML Load Error", e); }
-    }
-
-    function updateInterestScore(topic, points) {
-        if (!myUid || !topic) return;
-        const cleanTopic = topic.toLowerCase().trim();
-        
-        // Update Local Memory
-        userInterests[cleanTopic] = (userInterests[cleanTopic] || 0) + points;
-        
-        // Update Firebase Silently
-        db.collection("users").doc(myUid).update({
-            [`bitesProfile.${cleanTopic}`]: firebase.firestore.FieldValue.increment(points)
-        }).catch(e => {
-            // If field doesn't exist yet, merge it
-            db.collection("users").doc(myUid).set({ bitesProfile: { [cleanTopic]: points } }, { merge: true });
-        });
-        
-        console.log(`🤖 Algorithm Learned: +${points} to [${cleanTopic}]`);
-    }
-
-    // --- 3. THE INTERNET FETCHER (BULLETPROOF RSS ENGINE) ---
-    // Uses Google News RSS routed through a free RSS-to-JSON API. 
-    // This bypasses CORS completely and never throws 403 Forbidden errors.
+    // --- 2. THE RSS ENGINE (PURE OPEN ACCESS) ---
     async function fetchFromInternet(topic, limit = 10) {
         try {
-            // We use Google News RSS to search for the specific topic
-            const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-IN&gl=IN&ceid=IN:en`;
-            
-            // We use rss2json (a free open API) to convert the XML to JSON and bypass CORS
-            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&api_key=`;
+            // Using Google News RSS through a free RSS-to-JSON bridge
+            const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-US&gl=US&ceid=US:en`;
+            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const json = await response.json();
-            
             if (json.status !== "ok") throw new Error("RSS conversion failed");
 
-            // Normalize the data to fit the Goorac Bites UI
-            let richBites = json.items.filter(item => item.enclosure && item.enclosure.link); // Only keep posts with images
-
-            // If RSS doesn't give direct images, we extract them from the description HTML
-            if (richBites.length === 0) {
-                richBites = json.items.filter(item => item.description.includes('<img'));
-            }
-
-            return richBites.slice(0, limit).map(b => {
-                // Extract image URL from description if enclosure is missing
+            return json.items.map(b => {
                 let imgUrl = b.enclosure && b.enclosure.link ? b.enclosure.link : '';
                 if (!imgUrl && b.description) {
                     const imgMatch = b.description.match(/src="([^"]+)"/);
@@ -301,61 +231,39 @@
                 return {
                     id: b.guid || Math.random().toString(36).substr(2, 9),
                     category: topic,
-                    source: b.source || "Web News",
-                    author: "NewsDesk",
-                    title: b.title.split(' - ')[0], // Cleans up the title
-                    imgUrl: imgUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=1000', // Fallback image
-                    likes: Math.floor(Math.random() * 500) + 50, // Simulated likes for UI
+                    source: b.author || "Global News",
+                    author: "NewsFeed",
+                    title: b.title.split(' - ')[0], 
+                    imgUrl: imgUrl || `https://picsum.photos/seed/${Math.random()}/1080/1920`, 
+                    likes: Math.floor(Math.random() * 800) + 100,
                     timestamp: new Date(b.pubDate).getTime(),
                     link: b.link
                 };
             });
         } catch(error) {
-            console.warn(`Failed to fetch topic via RSS: ${topic} -`, error);
+            console.warn(`Fetch error for: ${topic}`, error);
             return [];
         }
     }
 
-    // --- 4. THE FEED GENERATOR (WEIGHTED BLEND) ---
+    // --- 3. FEED CONTROLLER ---
     async function fetchNextBatch() {
         if (isFetching) return;
         isFetching = true;
         
-        // 1. Determine what to fetch based on interests
-        let topicsToFetch = [];
-        let interestsArr = Object.entries(userInterests).sort((a,b) => b[1] - a[1]);
+        // Rotate through default topics for variety
+        const randomTopic = DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)];
+        const results = await fetchFromInternet(randomTopic, 8);
         
-        if (interestsArr.length === 0) {
-            topicsToFetch = DEFAULT_TOPICS;
-        } else {
-            // Grab top 2 interests
-            topicsToFetch.push(interestsArr[0][0]);
-            if(interestsArr[1]) topicsToFetch.push(interestsArr[1][0]);
-            
-            // ML Exploration Slot: Pick a random default to keep feed fresh
-            topicsToFetch.push(DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)]);
-        }
-
-        // 2. Fetch all simultaneously
-        const fetchPromises = topicsToFetch.map(topic => fetchFromInternet(topic, 5));
-        const resultsArray = await Promise.all(fetchPromises);
-        
-        // 3. Flatten, shuffle, and filter duplicates
-        let newBites = resultsArray.flat();
-        newBites = newBites.filter(bite => {
+        let newBites = results.filter(bite => {
             if (seenBites.has(bite.id)) return false;
             seenBites.add(bite.id);
             return true;
-        });
+        }).sort(() => Math.random() - 0.5);
         
-        // Shuffle array for natural TikTok feel
-        newBites.sort(() => Math.random() - 0.5);
-        
-        // 4. Render to DOM
         if(newBites.length > 0) {
             appendBitesToDOM(newBites);
         }
-        
         isFetching = false;
     }
 
@@ -368,21 +276,15 @@
 
     function appendBitesToDOM(bites) {
         const container = document.getElementById('bites-feed-container');
-        
-        // Clear skeleton if it's the first real load
-        if(container.querySelector('.skeleton-card')) {
-            container.innerHTML = ''; 
-        }
+        if(container.querySelector('.skeleton-card')) container.innerHTML = ''; 
 
         bites.forEach((bite, index) => {
             const el = document.createElement('div');
             el.className = 'bite-card';
             el.style.backgroundImage = `url('${bite.imgUrl}')`;
             el.dataset.id = bite.id;
-            el.dataset.category = bite.category;
             
-            // Generate source initial or use first character of source name safely
-            const firstLetter = (bite.source && bite.source.length > 0) ? bite.source.charAt(0).toUpperCase() : 'N';
+            const firstLetter = bite.source.charAt(0).toUpperCase();
 
             el.innerHTML = `
                 <div class="bite-overlay"></div>
@@ -399,9 +301,9 @@
                         <div class="bite-tag">#${bite.category.replace(/\s+/g, '')}</div>
                     </div>
                     <div class="bite-actions">
-                        <div class="action-btn" onclick="handleLike(this, '${bite.category}')">
+                        <div class="action-btn" onclick="handleLike(this)">
                             <span class="material-icons-round">favorite_border</span>
-                            <span class="action-label">${bite.likes > 1000 ? (bite.likes/1000).toFixed(1)+'k' : bite.likes}</span>
+                            <span class="action-label">${bite.likes}</span>
                         </div>
                         <div class="action-btn" onclick="shareBite('${bite.link}')">
                             <span class="material-icons-round">open_in_browser</span>
@@ -411,140 +313,76 @@
                 </div>
             `;
             container.appendChild(el);
-            
-            // Attach 5-second ML Observer
-            mlObserver.observe(el);
-
-            // Attach Infinite Scroll Observer to the 2nd to last item
-            if (index === bites.length - 2) {
-                infiniteScrollObserver.observe(el);
-            }
+            if (index === bites.length - 2) infiniteScrollObserver.observe(el);
         });
-
-        // Update 0ms Cache
         localStorage.setItem('goorac_bites_cache', container.innerHTML);
     }
 
-    // --- 5. OBSERVERS (ML & INFINITE SCROLL) ---
-    
-    // The ML Observer: Learns what user watches for 5 seconds
-    const mlObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const biteId = entry.target.dataset.id;
-            const category = entry.target.dataset.category;
-
-            if (entry.isIntersecting) {
-                // User stopped on this bite. Start 5 sec timer!
-                viewTimers[biteId] = setTimeout(() => {
-                    updateInterestScore(category, 1); // +1 Point for watching
-                }, 5000); 
-            } else {
-                // User scrolled away. Cancel timer.
-                clearTimeout(viewTimers[biteId]);
-            }
-        });
-    }, { threshold: 0.7 }); // Triggers when 70% of card is visible
-
-    // Infinite Scroll Observer: Fetches next batch silently
+    // --- 4. INFINITE SCROLL ---
     const infiniteScrollObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                infiniteScrollObserver.unobserve(entry.target); // Unobserve this one
-                fetchNextBatch(); // Fetch more!
+                infiniteScrollObserver.unobserve(entry.target);
+                fetchNextBatch();
             }
         });
-    }, { rootMargin: "0px 0px 500px 0px" }); // Trigger 500px before reaching it
+    }, { rootMargin: "0px 0px 800px 0px" });
 
     function initEngine() {
-        // If the container only has a skeleton, fetch immediately
-        if (document.getElementById('bites-feed-container').querySelector('.skeleton-card')) {
+        if (document.getElementById('bites-feed-container').querySelector('.skeleton-card') || !cachedBites) {
             fetchNextBatch();
         } else {
-            // It loaded from cache. Fetch next batch silently in background.
-            setTimeout(fetchNextBatch, 1000);
-            // Re-attach observers to cached elements
-            document.querySelectorAll('.bite-card').forEach(card => mlObserver.observe(card));
+            setTimeout(fetchNextBatch, 500);
         }
     }
 
-    // --- 6. USER ACTIONS ---
-    function handleLike(btnEl, category) {
+    // --- 5. UI ACTIONS ---
+    function handleLike(btnEl) {
         const icon = btnEl.querySelector('.material-icons-round');
-        let likesCount = parseInt(btnEl.querySelector('.action-label').innerText) || 0;
-        
-        if (btnEl.classList.contains('liked')) {
-            btnEl.classList.remove('liked');
-            icon.innerText = 'favorite_border';
-        } else {
-            // User Liked it! HUGE ML SIGNAL. +5 Points.
-            btnEl.classList.add('liked');
-            icon.innerText = 'favorite';
-            updateInterestScore(category, 5);
-            
-            // Haptic Feedback
-            if(navigator.vibrate) navigator.vibrate(50);
-        }
+        btnEl.classList.toggle('liked');
+        icon.innerText = btnEl.classList.contains('liked') ? 'favorite' : 'favorite_border';
+        if(navigator.vibrate) navigator.vibrate(40);
     }
 
     function shareBite(url) {
-        if (url && url.startsWith('http')) {
-            window.open(url, '_blank');
-        } else {
-            alert("No link provided for this article.");
-        }
+        if (url) window.open(url, '_blank');
     }
 
-    // --- 7. SEARCH MODAL & MANUAL OVERRIDE ---
     function openSearch() {
         document.getElementById('search-modal').classList.add('active');
         document.getElementById('bite-search-box').focus();
-        history.pushState({ modalOpen: true }, "", "#search");
     }
 
     function closeSearch() {
         document.getElementById('search-modal').classList.remove('active');
-        if (window.location.hash === "#search") history.back();
     }
-
-    window.addEventListener('popstate', () => {
-        if (document.getElementById('search-modal').classList.contains('active')) {
-            document.getElementById('search-modal').classList.remove('active');
-        }
-    });
 
     document.getElementById('bite-search-box').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             const query = this.value.trim();
-            if(query.length > 0) executeAutoLearningSearch(query);
+            if(query.length > 0) executeSearch(query);
         }
     });
 
-    async function executeAutoLearningSearch(query) {
+    async function executeSearch(query) {
         const container = document.getElementById('search-results-container');
-        container.innerHTML = `<div class="loading-spinner">Searching Quantum Network...</div>`;
-        
-        // Massive ML Signal: User actively typed a search. +10 Points!
-        updateInterestScore(query, 10);
-        
-        // Fetch specific query
-        const results = await fetchFromInternet(query, 15);
-        
+        container.innerHTML = `<div class="loading-spinner">Accessing Global Feed...</div>`;
+        const results = await fetchFromInternet(query, 12);
         container.innerHTML = '';
+        
         if(results.length === 0) {
-            container.innerHTML = `<p style="text-align:center; color:var(--text-dim); padding:20px;">No signal found for "${query}".</p>`;
+            container.innerHTML = `<p style="text-align:center; color:var(--text-dim); padding:20px;">No results for "${query}"</p>`;
             return;
         }
 
         results.forEach(res => {
             const card = document.createElement('div');
             card.className = 'search-card';
-            // When clicked, close search and push this item to the very top of the main feed
             card.onclick = () => {
                 closeSearch();
                 window.scrollTo(0,0);
-                appendBitesToDOM([res]); // Forces it into DOM
+                appendBitesToDOM([res]);
             };
-            
             card.innerHTML = `
                 <img src="${res.imgUrl}" class="search-thumb">
                 <div class="search-text">
@@ -555,6 +393,9 @@
             container.appendChild(card);
         });
     }
+
+    // Initialize
+    window.onload = initEngine;
 </script>
 
 </body>
