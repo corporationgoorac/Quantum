@@ -449,7 +449,8 @@ class SongPicker extends HTMLElement {
         // If it was "For You", we prefer the fresh 'already loaded' batch
         
         // --- NEW: Do NOT restore if the last session had a query. This ensures 0ms own suggestions. ---
-        if (lastSession && (Date.now() - lastSession.timestamp < 86400000) && !lastSession.query) {
+        // --- CHANGED: Added "false && " to force it to NEVER restore previous state ---
+        if (false && lastSession && (Date.now() - lastSession.timestamp < 86400000) && !lastSession.query) {
             
             // If the last session was 'For You', we allow restoring if it has content
             // This is crucial for "load fastly" on re-open.
