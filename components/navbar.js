@@ -34,10 +34,6 @@ class MainNavbar extends HTMLElement {
         // Render the HTML and CSS
         this.render();
         
-        // --- ADDED FOR 0ms LOAD ---
-        // Saves the fully rendered SVG HTML directly to local storage to enable instant loading
-        localStorage.setItem('goorac_navbar_html_cache', this.innerHTML);
-
         // Highlight the current page based on URL
         this._highlightActive();
         
@@ -285,38 +281,28 @@ class MainNavbar extends HTMLElement {
 
         <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
             <a href="home.html" class="nav-item" aria-label="Home">
-                <svg class="material-icons-round" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
+                <span class="material-icons-round">home</span>
                 <span>Home</span>
             </a>
             <a href="messages.html" class="nav-item" aria-label="Messages">
                 <div class="icon-wrapper">
-                    <svg class="material-icons-round" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-                    </svg>
+                    <span class="material-icons-round">chat_bubble_outline</span>
                     <div class="unread-badge" id="chat-badge"></div>
                 </div>
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <svg class="material-icons-round" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.88 9.54L8.92 15.08l3.54-4.96 4.96-3.54-3.54 4.96zM12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1 1.1-.49 1.1-1.1-.49-1.1-1.1-1.1z"/>
-                </svg>
+                <span class="material-icons-round">explore</span>
                 <span>Explore</span>
             </a>
             <a href="pulseLobby.html" class="nav-item" aria-label="Pulse Lobby">
                 <div class="pulse-icon-container">
-                    <svg class="material-icons-round pulse-graphic" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                        <path d="M11 5h2v14h-2zm-4 6h2v2H7zm10-2h2v6h-2zM3 10h2v4H3zm14 0h2v4h-2z"/>
-                    </svg>
+                    <span class="material-icons-round pulse-graphic">graphic_eq</span>
                 </div>
                 <span>Pulse</span>
             </a>
             <a href="calls.html" class="nav-item" aria-label="Calls">
-                <svg class="material-icons-round" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                </svg>
+                <span class="material-icons-round">phone</span>
                 <span>Calls</span>
             </a>
         </nav>
@@ -340,16 +326,6 @@ class MainNavbar extends HTMLElement {
                 if (icon && icon.innerText === 'chat_bubble_outline') {
                     icon.innerText = 'chat_bubble';
                 }
-                
-                // --- NEW SVG ACTIVE STATE LOGIC ---
-                // Changes the chat outline SVG to a filled chat SVG when active
-                if (href === 'messages.html') {
-                    const svgPath = link.querySelector('svg path');
-                    if (svgPath) {
-                        svgPath.setAttribute('d', 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z');
-                    }
-                }
-
             } else {
                 link.classList.remove('active');
             }
@@ -364,6 +340,13 @@ class MainNavbar extends HTMLElement {
         
         const checkVisibility = () => {
             const callScreen = document.getElementById('call-screen');
+            
+            // Added falsy check here to prevent errors if element doesn't exist
+            if (!callScreen) {
+                navContainer.classList.remove('nav-hidden');
+                return;
+            }
+
             if (callScreen && (callScreen.style.display === 'flex' || callScreen.classList.contains('active'))) {
                 navContainer.classList.add('nav-hidden');
             } else {
