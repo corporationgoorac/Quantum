@@ -913,6 +913,14 @@
             <div id="notif-count" class="notif-badge">0</div>
         </div>
         <img id="header-pfp" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="header-pfp skeleton" onclick="window.location.href='profile.html'">
+        <script>
+            // 🚀 0ms HEADER PFP INJECTION 
+            if (preloadedData && preloadedData.photoURL) {
+                const pfp = document.getElementById('header-pfp');
+                pfp.src = preloadedData.photoURL;
+                pfp.classList.remove('skeleton');
+            }
+        </script>
     </div>
 </header>
 
@@ -920,6 +928,14 @@
     <div class="note-item" id="my-note-btn">
         <div class="note-bubble" id="my-note-preview" style="display:none;"></div>
         <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="note-pfp skeleton" id="my-note-pfp" width="65" height="65">
+        <script>
+            // 🚀 0ms NOTE PFP INJECTION 
+            if (preloadedData && preloadedData.photoURL) {
+                const notePfp = document.getElementById('my-note-pfp');
+                notePfp.src = preloadedData.photoURL;
+                notePfp.classList.remove('skeleton');
+            }
+        </script>
         <span class="note-username">You</span>
     </div>
 </div>
@@ -970,6 +986,13 @@
         </div>
     </div>
 </div>
+<script>
+    // 🚀 INSTANT 0ms DASHBOARD CACHE INJECTION
+    const cachedDashboardHtmlData = localStorage.getItem('goorac_dashboard_html_cache');
+    if (cachedDashboardHtmlData) {
+        document.getElementById('dashboard-content').innerHTML = cachedDashboardHtmlData;
+    }
+</script>
 
 <div id="moments-fab" class="moments-fab" onclick="handleFabClick()">
     <span class="material-icons-round">add</span>
@@ -1117,6 +1140,14 @@
                 pingEl.innerText = `(${ping}ms)`;
             }
         }, 3500);
+
+        // 🚀 LIVE CACHE SAVER FOR DASHBOARD (0ms latency prep - stores the whole dashboard structure)
+        const dashboardContentEl = document.getElementById('dashboard-content');
+        if (dashboardContentEl) {
+            new MutationObserver(() => {
+                localStorage.setItem('goorac_dashboard_html_cache', dashboardContentEl.innerHTML);
+            }).observe(dashboardContentEl, { childList: true, subtree: true, attributes: true, characterData: true });
+        }
 
         // 🚀 LIVE CACHE SAVER FOR NOTES (0ms latency prep)
         const notesContainerEl = document.getElementById('notes-container');
