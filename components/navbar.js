@@ -60,7 +60,7 @@ class MainNavbar extends HTMLElement {
                 --nav-border: rgba(0, 0, 0, 0.08);
                 --icon-inactive: #8e8e93; 
                 --icon-active: #007aff;   
-                --pulse-color: #00d2ff;   
+                --bites-color: #00d2ff;   
                 --nav-height: 64px;
                 --safe-area-bottom: env(safe-area-inset-bottom, 0px);
                 
@@ -75,7 +75,7 @@ class MainNavbar extends HTMLElement {
                     --nav-border: rgba(255, 255, 255, 0.12);
                     --icon-inactive: #98989d; 
                     --icon-active: #0a84ff;   
-                    --pulse-color: #00d2ff;
+                    --bites-color: #00d2ff;
                 }
             }
 
@@ -225,6 +225,39 @@ class MainNavbar extends HTMLElement {
                 transform: scale(1);
             }
 
+            /* ==========================================================================
+               BITES ICON ENHANCEMENTS
+               ========================================================================== */
+            .bites-icon-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                width: 32px;
+            }
+
+            .nav-item .bites-graphic {
+                color: var(--bites-color);
+                animation: bites-skel 2.5s infinite ease-in-out;
+            }
+
+            .nav-item.active .bites-graphic {
+                filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
+                animation: bites-skel-active 1.5s infinite ease-in-out;
+            }
+
+            @keyframes bites-skel {
+                0%, 100% { opacity: 0.5; transform: scale(1); }
+                50% { opacity: 0.9; transform: scale(1.05); }
+            }
+
+            @keyframes bites-skel-active {
+                0% { transform: scale(1.1); filter: brightness(1); }
+                50% { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 15px rgba(0, 210, 255, 0.8)); }
+                100% { transform: scale(1.1); filter: brightness(1); }
+            }
+
             /* Subtle Active Indicator Dot */
             .nav-item::after {
                 content: '';
@@ -263,7 +296,9 @@ class MainNavbar extends HTMLElement {
                 <span>Explore</span>
             </a>
             <a href="bites.html" class="nav-item" aria-label="Bites">
-                <span class="material-icons-round">restaurant</span>
+                <div class="bites-icon-container">
+                    <span class="material-icons-round bites-graphic">dynamic_feed</span>
+                </div>
                 <span>Bites</span>
             </a>
             <a href="calls.html" class="nav-item" aria-label="Calls">
