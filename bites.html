@@ -3,248 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Goorac | Quantum Shorts Portal</title>
+    <title>Goorac | Official Shorts Feed</title>
     
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <script src="components/navbar.js" defer></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons-Round" rel="stylesheet">
     
     <style>
-        /* ==========================================================================
-           QUANTUM UI TOKENS (EMBED EDITION)
-           ========================================================================== */
         :root {
             --bg: #000000;
-            --accent: #00d2ff;
-            --nav-clearance: 140px; 
-            --safe-bottom: env(safe-area-inset-bottom);
+            --nav-clearance: 140px; /* Space for your Goorac Navbar */
+            --safe-top: env(safe-area-inset-top);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; width: 100vw; position: fixed; }
-
-        /* THE CONTAINER FOR ALL SHORTS */
-        #bites-feed-container {
-            height: 100vh; width: 100vw;
-            overflow-y: scroll; scroll-snap-type: y mandatory;
-            scrollbar-width: none; background: #000;
-        }
-        #bites-feed-container::-webkit-scrollbar { display: none; }
-
-        /* REEL CARD */
-        .bite-card {
-            height: 100vh; width: 100vw;
-            scroll-snap-align: start; scroll-snap-stop: always;
-            position: relative; background: #000;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 16px; 
-            padding-bottom: calc(var(--nav-clearance) + var(--safe-bottom) + 15px);
+        * { 
+            box-sizing: border-box; 
+            margin: 0; padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
         }
 
-        /* THE GOOGLE PLAYER AREA */
-        .player-anchor {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            z-index: 0; pointer-events: auto;
+        body, html {
+            background-color: var(--bg); 
+            overflow: hidden; 
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
         }
 
-        /* UI OVERLAY (Z-INDEX 10) */
-        .bite-ui-overlay {
-            position: relative; z-index: 10;
-            width: 100%; pointer-events: none;
-            display: flex; justify-content: space-between; align-items: flex-end;
+        /* ==========================================================================
+          THE OFFICIAL YOUTUBE PORTAL 
+          ==========================================================================
+        */
+        #official-youtube-portal {
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 100%;
+            /* Cuts the bottom off exactly where your navbar starts */
+            height: calc(100vh - var(--nav-clearance)); 
+            border: none;
+            z-index: 1;
+            background: #000;
         }
 
-        .bite-info { flex: 1; pointer-events: auto; padding-right: 40px; }
-        
-        .creator-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .creator-avatar { width: 32px; height: 32px; border-radius: 50%; background: #222; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; }
-        .creator-name { font-weight: 800; font-size: 0.9rem; text-shadow: 0 2px 4px #000; }
-
-        /* ONE LINE ELASTIC CAPTION */
-        .caption {
-            font-size: 0.85rem; line-height: 1.4; color: #fff;
-            display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
-            overflow: hidden; cursor: pointer; transition: all 0.3s ease;
-            text-shadow: 0 1px 4px #000;
-        }
-        .caption.expanded { -webkit-line-clamp: unset; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px); }
-
-        .tag-row { display: flex; gap: 5px; margin-top: 5px; }
-        .tag { font-size: 0.65rem; font-weight: 800; color: var(--accent); text-transform: lowercase; }
-
-        .bite-actions { display: flex; flex-direction: column; gap: 25px; align-items: center; pointer-events: auto; }
-        .action { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .action .material-icons-round { font-size: 36px; filter: drop-shadow(0 2px 8px #000); }
-        .action.liked .material-icons-round { color: #ff2a55; }
-        
+        /* GOORAC HEADER OVERLAY */
         header {
-            position: fixed; top: 0; width: 100%; z-index: 100;
-            padding: calc(env(safe-area-inset-top) + 15px) 20px 40px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            display: flex; justify-content: space-between; align-items: center;
-            pointer-events: none;
+            position: fixed; 
+            top: 0; 
+            width: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            padding: calc(var(--safe-top) + 15px) 20px 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            z-index: 5000; 
+            pointer-events: none; /* Lets you touch the video behind the header */
         }
-        .logo { font-size: 1.6rem; font-weight: 900; color: #fff; letter-spacing: -1px; pointer-events: auto; }
-        .search-btn { font-size: 36px; color: #fff; pointer-events: auto; cursor: pointer; }
+        
+        .header-title { 
+            font-size: 1.7rem; font-weight: 900; letter-spacing: -1.2px;
+            color: #fff; text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            pointer-events: auto;
+            font-family: -apple-system, sans-serif;
+        }
+
+        /* GOORAC NAVBAR LAYER */
+        main-navbar { 
+            position: fixed; 
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 6000; 
+        }
+        
+        /* Loading Screen while YouTube connects */
+        #portal-loader {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            z-index: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-family: sans-serif;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">Goorac Bites</div>
-    <span class="material-icons-round search-btn" onclick="Engine.openSearch()">search</span>
+    <div class="header-title">Goorac Bites</div>
 </header>
 
-<div id="bites-feed-container">
-    </div>
+<div id="portal-loader">CONNECTING TO YOUTUBE...</div>
+
+<iframe 
+    id="official-youtube-portal" 
+    src="https://www.youtube.com/shorts" 
+    allow="autoplay; encrypted-media; fullscreen"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+    onload="document.getElementById('portal-loader').style.display='none';">
+</iframe>
 
 <main-navbar></main-navbar>
 
-<div id="search-box-container" style="display:none; position:fixed; inset:0; background:#000; z-index:5000; flex-direction:column;">
-    <div style="padding: 50px 20px 20px; display:flex; align-items:center; gap:15px; border-bottom:1px solid #222;">
-        <span class="material-icons-round" onclick="Engine.closeSearch()" style="font-size:36px; cursor:pointer;">expand_more</span>
-        <input type="text" id="main-search-input" placeholder="Search exactly..." style="flex:1; background:#111; border:1px solid #333; padding:15px; border-radius:12px; color:#fff; font-size:16px;">
-    </div>
-    <div id="search-results" style="flex:1; overflow-y:auto;"></div>
-</div>
-
 <script>
-    // --- 1. LOAD YOUTUBE API ---
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    const State = {
-        players: {}, 
-        activeId: null,
-        seen: new Set(),
-        isSearch: false
-    };
-
-    // --- 2. THE MASTER ENGINE ---
-    const Engine = {
-        /**
-         * Fetch trending or specific videos from your Render server
-         */
-        fetchBatch: async function(topic = "trending") {
-            const url = `https://pishaa.onrender.com/api/feed?topics=${encodeURIComponent(topic)}&cb=${Date.now()}`;
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.success) this.render(data.bites, topic === "trending" ? false : true);
-            } catch (e) { console.error("Fetch Error"); }
-        },
-
-        render: function(bites, isNewSearch) {
-            const container = document.getElementById('bites-feed-container');
-            if (isNewSearch) {
-                container.innerHTML = '';
-                State.seen.clear();
-            }
-
-            bites.forEach(bite => {
-                if (State.seen.has(bite.videoId)) return;
-                State.seen.add(bite.videoId);
-
-                const card = document.createElement('div');
-                card.className = 'bite-card';
-                card.dataset.vid = bite.videoId;
-
-                const creator = bite.author || "Creator";
-                const tags = (bite.title.match(/#\w+/g) || []).slice(0,2).map(t => `<span class="tag">${t}</span>`).join('');
-
-                card.innerHTML = `
-                    <div class="player-anchor" id="player_${bite.videoId}"></div>
-                    <div class="bite-ui-overlay">
-                        <div class="bite-info">
-                            <div class="creator-row">
-                                <div class="creator-avatar">${creator.charAt(0)}</div>
-                                <div class="creator-name">${creator}</div>
-                            </div>
-                            <div class="caption" onclick="this.classList.toggle('expanded')">${bite.title}</div>
-                            <div class="tag-row">${tags}</div>
-                        </div>
-                        <div class="bite-actions">
-                            <div class="action" onclick="this.classList.toggle('liked')">
-                                <span class="material-icons-round">favorite</span>
-                                <span class="node-val">${bite.likes}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-                this.observeCard(card);
-            });
-        },
-
-        observeCard: function(card) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const vid = entry.target.dataset.vid;
-                    if (entry.isIntersecting) {
-                        this.initPlayer(vid);
-                        State.activeId = vid;
-                    } else {
-                        this.destroyPlayer(vid);
-                    }
-                });
-            }, { threshold: 0.8 });
-            observer.observe(card);
-        },
-
-        initPlayer: function(vid) {
-            // Virtual DOM Buffer: Only allow 3 active players at once
-            if (State.players[vid]) {
-                State.players[vid].playVideo();
-                return;
-            }
-
-            State.players[vid] = new YT.Player(`player_${vid}`, {
-                videoId: vid,
-                playerVars: {
-                    'autoplay': 1, 'controls': 0, 'loop': 1, 'playlist': vid,
-                    'modestbranding': 1, 'rel': 0, 'playsinline': 1, 'vq': 'small'
-                },
-                events: {
-                    'onReady': (e) => { e.target.mute(); e.target.playVideo(); }
-                }
-            });
-        },
-
-        destroyPlayer: function(vid) {
-            if (State.players[vid]) {
-                State.players[vid].destroy();
-                delete State.players[vid];
-            }
-        },
-
-        openSearch: function() {
-            document.getElementById('search-box-container').style.display = 'flex';
-            document.getElementById('main-search-input').focus();
-        },
-
-        closeSearch: function() {
-            document.getElementById('search-box-container').style.display = 'none';
-        }
-    };
-
-    // --- 3. SEARCH LOGIC ---
-    document.getElementById('main-search-input').onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            const val = e.target.value;
-            Engine.fetchBatch(val);
-            Engine.closeSearch();
-        }
-    };
-
-    function onYouTubeIframeAPIReady() {
-        Engine.fetchBatch();
+    // Keep your Firebase Auth intact as requested
+    if (typeof window.initFirebaseCore === 'function') {
+        window.initFirebaseCore();
+    } else if (!firebase.apps.length && window.firebaseConfig) {
+        firebase.initializeApp(window.firebaseConfig);
     }
+    const auth = firebase.auth();
+
+    // Ensure the user is logged into your app before showing the portal
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
 </script>
 
 </body>
