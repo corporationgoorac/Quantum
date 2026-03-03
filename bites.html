@@ -15,7 +15,7 @@
     
     <style>
         /* ==========================================================================
-           CSS VARIABLES & GLOBAL STYLING
+           CSS VARIABLES & QUANTUM THEME
            ========================================================================== */
         :root {
             --bg: #000000;
@@ -25,8 +25,8 @@
             --border: #1a1a1a;
             --text-main: #ffffff;
             --text-dim: #888888;
-            /* Navigation height reference to prevent overlap */
-            --nav-bottom-height: 140px; 
+            /* Reference height to ensure Bottom Nav doesn't hide content */
+            --nav-clearance: 120px; 
         }
 
         * { 
@@ -41,12 +41,12 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; 
             padding: 0; 
-            overflow: hidden; /* Lock body for smooth scroll-snapping */
+            overflow: hidden; /* Locked for full-screen snapping */
             height: 100vh;
         }
 
         /* ==========================================================================
-           HEADER NAVIGATION
+           HEADER COMPONENT
            ========================================================================== */
         header {
             position: fixed; 
@@ -58,20 +58,23 @@
             justify-content: space-between; 
             align-items: center; 
             z-index: 1000; 
-            pointer-events: none; /* Allows scrolling through the gradient */
+            pointer-events: none;
         }
 
         .header-title { 
-            font-size: 1.5rem; 
+            font-size: 1.6rem; 
             font-weight: 900; 
-            letter-spacing: -1px;
+            letter-spacing: -1.2px;
             text-shadow: 0 2px 10px rgba(0,0,0,0.8); 
             pointer-events: auto;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .search-icon-btn {
             color: #fff; 
-            font-size: 30px; 
+            font-size: 32px; 
             cursor: pointer; 
             pointer-events: auto;
             text-shadow: 0 2px 10px rgba(0,0,0,0.8); 
@@ -84,7 +87,7 @@
         }
 
         /* ==========================================================================
-           BITES FEED (Vertical Scroll Snapping)
+           MAIN FEED (SCROLL SNAP)
            ========================================================================== */
         #bites-feed-container {
             height: 100vh; 
@@ -101,7 +104,7 @@
         }
 
         /* ==========================================================================
-           BITE CARD COMPONENT
+           BITE CARD UI
            ========================================================================== */
         .bite-card {
             height: 100vh; 
@@ -113,22 +116,21 @@
             flex-direction: column;
             justify-content: flex-end; 
             padding: 20px; 
-            /* INCREASED PADDING TO PREVENT NAV BAR OVERLAP */
-            padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom));
+            /* FIXED: Navbar Clearance applied to padding-bottom */
+            padding-bottom: calc(var(--nav-clearance) + env(safe-area-inset-bottom));
             background-size: cover; 
             background-position: center;
             background-color: #050505;
             border-bottom: 1px solid var(--border);
-            transition: opacity 0.3s ease;
         }
 
         .bite-overlay {
             position: absolute; 
             inset: 0;
             background: linear-gradient(to top, 
-                rgba(0,0,0,0.95) 0%, 
-                rgba(0,0,0,0.4) 40%, 
-                rgba(0,0,0,0.1) 100%);
+                rgba(0,0,0,1) 0%, 
+                rgba(0,0,0,0.6) 30%, 
+                rgba(0,0,0,0.2) 100%);
             z-index: 1; 
             pointer-events: none;
         }
@@ -145,40 +147,40 @@
         .bite-info { 
             flex: 1; 
             padding-right: 15px; 
-            animation: slideInLeft 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            animation: quantumReveal 0.6s ease-out;
         }
 
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+        @keyframes quantumReveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .source-row { 
             display: flex; 
             align-items: center; 
-            gap: 10px; 
-            margin-bottom: 12px; 
+            gap: 12px; 
+            margin-bottom: 15px; 
         }
 
         .source-pfp { 
-            width: 42px; 
-            height: 42px; 
-            border-radius: 12px; 
+            width: 44px; 
+            height: 44px; 
+            border-radius: 14px; 
             background: var(--surface); 
             object-fit: cover; 
-            border: 1px solid var(--border); 
+            border: 1.5px solid var(--accent); 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             font-weight: 900; 
-            font-size: 1.2rem; 
+            font-size: 1.3rem; 
             color: var(--accent);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
         }
 
         .source-name { 
             font-weight: 800; 
-            font-size: 1.05rem; 
+            font-size: 1.1rem; 
             color: #fff; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
@@ -188,47 +190,44 @@
             color: var(--text-dim); 
             font-weight: 600; 
             margin-top: 2px;
+            opacity: 0.8;
         }
         
         .bite-caption { 
-            font-size: 1rem; 
-            line-height: 1.4; 
-            color: #f0f0f0; 
-            margin-bottom: 12px;
+            font-size: 1.05rem; 
+            line-height: 1.45; 
+            color: #ffffff; 
+            margin-bottom: 15px;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 4; /* More text visible */
             -webkit-box-orient: vertical;
             overflow: hidden;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+            font-weight: 500;
         }
 
         .bite-tag { 
-            background: rgba(0, 210, 255, 0.15); 
+            background: rgba(0, 210, 255, 0.1); 
             color: var(--accent); 
-            padding: 5px 12px; 
-            border-radius: 12px; 
-            font-weight: 700; 
+            padding: 6px 14px; 
+            border-radius: 10px; 
+            font-weight: 800; 
             display: inline-block; 
-            font-size: 0.75rem; 
-            border: 1px solid rgba(0, 210, 255, 0.3);
-            backdrop-filter: blur(5px);
+            font-size: 0.7rem; 
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         /* ==========================================================================
-           INTERACTION BUTTONS (RIGHT SIDE)
+           ACTION BUTTONS
            ========================================================================== */
         .bite-actions { 
             display: flex; 
             flex-direction: column; 
-            gap: 25px; 
+            gap: 28px; 
             align-items: center; 
-            padding-bottom: 5px; 
-            animation: slideInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            padding-bottom: 10px; 
         }
 
         .action-btn { 
@@ -238,137 +237,65 @@
             gap: 6px; 
             color: #fff; 
             cursor: pointer; 
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
         .action-btn .material-icons-round { 
-            font-size: 36px; 
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); 
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            font-size: 38px; 
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)); 
         }
 
-        .action-btn:active .material-icons-round { 
-            transform: scale(0.7); 
-        }
-
-        .action-btn.liked .material-icons-round { 
-            color: var(--danger); 
-            animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes heartPop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.4); }
-            100% { transform: scale(1); }
-        }
+        .action-btn:active { transform: scale(0.8); }
+        .action-btn.liked .material-icons-round { color: var(--danger); text-shadow: 0 0 15px rgba(255, 68, 68, 0.4); }
 
         .action-label { 
             font-size: 0.75rem; 
-            font-weight: 700; 
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8); 
+            font-weight: 800; 
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8); 
         }
 
         /* ==========================================================================
-           SEARCH MODAL (Slide from Right)
+           SEARCH MODAL (Slide-In)
            ========================================================================== */
         #search-modal {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: var(--surface); 
-            z-index: 10001;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10001;
             transform: translateX(100%); 
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; 
-            flex-direction: column;
+            transition: transform 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex; flex-direction: column;
         }
 
-        #search-modal.active { 
-            transform: translateX(0); 
-        }
+        #search-modal.active { transform: translateX(0); }
         
         .search-header {
             padding: max(15px, env(safe-area-inset-top)) 20px 15px;
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
+            display: flex; align-items: center; gap: 15px;
             border-bottom: 1px solid var(--border);
-            background: rgba(0,0,0,0.8); 
-            backdrop-filter: blur(15px);
-        }
-
-        .back-btn { 
-            color: #fff; 
-            font-size: 28px; 
-            cursor: pointer; 
-        }
-
-        .search-input-wrap { 
-            flex: 1; 
-            position: relative; 
+            background: rgba(10,10,10,0.95); backdrop-filter: blur(20px);
         }
 
         .search-input {
-            width: 100%; 
-            background: #111; 
-            border: 1px solid var(--border);
-            padding: 14px 18px; 
-            border-radius: 16px; 
-            color: white; 
-            outline: none;
-            font-size: 16px; 
-            transition: all 0.3s;
+            flex: 1; background: #111; border: 1px solid var(--border);
+            padding: 14px 20px; border-radius: 14px; color: white; outline: none;
+            font-size: 16px; transition: 0.3s;
         }
 
-        .search-input:focus { 
-            border-color: var(--accent); 
-            background: #151515; 
-            box-shadow: 0 0 15px rgba(0,210,255,0.15); 
-        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,210,255,0.1); }
 
-        .search-results { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 10px 0; 
-            background: var(--bg); 
-        }
+        .search-results { flex: 1; overflow-y: auto; padding: 10px 0; background: var(--bg); }
 
         /* ==========================================================================
-           SKELETON LOADING EFFECTS
+           LOADING & UTILS
            ========================================================================== */
-        .skeleton-card { 
-            background: #080808; 
-            animation: quantumPulse 1.8s infinite ease-in-out; 
-        }
-
-        .skel-box { 
-            background: #1a1a1a; 
-            border-radius: 6px; 
-        }
-
-        @keyframes quantumPulse { 
-            0%, 100% { opacity: 0.5; } 
-            50% { opacity: 1; } 
-        }
+        .skeleton-card { background: #0a0a0a; animation: skelPulse 1.5s infinite; }
+        @keyframes skelPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
         
         .loading-spinner {
-            text-align: center; 
-            padding: 40px; 
-            color: var(--accent); 
-            font-weight: 800; 
-            font-size: 0.9rem;
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            animation: quantumPulse 1s infinite;
+            text-align: center; padding: 40px; color: var(--accent); font-weight: 900;
+            text-transform: uppercase; letter-spacing: 4px; animation: skelPulse 1s infinite;
         }
 
-        /* Ensure navbar doesn't clip its own animations */
-        main-navbar { 
-            z-index: 10000; 
-            position: relative; 
-        }
+        main-navbar { position: relative; z-index: 10000; }
     </style>
 </head>
 <body>
@@ -381,23 +308,11 @@
 <div id="bites-feed-container">
     <div class="bite-card skeleton-card">
         <div class="bite-overlay"></div>
-        <div class="bite-content" style="opacity: 0.7;">
+        <div class="bite-content" style="opacity: 0.5;">
             <div class="bite-info">
-                <div class="source-row">
-                    <div class="source-pfp"></div>
-                    <div class="source-details">
-                        <div class="skel-box" style="width:120px; height:18px; margin-bottom:6px;"></div>
-                        <div class="skel-box" style="width:70px; height:12px;"></div>
-                    </div>
-                </div>
-                <div class="skel-box" style="width:95%; height:16px; margin-bottom:10px;"></div>
-                <div class="skel-box" style="width:80%; height:16px; margin-bottom:10px;"></div>
-                <div class="skel-box" style="width:60%; height:16px; margin-bottom:20px;"></div>
-                <div class="skel-box" style="width:90px; height:24px; border-radius:12px;"></div>
-            </div>
-            <div class="bite-actions">
-                <div class="skel-box" style="width:40px; height:40px; border-radius:50%;"></div>
-                <div class="skel-box" style="width:40px; height:40px; border-radius:50%;"></div>
+                <div class="source-row"><div class="source-pfp" style="background:#222;"></div><div style="width:100px;height:20px;background:#222;border-radius:4px;"></div></div>
+                <div style="width:90%;height:15px;background:#222;margin-bottom:10px;border-radius:4px;"></div>
+                <div style="width:70%;height:15px;background:#222;border-radius:4px;"></div>
             </div>
         </div>
     </div>
@@ -408,24 +323,22 @@
 <div id="search-modal">
     <div class="search-header">
         <span class="material-icons-round back-btn" onclick="closeSearch()">arrow_back</span>
-        <div class="search-input-wrap">
-            <input type="text" class="search-input" id="bite-search-box" placeholder="Explore topics, news, interests..." autocomplete="off">
-        </div>
+        <input type="text" class="search-input" id="bite-search-box" placeholder="Search Quantum Network..." autocomplete="off">
     </div>
     <div class="search-results" id="search-results-container">
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; opacity:0.4; padding: 40px;">
-            <span class="material-icons-round" style="font-size: 56px; margin-bottom:20px;">query_stats</span>
-            <p style="text-align: center; font-size: 1rem; font-weight: 700;">Quantum Intelligence Active</p>
-            <p style="text-align: center; font-size: 0.85rem; color: var(--text-dim);">Search results tune the feed algorithm.</p>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;opacity:0.3;padding:40px;">
+            <span class="material-icons-round" style="font-size:64px;margin-bottom:20px;">explore</span>
+            <p style="text-align:center;font-weight:800;letter-spacing:1px;">EXPLORE THE UNIVERSE</p>
+            <p style="text-align:center;font-size:0.8rem;">Every search trains your personalized algorithm.</p>
         </div>
     </div>
 </div>
 
 <script>
-    /* --- 1. FIREBASE & STATE INITIALIZATION --- */
+    /* --- 1. CORE SETUP --- */
     if (typeof window.initFirebaseCore === 'function') {
         window.initFirebaseCore();
-    } else if (!firebase.apps.length && window.firebaseConfig) {
+    } else if (!firebase.apps.length) {
         firebase.initializeApp(window.firebaseConfig);
     }
 
@@ -438,169 +351,142 @@
     let isFetching = false;
     let viewTimers = {}; 
 
-    // Seed topics for variety
-    const DEFAULT_TOPICS = ["world news", "technology", "sports", "science", "innovation"];
+    // Seed Topics
+    const DEFAULT_TOPICS = ["breaking news", "technology", "sports", "quantum physics", "nature"];
 
-    /* --- 2. AUTHENTICATION & PROFILE LOADING --- */
+    /* --- 2. AUTHENTICATION & PROFILE --- */
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             myUid = user.uid;
-            await loadMachineLearningProfile();
+            await loadMLProfile();
             initEngine();
         } else {
             window.location.href = "login.html";
         }
     });
 
-    async function loadMachineLearningProfile() {
+    async function loadMLProfile() {
         try {
             const doc = await db.collection("users").doc(myUid).get();
             if(doc.exists && doc.data().bitesProfile) {
                 userInterests = doc.data().bitesProfile;
             }
-        } catch(e) { 
-            console.error("ML Profile Error", e); 
-        }
+        } catch(e) { console.error("ML Profile Loading Error", e); }
     }
 
-    /* --- 3. THE MACHINE LEARNING SCORING SYSTEM --- */
-    // Weights: Watch (5s) = +1, Like = +5, Search = +10
-    function updateInterestScore(topic, points) {
+    /* --- 3. ML SCORING LOGIC --- */
+    // Logic: Linger = +1, Like = +5, Search = +10
+    function trainAlgorithm(topic, points) {
         if (!myUid || !topic) return;
-        const cleanTopic = topic.toLowerCase().trim();
+        const tag = topic.toLowerCase().trim();
         
-        userInterests[cleanTopic] = (userInterests[cleanTopic] || 0) + points;
+        userInterests[tag] = (userInterests[tag] || 0) + points;
         
-        // Push update to Firebase Firestore
+        // Update Firebase
         db.collection("users").doc(myUid).update({
-            [`bitesProfile.${cleanTopic}`]: firebase.firestore.FieldValue.increment(points)
-        }).catch(e => {
-            // First time initialization
+            [`bitesProfile.${tag}`]: firebase.firestore.FieldValue.increment(points)
+        }).catch(() => {
             db.collection("users").doc(myUid).set({ 
-                bitesProfile: { [cleanTopic]: points } 
+                bitesProfile: { [tag]: points } 
             }, { merge: true });
         });
         
-        console.log(`🤖 Quantum ML: Recalibrated [${cleanTopic}] by +${points}`);
+        console.log(`🤖 Quantum Engine Recalibrated: [${tag}] is now weighted +${points}`);
     }
 
-    /* --- 4. THE INTERNET FETCHER (RSS-TO-JSON ENGINE) --- */
-    // Uses Google News RSS via public API bridge to solve CORS
+    /* --- 4. INTERNET FETCH ENGINE (RSS-TO-JSON) --- */
+    // Using a reliable bridge to solve CORS and 403 Forbidden issues
     async function fetchFromInternet(topic, limit = 12) {
         try {
             const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-IN&gl=IN&ceid=IN:en`;
+            // Free Public API Bridge
             const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&api_key=`;
 
             const response = await fetch(apiUrl);
-            if (!response.ok) throw new Error(`Fetch status: ${response.status}`);
-            
             const json = await response.json();
-            if (json.status !== "ok") throw new Error("RSS data stream failure");
+            
+            if (json.status !== "ok") return [];
 
-            // Filter out items without images for a visual feed
-            let richBites = json.items.filter(item => 
-                (item.enclosure && item.enclosure.link) || 
-                (item.description && item.description.includes('<img'))
-            );
-
-            return richBites.slice(0, limit).map(b => {
-                let imgUrl = b.enclosure && b.enclosure.link ? b.enclosure.link : '';
-                if (!imgUrl && b.description) {
-                    const imgMatch = b.description.match(/src="([^"]+)"/);
-                    if (imgMatch) imgUrl = imgMatch[1];
+            return json.items.map(b => {
+                // Extracting Images from RSS Enclosures or Description
+                let img = b.enclosure && b.enclosure.link ? b.enclosure.link : '';
+                if (!img && b.description) {
+                    const match = b.description.match(/src="([^"]+)"/);
+                    if (match) img = match[1];
                 }
 
                 return {
                     id: b.guid || Math.random().toString(36).substr(2, 9),
                     category: topic,
-                    source: b.source || "Global Feed",
-                    author: "QuantumNews",
+                    source: b.source || "Quantum Feed",
                     title: b.title.split(' - ')[0], 
-                    imgUrl: imgUrl || `https://picsum.photos/seed/${Math.random()}/1080/1920`, 
-                    likes: Math.floor(Math.random() * 900) + 100,
+                    imgUrl: img || `https://picsum.photos/seed/${Math.random()}/1080/1920`, 
+                    likes: Math.floor(Math.random() * 900) + 150,
                     timestamp: new Date(b.pubDate).getTime(),
                     link: b.link
                 };
             });
         } catch(error) {
-            console.warn(`Feed sync error: ${topic}`, error);
+            console.warn(`Sync Error for ${topic}:`, error);
             return [];
         }
     }
 
-    /* --- 5. THE FEED CONTROLLER (WEIGHTED BLEND) --- */
+    /* --- 5. THE WEIGHTED BLEND GENERATOR --- */
     async function fetchNextBatch() {
         if (isFetching) return;
         isFetching = true;
         
         let topicsToFetch = [];
-        let interestsArr = Object.entries(userInterests).sort((a,b) => b[1] - a[1]);
+        // Sort interests by score
+        let sorted = Object.entries(userInterests).sort((a,b) => b[1] - a[1]);
         
-        if (interestsArr.length === 0) {
-            topicsToFetch = DEFAULT_TOPICS;
+        if (sorted.length === 0) {
+            topicsToFetch = DEFAULT_TOPICS.slice(0, 3);
         } else {
-            // Mix top interests with fresh exploration slots
-            topicsToFetch.push(interestsArr[0][0]);
-            if(interestsArr[1]) topicsToFetch.push(interestsArr[1][0]);
+            // ML Strategy: Top 2 Interests + 1 Random Exploration Slot
+            topicsToFetch.push(sorted[0][0]);
+            if(sorted[1]) topicsToFetch.push(sorted[1][0]);
             topicsToFetch.push(DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)]);
         }
 
-        const fetchPromises = topicsToFetch.map(topic => fetchFromInternet(topic, 6));
-        const resultsArray = await Promise.all(fetchPromises);
+        const promises = topicsToFetch.map(t => fetchFromInternet(t, 6));
+        const resArray = await Promise.all(promises);
         
-        let newBites = resultsArray.flat();
-        newBites = newBites.filter(bite => {
-            if (seenBites.has(bite.id)) return false;
-            seenBites.add(bite.id);
-            return true;
-        });
+        let freshBites = resArray.flat();
+        freshBites = freshBites.filter(b => !seenBites.has(b.id));
+        freshBites.forEach(b => seenBites.add(b.id));
         
-        // Shuffle for natural content discovery
-        newBites.sort(() => Math.random() - 0.5);
+        // Shuffle for Discovery feel
+        freshBites.sort(() => Math.random() - 0.5);
         
-        if(newBites.length > 0) {
-            appendBitesToDOM(newBites);
-        }
-        
+        if(freshBites.length > 0) renderToDOM(freshBites);
         isFetching = false;
     }
 
-    function formatTime(ms) {
-        const diff = Date.now() - ms;
-        const sec = Math.floor(diff / 1000);
-        if (sec < 60) return "Just now";
-        if (sec < 3600) return Math.floor(sec/60) + "m ago";
-        if (sec < 86400) return Math.floor(sec/3600) + "h ago";
-        return Math.floor(sec/86400) + "d ago";
-    }
-
-    /* --- 6. DOM RENDERING ENGINE --- */
-    function appendBitesToDOM(bites) {
+    /* --- 6. DOM RENDERER --- */
+    function renderToDOM(bites) {
         const container = document.getElementById('bites-feed-container');
-        
-        // Remove initial skeleton on first real load
-        if(container.querySelector('.skeleton-card')) {
-            container.innerHTML = ''; 
-        }
+        if(container.querySelector('.skeleton-card')) container.innerHTML = '';
 
         bites.forEach((bite, index) => {
-            const el = document.createElement('div');
-            el.className = 'bite-card';
-            el.style.backgroundImage = `url('${bite.imgUrl}')`;
-            el.dataset.id = bite.id;
-            el.dataset.category = bite.category;
+            const card = document.createElement('div');
+            card.className = 'bite-card';
+            card.style.backgroundImage = `url('${bite.imgUrl}')`;
+            card.dataset.id = bite.id;
+            card.dataset.category = bite.category;
             
-            const firstChar = bite.source.charAt(0).toUpperCase();
+            const initial = bite.source.charAt(0).toUpperCase();
 
-            el.innerHTML = `
+            card.innerHTML = `
                 <div class="bite-overlay"></div>
                 <div class="bite-content">
                     <div class="bite-info">
                         <div class="source-row">
-                            <div class="source-pfp">${firstChar}</div>
+                            <div class="source-pfp">${initial}</div>
                             <div class="source-details">
                                 <span class="source-name">${bite.source}</span>
-                                <span class="bite-time">@${bite.author} • ${formatTime(bite.timestamp)}</span>
+                                <span class="bite-time">${formatTime(bite.timestamp)}</span>
                             </div>
                         </div>
                         <div class="bite-caption">${bite.title}</div>
@@ -611,84 +497,84 @@
                             <span class="material-icons-round">favorite_border</span>
                             <span class="action-label">${bite.likes}</span>
                         </div>
-                        <div class="action-btn" onclick="openLink('${bite.link}')">
+                        <div class="action-btn" onclick="window.open('${bite.link}', '_blank')">
                             <span class="material-icons-round">open_in_browser</span>
                             <span class="action-label">Expand</span>
                         </div>
                     </div>
                 </div>
             `;
-            container.appendChild(el);
+            container.appendChild(card);
             
-            // Monitor for engagement
-            mlObserver.observe(el);
+            // Attach Engagement Watcher
+            mlWatcher.observe(card);
 
-            // Trigger infinite scroll load before end of list
-            if (index === bites.length - 2) {
-                infiniteScrollObserver.observe(el);
-            }
+            // Infinite Scroll: Trigger on 2nd to last item
+            if (index === bites.length - 2) scrollTrigger.observe(card);
         });
 
         /* CACHE REMOVED: Fresh feed on every visit as requested */
     }
 
-    /* --- 7. QUANTUM OBSERVERS --- */
+    /* --- 7. OBSERVERS (ML & SCROLL) --- */
     
-    // ML Watcher: If visible for 5s, user is interested
-    const mlObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const biteId = entry.target.dataset.id;
-            const category = entry.target.dataset.category;
+    // ML Observer: Tracks 5-second watch time
+    const mlWatcher = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            const id = e.target.dataset.id;
+            const cat = e.target.dataset.category;
 
-            if (entry.isIntersecting) {
-                viewTimers[biteId] = setTimeout(() => {
-                    updateInterestScore(category, 1);
+            if (e.isIntersecting) {
+                viewTimers[id] = setTimeout(() => {
+                    trainAlgorithm(cat, 1); // +1 point for watching
                 }, 5000); 
             } else {
-                clearTimeout(viewTimers[biteId]);
+                clearTimeout(viewTimers[id]);
             }
         });
     }, { threshold: 0.8 }); 
 
-    // Infinite Scroll Controller
-    const infiniteScrollObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                infiniteScrollObserver.unobserve(entry.target);
+    // Scroll Trigger: Infinite Loading
+    const scrollTrigger = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                scrollTrigger.unobserve(e.target);
                 fetchNextBatch(); 
             }
         });
     }, { rootMargin: "0px 0px 1000px 0px" });
 
+    function formatTime(ms) {
+        const diff = Date.now() - ms;
+        const sec = Math.floor(diff / 1000);
+        if (sec < 60) return "Just now";
+        if (sec < 3600) return Math.floor(sec/60) + "m ago";
+        if (sec < 86400) return Math.floor(sec/3600) + "h ago";
+        return Math.floor(sec/86400) + "d ago";
+    }
+
     function initEngine() {
-        // Initial Fetch
         fetchNextBatch();
     }
 
-    /* --- 8. UI INTERACTIONS & UTILS --- */
-    function handleLike(btnEl, category) {
-        const icon = btnEl.querySelector('.material-icons-round');
-        
-        if (btnEl.classList.contains('liked')) {
-            btnEl.classList.remove('liked');
+    /* --- 8. UI ACTIONS --- */
+    function handleLike(el, cat) {
+        const icon = el.querySelector('.material-icons-round');
+        if (el.classList.contains('liked')) {
+            el.classList.remove('liked');
             icon.innerText = 'favorite_border';
         } else {
-            btnEl.classList.add('liked');
+            el.classList.add('liked');
             icon.innerText = 'favorite';
-            // Massive signal boost for likes
-            updateInterestScore(category, 5);
-            if(navigator.vibrate) navigator.vibrate([40, 30]);
+            trainAlgorithm(cat, 5); // Massive +5 boost
+            if(navigator.vibrate) navigator.vibrate([30, 40]);
         }
-    }
-
-    function openLink(url) {
-        if (url) window.open(url, '_blank');
     }
 
     function openSearch() {
         document.getElementById('search-modal').classList.add('active');
         document.getElementById('bite-search-box').focus();
-        history.pushState({ searchOpen: true }, "", "#search");
+        history.pushState({ search: true }, "", "#search");
     }
 
     function closeSearch() {
@@ -704,43 +590,43 @@
 
     document.getElementById('bite-search-box').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
-            const query = this.value.trim();
-            if(query.length > 0) executeAlgorithmSearch(query);
+            const q = this.value.trim();
+            if(q.length > 0) runSearch(q);
         }
     });
 
-    async function executeAlgorithmSearch(query) {
-        const container = document.getElementById('search-results-container');
-        container.innerHTML = `<div class="loading-spinner">Tuning Quantum Frequencies...</div>`;
+    async function runSearch(query) {
+        const resultsBox = document.getElementById('search-results-container');
+        resultsBox.innerHTML = `<div class="loading-spinner">Calibrating Frequency...</div>`;
         
-        // Searches represent high intent: +10 Points
-        updateInterestScore(query, 10);
+        // Search = High intent action: +10 Points
+        trainAlgorithm(query, 10);
         
         const results = await fetchFromInternet(query, 15);
-        container.innerHTML = '';
+        resultsBox.innerHTML = '';
         
         if(results.length === 0) {
-            container.innerHTML = `<p style="text-align:center; color:var(--text-dim); padding:40px;">Frequency blank for "${query}"</p>`;
+            resultsBox.innerHTML = `<p style="text-align:center;padding:40px;color:grey;">No signal found for "${query}"</p>`;
             return;
         }
 
         results.forEach(res => {
-            const card = document.createElement('div');
-            card.style.cssText = "display:flex; padding:15px 20px; border-bottom:1px solid var(--border); gap:15px; align-items:center; cursor:pointer;";
-            card.onclick = () => {
+            const row = document.createElement('div');
+            row.style.cssText = "display:flex;padding:15px 20px;border-bottom:1px solid #1a1a1a;gap:15px;align-items:center;cursor:pointer;";
+            row.onclick = () => {
                 closeSearch();
                 window.scrollTo(0,0);
-                appendBitesToDOM([res]); // Inject result to top of feed
+                renderToDOM([res]); // Force to top
             };
             
-            card.innerHTML = `
-                <img src="${res.imgUrl}" style="width:65px; height:65px; border-radius:12px; object-fit:cover; background:#111;">
+            row.innerHTML = `
+                <img src="${res.imgUrl}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;">
                 <div style="flex:1;">
-                    <div style="font-size:0.95rem; font-weight:700; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${res.title}</div>
-                    <div style="font-size:0.75rem; color:var(--accent); margin-top:4px; font-weight:600;">${res.source}</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${res.title}</div>
+                    <div style="font-size:0.75rem;color:var(--accent);margin-top:4px;font-weight:700;">${res.source}</div>
                 </div>
             `;
-            container.appendChild(card);
+            resultsBox.appendChild(row);
         });
     }
 </script>
