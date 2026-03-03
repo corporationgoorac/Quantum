@@ -74,6 +74,7 @@
             overflow-y: scroll; scroll-snap-type: y mandatory;
             scrollbar-width: none; -ms-overflow-style: none;
             background: var(--bg);
+            scroll-behavior: smooth;
         }
         #bites-feed-container::-webkit-scrollbar { display: none; }
 
@@ -91,20 +92,18 @@
             background-color: #050505; border-bottom: 1px solid var(--border);
         }
 
-        /* VIDEO PLAYER STYLING (FIXED FOR BLACK SCREEN ISSUE) */
+        /* VIDEO PLAYER STYLING */
         .video-wrapper {
             position: absolute; inset: 0; width: 100%; height: 100%;
             z-index: 0; background: transparent;
-            /* Use opacity instead of display:none so browser preloads it properly */
-            opacity: 0; transition: opacity 0.8s ease-in-out;
+            opacity: 0; transition: opacity 0.6s ease-in-out;
         }
         .video-wrapper iframe { 
-            width: 100%; height: 100%; border: none; pointer-events: none; 
+            width: 100%; height: 100%; border: none; pointer-events: auto; 
             transform: scale(1.05); /* Slight crop to hide YouTube borders */
         }
         /* When active, smoothly fade in the preloaded video */
         .bite-card.active-video .video-wrapper { opacity: 1; }
-        .bite-card.active-video .video-wrapper iframe { pointer-events: auto; }
 
         .bite-overlay {
             position: absolute; inset: 0;
@@ -210,13 +209,13 @@
 <div id="search-modal">
     <div class="search-header">
         <span class="material-icons-round back-btn" style="color:#fff; cursor:pointer;" onclick="closeSearch()">arrow_back</span>
-        <input type="text" class="search-input" id="bite-search-box" placeholder="Search YouTube Shorts & News..." autocomplete="off">
+        <input type="text" class="search-input" id="bite-search-box" placeholder="Search YouTube Shorts..." autocomplete="off">
     </div>
     <div class="search-results" id="search-results-container">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;opacity:0.3;padding:40px;">
-            <span class="material-icons-round" style="font-size:64px;margin-bottom:20px;">model_training</span>
-            <p style="text-align:center;font-weight:800;letter-spacing:1px;">QUANTUM ML ACTIVE</p>
-            <p style="text-align:center;font-size:0.8rem; margin-top:5px;">Your searches tune your algorithm.</p>
+            <span class="material-icons-round" style="font-size:64px;margin-bottom:20px;">explore</span>
+            <p style="text-align:center;font-weight:800;letter-spacing:1px;">EXPLORE BITES</p>
+            <p style="text-align:center;font-size:0.8rem; margin-top:5px;">Find new topics to tune your feed.</p>
         </div>
     </div>
 </div>
@@ -231,22 +230,20 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     
-    // --- 2. QUANTUM STATE ---
+    // --- 2. INSTAGRAM-STYLE ALGORITHM STATE ---
     let myUid = null;
-    let userInterests = {}; 
-    let seenBites = new Set(); 
+    
+    // Local memory prevents you from EVER seeing the same video twice
+    let seenBites = JSON.parse(localStorage.getItem('goorac_seen_bites') || '[]');
     let isFetching = false;
     let viewTimers = {}; 
-    
-    // Global Audio State (Remembers if user unmuted a video)
     let globalAudioEnabled = false;
 
-    // YOUR RENDER BACKEND
+    // The Rabbit-Hole Stack: Pushes recent interests to the front
+    let dynamicAlgorithmStack = ["technology", "trending", "funny", "gaming"]; 
     const BACKEND_API_URL = "https://pishaa.onrender.com/api/feed";
 
-    const DEFAULT_TOPICS = ["technology", "funny", "gaming", "music", "science"];
-
-    // --- 3. PROFILE LOADING ---
+    // --- 3. CORE INIT ---
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             myUid = user.uid;
@@ -261,69 +258,91 @@
         try {
             const doc = await db.collection("users").doc(myUid).get();
             if (doc.exists && doc.data().bitesProfile) {
-                userInterests = doc.data().bitesProfile;
+                // Load lifetime preferences, but mix them into the dynamic stack
+                const topInterests = Object.entries(doc.data().bitesProfile)
+                    .sort((a,b) => b[1] - a[1])
+                    .map(arr => arr[0]);
+                if (topInterests.length > 0) {
+                    dynamicAlgorithmStack = [...topInterests.slice(0, 3), ...dynamicAlgorithmStack];
+                }
             }
-        } catch (e) { console.error("ML Load Error", e); }
+        } catch (e) { console.error("Profile Load Error", e); }
     }
 
-    // --- 4. THE DEEP LEARNING ALGORITHM ---
-    function trainAlgorithm(topic, points) {
-        if (!myUid || !topic) return;
+    // --- 4. RABBIT-HOLE ENGAGEMENT SYSTEM ---
+    // Instead of just points, this forcefully changes the very next batch of videos
+    function engageAlgorithm(topic, weight) {
+        if (!topic) return;
         const tag = topic.toLowerCase().trim();
         
-        userInterests[tag] = (userInterests[tag] || 0) + points;
+        // Push the new topic to the very front of the queue
+        for(let i=0; i<weight; i++) {
+            dynamicAlgorithmStack.unshift(tag);
+        }
         
-        db.collection("users").doc(myUid).update({
-            [`bitesProfile.${tag}`]: firebase.firestore.FieldValue.increment(points)
-        }).catch(() => {
-            db.collection("users").doc(myUid).set({ bitesProfile: { [tag]: points } }, { merge: true });
-        });
-        
-        console.log(`🧠 Algorithm Tuned: +${points} to [${tag}]`);
+        // Keep the stack fast and relevant (max 20 items)
+        if (dynamicAlgorithmStack.length > 20) {
+            dynamicAlgorithmStack = dynamicAlgorithmStack.slice(0, 20);
+        }
+
+        // Quietly update Firebase in the background for long-term profiling
+        if (myUid) {
+            db.collection("users").doc(myUid).set({ 
+                bitesProfile: { [tag]: firebase.firestore.FieldValue.increment(weight) } 
+            }, { merge: true }).catch(e => console.log(e));
+        }
     }
 
-    // --- 5. DATA FETCHER (FROM RENDER) ---
+    // --- 5. DATA FETCHER (WITH CACHE BUSTING) ---
     async function fetchFromBackend(topic) {
         try {
-            const response = await fetch(`${BACKEND_API_URL}?topic=${encodeURIComponent(topic)}`);
+            // Added Cache Buster (Date.now()) so Render NEVER gives you the exact same list
+            const url = `${BACKEND_API_URL}?topic=${encodeURIComponent(topic)}&cb=${Date.now()}`;
+            const response = await fetch(url);
             const data = await response.json();
-            if (data.success && data.bites) return data.bites;
-            return [];
+            return (data.success && data.bites) ? data.bites : [];
         } catch (error) {
-            console.error(`Backend Sync Error:`, error);
             return [];
         }
     }
 
-    // --- 6. FEED GENERATOR ---
-    async function fetchNextBatch() {
+    // --- 6. INFINITE SCROLL GENERATOR ---
+    async function fetchNextBatch(forceTopic = null) {
         if (isFetching) return;
         isFetching = true;
         
-        let topicsToFetch = [];
-        let sorted = Object.entries(userInterests).sort((a,b) => b[1] - a[1]);
-        
-        if (sorted.length === 0) {
-            topicsToFetch = DEFAULT_TOPICS.slice(0, 2);
-        } else {
-            topicsToFetch.push(sorted[0][0]);
-            if (sorted[1]) topicsToFetch.push(sorted[1][0]);
-            topicsToFetch.push(DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)]);
+        // Determine what to fetch based on recent engagement
+        let topicToFetch = forceTopic;
+        if (!topicToFetch) {
+            // Grab the most recent interest from the front of the stack, then move it to the back
+            topicToFetch = dynamicAlgorithmStack.shift();
+            dynamicAlgorithmStack.push(topicToFetch);
         }
 
-        const promises = topicsToFetch.map(t => fetchFromBackend(t));
-        const resArray = await Promise.all(promises);
+        const freshBites = await fetchFromBackend(topicToFetch);
         
-        let freshBites = resArray.flat();
-        freshBites = freshBites.filter(b => !seenBites.has(b.id));
-        freshBites.forEach(b => seenBites.add(b.id));
-        freshBites.sort(() => Math.random() - 0.5); 
+        // Strict filtering to ensure NO repeats
+        let uniqueBites = freshBites.filter(b => !seenBites.includes(b.id));
         
-        if (freshBites.length > 0) renderToDOM(freshBites);
+        // Save the new IDs to LocalStorage
+        uniqueBites.forEach(b => {
+            seenBites.push(b.id);
+            if(seenBites.length > 300) seenBites.shift(); // Keep memory lean
+        });
+        localStorage.setItem('goorac_seen_bites', JSON.stringify(seenBites));
+        
+        if (uniqueBites.length > 0) renderToDOM(uniqueBites);
+        else if (uniqueBites.length === 0 && freshBites.length > 0) {
+            // If we filtered out everything because we saw it all, try fetching a different topic instantly
+            isFetching = false;
+            fetchNextBatch(dynamicAlgorithmStack[Math.floor(Math.random() * dynamicAlgorithmStack.length)]);
+            return;
+        }
+
         isFetching = false;
     }
 
-    // --- 7. DOM RENDERING ---
+    // --- 7. FAST DOM RENDERING ---
     function renderToDOM(bites) {
         const container = document.getElementById('bites-feed-container');
         if (container.querySelector('.skeleton-card')) container.innerHTML = '';
@@ -339,6 +358,7 @@
             let initial = isVideo ? 'Y' : 'N';
             let sourceClass = isVideo ? 'youtube' : 'news';
             
+            // Player uses enablejsapi=1 so we can pause/play without destroying it
             let videoLayer = isVideo ? `
                 <div class="video-wrapper">
                     <iframe data-src="https://www.youtube.com/embed/${bite.videoId}?autoplay=1&mute=1&loop=1&playlist=${bite.videoId}&controls=0&modestbranding=1&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
@@ -359,7 +379,6 @@
                         <div class="bite-caption">${bite.title}</div>
                         <div class="bite-tag">#${bite.category.replace(/\s+/g, '')}</div>
                     </div>
-                    
                     <div class="bite-actions">
                         <div class="action-btn" onclick="handleLike(this, '${bite.category}')">
                             <span class="material-icons-round">favorite_border</span>
@@ -375,11 +394,15 @@
             
             container.appendChild(card);
             
-            // Register observers
-            preloadObserver.observe(card);
+            // Attach performance observers
+            videoPreloader.observe(card);
             mlWatcher.observe(card);
 
-            if (index === bites.length - 2) scrollTrigger.observe(card);
+            // Re-attach infinite scroll trigger strictly to the second-to-last item
+            if (index === bites.length - 2) {
+                scrollTrigger.disconnect(); // Clear old triggers so it doesn't double-fire
+                scrollTrigger.observe(card);
+            }
         });
     }
 
@@ -388,17 +411,17 @@
         return num > 1000 ? (num/1000).toFixed(1) + 'k' : num;
     }
 
-    // --- 8. SMART OBSERVERS (THE FIX IS HERE) ---
+    // --- 8. HIGH PERFORMANCE OBSERVERS ---
     
-    // NEW: Secretly load the video before you scroll to it
-    const preloadObserver = new IntersectionObserver((entries) => {
+    // Only loads the iframe when it's 1 card away to save RAM and speed up the page
+    const videoPreloader = new IntersectionObserver((entries) => {
         entries.forEach(e => {
             if (e.isIntersecting) {
                 const iframe = e.target.querySelector('iframe');
                 if (iframe && !iframe.src) iframe.src = iframe.dataset.src;
             }
         });
-    }, { rootMargin: "1200px 0px" }); // Loads 1 or 2 cards ahead of your current scroll position
+    }, { rootMargin: "800px 0px" }); 
 
     const mlWatcher = new IntersectionObserver((entries) => {
         entries.forEach(e => {
@@ -407,55 +430,51 @@
             const iframe = e.target.querySelector('iframe');
 
             if (e.isIntersecting) {
-                // Safety net: if preloader missed it, load it now
+                // If user scrolled incredibly fast and preloader missed it
                 if (iframe && !iframe.src) iframe.src = iframe.dataset.src; 
                 
                 e.target.classList.add('active-video');
 
-                // Add a small delay so the CSS transition starts before forcing play commands
+                // Play the video and sync global audio state
                 setTimeout(() => {
                     if (iframe && iframe.contentWindow) {
                         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
-                        
                         if (globalAudioEnabled) {
                             iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
                         } else {
                             iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
                         }
                     }
-                }, 500);
+                }, 300);
 
-                // 5-SECOND DEEP LEARNING WATCH TIMER
+                // Watch time engagement
                 viewTimers[id] = setTimeout(() => {
-                    trainAlgorithm(cat, 1); 
-                }, 5000); 
+                    engageAlgorithm(cat, 1); // Watching it adds 1 weight to the stack
+                }, 4000); 
 
             } else {
                 e.target.classList.remove('active-video');
                 
-                // Do NOT destroy the iframe! Just PAUSE and MUTE it.
+                // Crucial: Pause it so it doesn't play in the background
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":[]}', '*');
-                    iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
                 }
-                
                 clearTimeout(viewTimers[id]);
             }
         });
-    }, { threshold: 0.85 }); 
+    }, { threshold: 0.8 }); 
 
     const scrollTrigger = new IntersectionObserver((entries) => {
         entries.forEach(e => {
             if (e.isIntersecting) {
-                scrollTrigger.unobserve(e.target);
                 fetchNextBatch(); 
             }
         });
-    }, { rootMargin: "0px 0px 800px 0px" });
+    }, { rootMargin: "0px 0px 400px 0px" });
 
     function initEngine() { fetchNextBatch(); }
 
-    // --- 9. INTERFACE CONTROLS ---
+    // --- 9. INTERFACE & AUDIO CONTROLS ---
     function handleLike(btnEl, category) {
         const icon = btnEl.querySelector('.material-icons-round');
         if (btnEl.classList.contains('liked')) {
@@ -464,11 +483,26 @@
         } else {
             btnEl.classList.add('liked');
             icon.innerText = 'favorite';
-            trainAlgorithm(category, 5); 
+            engageAlgorithm(category, 3); // Liking strongly shifts the feed (+3 weight)
             if (navigator.vibrate) navigator.vibrate([30, 40]);
         }
     }
 
+    function enableAudio(overlay) {
+        globalAudioEnabled = !globalAudioEnabled; 
+        const iframe = overlay.parentElement.querySelector('iframe');
+        
+        if (iframe && iframe.contentWindow) {
+            if (globalAudioEnabled) {
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
+            } else {
+                iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
+            }
+        }
+    }
+
+    // --- 10. FIXED SEARCH MODAL LOGIC ---
     function openSearch() {
         document.getElementById('search-modal').classList.add('active');
         document.getElementById('bite-search-box').focus();
@@ -480,10 +514,10 @@
         if (e.key === 'Enter') {
             const query = this.value.trim();
             if (query.length > 0) {
-                trainAlgorithm(query, 10); 
+                engageAlgorithm(query, 5); // Shift entire feed to this search
                 
                 const container = document.getElementById('search-results-container');
-                container.innerHTML = `<div class="loading-spinner">Querying Archives...</div>`;
+                container.innerHTML = `<div class="loading-spinner">Locating Bites...</div>`;
                 
                 const results = await fetchFromBackend(query);
                 container.innerHTML = '';
@@ -497,10 +531,17 @@
                     const card = document.createElement('div');
                     card.style.cssText = "display:flex; padding:15px 20px; border-bottom:1px solid #1a1a1a; gap:15px; align-items:center; cursor:pointer;";
                     
+                    // THE FIX: When clicked, wipe the feed, insert the video, scroll to top, and load more!
                     card.onclick = () => {
                         closeSearch();
-                        window.scrollTo(0,0);
-                        renderToDOM([res]); 
+                        const feedContainer = document.getElementById('bites-feed-container');
+                        feedContainer.innerHTML = ''; // Wipe old feed
+                        
+                        renderToDOM([res]); // Insert chosen video
+                        feedContainer.scrollTo(0,0); // Force scroll to top
+                        
+                        // Immediately fetch more related videos to populate below it
+                        fetchNextBatch(query); 
                     };
                     
                     card.innerHTML = `
@@ -515,23 +556,6 @@
             }
         }
     });
-
-    // --- 10. SMART AUDIO CONTROLLER ---
-    function enableAudio(overlay) {
-        globalAudioEnabled = !globalAudioEnabled; 
-        const iframe = overlay.parentElement.querySelector('iframe');
-        
-        if (iframe && iframe.contentWindow) {
-            if (globalAudioEnabled) {
-                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
-                
-                if (navigator.vibrate) navigator.vibrate(20); 
-            } else {
-                iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
-            }
-        }
-    }
 </script>
 
 </body>
