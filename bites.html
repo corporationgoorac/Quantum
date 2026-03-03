@@ -15,7 +15,7 @@
     
     <style>
         /* ==========================================================================
-           QUANTUM UI TOKENS
+           QUANTUM UI TOKENS (COMPACT EDITION)
            ========================================================================== */
         :root {
             --bg: #000000;
@@ -26,16 +26,14 @@
             --border: #1a1a1a;
             --text-main: #ffffff;
             --text-dim: #a0a0a0;
-            
-            /* The critical fix for your bottom navigation overlap */
-            --nav-clearance: 140px; 
+            --nav-clearance: 140px; /* Keeps it exactly above your custom navbar */
         }
 
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
             user-select: none; 
-            outline: none;
+            outline: none; 
         }
 
         body {
@@ -43,7 +41,7 @@
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; padding: 0; 
-            overflow: hidden; /* Lock body to enforce snapping */
+            overflow: hidden; 
             height: 100vh;
         }
 
@@ -68,7 +66,7 @@
         }
         .search-icon-btn:active { transform: scale(0.8); color: var(--accent); }
 
-        /* FEED CONTAINER (VERTICAL SCROLL SNAPPING) */
+        /* FEED CONTAINER */
         #bites-feed-container {
             height: 100vh; width: 100vw;
             overflow-y: scroll; scroll-snap-type: y mandatory;
@@ -83,11 +81,9 @@
             height: 100vh; width: 100vw;
             scroll-snap-align: start; scroll-snap-stop: always;
             position: relative; display: flex; flex-direction: column;
-            justify-content: flex-end; padding: 20px; 
-            
-            /* PADDING FIX: Pushes text up above the Goorac navbar */
+            justify-content: flex-end; 
+            padding: 15px; /* Tighter padding for mobile */
             padding-bottom: calc(var(--nav-clearance) + env(safe-area-inset-bottom));
-            
             background-size: cover; background-position: center;
             background-color: #050505; border-bottom: 1px solid var(--border);
         }
@@ -100,64 +96,62 @@
         }
         .video-wrapper iframe { 
             width: 100%; height: 100%; border: none; pointer-events: auto; 
-            transform: scale(1.05); /* Slight crop to hide YouTube borders */
+            transform: scale(1.05); 
         }
-        /* When active, smoothly fade in the preloaded video */
         .bite-card.active-video .video-wrapper { opacity: 1; }
 
         .bite-overlay {
             position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.1) 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.0) 80%);
             z-index: 1; pointer-events: auto;
         }
         
         .bite-content { 
             position: relative; z-index: 2; display: flex; 
             justify-content: space-between; align-items: flex-end; width: 100%; 
-            pointer-events: none; /* Let clicks pass through to the overlay */
+            pointer-events: none; 
         }
         
-        /* Ensure buttons stay clickable */
         .bite-actions, .bite-info { pointer-events: auto; }
-
         .bite-info { flex: 1; padding-right: 15px; animation: slideUp 0.6s ease-out; }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
-        .source-row { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        /* TIGHTER, SMALLER UI ELEMENTS */
+        .source-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         
         .source-pfp { 
-            width: 44px; height: 44px; border-radius: 12px; 
+            width: 34px; height: 34px; border-radius: 10px; 
             background: var(--surface); object-fit: cover; 
             display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; font-size: 1.3rem; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-weight: 900; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
-        .source-pfp.youtube { border: 2px solid var(--youtube-red); color: var(--youtube-red); }
-        .source-pfp.news { border: 2px solid var(--accent); color: var(--accent); }
+        .source-pfp.youtube { border: 1px solid var(--youtube-red); color: var(--youtube-red); }
+        .source-pfp.news { border: 1px solid var(--accent); color: var(--accent); }
         
-        .source-name { font-weight: 800; font-size: 1.1rem; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .source-name { font-weight: 800; font-size: 0.95rem; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
         
         .bite-caption { 
-            font-size: 1.05rem; line-height: 1.45; color: #ffffff; 
-            margin-bottom: 15px; font-weight: 500; display: -webkit-box; 
+            font-size: 0.9rem; line-height: 1.35; color: #f0f0f0; 
+            margin-bottom: 8px; font-weight: 400; display: -webkit-box; 
             -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; 
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            text-shadow: 0 1px 6px rgba(0,0,0,0.9);
         }
 
         .bite-tag { 
-            background: rgba(255, 255, 255, 0.15); color: #fff; padding: 6px 14px; 
-            border-radius: 10px; font-weight: 800; display: inline-block; 
-            font-size: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.3);
-            text-transform: uppercase; letter-spacing: 1px; backdrop-filter: blur(5px);
+            background: rgba(255, 255, 255, 0.15); color: #fff; padding: 4px 10px; 
+            border-radius: 8px; font-weight: 700; display: inline-block; 
+            font-size: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.2);
+            text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(5px); margin-right: 5px; margin-bottom: 5px;
         }
 
         /* ACTIONS SECTION */
-        .bite-actions { display: flex; flex-direction: column; gap: 28px; align-items: center; padding-bottom: 5px; }
-        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; cursor: pointer; transition: 0.2s; }
-        .action-btn .material-icons-round { font-size: 38px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)); }
+        .bite-actions { display: flex; flex-direction: column; gap: 20px; align-items: center; padding-bottom: 0px; }
+        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; cursor: pointer; transition: 0.2s; }
+        .action-btn .material-icons-round { font-size: 34px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); }
         .action-btn:active { transform: scale(0.7); }
         .action-btn.liked .material-icons-round { color: var(--danger); text-shadow: 0 0 15px rgba(255,42,85,0.5); }
-        .action-label { font-size: 0.75rem; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+        .action-label { font-size: 0.7rem; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 
         /* SEARCH MODAL */
         #search-modal {
@@ -199,9 +193,7 @@
 </header>
 
 <div id="bites-feed-container">
-    <div class="bite-card skeleton-card">
-        <div class="bite-overlay"></div>
-    </div>
+    <div class="bite-card skeleton-card"><div class="bite-overlay"></div></div>
 </div>
 
 <main-navbar></main-navbar>
@@ -209,7 +201,7 @@
 <div id="search-modal">
     <div class="search-header">
         <span class="material-icons-round back-btn" style="color:#fff; cursor:pointer;" onclick="closeSearch()">arrow_back</span>
-        <input type="text" class="search-input" id="bite-search-box" placeholder="Search YouTube Shorts..." autocomplete="off">
+        <input type="text" class="search-input" id="bite-search-box" placeholder="Search Quantum Bites..." autocomplete="off">
     </div>
     <div class="search-results" id="search-results-container">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;opacity:0.3;padding:40px;">
@@ -221,16 +213,11 @@
 </div>
 
 <script>
-    // --- 1. FIREBASE INIT ---
-    if (typeof window.initFirebaseCore === 'function') {
-        window.initFirebaseCore();
-    } else if (!firebase.apps.length && window.firebaseConfig) {
-        firebase.initializeApp(window.firebaseConfig);
-    }
+    if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
+    else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
     
-    // --- 2. GLOBAL STATE & CACHE ---
     let myUid = null;
     let seenBites = JSON.parse(localStorage.getItem('goorac_seen_bites') || '[]');
     let cachedFeed = JSON.parse(localStorage.getItem('goorac_feed_cache') || '[]');
@@ -241,51 +228,42 @@
     let scrollStartTime = 0;
 
     const BACKEND_API_URL = "https://pishaa.onrender.com/api/feed";
-    const DEFAULT_TOPICS = ["trending shorts", "funny moments", "tech reviews", "gaming highlights", "music covers"];
+    const DEFAULT_TOPICS = ["trending", "funny", "tech", "gaming"];
 
-    // --- 3. TRUE YOUTUBE/IG RECENCY ALGORITHM ENGINE ---
+    // --- TRUE IG ALGORITHM ENGINE ---
     const QuantumIG_Engine = {
         interests: JSON.parse(localStorage.getItem('goorac_ig_algorithm') || '{}'),
         
         loadProfile: async function() {
             try {
-                // Merge Firebase long-term memory with Local short-term recency memory
                 const doc = await db.collection("users").doc(myUid).get();
                 if (doc.exists && doc.data().bitesProfile) {
                     const fbData = doc.data().bitesProfile;
                     for (let key in fbData) {
-                        if (!this.interests[key]) {
-                            this.interests[key] = { score: fbData[key], ts: Date.now() };
-                        }
+                        if (!this.interests[key]) this.interests[key] = { score: fbData[key], ts: Date.now() };
                     }
                 }
-            } catch (e) { console.error("Profile load failed", e); }
+            } catch (e) {}
         },
 
         engage: function(topic, action) {
             if (!topic) return;
-            const tag = topic.toLowerCase().trim();
+            const tag = topic.toLowerCase().replace(/#/g, '').trim(); 
             let points = 0;
 
-            // Heavily penalize skips, heavily reward likes and searches
-            if (action === 'like') points = 15;
+            if (action === 'like') points = 20;
             else if (action === 'search') points = 25;
-            else if (action === 'watch') points = 3; 
+            else if (action === 'watch_long') points = 10; 
             else if (action === 'skip') points = -2; 
 
-            if (!this.interests[tag]) {
-                this.interests[tag] = { score: 10, ts: Date.now() };
-            }
+            if (!this.interests[tag]) this.interests[tag] = { score: 5, ts: Date.now() };
 
             this.interests[tag].score += points;
-            this.interests[tag].ts = Date.now(); // Update Timestamp to prioritize recency!
-            
+            this.interests[tag].ts = Date.now(); 
             if (this.interests[tag].score < 1) this.interests[tag].score = 1;
 
-            // Save to local recency memory instantly
             localStorage.setItem('goorac_ig_algorithm', JSON.stringify(this.interests));
 
-            // Sync with Firebase in background
             if (myUid && points > 0) {
                 db.collection("users").doc(myUid).set({ 
                     bitesProfile: { [tag]: firebase.firestore.FieldValue.increment(points) } 
@@ -293,33 +271,23 @@
             }
         },
 
-        pickNextTopic: function() {
+        getMixedBatchQuery: function() {
             const entries = Object.entries(this.interests);
-            
-            // 15% Discovery Rate to avoid algorithm bubbles
-            if (entries.length === 0 || Math.random() < 0.15) {
-                return DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)];
-            }
-
-            // TIME-DECAY CALCULATION: Recent interactions get mathematically boosted
             let weightedTopics = entries.map(([tag, data]) => {
                 const hoursOld = (Date.now() - data.ts) / (1000 * 60 * 60);
-                const recencyMultiplier = Math.max(0.2, 1 - (hoursOld * 0.05)); // Decays slowly over 20 hours
+                const recencyMultiplier = Math.max(0.2, 1 - (hoursOld * 0.05)); 
                 return { tag, finalScore: data.score * recencyMultiplier };
-            });
+            }).sort((a, b) => b.finalScore - a.finalScore);
 
-            const totalWeight = weightedTopics.reduce((sum, item) => sum + item.finalScore, 0);
-            let randomNum = Math.random() * totalWeight;
+            let selected = [];
+            if (weightedTopics.length > 0) selected.push(weightedTopics[0].tag);
+            if (weightedTopics.length > 1) selected.push(weightedTopics[1].tag);
+            selected.push(DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)]);
             
-            for (let i = 0; i < weightedTopics.length; i++) {
-                randomNum -= weightedTopics[i].finalScore;
-                if (randomNum <= 0) return weightedTopics[i].tag;
-            }
-            return weightedTopics[0].tag; 
+            return selected.join(','); 
         }
     };
 
-    // --- 4. CORE INIT & FAST CACHE LOADING ---
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             myUid = user.uid;
@@ -328,63 +296,47 @@
             if (cachedFeed.length > 0) {
                 renderToDOM(cachedFeed, true); 
                 setTimeout(() => fetchNextBatch(), 1000); 
-            } else {
-                fetchNextBatch();
-            }
-        } else {
-            window.location.href = "login.html";
-        }
+            } else fetchNextBatch();
+        } else window.location.href = "login.html";
     });
 
-    // --- 5. DATA FETCHER ---
-    async function fetchFromBackend(topic) {
+    async function fetchFromBackend(topicsString) {
         try {
-            const url = `${BACKEND_API_URL}?topic=${encodeURIComponent(topic)}&cb=${Date.now()}`;
+            const url = `${BACKEND_API_URL}?topics=${encodeURIComponent(topicsString)}&cb=${Date.now()}`;
             const response = await fetch(url);
             const data = await response.json();
             return (data.success && data.bites) ? data.bites : [];
-        } catch (error) {
-            return [];
-        }
+        } catch (error) { return []; }
     }
 
-    // --- 6. INFINITE SCROLL GENERATOR ---
     async function fetchNextBatch(forceArray = null) {
         if (isFetching) return;
         isFetching = true;
         
         let freshBites = [];
-
         if (forceArray) {
             freshBites = forceArray;
         } else {
-            const selectedTopic = QuantumIG_Engine.pickNextTopic();
-            freshBites = await fetchFromBackend(selectedTopic);
+            const mixedQuery = QuantumIG_Engine.getMixedBatchQuery();
+            freshBites = await fetchFromBackend(mixedQuery);
         }
         
         let uniqueBites = freshBites.filter(b => !seenBites.includes(b.id));
 
         if (uniqueBites.length > 0) {
-            if (forceArray) cachedFeed = uniqueBites;
-            else cachedFeed = [...cachedFeed, ...uniqueBites].slice(-30);
-            
-            localStorage.setItem('goorac_feed_cache', JSON.stringify(cachedFeed));
+            cachedFeed = [...cachedFeed, ...uniqueBites];
             renderToDOM(uniqueBites, forceArray ? true : false);
         } else if (!forceArray) {
             isFetching = false;
             fetchNextBatch();
             return;
         }
-
         isFetching = false;
     }
 
-    // --- 7. DOM RENDERING ---
     function renderToDOM(bites, clearExisting = false) {
         const container = document.getElementById('bites-feed-container');
-        if (clearExisting || container.querySelector('.skeleton-card')) {
-            container.innerHTML = '';
-        }
+        if (clearExisting || container.querySelector('.skeleton-card')) container.innerHTML = '';
 
         bites.forEach((bite, index) => {
             const card = document.createElement('div');
@@ -394,10 +346,16 @@
             card.dataset.category = bite.category;
             
             const isVideo = bite.type === 'video' && bite.videoId;
-            let initial = isVideo ? 'Y' : 'N';
             let sourceClass = isVideo ? 'youtube' : 'news';
             
-            // PERFORMANCE FIX: Added &vq=small to force instant loading without buffering lag
+            // UI UPGRADE: Uses the author's real channel name, and creates an initial for the PFP
+            const channelName = bite.author || bite.source || "Quantum Feed";
+            const initial = channelName.charAt(0).toUpperCase();
+
+            const extractedTags = bite.title.match(/#[\w\u0590-\u05ff]+/g) || [];
+            card.dataset.tags = extractedTags.join(','); 
+            let tagsHtml = extractedTags.slice(0,3).map(tag => `<span class="bite-tag">${tag}</span>`).join('');
+
             let videoLayer = isVideo ? `
                 <div class="video-wrapper">
                     <iframe data-src="https://www.youtube.com/embed/${bite.videoId}?autoplay=1&mute=1&loop=1&playlist=${bite.videoId}&controls=0&modestbranding=1&playsinline=1&enablejsapi=1&vq=small" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
@@ -411,12 +369,10 @@
                     <div class="bite-info">
                         <div class="source-row">
                             <div class="source-pfp ${sourceClass}">${initial}</div>
-                            <div class="source-details">
-                                <span class="source-name">${bite.source || 'Quantum Feed'}</span>
-                            </div>
+                            <div class="source-details"><span class="source-name">${channelName}</span></div>
                         </div>
                         <div class="bite-caption">${bite.title}</div>
-                        <div class="bite-tag">#${bite.category.replace(/\s+/g, '')}</div>
+                        <div>${tagsHtml}</div>
                     </div>
                     <div class="bite-actions">
                         <div class="action-btn" onclick="handleLike(this, '${bite.category}')">
@@ -432,11 +388,10 @@
             `;
             
             container.appendChild(card);
-            
             videoPreloader.observe(card);
             mlWatcher.observe(card);
 
-            if (index === bites.length - 2) {
+            if (index === bites.length - 5 || (bites.length < 5 && index === bites.length - 1)) {
                 scrollTrigger.disconnect(); 
                 scrollTrigger.observe(card);
             }
@@ -444,26 +399,21 @@
     }
 
     function formatLikes(num) {
-        if (!num) return '100';
-        return num > 1000 ? (num/1000).toFixed(1) + 'k' : num;
+        if (!num) return '100'; return num > 1000 ? (num/1000).toFixed(1) + 'k' : num;
     }
 
-    // --- 8. CACHE WIPER FUNCTION ---
-    // Instantly removes the video you just watched from the cache so it never replays
-    function markAsWatchedAndClearCache(id) {
-        if (!seenBites.includes(id)) {
-            seenBites.push(id);
-            if (seenBites.length > 500) seenBites.shift();
-            localStorage.setItem('goorac_seen_bites', JSON.stringify(seenBites));
-        }
+    // --- 8. SMART UPCOMING CACHE LIMITER ---
+    function limitCacheToUpcoming() {
+        const allCards = Array.from(document.querySelectorAll('.bite-card'));
+        const activeIndex = allCards.findIndex(card => card.classList.contains('active-video'));
         
-        cachedFeed = cachedFeed.filter(b => b.id !== id);
-        localStorage.setItem('goorac_feed_cache', JSON.stringify(cachedFeed));
+        if (activeIndex !== -1) {
+            const upcomingIds = allCards.slice(activeIndex + 1, activeIndex + 5).map(card => card.dataset.id);
+            const upcomingCache = cachedFeed.filter(bite => upcomingIds.includes(bite.id));
+            localStorage.setItem('goorac_feed_cache', JSON.stringify(upcomingCache));
+        }
     }
 
-    // --- 9. HIGH PERFORMANCE OBSERVERS ---
-    
-    // Increased rootMargin to 1500px so it preloads videos MUCH earlier, preventing lag
     const videoPreloader = new IntersectionObserver((entries) => {
         entries.forEach(e => {
             if (e.isIntersecting) {
@@ -477,18 +427,22 @@
         entries.forEach(e => {
             const id = e.target.dataset.id;
             const cat = e.target.dataset.category;
+            const cardTags = e.target.dataset.tags;
             const iframe = e.target.querySelector('iframe');
 
             if (e.isIntersecting) {
                 scrollStartTime = Date.now();
                 
-                // Clear this video from the local storage cache immediately so it won't load on refresh
-                markAsWatchedAndClearCache(id);
+                if (!seenBites.includes(id)) {
+                    seenBites.push(id);
+                    if (seenBites.length > 500) seenBites.shift();
+                    localStorage.setItem('goorac_seen_bites', JSON.stringify(seenBites));
+                }
                 
                 if (iframe && !iframe.src) iframe.src = iframe.dataset.src; 
                 e.target.classList.add('active-video');
+                limitCacheToUpcoming(); 
 
-                // Removed the 300ms delay to make playback absolutely instantaneous 
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
                     if (globalAudioEnabled) iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
@@ -496,16 +450,18 @@
                 }
 
                 viewTimers[id] = setTimeout(() => {
-                    QuantumIG_Engine.engage(cat, 'watch'); 
-                }, 4000); 
+                    QuantumIG_Engine.engage(cat, 'watch_long'); 
+                    if (cardTags) {
+                        cardTags.split(',').forEach(tag => {
+                            if(tag) QuantumIG_Engine.engage(tag, 'watch_long'); 
+                        });
+                    }
+                }, 15000); 
 
             } else {
                 e.target.classList.remove('active-video');
-                
                 const timeSpent = Date.now() - scrollStartTime;
-                if (timeSpent > 0 && timeSpent < 1500) {
-                    QuantumIG_Engine.engage(cat, 'skip');
-                }
+                if (timeSpent > 0 && timeSpent < 1500) QuantumIG_Engine.engage(cat, 'skip');
 
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":[]}', '*');
@@ -521,9 +477,11 @@
         });
     }, { rootMargin: "0px 0px 400px 0px" });
 
-    // --- 10. INTERFACE & AUDIO CONTROLS ---
     function handleLike(btnEl, category) {
         const icon = btnEl.querySelector('.material-icons-round');
+        const card = btnEl.closest('.bite-card');
+        const cardTags = card.dataset.tags;
+
         if (btnEl.classList.contains('liked')) {
             btnEl.classList.remove('liked');
             icon.innerText = 'favorite_border';
@@ -531,6 +489,12 @@
             btnEl.classList.add('liked');
             icon.innerText = 'favorite';
             QuantumIG_Engine.engage(category, 'like'); 
+            
+            if (cardTags) {
+                cardTags.split(',').forEach(tag => {
+                    if(tag) QuantumIG_Engine.engage(tag, 'like');
+                });
+            }
             if (navigator.vibrate) navigator.vibrate([30, 40]);
         }
     }
@@ -538,7 +502,6 @@
     function enableAudio(overlay) {
         globalAudioEnabled = !globalAudioEnabled; 
         const iframe = overlay.parentElement.querySelector('iframe');
-        
         if (iframe && iframe.contentWindow) {
             if (globalAudioEnabled) {
                 iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
@@ -549,7 +512,6 @@
         }
     }
 
-    // --- 11. MOBILE BACK BUTTON & SEARCH MODAL INJECTION ---
     function openSearch() {
         document.getElementById('search-modal').classList.add('active');
         document.getElementById('bite-search-box').focus();
@@ -561,16 +523,13 @@
         else document.getElementById('search-modal').classList.remove('active');
     }
 
-    window.addEventListener('popstate', (e) => {
-        document.getElementById('search-modal').classList.remove('active');
-    });
+    window.addEventListener('popstate', () => document.getElementById('search-modal').classList.remove('active'));
 
     document.getElementById('bite-search-box').addEventListener('keypress', async function (e) {
         if (e.key === 'Enter') {
             const query = this.value.trim();
             if (query.length > 0) {
                 QuantumIG_Engine.engage(query, 'search'); 
-                
                 const container = document.getElementById('search-results-container');
                 container.innerHTML = `<div class="loading-spinner">Locating Bites...</div>`;
                 
@@ -586,15 +545,15 @@
                     const card = document.createElement('div');
                     card.style.cssText = "display:flex; padding:15px 20px; border-bottom:1px solid #1a1a1a; gap:15px; align-items:center; cursor:pointer;";
                     
+                    // UI UPGRADE: Search Results display Author Name instead of "YouTube Shorts"
+                    const authorName = res.author || res.source || "Creator";
+                    
                     card.onclick = () => {
                         closeSearch();
-                        
                         const clickedIndex = resultsArray.indexOf(res);
                         resultsArray.splice(clickedIndex, 1);
                         resultsArray.unshift(res);
-                        
                         fetchNextBatch(resultsArray);
-                        
                         setTimeout(()=> document.getElementById('bites-feed-container').scrollTo(0,0), 50);
                     };
                     
@@ -602,7 +561,7 @@
                         <img src="${res.imgUrl}" style="width:65px; height:65px; border-radius:12px; object-fit:cover; background:#111;">
                         <div style="flex:1;">
                             <div style="font-size:0.95rem; font-weight:700; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${res.title}</div>
-                            <div style="font-size:0.75rem; color:var(--accent); margin-top:4px; font-weight:600;">${res.source}</div>
+                            <div style="font-size:0.75rem; color:var(--accent); margin-top:4px; font-weight:600;">${authorName}</div>
                         </div>
                     `;
                     container.appendChild(card);
