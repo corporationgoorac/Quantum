@@ -741,8 +741,8 @@
         /* ==========================================================================
            FOUT ICON TEXT FLASH FIX (Pure CSS logic)
            ========================================================================== */
-        /* 🚀 UNCOMMENTED TO FIX SPAN TEXT FLASHING BEFORE FONT LOAD */
-        .material-icons-round { color: transparent !important; text-shadow: none !important; }
+        /* 🚀 FIX: Commented out transparent !important which permanently hid the icons */
+        /* .material-icons-round { color: transparent !important; text-shadow: none !important; } */
         body.fonts-ready .material-icons-round { color: inherit; text-shadow: inherit; }
         body.fonts-ready .msg-icon { color: #fff !important; }
         body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; }
