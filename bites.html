@@ -264,17 +264,22 @@
         console.log(`🤖 Algorithm Learned: +${points} to [${cleanTopic}]`);
     }
 
-    // --- 3. THE INTERNET FETCHER (NO CORS, NO API KEYS) ---
-    // Uses Reddit's open JSON architecture as the global data provider
+    // --- 3. THE INTERNET FETCHER (WITH CORS PROXY FIX) ---
+    // Uses Reddit's open JSON architecture, routed through a proxy to bypass the 403 Forbidden errors
     async function fetchFromInternet(topic, limit = 10) {
         try {
-            let url = `https://www.reddit.com/r/${topic.replace(/\s+/g, '')}/hot.json?limit=${limit}`;
+            let targetUrl = `https://www.reddit.com/r/${topic.replace(/\s+/g, '')}/hot.json?limit=${limit}`;
             if(topic.includes(' ')) {
                 // If it's a complex query (e.g. "MS Dhoni"), use the search endpoint
-                url = `https://www.reddit.com/search.json?q=${encodeURIComponent(topic)}&sort=hot&limit=${limit}`;
+                targetUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(topic)}&sort=hot&limit=${limit}`;
             }
             
-            const response = await fetch(url);
+            // THE FIX: Wrap the URL in a CORS Proxy to bypass browser restrictions
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+            
+            const response = await fetch(proxyUrl);
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const json = await response.json();
             
             // Normalize data and filter out text-only posts
@@ -292,7 +297,7 @@
                 timestamp: b.created_utc * 1000
             }));
         } catch(error) {
-            console.warn(`Failed to fetch topic: ${topic}`);
+            console.warn(`Failed to fetch topic: ${topic} -`, error);
             return [];
         }
     }
