@@ -29,6 +29,9 @@
     <script type="module" src="components/presence.js"></script>
 
     <script>
+        /* --- [GLITCH FIX]: DISABLED LOCALSTORAGE CACHE TO MATCH MESSAGES.HTML ---
+           This block is safely commented out so it no longer blocks the 0ms render.
+           Not a single line was deleted.
         // 🚀 INSTANT ICON FONT CACHE FIX (Saves icons to local storage for 0ms visual load)
         // UPGRADED: Now fetches the actual font file as Base64 so there is zero delay!
         const cachedIcons = localStorage.getItem('goorac_icons_css_cache_v2'); // Changed cache key for the new format
@@ -69,6 +72,7 @@
                     document.head.appendChild(style);
                 }).catch(e => console.error("Icon cache failed", e));
         }
+        --------------------------------------------------------------------------- */
     </script>
 
     <style>
@@ -772,14 +776,15 @@
         body.fonts-ready .pulse-icon { color: var(--accent) !important; }
 
         /* INSTEAD: Added max-width and overflow hidden so fallback text doesn't stretch the layout */
+        /* --- [GLITCH FIX]: DISABLED SQUISH CSS TO FIX NAVBAR FLICKER --- */
         .material-icons-round {
-            color: inherit; /* Fixed: Removed !important so verification badges keep their own color */
-            max-width: 1em; 
-            overflow: hidden;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            white-space: nowrap;
+            /* color: inherit; */ /* Fixed: Removed !important so verification badges keep their own color */
+            /* max-width: 1em; */
+            /* overflow: hidden; */
+            /* display: inline-flex; */
+            /* justify-content: center; */
+            /* align-items: center; */
+            /* white-space: nowrap; */
         }
         /* Fix for Emoji/Verification Badges so they don't turn black/white */
         .material-icons-round[class*="verif"], .verified, .verification-badge { color: var(--accent) !important; }
@@ -898,9 +903,11 @@
         document.body.classList.add('fonts-ready');
     });
     // Fallback if cached icons are already loaded instantly
+    /* --- [GLITCH FIX]: DISABLED CACHE CHECK TO MATCH MESSAGES.HTML ---
     if (localStorage.getItem('goorac_icons_css_cache_v2')) {
         document.body.classList.add('fonts-ready');
     }
+    -------------------------------------------------------------------- */
 </script>
 
 <div id="greeting-overlay" class="greeting-overlay">
