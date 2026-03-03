@@ -94,23 +94,20 @@
         /* VIDEO PLAYER STYLING */
         .video-wrapper {
             position: absolute; inset: 0; width: 100%; height: 100%;
-            /* FIX: Changed background to transparent to stop the black box from covering the thumbnail */
             z-index: 0; display: none; background: transparent;
         }
         .video-wrapper iframe { 
-            /* Changed pointer-events to auto so users can tap to play/unmute if blocked by browser */
             width: 100%; height: 100%; border: none; pointer-events: auto; 
             transform: scale(1.05); /* Slight crop to hide YouTube borders */
         }
-        /* FIX: Slowed the fade-in down so the thumbnail stays visible while the video buffers */
-        .bite-card.active-video .video-wrapper { display: block; animation: fadeIn 1.2s ease-in; }
+        /* FIX: Smoother, faster fade-in to prevent the screen from hanging black */
+        .bite-card.active-video .video-wrapper { display: block; animation: fadeIn 0.5s ease-in forwards; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .bite-overlay {
             position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.1) 100%);
-            /* FIX: Changed pointer-events to auto so we can register the "tap to unmute" */
             z-index: 1; pointer-events: auto;
         }
         
@@ -239,11 +236,13 @@
     let seenBites = new Set(); 
     let isFetching = false;
     let viewTimers = {}; 
+    
+    // NEW FIX: Global Audio State (Remembers if user unmuted a video)
+    let globalAudioEnabled = false;
 
     // YOUR RENDER BACKEND
     const BACKEND_API_URL = "https://pishaa.onrender.com/api/feed";
 
-    // Exploration Seeds (To prevent Filter Bubbles)
     const DEFAULT_TOPICS = ["technology", "funny", "gaming", "music", "science"];
 
     // --- 3. PROFILE LOADING ---
@@ -306,7 +305,6 @@
         if (sorted.length === 0) {
             topicsToFetch = DEFAULT_TOPICS.slice(0, 2);
         } else {
-            // Pick Top 2 Interests + 1 Random Element
             topicsToFetch.push(sorted[0][0]);
             if (sorted[1]) topicsToFetch.push(sorted[1][0]);
             topicsToFetch.push(DEFAULT_TOPICS[Math.floor(Math.random() * DEFAULT_TOPICS.length)]);
@@ -336,19 +334,16 @@
             card.dataset.id = bite.id;
             card.dataset.category = bite.category;
             
-            // Check if it's a Video Short or a News Article
             const isVideo = bite.type === 'video' && bite.videoId;
             let initial = isVideo ? 'Y' : 'N';
             let sourceClass = isVideo ? 'youtube' : 'news';
             
-            // FIX: Changed mute=0 to mute=1 (guarantees browser allows visual autoplay) and added enablejsapi=1
             let videoLayer = isVideo ? `
                 <div class="video-wrapper">
                     <iframe data-src="https://www.youtube.com/embed/${bite.videoId}?autoplay=1&mute=1&loop=1&playlist=${bite.videoId}&controls=0&modestbranding=1&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
                 </div>
             ` : '';
 
-            // FIX: Added onclick="enableAudio(this)" to the bite-overlay
             card.innerHTML = `
                 ${videoLayer}
                 <div class="bite-overlay" onclick="enableAudio(this)"></div>
@@ -389,27 +384,50 @@
         return num > 1000 ? (num/1000).toFixed(1) + 'k' : num;
     }
 
-    // --- 8. SMART OBSERVERS ---
+    // --- 8. SMART OBSERVERS (THE CRITICAL FIX IS HERE) ---
     const mlWatcher = new IntersectionObserver((entries) => {
         entries.forEach(e => {
             const id = e.target.dataset.id;
             const cat = e.target.dataset.category;
+            const iframe = e.target.querySelector('iframe');
 
             if (e.isIntersecting) {
-                // AUTO-PLAY VIDEO LOGIC
-                const iframe = e.target.querySelector('iframe');
-                if (iframe && !iframe.src) iframe.src = iframe.dataset.src; // Lazy Load Video
+                // 1. If it doesn't have a source yet, load the video into memory
+                if (iframe && !iframe.src) {
+                    iframe.src = iframe.dataset.src; 
+                } else if (iframe && iframe.contentWindow) {
+                    // If it already loaded previously, just hit PLAY!
+                    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
+                }
+                
                 e.target.classList.add('active-video');
 
-                // 5-SECOND DEEP LEARNING WATCH TIMER
+                // 2. Automatically sync the audio state!
+                setTimeout(() => {
+                    if (iframe && iframe.contentWindow) {
+                        if (globalAudioEnabled) {
+                            iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
+                        } else {
+                            iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
+                        }
+                    }
+                }, 1000); // Wait 1 second for the player to initialize before sending the command
+
+                // 3. Start 5-SECOND DEEP LEARNING WATCH TIMER
                 viewTimers[id] = setTimeout(() => {
-                    trainAlgorithm(cat, 1); // +1 point for lingering
+                    trainAlgorithm(cat, 1); 
                 }, 5000); 
+
             } else {
-                // STOP PLAYING & CANCEL TIMERS
                 e.target.classList.remove('active-video');
-                const iframe = e.target.querySelector('iframe');
-                if (iframe) iframe.src = ""; // Unloads video to save RAM
+                
+                // THE FIX: Do NOT destroy the iframe! Just PAUSE and MUTE it.
+                // This stops the black screen crashes and saves huge amounts of data/RAM.
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":[]}', '*');
+                    iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
+                }
+                
                 clearTimeout(viewTimers[id]);
             }
         });
@@ -435,7 +453,7 @@
         } else {
             btnEl.classList.add('liked');
             icon.innerText = 'favorite';
-            trainAlgorithm(category, 5); // Likes = +5 Points
+            trainAlgorithm(category, 5); 
             if (navigator.vibrate) navigator.vibrate([30, 40]);
         }
     }
@@ -451,7 +469,7 @@
         if (e.key === 'Enter') {
             const query = this.value.trim();
             if (query.length > 0) {
-                trainAlgorithm(query, 10); // Search = +10 Points
+                trainAlgorithm(query, 10); 
                 
                 const container = document.getElementById('search-results-container');
                 container.innerHTML = `<div class="loading-spinner">Querying Archives...</div>`;
@@ -471,7 +489,7 @@
                     card.onclick = () => {
                         closeSearch();
                         window.scrollTo(0,0);
-                        renderToDOM([res]); // Inserts directly to top of feed
+                        renderToDOM([res]); 
                     };
                     
                     card.innerHTML = `
@@ -487,14 +505,22 @@
         }
     });
 
-    // --- 10. AUDIO CONTROLLER (NEW FIX) ---
-    // Browsers require user interaction to play audio. 
-    // Tapping the screen uses the YouTube API to unmute the video safely.
+    // --- 10. SMART AUDIO CONTROLLER ---
+    // User taps the screen -> Unmutes the current video AND remembers the choice for the next videos!
     function enableAudio(overlay) {
+        globalAudioEnabled = !globalAudioEnabled; // Toggle global state
         const iframe = overlay.parentElement.querySelector('iframe');
+        
         if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
-            iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
+            if (globalAudioEnabled) {
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":[]}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":[]}', '*');
+                
+                // Optional: Vibrate slightly to confirm unmute
+                if (navigator.vibrate) navigator.vibrate(20); 
+            } else {
+                iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":[]}', '*');
+            }
         }
     }
 </script>
