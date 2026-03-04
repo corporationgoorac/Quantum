@@ -162,7 +162,7 @@
         
         /* --- 1. THE VIDEO PLAYER ZONE (Fixed Size) --- */
         .video-zone {
-            flex: 0 0 35%; /* STRICTLY LOCKS THE HEIGHT to 35% of the screen */
+            flex: 0 0 35vh; /* STRICTLY LOCKS THE HEIGHT to 35% of the screen */
             min-height: 250px; 
             width: 100%; 
             background: #050505;
@@ -586,7 +586,14 @@
 
             // START ENGINE
             roomUnsub = roomRef.onSnapshot(snap => {
-                if (!snap.exists) return;
+                // FIX: IF DOCUMENT IS DELETED, AUTO EXIT FOR BOTH USERS
+                if (!snap.exists) {
+                    if (player) player.destroy();
+                    if (wakeLock) wakeLock.release();
+                    window.location.replace('visionLobby.html');
+                    return;
+                }
+
                 const data = snap.data();
                 
                 if (data.sessionStatus === 'ended') { exitSession(); return; }
@@ -655,6 +662,13 @@
                 btn.innerHTML = data.status === 'picking' ? `WAITING...` : `WATCHING`;
                 const name = targetProfile ? targetProfile.name.split(' ')[0].toUpperCase() : 'THEM';
                 document.getElementById('info-sub').innerText = `${name}'S TURN`;
+            }
+
+            // FIX: HIDE BUTTON AFTER SELECTING SO IT DISAPPEARS
+            if (data.status === 'playing') {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'flex';
             }
 
             // Phase: Picking
@@ -1074,6 +1088,11 @@
                     [myField]: 'offline',
                     sessionStatus: 'ended'
                 }).catch(()=>{});
+
+                // FIX: HARD DELETE ROOM AND CHAT DATA SO NO GHOST INVITES REMAIN
+                visionDb.collection('vision_rooms').doc(roomId).delete().catch(()=>{});
+                visionRdb.ref(`vision_chat/${roomId}`).remove().catch(()=>{});
+                visionRdb.ref(`typing/vision_${roomId}`).remove().catch(()=>{});
             }
             if (player) player.destroy();
             if (wakeLock) wakeLock.release();
