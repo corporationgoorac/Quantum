@@ -528,8 +528,11 @@
 
             // Trigger compression if it's a video
             if (this.fileType === 'video') {
-                loadingText.innerText = "Optimizing Video...\n(Takes real-time, please wait)";
-                fileToUpload = await this.compressVideo(this.selectedFile);
+                // MODIFICATION: Bypassing the compression logic and directly assigning the original file
+                // loadingText.innerText = "Optimizing Video...\n(Takes real-time, please wait)";
+                // fileToUpload = await this.compressVideo(this.selectedFile);
+                loadingText.innerText = "Preparing Video...";
+                fileToUpload = this.selectedFile;
             }
 
             loadingText.innerText = "Uploading to Cloud...";
