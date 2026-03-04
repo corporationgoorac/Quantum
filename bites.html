@@ -9,6 +9,7 @@
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script src="components/navbar.js" defer></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons-Round" rel="stylesheet">
@@ -238,7 +239,10 @@
     // ==========================================================================
     if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
     else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
+    
+    // 🔥 Firebase Services Ready
     const auth = firebase.auth();
+    const db = firebase.firestore(); 
     
     const CONFIG = {
         BACKEND: "https://pishaa.onrender.com/api/feed",
