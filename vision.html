@@ -15,766 +15,883 @@
     
     <script src="https://www.youtube.com/iframe_api"></script>
 
-    <script src="components/presence.js" defer></script>
-    <script src="components/call-notifier.js" defer></script>
-    <script src="components/chatLoader.js" defer></script>
+    <script src="components/presence.js"></script>
+    <script src="components/call-notifier.js"></script>
+    <script src="components/chatLoader.js"></script>
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* =========================================
-           1. CORE VARIABLES & RESET
-           ========================================= */
+        /* ==========================================================================
+           1. CORE VARIABLES & MASTER RESET
+           ========================================================================== */
         :root {
             --bg: #000000;
             --surface: #0a0a0a;
-            --surface-glass: rgba(15, 15, 15, 0.8);
+            --surface-glass: rgba(15, 15, 15, 0.85);
             --border: rgba(255, 255, 255, 0.08);
-            --accent: #00d2ff; /* Cinematic Cyan */
-            --accent-glow: rgba(0, 210, 255, 0.4);
+            --accent: #00d2ff; /* Vision Cyan */
+            --accent-dark: #0088aa;
             --text: #ffffff;
             --text-dim: #888888;
             --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 15px);
-            --verified-color: #0095f6;
-            --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            --ease-spring: cubic-bezier(0.19, 1, 0.22, 1);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --verified: #0095f6;
+            --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --smooth: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-            user-select: none; outline: none;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             background: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif;
-            height: 100dvh; width: 100vw; overflow: hidden;
+            font-family: 'Inter', -apple-system, sans-serif;
+            height: 100vh; height: 100dvh; width: 100vw; overflow: hidden;
             display: flex; flex-direction: column;
+            overscroll-behavior: none;
         }
 
-        /* =========================================
-           2. NAVIGATION & TOP BAR
-           ========================================= */
+        /* HARDWARE ACCELERATION CLASSES */
+        .hw-accel { transform: translateZ(0); will-change: transform; }
+
+        /* ==========================================================================
+           2. GLOBAL NAVIGATION & HEADERS
+           ========================================================================== */
         .top-nav {
             position: absolute; top: 0; left: 0; width: 100%;
             padding: calc(10px + var(--safe-top)) 20px 10px;
             display: flex; align-items: center; justify-content: space-between;
-            z-index: 100; pointer-events: none;
+            z-index: 500;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
         }
         
         .back-btn {
-            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
             width: 40px; height: 40px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; backdrop-filter: blur(10px);
-            transition: 0.2s; pointer-events: auto;
+            color: #fff; cursor: pointer; 
+            backdrop-filter: blur(10px); transition: transform 0.2s;
         }
-        .back-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
-        
-        .status-pill {
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
-            padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);
-            font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--accent);
-            display: flex; align-items: center; gap: 6px; letter-spacing: 1px; font-weight: 700;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        .back-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+
+        .room-badge {
+            background: rgba(0, 210, 255, 0.15); border: 1px solid var(--accent);
+            padding: 4px 12px; border-radius: 20px; color: var(--accent);
+            font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700;
+            letter-spacing: 1px; display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
         }
-        .status-dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; box-shadow: 0 0 8px currentColor; animation: blink 1.5s infinite; }
+        .live-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* =========================================
-           3. SCREEN MANAGER
-           ========================================= */
-        #session-view { position: relative; width: 100%; height: 100%; }
-
+        /* ==========================================================================
+           3. SCREEN MANAGER (WAITING VS ACTIVE)
+           ========================================================================== */
+        #session-view { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        
         .screen {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.4s ease, transform 0.4s ease;
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            opacity: 0; pointer-events: none; transition: 0.4s var(--smooth);
             transform: scale(0.98); z-index: 10;
         }
         .screen.active { opacity: 1; pointer-events: auto; transform: scale(1); }
 
-        /* =========================================
-           4. WAITING ROOM UI
-           ========================================= */
-        .session-avatars {
+        /* --- ERROR SCREEN --- */
+        .err-box {
+            background: var(--surface-glass); border: 1px solid var(--border);
+            padding: 40px 30px; border-radius: 30px; text-align: center;
+            margin: auto; max-width: 320px; backdrop-filter: blur(20px);
+        }
+        .err-box h2 { color: #ff453a; margin: 15px 0 10px; font-weight: 800; }
+
+        /* --- WAITING SCREEN --- */
+        #screen-waiting { justify-content: center; align-items: center; background: radial-gradient(circle at center, #001a22 0%, #000 70%); }
+        
+        .avatar-link-container { display: flex; align-items: center; gap: 30px; margin-bottom: 40px; position: relative; }
+        
+        .w-avatar-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; transition: 0.4s; }
+        .w-avatar {
+            width: 90px; height: 90px; border-radius: 50%; border: 2px solid #333;
+            background: #111; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: 0.4s;
+        }
+        .w-name { font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 12px; }
+        
+        .w-avatar-wrapper.target { opacity: 0.5; filter: grayscale(100%); transform: scale(0.9); }
+        .w-avatar-wrapper.target.connected { opacity: 1; filter: grayscale(0%); transform: scale(1); }
+        .w-avatar-wrapper.target.connected .w-avatar { border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 210, 255, 0.4); }
+
+        .w-line { position: absolute; top: 45px; left: 50%; transform: translateX(-50%); width: 80px; height: 2px; background: #222; z-index: 1; overflow: hidden; }
+        .w-line::after {
+            content:''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation: flow 1.5s infinite linear; opacity: 0; transition: 0.3s;
+        }
+        .w-avatar-wrapper.target.connected ~ .w-line::after { opacity: 1; }
+        @keyframes flow { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* ==========================================================================
+           4. ACTIVE SCREEN: VIDEO PLAYER (TOP HALF)
+           ========================================================================== */
+        .video-section {
+            width: 100%; height: 40vh; min-height: 250px; background: #000;
+            position: relative; flex-shrink: 0; z-index: 50;
+            border-bottom: 1px solid var(--border);
+            padding-top: calc(var(--safe-top) + 50px); /* Push down below header */
+        }
+
+        /* THE MAGIC OVERLAY: 
+           This transparent div sits ON TOP of the YouTube iframe.
+           It blocks the user from touching the progress bar, forcing them to use our play/pause logic. 
+        */
+        .custom-player-overlay {
+            position: absolute; top: calc(var(--safe-top) + 50px); left: 0; width: 100%; bottom: 0;
+            z-index: 60; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0); transition: background 0.3s;
+        }
+        .custom-player-overlay:active { background: rgba(255,255,255,0.05); }
+
+        .playback-anim-icon {
+            width: 70px; height: 70px; background: rgba(0,0,0,0.6); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            gap: 45px; width: 100%; position: relative; margin-bottom: 40px;
+            color: #fff; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+            transform: scale(0); opacity: 0; pointer-events: none;
         }
+        .playback-anim-icon span { font-size: 36px; margin-left: 4px; }
+        .playback-anim-icon.ping { animation: playPing 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes playPing { 
+            0% { transform: scale(0); opacity: 1; } 
+            50% { transform: scale(1.2); opacity: 1; } 
+            100% { transform: scale(1.5); opacity: 0; } 
+        }
+
+        #yt-player-container { width: 100%; height: 100%; pointer-events: none; /* Prevent direct iframe clicks */ }
         
-        .avatar-group { display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; z-index: 2; transition: 0.5s; }
+        .video-meta-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 15px 15px 10px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            z-index: 65; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .v-title { font-size: 14px; font-weight: 700; text-shadow: 0 2px 4px #000; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; margin-right: 15px; }
         
-        .s-bubble {
-            width: 90px; height: 90px; border-radius: 50%;
-            position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            background: #111; border: 2px solid #222; transition: 0.3s;
+        .turn-indicator {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 800;
+            letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;
         }
-        .s-bubble img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; opacity: 0; transition: opacity 0.5s; }
-        .s-bubble img.loaded { opacity: 1; }
-        
-        .avatar-group.them { opacity: 0.4; filter: grayscale(100%); transform: scale(0.9); }
-        .avatar-group.them.active { opacity: 1; filter: grayscale(0%); transform: scale(1); }
-        .avatar-group.them.active .s-bubble { border-color: var(--accent); box-shadow: 0 0 25px var(--accent-glow); }
+        .turn-indicator.mine { background: var(--accent); color: #000; border-color: var(--accent); }
 
-        .u-name { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-
-        .s-line {
-            position: absolute; height: 2px; width: 70px; background: #222;
-            top: 45px; left: 50%; transform: translateX(-50%); z-index: 1; overflow: hidden;
-        }
-        .s-line::after {
-            content:''; position: absolute; top:0; left:-100%; width:100%; height:100%;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            animation: flowLine 1.5s infinite linear; opacity: 0;
-        }
-        .s-line.connected { background: #333; }
-        .s-line.connected::after { opacity: 1; }
-        @keyframes flowLine { 0% { left: -100%; } 100% { left: 100%; } }
-
-        /* =========================================
-           5. ACTIVE VISION UI (PLAYER + CHAT)
-           ========================================= */
-        #screen-active { justify-content: flex-start; background: #000; }
-
-        .video-container {
-            width: 100%; height: 35vh; min-height: 250px; background: #050505;
-            position: relative; z-index: 20; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-        }
-        #yt-player-anchor { width: 100%; height: 100%; pointer-events: auto; }
-
-        /* Cover block to prevent them from clicking YouTube logo/links if needed */
-        .yt-blocker { position: absolute; top:0; left:0; width:100%; height:50px; z-index: 30; pointer-events: auto; }
-
-        .turn-banner {
-            width: 100%; background: var(--surface-glass); backdrop-filter: blur(10px);
-            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border); z-index: 25; font-size: 13px; font-weight: 600;
-        }
-        
-        .pick-btn {
-            background: #fff; color: #000; padding: 6px 16px; border-radius: 20px;
-            font-size: 12px; font-weight: 800; border: none; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(255,255,255,0.2); animation: pop 0.3s var(--ease-out-back);
-        }
-        .pick-btn:active { transform: scale(0.95); }
-        @keyframes pop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
-
-        /* =========================================
-           6. LIVE CHAT ENGINE
-           ========================================= */
+        /* ==========================================================================
+           5. ACTIVE SCREEN: LIVE CHAT AREA (BOTTOM HALF)
+           ========================================================================== */
         .chat-section {
-            flex: 1; width: 100%; display: flex; flex-direction: column;
-            background: radial-gradient(circle at top, #111 0%, #000 100%);
-            position: relative; overflow: hidden;
+            flex: 1; display: flex; flex-direction: column; position: relative;
+            background: var(--surface); overflow: hidden;
         }
 
-        .chat-messages {
-            flex: 1; overflow-y: auto; padding: 15px;
-            display: flex; flex-direction: column; gap: 12px;
-            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        /* Top gradient fade for messages scrolling up */
+        .chat-fade-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 40px;
+            background: linear-gradient(to bottom, var(--surface), transparent); z-index: 10; pointer-events: none;
         }
-        .chat-messages::-webkit-scrollbar { display: none; }
 
-        /* Professional Live Chat Bubbles */
-        .live-msg { display: flex; flex-direction: column; animation: slideInMsg 0.3s var(--ease-out-back); }
-        @keyframes slideInMsg { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #chat-scroll-area {
+            flex: 1; overflow-y: auto; padding: 15px 15px 0;
+            display: flex; flex-direction: column; scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; padding-bottom: 10px;
+        }
+        #chat-scroll-area::-webkit-scrollbar { display: none; }
+
+        /* LIVE CHAT BUBBLE DESIGN (Twitch / IG Live Style) */
+        .chat-msg {
+            display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start;
+            animation: slideInLeft 0.3s var(--smooth); width: 100%;
+        }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         
-        .live-msg.me { align-items: flex-end; }
-        .live-msg.them { align-items: flex-flex-start; }
+        .c-pfp { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #222; flex-shrink: 0; margin-top: 2px; }
+        .c-content { display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 8px 14px; border-radius: 16px; border-top-left-radius: 4px; max-width: 85%; }
+        
+        /* Differentiate my messages */
+        .chat-msg.me { flex-direction: row-reverse; animation: slideInRight 0.3s var(--smooth); }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .chat-msg.me .c-content { background: var(--accent); color: #000; border-top-left-radius: 16px; border-top-right-radius: 4px; }
+        .chat-msg.me .c-name { color: rgba(0,0,0,0.6); text-align: right; }
 
-        .msg-sender { font-size: 10px; font-weight: 700; color: #666; margin-bottom: 3px; margin-left: 4px; text-transform: uppercase; }
-        .me .msg-sender { display: none; }
+        .c-name { font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 2px; letter-spacing: 0.5px; }
+        .c-text { font-size: 14px; line-height: 1.4; word-wrap: break-word; font-weight: 500; }
 
-        .msg-bubble {
-            padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4;
-            max-width: 80%; word-wrap: break-word; user-select: text; -webkit-user-select: text;
+        /* TYPING INDICATOR */
+        .typing-row { display: none; align-items: center; gap: 10px; padding: 0 15px 10px; opacity: 0.7; }
+        .t-text { font-size: 12px; font-style: italic; color: var(--text-dim); }
+        .t-dots { display: flex; gap: 3px; margin-top: 4px; }
+        .t-dot { width: 4px; height: 4px; background: var(--text-dim); border-radius: 50%; animation: tBounce 1.4s infinite ease-in-out both; }
+        .t-dot:nth-child(1) { animation-delay: -0.32s; } .t-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes tBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* ==========================================================================
+           6. INPUT CAPSULE
+           ========================================================================== */
+        .input-container {
+            padding: 10px 15px calc(15px + var(--safe-bottom));
+            background: var(--surface); border-top: 1px solid var(--border);
+            display: flex; gap: 10px; align-items: center; z-index: 20;
         }
-        .me .msg-bubble { background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
-        .them .msg-bubble { background: #222; color: #fff; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-
-        /* Typing Indicator */
-        .typing-box { display: none; padding: 10px 14px; background: transparent; align-items: center; gap: 4px; width: fit-content; }
-        .dot { width: 6px; height: 6px; background: #666; border-radius: 50%; animation: typeBounce 1.4s infinite ease-in-out; }
-        .dot:nth-child(1) { animation-delay: 0s; } .dot:nth-child(2) { animation-delay: 0.2s; } .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typeBounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
-
-        /* Input Area */
-        .chat-input-area {
-            width: 100%; padding: 10px 15px calc(var(--safe-bottom) + 10px);
-            background: rgba(10,10,10,0.9); backdrop-filter: blur(15px);
-            border-top: 1px solid var(--border); display: flex; align-items: flex-end; gap: 10px;
+        
+        .dj-control-btn {
+            width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: #222; border: 1px solid #333; color: #fff; cursor: pointer; transition: 0.2s;
         }
+        .dj-control-btn.active { background: var(--accent); color: #000; border-color: var(--accent); animation: pulse 2s infinite; }
+        .dj-control-btn:active { transform: scale(0.9); }
+
+        .chat-input-wrapper {
+            flex: 1; background: #1a1a1a; border-radius: 24px; border: 1px solid #333;
+            display: flex; align-items: center; padding: 4px 4px 4px 16px; transition: 0.3s;
+        }
+        .chat-input-wrapper:focus-within { border-color: var(--accent); background: #222; }
+        
         .chat-input {
-            flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff;
-            padding: 12px 16px; border-radius: 24px; font-size: 14px;
-            outline: none; transition: 0.3s; max-height: 100px; resize: none;
-            user-select: text; -webkit-user-select: text;
+            flex: 1; background: transparent; border: none; color: #fff;
+            font-size: 14px; outline: none; padding: 8px 0;
         }
-        .chat-input:focus { border-color: var(--accent); background: #222; }
+        .chat-input::placeholder { color: #666; }
         
         .send-btn {
-            width: 42px; height: 42px; border-radius: 50%; background: var(--accent);
-            color: #000; border: none; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0; transform: scale(0.8); transition: 0.3s var(--ease-out-back);
-            pointer-events: none; flex-shrink: 0; margin-bottom: 2px;
+            width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+            border: none; display: flex; align-items: center; justify-content: center;
+            color: #000; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.2s;
         }
-        .send-btn.visible { opacity: 1; transform: scale(1); pointer-events: auto; }
-        .send-btn span { font-size: 20px; margin-left: 2px; }
+        .send-btn.ready { opacity: 1; pointer-events: auto; }
+        .send-btn span { font-size: 18px; margin-left: 2px; }
 
-        /* =========================================
-           7. SEARCH MODAL (FOR VIDEO PICKING)
-           ========================================= */
-        #search-modal {
-            position: fixed; inset: 0; background: var(--bg); z-index: 5000;
-            transform: translateY(100%); transition: transform 0.4s var(--ease-spring);
+        /* ==========================================================================
+           7. TURN-BASED VIDEO PICKER MODAL (FULL SCREEN BOTTOM SHEET)
+           ========================================================================== */
+        #picker-modal {
+            position: fixed; inset: 0; z-index: 2000; background: var(--bg);
             display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s var(--spring);
         }
-        #search-modal.active { transform: translateY(0); }
+        #picker-modal.active { transform: translateY(0); }
 
-        .search-header {
-            padding: calc(var(--safe-top) + 15px) 20px 15px; background: #0a0a0a;
-            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border);
+        .picker-header {
+            padding: calc(var(--safe-top) + 15px) 20px 15px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 15px; background: #111;
         }
-        .search-input-box {
-            flex: 1; background: #1a1a1a; border: 1px solid #333;
-            padding: 14px 18px; border-radius: 16px; color: white; outline: none; font-size: 15px;
+        .search-box-huge {
+            flex: 1; background: #000; border: 1px solid #333; border-radius: 16px;
+            padding: 12px 16px; color: #fff; font-size: 15px; outline: none; transition: 0.3s;
         }
-        .search-input-box:focus { border-color: var(--accent); }
+        .search-box-huge:focus { border-color: var(--accent); }
 
-        .search-results { flex: 1; overflow-y: auto; padding: 10px 0; -webkit-overflow-scrolling: touch; }
+        #picker-results {
+            flex: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch;
+        }
         
-        .video-card {
-            display: flex; gap: 12px; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer; transition: 0.2s;
+        .yt-card {
+            display: flex; gap: 15px; padding: 10px; background: #111; border-radius: 16px;
+            margin-bottom: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
         }
-        .video-card:active { background: #111; }
-        .v-thumb { width: 120px; height: 68px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; border: 1px solid #333; }
-        .v-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .v-title { font-size: 13px; font-weight: 600; color: #fff; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
-        .v-channel { font-size: 11px; color: var(--accent); font-weight: 700; }
+        .yt-card:active { transform: scale(0.97); background: #1a1a1a; }
+        .yt-thumb { width: 120px; height: 68px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; }
+        .yt-info { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+        .yt-title { font-size: 13px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
+        .yt-chan { font-size: 11px; color: #888; }
 
-        .loader-spinner { border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 40px auto; }
-        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .skeleton-item { display: flex; gap: 15px; margin-bottom: 12px; opacity: 0.5; animation: skelPulse 1.5s infinite; }
+        .skel-img { width: 120px; height: 68px; background: #222; border-radius: 8px; }
+        .skel-lines { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+        .skel-line { height: 12px; background: #222; border-radius: 4px; }
+        @keyframes skelPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
 
     </style>
 </head>
 <body>
 
+    <div id="picker-modal">
+        <div class="picker-header">
+            <span class="material-icons-round" style="font-size:32px; cursor:pointer;" onclick="history.back()">expand_more</span>
+            <input type="text" id="picker-search-input" class="search-box-huge" placeholder="Search YouTube or paste URL...">
+        </div>
+        <div id="picker-results">
+            <div style="text-align:center; padding: 60px 20px; color: #555;">
+                <span class="material-icons-round" style="font-size:60px; margin-bottom:10px;">smart_display</span>
+                <h3>It's your turn.</h3>
+                <p style="font-size:13px; margin-top:5px;">Search for any video to play it instantly for both of you.</p>
+            </div>
+        </div>
+    </div>
+
     <div id="session-view">
+        
+        <div class="screen" id="screen-error">
+            <div class="err-box">
+                <span class="material-icons-round" style="font-size:50px; color:#ff453a;">gpp_bad</span>
+                <h2>Access Denied</h2>
+                <p id="error-msg">Connection failure or blocked user.</p>
+                <button onclick="handleExit()" style="margin-top:20px; padding:12px 30px; background:#fff; color:#000; border:none; border-radius:30px; font-weight:800; cursor:pointer;">Exit Room</button>
+            </div>
+        </div>
+
         <div class="screen active" id="screen-waiting">
-            <div class="top-nav">
-                <div class="back-btn" onclick="handleExit()">
-                    <span class="material-icons-round">close</span>
+            <div class="top-nav" style="background:transparent;">
+                <div class="back-btn" onclick="handleExit()"><span class="material-icons-round">close</span></div>
+            </div>
+
+            <div class="avatar-link-container">
+                <div class="w-avatar-wrapper me">
+                    <img id="wait-my-pfp" src="https://via.placeholder.com/90" class="w-avatar">
+                    <div class="w-name">YOU</div>
+                </div>
+                <div class="w-line"></div>
+                <div class="w-avatar-wrapper target" id="wait-target-group">
+                    <img id="wait-target-pfp" src="https://via.placeholder.com/90" class="w-avatar">
+                    <div class="w-name" id="wait-target-name">THEM</div>
                 </div>
             </div>
 
-            <div class="session-avatars">
-                <div class="s-line" id="connect-line"></div>
-                
-                <div class="avatar-group me">
-                    <div class="s-bubble"><img id="my-pfp" src="" class="loaded"></div>
-                    <div class="u-name">You</div>
-                </div>
-
-                <div class="avatar-group them" id="target-group">
-                    <div class="s-bubble"><img id="target-pfp" src=""></div>
-                    <div class="u-name" id="target-name">...</div>
-                </div>
-            </div>
-
-            <h1 style="font-size:22px; font-family:'Orbitron'; font-weight:900; letter-spacing:1px; margin-bottom:5px;">VISION SYNC</h1>
-            <p id="wait-sub" style="font-size:13px; color:#666;">Waiting for partner to join...</p>
+            <h2 style="font-family:'Orbitron'; letter-spacing:1px; margin-bottom:8px;">CONNECTING</h2>
+            <p style="color:#888; font-size:13px;">Waiting for partner to join...</p>
         </div>
 
         <div class="screen" id="screen-active">
-            <div class="top-nav" style="pointer-events: none;">
-                <div class="status-pill"><div class="status-dot"></div> VISION LIVE</div>
-                <div class="back-btn" onclick="handleExit()" style="background:rgba(0,0,0,0.8); pointer-events:auto;">
-                    <span class="material-icons-round" style="color:#ff3b30; font-size: 22px;">power_settings_new</span>
+            
+            <div class="video-section">
+                <div class="top-nav">
+                    <div class="back-btn" onclick="handleExit()" style="background:rgba(255, 69, 58, 0.1); border-color:#ff453a; color:#ff453a;">
+                        <span class="material-icons-round">power_settings_new</span>
+                    </div>
+                    <div class="room-badge"><div class="live-dot"></div> VISION SYNC</div>
+                </div>
+
+                <div id="yt-player-container"></div>
+                
+                <div class="custom-player-overlay" id="video-tap-zone">
+                    <div class="playback-anim-icon" id="play-anim"><span class="material-icons-round">play_arrow</span></div>
+                    <div class="playback-anim-icon" id="pause-anim" style="display:none;"><span class="material-icons-round">pause</span></div>
+                </div>
+
+                <div class="video-meta-bar">
+                    <div class="v-title" id="active-v-title">Waiting for video...</div>
+                    <div class="turn-indicator" id="turn-badge">WAITING</div>
                 </div>
             </div>
-
-            <div class="video-container" id="video-container">
-                <div id="yt-player-anchor"></div>
-                <div class="yt-blocker"></div>
-            </div>
-
-            <div class="turn-banner" id="turn-banner">
-                <span id="turn-text">Connecting...</span>
-                </div>
 
             <div class="chat-section">
-                <div class="chat-messages" id="chat-messages">
-                    </div>
+                <div class="chat-fade-top"></div>
                 
-                <div class="typing-box" id="typing-indicator">
-                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                </div>
+                <div id="chat-scroll-area">
+                    <div style="text-align:center; padding:20px; font-size:11px; color:#555; font-weight:700; letter-spacing:1px; margin-bottom:10px;">
+                        SECURE CONNECTION ESTABLISHED
+                    </div>
+                    </div>
 
-                <div class="chat-input-area">
-                    <textarea class="chat-input" id="chat-input" placeholder="Send a message..." rows="1"></textarea>
-                    <button class="send-btn" id="send-btn" onclick="sendChat()">
+                <div class="typing-row" id="typing-indicator">
+                    <div class="c-pfp"><img id="typing-pfp" src="" style="width:100%;height:100%;border-radius:50%;"></div>
+                    <div class="c-content" style="background:transparent; padding:0; flex-direction:row; align-items:center; gap:8px;">
+                        <div class="t-text" id="typing-name">Name is typing</div>
+                        <div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="dj-control-btn" id="dj-btn" onclick="openPickerModal()">
+                    <span class="material-icons-round">search</span>
+                </div>
+                
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Send a message..." autocomplete="off">
+                    <button class="send-btn" id="send-btn" onclick="sendChatMessage()">
                         <span class="material-icons-round">send</span>
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div id="search-modal">
-        <div class="search-header">
-            <span class="material-icons-round" style="color:#fff; cursor:pointer; font-size:32px;" onclick="closeSearchModal()">chevron_left</span>
-            <input type="text" id="search-box" class="search-input-box" placeholder="Search YouTube or paste URL..." autocomplete="off">
-        </div>
-        <div class="search-results" id="search-results-list">
-            <div style="text-align:center; padding:50px; color:#555;">
-                <span class="material-icons-round" style="font-size:50px; margin-bottom:10px;">youtube_searched_for</span>
-                <p>Search for any video to play for both.</p>
-            </div>
         </div>
     </div>
 
     <script>
-        // =================================================================
-        // 1. CORE SETUP & VARIABLES
-        // =================================================================
+        // ==========================================================================
+        // 1. SYSTEM INITIALIZATION & STATE
+        // ==========================================================================
         if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
         else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
 
-        const db = firebase.firestore();
-        const rdb = firebase.database();
-        const auth = firebase.auth();
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetUsername = urlParams.get('user');
+        const vFirestore = firebase.firestore();
+        const vRTDB = firebase.database();
+        const vAuth = firebase.auth();
 
-        let myUid = null;
-        let targetUid = null;
-        let roomId = null;
-        let roomRef = null;       // Firestore (Turn state, video state)
-        let syncRef = null;       // RTDB (Play/Pause physics)
-        let chatRef = null;       // RTDB (Live Chat)
-        
-        let player = null;
-        let isMyTurn = false;
-        let currentVideoId = null;
-        let ignoreSync = false;   // Prevents echo loops in Play/Pause
-        let myProfile = null;
-        let targetProfile = null;
+        const params = new URLSearchParams(window.location.search);
+        const targetUsername = params.get('user');
 
-        // Chat Variables
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const messagesDiv = document.getElementById('chat-messages');
-        const typingInd = document.getElementById('typing-indicator');
+        const State = {
+            myUid: null, myData: null,
+            targetUid: null, targetData: null,
+            roomId: null,
+            isMyTurn: false,
+            playerReady: false,
+            ytPlayer: null,
+            ignoreSyncEvent: false, // Prevents echo loop on pause/play
+            lastSyncTime: 0,
+            chatUnsubscribe: null,
+            roomUnsubscribe: null
+        };
 
-        // =================================================================
-        // 2. AUTH & INIT
-        // =================================================================
-        auth.onAuthStateChanged(async user => {
-            if (!user) return window.location.href = 'login.html';
-            myUid = user.uid;
-            
-            // Load My Profile
-            const mDoc = await db.collection('users').doc(myUid).get();
-            if(mDoc.exists) {
-                myProfile = mDoc.data();
-                document.getElementById('my-pfp').src = myProfile.photoURL || 'https://via.placeholder.com/150';
-            }
-
-            if (!targetUsername) return window.location.replace('visionLobby.html');
-
-            // Load Target Profile (Check Cache First for Speed)
-            const cachedTarget = localStorage.getItem(`pulse_cache_user_${targetUsername}`);
-            if (cachedTarget) {
-                targetProfile = JSON.parse(cachedTarget);
-                setupTargetUI();
-            }
-
-            const tSnap = await db.collection('users').where('username', '==', targetUsername).limit(1).get();
-            if(!tSnap.empty) {
-                targetProfile = tSnap.docs[0].data();
-                targetUid = tSnap.docs[0].id;
-                localStorage.setItem(`pulse_cache_user_${targetUsername}`, JSON.stringify(targetProfile));
-                setupTargetUI();
-                initVisionSession();
-            } else {
-                alert("User not found.");
-                handleExit();
-            }
-        });
-
-        function setupTargetUI() {
-            if(!targetProfile) return;
-            const pfp = targetProfile.photoURL || 'https://via.placeholder.com/150';
-            document.getElementById('target-pfp').src = pfp;
-            document.getElementById('target-pfp').classList.add('loaded');
-            document.getElementById('target-name').innerText = targetProfile.name.split(' ')[0];
+        // Cache prep for speed
+        if (targetUsername) {
+            const cache = localStorage.getItem(`vision_user_${targetUsername}`);
+            if (cache) updateWaitingUI(JSON.parse(cache));
         }
 
-        // =================================================================
-        // 3. ROOM STATE MACHINE (FIRESTORE)
-        // =================================================================
-        function initVisionSession() {
-            roomId = [myUid, targetUid].sort().join('_');
-            roomRef = db.collection('vision_rooms').doc(roomId);
-            syncRef = rdb.ref(`vision_sync/${roomId}`);
-            chatRef = rdb.ref(`vision_chat/${roomId}`);
+        vAuth.onAuthStateChanged(async user => {
+            if (user) {
+                State.myUid = user.uid;
+                
+                // Get My Data
+                const mDoc = await vFirestore.collection('users').doc(user.uid).get();
+                if(mDoc.exists) {
+                    State.myData = mDoc.data();
+                    document.getElementById('wait-my-pfp').src = State.myData.photoURL || 'https://via.placeholder.com/90';
+                }
 
-            const myField = (myUid < targetUid) ? 'userA' : 'userB';
-            const otherField = (myUid < targetUid) ? 'userB' : 'userA';
+                // Get Target Data
+                if(targetUsername) {
+                    try {
+                        const snap = await vFirestore.collection('users').where('username', '==', targetUsername).limit(1).get();
+                        if(!snap.empty) {
+                            State.targetUid = snap.docs[0].id;
+                            State.targetData = snap.docs[0].data();
+                            State.targetData.uid = State.targetUid;
+                            localStorage.setItem(`vision_user_${targetUsername}`, JSON.stringify(State.targetData));
+                            updateWaitingUI(State.targetData);
+                            
+                            initRoom();
+                        } else showError("User not found.");
+                    } catch(e) { showError("Network Error."); }
+                } else window.location.replace('visionLobby.html');
+            } else window.location.href = 'login.html';
+        });
 
-            // Set myself as Online
-            roomRef.set({ 
+        function updateWaitingUI(data) {
+            const pfp = data.photoURL || 'https://via.placeholder.com/90';
+            const name = (data.name || data.username).split(' ')[0].toUpperCase();
+            document.getElementById('wait-target-pfp').src = pfp;
+            document.getElementById('wait-target-name').innerText = name;
+            document.getElementById('typing-pfp').src = pfp;
+            document.getElementById('typing-name').innerText = `${name} is typing`;
+        }
+
+        function showError(msg) {
+            document.getElementById('error-msg').innerText = msg;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-error').classList.add('active');
+        }
+
+        // ==========================================================================
+        // 2. ROOM CONNECTION & PRESENCE LOGIC
+        // ==========================================================================
+        async function initRoom() {
+            // Generate deterministic room ID
+            State.roomId = State.myUid < State.targetUid ? `${State.myUid}_${State.targetUid}` : `${State.targetUid}_${State.myUid}`;
+            const roomRef = vFirestore.collection('vision_rooms').doc(State.roomId);
+
+            const myField = (State.myUid < State.targetUid) ? 'userA' : 'userB';
+            const otherField = (State.myUid < State.targetUid) ? 'userB' : 'userA';
+
+            // Set my presence to online
+            await roomRef.set({
                 [myField]: 'online',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }).then(() => {
-                roomRef.get().then(doc => {
-                    const data = doc.data();
-                    if (!doc.exists || !data.cycleStatus) {
-                        // First one here initializes the room rules
-                        const startingTurn = (myUid < targetUid) ? myUid : targetUid;
-                        roomRef.set({ 
-                            turn: startingTurn,                
-                            cycleStatus: 'picking',
-                            currentVideo: null
-                        }, { merge: true });
-                    }
-                });
-            });
+            }, { merge: true });
 
-            // Listen to Room Changes
-            roomRef.onSnapshot(snap => {
-                if (!snap.exists) return;
+            // Initialize defaults if room is fresh
+            const rDoc = await roomRef.get();
+            if(!rDoc.exists || !rDoc.data().turn) {
+                roomRef.set({
+                    turn: State.myUid, // Creator gets first turn
+                    currentVideo: null
+                }, { merge: true });
+            }
+
+            // Realtime Room Listener
+            State.roomUnsubscribe = roomRef.onSnapshot(snap => {
+                if(!snap.exists) return;
                 const data = snap.data();
 
-                // Check if other user is online
                 if (data[otherField] === 'online') {
-                    document.getElementById('target-group').classList.add('active');
-                    document.getElementById('connect-line').classList.add('connected');
-                    document.getElementById('wait-sub').innerText = "Link established.";
+                    // THEY ARE HERE
+                    document.getElementById('wait-target-group').classList.add('connected');
                     
-                    if (!document.getElementById('screen-active').classList.contains('active')) {
+                    if(!document.getElementById('screen-active').classList.contains('active')) {
                         setTimeout(() => {
-                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                            document.getElementById('screen-waiting').classList.remove('active');
                             document.getElementById('screen-active').classList.add('active');
-                            initChatEngine();
-                        }, 800); // Small delay for visual effect
+                            initYouTubeEngine();
+                            initLiveChat();
+                        }, 800); // Small delay for nice animation
                     }
-                    processCycle(data);
+
+                    // Process Turn & Video Data
+                    processRoomData(data);
                 } else {
-                    // They left
-                    document.getElementById('target-group').classList.remove('active');
-                    document.getElementById('connect-line').classList.remove('connected');
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    // THEY LEFT
+                    document.getElementById('wait-target-group').classList.remove('connected');
+                    document.getElementById('screen-active').classList.remove('active');
                     document.getElementById('screen-waiting').classList.add('active');
-                    document.getElementById('wait-sub').innerText = "Partner disconnected.";
-                    if (player) player.pauseVideo();
+                    if(State.ytPlayer && typeof State.ytPlayer.pauseVideo === 'function') State.ytPlayer.pauseVideo();
                 }
             });
+
+            // Cleanup Hooks
+            window.addEventListener('beforeunload', leaveRoom);
+            document.addEventListener('visibilitychange', () => { if (document.hidden) leaveRoom(); });
         }
 
-        function processCycle(data) {
-            isMyTurn = (data.turn === myUid);
-            const status = data.cycleStatus;
-            const banner = document.getElementById('turn-banner');
+        function processRoomData(data) {
+            // 1. Turn Logic
+            State.isMyTurn = (data.turn === State.myUid);
+            const badge = document.getElementById('turn-badge');
+            const djBtn = document.getElementById('dj-btn');
 
-            if (status === 'picking') {
-                if(player) { player.stopVideo(); document.getElementById('yt-player-anchor').style.opacity = 0; }
-                
-                if (isMyTurn) {
-                    banner.innerHTML = `
-                        <span style="color:var(--accent);">Your turn to pick a video</span>
-                        <button class="pick-btn" onclick="openSearchModal()">SEARCH</button>
-                    `;
-                } else {
-                    banner.innerHTML = `<span style="color:#888;">Waiting for ${targetProfile.name.split(' ')[0]} to pick...</span>`;
-                }
-            } 
-            else if (status === 'playing' && data.currentVideo) {
-                const vid = data.currentVideo;
-                document.getElementById('yt-player-anchor').style.opacity = 1;
-                
-                if (isMyTurn) {
-                    banner.innerHTML = `
-                        <span style="color:#fff;">${vid.title.substring(0,30)}...</span>
-                        <button class="pick-btn" onclick="swapTurn()" style="background:#222; color:#fff;">END TURN</button>
-                    `;
-                } else {
-                    banner.innerHTML = `<span style="color:#fff;">${vid.title.substring(0,40)}...</span>`;
-                }
-
-                if (currentVideoId !== vid.id) {
-                    currentVideoId = vid.id;
-                    initYouTubePlayer(vid.id);
-                }
-            }
-        }
-
-        function swapTurn() {
-            roomRef.update({
-                turn: targetUid,
-                cycleStatus: 'picking',
-                currentVideo: firebase.firestore.FieldValue.delete()
-            });
-        }
-
-        // =================================================================
-        // 4. YOUTUBE QUANTUM SYNC ENGINE
-        // =================================================================
-        function initYouTubePlayer(vidId) {
-            if (player) {
-                // Ignore sync while loading new video
-                ignoreSync = true;
-                player.loadVideoById(vidId);
-                setTimeout(() => ignoreSync = false, 1500);
+            if (State.isMyTurn) {
+                badge.innerText = "YOUR TURN";
+                badge.className = "turn-indicator mine";
+                djBtn.classList.add('active');
             } else {
-                player = new YT.Player('yt-player-anchor', {
-                    videoId: vidId,
-                    playerVars: { 
-                        'autoplay': 1, 
-                        'controls': 0, // Hides native controls (Rule: pause/play only)
-                        'disablekb': 1, 
-                        'fs': 0, 
-                        'rel': 0,
-                        'modestbranding': 1,
-                        'playsinline': 1
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                    }
-                });
+                const tName = State.targetData ? State.targetData.name.split(' ')[0].toUpperCase() : 'THEIR';
+                badge.innerText = `${tName}'S TURN`;
+                badge.className = "turn-indicator";
+                djBtn.classList.remove('active');
+            }
+
+            // 2. Video Loading Logic (Triggered by Firestore)
+            if (data.currentVideo && State.playerReady) {
+                // If it's a new video we haven't loaded yet
+                const curUrl = State.ytPlayer.getVideoUrl();
+                const vidId = data.currentVideo.videoId;
+                
+                if (!curUrl || !curUrl.includes(vidId)) {
+                    document.getElementById('active-v-title').innerText = data.currentVideo.title;
+                    State.ignoreSyncEvent = true;
+                    State.ytPlayer.loadVideoById(vidId);
+                    
+                    setTimeout(() => { State.ignoreSyncEvent = false; }, 1000);
+                }
             }
         }
 
-        function onPlayerReady(event) {
-            // Listen to RTDB for Play/Pause commands from partner
-            syncRef.child('playbackState').on('value', snap => {
-                const stateObj = snap.val();
-                if (!stateObj) return;
-
-                // Don't react to our own broadcasts
-                if (stateObj.updatedBy === myUid) return;
-
-                // Lock outbound sync so we don't echo back
-                ignoreSync = true;
-                
-                if (stateObj.state === YT.PlayerState.PLAYING) {
-                    player.playVideo();
-                } else if (stateObj.state === YT.PlayerState.PAUSED) {
-                    player.pauseVideo();
+        // ==========================================================================
+        // 3. CUSTOM YOUTUBE SYNC ENGINE (RTDB FOR 40ms LATENCY)
+        // ==========================================================================
+        function initYouTubeEngine() {
+            if (State.ytPlayer) return; // Already built
+            
+            State.ytPlayer = new YT.Player('yt-player-container', {
+                height: '100%', width: '100%',
+                videoId: '', 
+                playerVars: {
+                    'autoplay': 0, 
+                    'controls': 0, // HIDE NATIVE CONTROLS (CRITICAL)
+                    'disablekb': 1, // Disable keyboard skipping
+                    'rel': 0, 
+                    'modestbranding': 1,
+                    'playsinline': 1
+                },
+                events: {
+                    'onReady': () => {
+                        State.playerReady = true;
+                        listenToSyncNode();
+                    },
+                    'onStateChange': onPlayerStateChange
                 }
+            });
 
-                // Unlock
-                setTimeout(() => ignoreSync = false, 500);
+            // CUSTOM TAP ZONE LOGIC (Play/Pause Toggle Only)
+            const tapZone = document.getElementById('video-tap-zone');
+            tapZone.addEventListener('click', () => {
+                if(!State.playerReady || !State.ytPlayer.getVideoUrl()) return;
+                
+                const state = State.ytPlayer.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    State.ytPlayer.pauseVideo();
+                    animatePlaybackIcon('pause');
+                    broadcastSyncState(2); // 2 = Paused
+                } else {
+                    State.ytPlayer.playVideo();
+                    animatePlaybackIcon('play');
+                    broadcastSyncState(1); // 1 = Playing
+                }
+                if(navigator.vibrate) navigator.vibrate(15);
             });
         }
 
+        function animatePlaybackIcon(type) {
+            const playEl = document.getElementById('play-anim');
+            const pauseEl = document.getElementById('pause-anim');
+            
+            playEl.style.display = 'none'; playEl.classList.remove('ping');
+            pauseEl.style.display = 'none'; pauseEl.classList.remove('ping');
+            
+            const target = type === 'play' ? playEl : pauseEl;
+            target.style.display = 'flex';
+            void target.offsetWidth; // reflow
+            target.classList.add('ping');
+        }
+
+        // RTDB Publisher
+        function broadcastSyncState(stateCode) {
+            if (!State.roomId) return;
+            vRTDB.ref(`vision_sync/${State.roomId}/playback`).set({
+                state: stateCode,
+                time: State.ytPlayer.getCurrentTime(),
+                updatedBy: State.myUid,
+                ts: Date.now()
+            });
+        }
+
+        // Internal Player Observer
         function onPlayerStateChange(event) {
-            // Auto swap turn if video ends naturally
-            if (event.data === YT.PlayerState.ENDED && isMyTurn) {
-                swapTurn();
-                return;
-            }
-
-            if (ignoreSync) return;
-
-            // Broadcast Play/Pause
-            if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.PAUSED) {
-                syncRef.child('playbackState').set({
-                    state: event.data,
-                    updatedBy: myUid,
-                    ts: Date.now()
+            // Video Ended -> Swap Turn
+            if (event.data === YT.PlayerState.ENDED && State.isMyTurn) {
+                vFirestore.collection('vision_rooms').doc(State.roomId).update({
+                    turn: State.targetUid,
+                    currentVideo: null
                 });
             }
         }
 
-        // =================================================================
-        // 5. SEARCH & VIDEO PICKER
-        // =================================================================
-        const searchInput = document.getElementById('search-box');
-        let searchTimer = null;
+        // RTDB Listener (Fast Sync)
+        function listenToSyncNode() {
+            vRTDB.ref(`vision_sync/${State.roomId}/playback`).on('value', snap => {
+                const data = snap.val();
+                if (!data) return;
 
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimer);
-            const val = e.target.value.trim();
-            if(!val) return document.getElementById('search-results-list').innerHTML = '';
-            
-            // Check for direct URL
-            const urlRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-            const match = val.match(urlRegex);
-            if (match && match[1]) {
-                selectVideo(match[1], "Direct YouTube Link", "URL");
+                // Protect against echo loop: Don't process our own commands immediately
+                if (data.updatedBy === State.myUid) return;
+
+                State.ignoreSyncEvent = true;
+
+                // Drift check (If time is off by more than 1.5s, force snap)
+                const localTime = State.ytPlayer.getCurrentTime();
+                if (Math.abs(localTime - data.time) > 1.5) {
+                    State.ytPlayer.seekTo(data.time, true);
+                }
+
+                // State Enforcement
+                if (data.state === 1 && State.ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+                    State.ytPlayer.playVideo();
+                    animatePlaybackIcon('play');
+                } else if (data.state === 2 && State.ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) {
+                    State.ytPlayer.pauseVideo();
+                    animatePlaybackIcon('pause');
+                }
+
+                setTimeout(() => { State.ignoreSyncEvent = false; }, 500);
+            });
+        }
+
+        // ==========================================================================
+        // 4. VIDEO PICKER MODAL & SEARCH API
+        // ==========================================================================
+        function openPickerModal() {
+            if(!State.isMyTurn) {
+                const name = State.targetData ? State.targetData.name.split(' ')[0] : 'Partner';
+                alert(`It's ${name}'s turn to pick a video!`);
                 return;
             }
+            document.getElementById('picker-modal').classList.add('active');
+            history.pushState({modal: 'picker'}, "");
+            setTimeout(() => document.getElementById('picker-search-input').focus(), 300);
+        }
 
-            // Normal Search
-            searchTimer = setTimeout(() => fetchResults(val), 800);
+        function closePickerModal() {
+            document.getElementById('picker-modal').classList.remove('active');
+            if (history.state && history.state.modal === 'picker') history.back();
+        }
+
+        // Search Logic
+        document.getElementById('picker-search-input').addEventListener('keypress', async function(e) {
+            if(e.key === 'Enter') {
+                const query = this.value.trim();
+                if(!query) return;
+                this.blur(); // dismiss keyboard
+
+                const resContainer = document.getElementById('picker-results');
+                
+                // 1. Direct URL Parsing
+                const urlRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+                const match = query.match(urlRegex);
+                if (match && match[1]) {
+                    // Send to Firebase immediately
+                    selectVideo({ videoId: match[1], title: "Custom YouTube Link", author: "Direct URL" });
+                    return;
+                }
+
+                // 2. Render Skeleton Loader
+                resContainer.innerHTML = `
+                    <div class="skeleton-item"><div class="skel-img"></div><div class="skel-lines"><div class="skel-line" style="width:90%"></div><div class="skel-line" style="width:60%"></div></div></div>
+                    <div class="skeleton-item"><div class="skel-img"></div><div class="skel-lines"><div class="skel-line" style="width:85%"></div><div class="skel-line" style="width:50%"></div></div></div>
+                    <div class="skeleton-item"><div class="skel-img"></div><div class="skel-lines"><div class="skel-line" style="width:95%"></div><div class="skel-line" style="width:70%"></div></div></div>
+                `;
+
+                // 3. Fetch from Server
+                try {
+                    const res = await fetch(`https://pishaa.onrender.com/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
+                    const data = await res.json();
+                    
+                    resContainer.innerHTML = '';
+                    if (data.bites && data.bites.length > 0) {
+                        data.bites.forEach(vid => {
+                            const card = document.createElement('div');
+                            card.className = 'yt-card';
+                            card.onclick = () => selectVideo(vid);
+                            card.innerHTML = `
+                                <img src="${vid.imgUrl}" class="yt-thumb">
+                                <div class="yt-info">
+                                    <div class="yt-title">${vid.title}</div>
+                                    <div class="yt-chan">${vid.author || "YouTube"}</div>
+                                </div>
+                            `;
+                            resContainer.appendChild(card);
+                        });
+                    } else {
+                        resContainer.innerHTML = '<p style="text-align:center; padding:40px; color:#888;">No results found.</p>';
+                    }
+                } catch(err) {
+                    resContainer.innerHTML = '<p style="text-align:center; padding:40px; color:#ff453a;">Network error searching YouTube.</p>';
+                }
+            }
         });
 
-        async function fetchResults(query) {
-            const list = document.getElementById('search-results-list');
-            list.innerHTML = '<div class="loader-spinner"></div>';
-            try {
-                // Uses the Render server we modified earlier to allow long videos
-                const res = await fetch(`https://pishaa.onrender.com/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
-                const data = await res.json();
-                
-                list.innerHTML = '';
-                if(data.bites && data.bites.length > 0) {
-                    data.bites.forEach(vid => {
-                        const card = document.createElement('div');
-                        card.className = 'video-card';
-                        card.onclick = () => selectVideo(vid.videoId, vid.title, vid.author);
-                        card.innerHTML = `
-                            <img src="${vid.imgUrl}" class="v-thumb">
-                            <div class="v-info">
-                                <div class="v-title">${vid.title}</div>
-                                <div class="v-channel">${vid.author || "YouTube"}</div>
-                            </div>
-                        `;
-                        list.appendChild(card);
-                    });
-                } else {
-                    list.innerHTML = '<p style="text-align:center; padding:40px; color:#888;">No results found.</p>';
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="text-align:center; padding:40px; color:#ff3b30;">Search failed. Try again.</p>';
-            }
-        }
-
-        function selectVideo(id, title, channel) {
-            closeSearchModal();
-            roomRef.update({
-                cycleStatus: 'playing',
-                currentVideo: { id, title, channel }
-            });
-        }
-
-        function openSearchModal() {
-            document.getElementById('search-modal').classList.add('active');
-            history.pushState({modal: 'search'}, null, "");
-            setTimeout(() => searchInput.focus(), 100);
-        }
-
-        function closeSearchModal() {
-            document.getElementById('search-modal').classList.remove('active');
-            searchInput.value = '';
-            document.getElementById('search-results-list').innerHTML = '';
-        }
-
-        // =================================================================
-        // 6. LIVE CHAT ENGINE (RTDB)
-        // =================================================================
-        let chatInitialized = false;
-
-        function initChatEngine() {
-            if(chatInitialized) return;
-            chatInitialized = true;
-
-            // Input Handling
-            chatInput.addEventListener('input', function() {
-                this.style.height = 'auto'; 
-                this.style.height = (this.scrollHeight) + 'px';
-                if(this.value.trim().length > 0) {
-                    sendBtn.classList.add('visible');
-                    chatRef.child('typing').child(myUid).set(true);
-                } else {
-                    sendBtn.classList.remove('visible');
-                    chatRef.child('typing').child(myUid).set(false);
+        function selectVideo(vid) {
+            closePickerModal();
+            // Update Firestore so partner sees it
+            vFirestore.collection('vision_rooms').doc(State.roomId).update({
+                currentVideo: {
+                    videoId: vid.videoId,
+                    title: vid.title,
+                    channel: vid.author || "YouTube",
+                    thumb: vid.imgUrl || ""
                 }
             });
+            // Auto Play for Host
+            setTimeout(() => { broadcastSyncState(1); }, 1500); 
+        }
 
-            // Listen for Messages
-            chatRef.child('messages').orderByChild('ts').limitToLast(50).on('child_added', snap => {
+        // ==========================================================================
+        // 5. LIVE CHAT ENGINE (RTDB)
+        // ==========================================================================
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const scrollArea = document.getElementById('chat-scroll-area');
+        let typingTimeout = null;
+
+        function initLiveChat() {
+            if (State.chatUnsubscribe) return;
+            State.chatUnsubscribe = true; // Lock
+
+            // 1. Message Listener
+            vRTDB.ref(`vision_chats/${State.roomId}/messages`).limitToLast(50).on('child_added', snap => {
                 const msg = snap.val();
-                renderChatMsg(msg);
+                renderChatBubble(msg);
             });
 
-            // Listen for Typing
-            chatRef.child('typing').child(targetUid).on('value', snap => {
-                typingInd.style.display = snap.val() ? 'flex' : 'none';
-                scrollToChatBottom();
+            // 2. Typing Listener
+            vRTDB.ref(`vision_chats/${State.roomId}/typing/${State.targetUid}`).on('value', snap => {
+                const isTyping = snap.val();
+                const indicator = document.getElementById('typing-indicator');
+                if (isTyping) {
+                    indicator.style.display = 'flex';
+                    scrollToBottom();
+                } else {
+                    indicator.style.display = 'none';
+                }
             });
         }
 
-        function sendChat() {
-            const text = chatInput.value.trim();
-            if(!text) return;
+        function renderChatBubble(msg) {
+            const isMe = (msg.senderId === State.myUid);
+            const div = document.createElement('div');
+            div.className = `chat-msg ${isMe ? 'me' : 'them'}`;
+            
+            const pfp = isMe ? (State.myData?.photoURL || '') : (State.targetData?.photoURL || '');
+            const name = isMe ? 'You' : (State.targetData?.name || 'User');
 
+            div.innerHTML = `
+                <img src="${pfp}" class="c-pfp">
+                <div class="c-content">
+                    <div class="c-name">${name}</div>
+                    <div class="c-text">${msg.text}</div>
+                </div>
+            `;
+            scrollArea.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Input Logic
+        chatInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0) {
+                sendBtn.classList.add('ready');
+                vRTDB.ref(`vision_chats/${State.roomId}/typing/${State.myUid}`).set(true);
+                
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    vRTDB.ref(`vision_chats/${State.roomId}/typing/${State.myUid}`).set(false);
+                }, 1500);
+            } else {
+                sendBtn.classList.remove('ready');
+                vRTDB.ref(`vision_chats/${State.roomId}/typing/${State.myUid}`).set(false);
+            }
+        });
+
+        chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendChatMessage(); });
+
+        function sendChatMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            
             chatInput.value = '';
-            chatInput.style.height = 'auto';
-            sendBtn.classList.remove('visible');
-            chatRef.child('typing').child(myUid).set(false);
+            sendBtn.classList.remove('ready');
+            vRTDB.ref(`vision_chats/${State.roomId}/typing/${State.myUid}`).set(false);
             chatInput.focus();
 
-            chatRef.child('messages').push({
+            vRTDB.ref(`vision_chats/${State.roomId}/messages`).push({
+                senderId: State.myUid,
                 text: text,
-                sender: myUid,
-                ts: firebase.database.ServerValue.TIMESTAMP
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
 
-        function renderChatMsg(msg) {
-            const isMe = (msg.sender === myUid);
-            const div = document.createElement('div');
-            div.className = `live-msg ${isMe ? 'me' : 'them'}`;
-            
-            const name = isMe ? "You" : targetProfile.name.split(' ')[0];
-            
-            div.innerHTML = `
-                <div class="msg-sender">${name}</div>
-                <div class="msg-bubble">${escapeHTML(msg.text)}</div>
-            `;
-            
-            messagesDiv.appendChild(div);
-            scrollToChatBottom();
-        }
-
-        function scrollToChatBottom() {
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-            }[tag]));
-        }
-
-        // =================================================================
-        // 7. BACK BUTTON & CLEANUP
-        // =================================================================
+        // ==========================================================================
+        // 6. HARDWARE BACK BUTTON & CLEANUP
+        // ==========================================================================
         window.addEventListener('popstate', (e) => {
-            const searchMod = document.getElementById('search-modal');
-            if(searchMod.classList.contains('active')) {
-                closeSearchModal();
-            } else if (!e.state) {
-                // Browser back intended to leave page
-                handleExit();
+            if (document.getElementById('picker-modal').classList.contains('active')) {
+                closePickerModal();
             }
         });
 
-        function handleExit() {
-            if (roomRef) {
-                const myField = (myUid < targetUid) ? 'userA' : 'userB';
-                roomRef.update({ [myField]: 'offline' }).catch(()=>{});
+        function leaveRoom() {
+            if (State.roomId) {
+                const myField = (State.myUid < State.targetUid) ? 'userA' : 'userB';
+                vFirestore.collection('vision_rooms').doc(State.roomId).update({ [myField]: 'offline' }).catch(()=>{});
             }
-            if (chatRef) chatRef.child('typing').child(myUid).set(false);
+            if (State.ytPlayer && typeof State.ytPlayer.destroy === 'function') {
+                State.ytPlayer.destroy();
+            }
             window.location.replace('visionLobby.html');
         }
 
-        window.addEventListener('beforeunload', () => {
-            if (roomRef) {
-                const myField = (myUid < targetUid) ? 'userA' : 'userB';
-                roomRef.update({ [myField]: 'offline' });
-            }
-        });
+        function handleExit() {
+            leaveRoom();
+        }
     </script>
 </body>
 </html>
