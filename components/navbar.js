@@ -295,7 +295,7 @@ class MainNavbar extends HTMLElement {
                 <span class="material-icons-round">explore</span>
                 <span>Explore</span>
             </a>
-            <a href="bites.html" class="nav-item" aria-label="Bites">
+            <a href="visionLobby.html" class="nav-item" aria-label="Bites">
                 <div class="bites-icon-container">
                     <span class="material-icons-round bites-graphic">dynamic_feed</span>
                 </div>
