@@ -60,7 +60,7 @@ class MainNavbar extends HTMLElement {
                 --nav-border: rgba(0, 0, 0, 0.08);
                 --icon-inactive: #8e8e93; 
                 --icon-active: #007aff;   
-                --bites-color: #00d2ff;   
+                --vision-color: #00d2ff;   
                 --nav-height: 64px;
                 --safe-area-bottom: env(safe-area-inset-bottom, 0px);
                 
@@ -75,7 +75,7 @@ class MainNavbar extends HTMLElement {
                     --nav-border: rgba(255, 255, 255, 0.12);
                     --icon-inactive: #98989d; 
                     --icon-active: #0a84ff;   
-                    --bites-color: #00d2ff;
+                    --vision-color: #00d2ff;
                 }
             }
 
@@ -226,9 +226,9 @@ class MainNavbar extends HTMLElement {
             }
 
             /* ==========================================================================
-               BITES ICON ENHANCEMENTS
+               VISION ICON ENHANCEMENTS
                ========================================================================== */
-            .bites-icon-container {
+            .vision-icon-container {
                 position: relative;
                 display: flex;
                 align-items: center;
@@ -237,22 +237,22 @@ class MainNavbar extends HTMLElement {
                 width: 32px;
             }
 
-            .nav-item .bites-graphic {
-                color: var(--bites-color);
-                animation: bites-skel 2.5s infinite ease-in-out;
+            .nav-item .vision-graphic {
+                color: var(--vision-color);
+                animation: vision-skel 2.5s infinite ease-in-out;
             }
 
-            .nav-item.active .bites-graphic {
+            .nav-item.active .vision-graphic {
                 filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
-                animation: bites-skel-active 1.5s infinite ease-in-out;
+                animation: vision-skel-active 1.5s infinite ease-in-out;
             }
 
-            @keyframes bites-skel {
+            @keyframes vision-skel {
                 0%, 100% { opacity: 0.5; transform: scale(1); }
                 50% { opacity: 0.9; transform: scale(1.05); }
             }
 
-            @keyframes bites-skel-active {
+            @keyframes vision-skel-active {
                 0% { transform: scale(1.1); filter: brightness(1); }
                 50% { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 15px rgba(0, 210, 255, 0.8)); }
                 100% { transform: scale(1.1); filter: brightness(1); }
@@ -281,28 +281,28 @@ class MainNavbar extends HTMLElement {
 
         <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
             <a href="home.html" class="nav-item" aria-label="Home">
-                <span class="material-icons-round">home</span>
+                <span class="material-icons-round">space_dashboard</span>
                 <span>Home</span>
             </a>
             <a href="messages.html" class="nav-item" aria-label="Messages">
                 <div class="icon-wrapper">
-                    <span class="material-icons-round">chat_bubble_outline</span>
+                    <span class="material-icons-round">textsms</span>
                     <div class="unread-badge" id="chat-badge"></div>
                 </div>
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round">explore</span>
+                <span class="material-icons-round">radar</span>
                 <span>Explore</span>
             </a>
-            <a href="visionLobby.html" class="nav-item" aria-label="Bites">
-                <div class="bites-icon-container">
-                    <span class="material-icons-round bites-graphic">dynamic_feed</span>
+            <a href="visionLobby.html" class="nav-item" aria-label="Vision">
+                <div class="vision-icon-container">
+                    <span class="material-icons-round vision-graphic">live_tv</span>
                 </div>
-                <span>Bites</span>
+                <span>Vision</span>
             </a>
             <a href="calls.html" class="nav-item" aria-label="Calls">
-                <span class="material-icons-round">phone</span>
+                <span class="material-icons-round">phone_iphone</span>
                 <span>Calls</span>
             </a>
         </nav>
@@ -323,8 +323,8 @@ class MainNavbar extends HTMLElement {
                 link.classList.add('active');
                 // The icon lookup has been updated to search within the wrapper properly
                 const icon = link.querySelector('.material-icons-round');
-                if (icon && icon.innerText === 'chat_bubble_outline') {
-                    icon.innerText = 'chat_bubble';
+                if (icon && icon.innerText === 'textsms') {
+                    icon.innerText = 'chat';
                 }
             } else {
                 link.classList.remove('active');
