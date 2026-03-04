@@ -281,18 +281,18 @@ class MainNavbar extends HTMLElement {
 
         <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
             <a href="home.html" class="nav-item" aria-label="Home">
-                <span class="material-icons-round">space_dashboard</span>
+                <span class="material-icons-round">home</span>
                 <span>Home</span>
             </a>
             <a href="messages.html" class="nav-item" aria-label="Messages">
                 <div class="icon-wrapper">
-                    <span class="material-icons-round">textsms</span>
+                    <span class="material-icons-round">chat_bubble_outline</span>
                     <div class="unread-badge" id="chat-badge"></div>
                 </div>
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round">radar</span>
+                <span class="material-icons-round">explore</span>
                 <span>Explore</span>
             </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
@@ -302,7 +302,7 @@ class MainNavbar extends HTMLElement {
                 <span>Vision</span>
             </a>
             <a href="calls.html" class="nav-item" aria-label="Calls">
-                <span class="material-icons-round">phone_iphone</span>
+                <span class="material-icons-round">call</span>
                 <span>Calls</span>
             </a>
         </nav>
@@ -323,8 +323,8 @@ class MainNavbar extends HTMLElement {
                 link.classList.add('active');
                 // The icon lookup has been updated to search within the wrapper properly
                 const icon = link.querySelector('.material-icons-round');
-                if (icon && icon.innerText === 'textsms') {
-                    icon.innerText = 'chat';
+                if (icon && icon.innerText === 'chat_bubble_outline') {
+                    icon.innerText = 'chat_bubble';
                 }
             } else {
                 link.classList.remove('active');
