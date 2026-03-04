@@ -797,8 +797,12 @@
         }
         
         function closePicker() {
-            document.getElementById('picker-modal').classList.remove('active');
-            if (history.state && history.state.modal === 'picker') history.back();
+            // FIX: Ensure safe popstate trigger
+            if (history.state && history.state.modal === 'picker') {
+                history.back();
+            } else {
+                document.getElementById('picker-modal').classList.remove('active');
+            }
         }
 
         document.getElementById('vid-search-input').addEventListener('keypress', async (e) => {
