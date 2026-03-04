@@ -1138,11 +1138,24 @@
         
         const t = text.toLowerCase();
         let theme = '';
+        let vibePattern = [];
         
-        if (t.includes('good morning')) { theme = 'morning'; }
-        else if (t.includes('good afternoon')) { theme = 'afternoon'; }
-        else if (t.includes('good evening')) { theme = 'evening'; }
-        else if (t.includes('good night')) { theme = 'night'; }
+        if (t.includes('good morning')) { 
+            theme = 'morning'; 
+            vibePattern = [500, 200, 500]; // 2 pulses
+        }
+        else if (t.includes('good afternoon')) { 
+            theme = 'afternoon'; 
+            vibePattern = [300, 100, 300, 100, 300]; // 3 quick pulses
+        }
+        else if (t.includes('good evening')) { 
+            theme = 'evening'; 
+            vibePattern = [800, 200, 800]; // 2 longer pulses
+        }
+        else if (t.includes('good night')) { 
+            theme = 'night'; 
+            vibePattern = [1000, 500, 1000, 500, 1000]; // Long sleepy pulses
+        }
         
         if (theme) {
             sessionStorage.setItem(playedKey, 'true');
@@ -1152,16 +1165,18 @@
             
             overlay.className = 'greeting-overlay theme-' + theme;
             nameEl.innerText = `${sender}`;
-            textEl.innerText = ""; // Text removed as per request
-            textEl.style.display = 'none'; // Keeping hidden for sure
+            
+            // FIX: Restore text display
+            textEl.innerText = text; 
+            textEl.style.display = 'block'; 
             
             void overlay.offsetWidth; // Force CSS reflow
             
             overlay.classList.add('active');
             
-            // Long vibration for premium feel
+            // Unique vibration for each of the four greetings
             if(window.navigator && window.navigator.vibrate) {
-                navigator.vibrate([1000, 200, 1000, 200, 1000]); 
+                navigator.vibrate(vibePattern); 
             }
             
             setTimeout(() => {
