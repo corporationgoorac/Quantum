@@ -1,449 +1,735 @@
-// components/navbar.js
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <title>Vision Lobby | Goorac</title>
 
-/**
- * MainNavbar Component
- * A professional, sleek bottom navigation bar.
- * Features:
- * - Premium Glassmorphism & adaptive dark/light mode
- * - Mobile safe-area support for modern smartphones (notch/home indicator)
- * - Dynamic active states and high-fidelity micro-animations
- * - MutationObserver to automatically hide during active calls
- * - Real-time Unread Messages Badge (Firebase + Local Cache optimized)
- */
-class MainNavbar extends HTMLElement {
-    
-    /**
-     * Called when the element is inserted into the DOM.
-     * Contains initialization logic, DOM rendering, and event bindings.
-     */
-    connectedCallback() {
-        // --- AUTO-STORAGE LOGIC ---
-        // Stores the class definition code to local storage automatically
-        // (Retained exactly as requested)
-        localStorage.setItem('goorac_navbar_component', this.constructor.toString());
-
-        // Import Google Material Icons Round dynamically if not already present
-        if (!document.getElementById('material-icons-round-css')) {
-            const link = document.createElement('link');
-            link.id = 'material-icons-round-css';
-            link.rel = 'stylesheet';
-            link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons+Round';
-            document.head.appendChild(link);
-        }
-
-        // Render the HTML and CSS
-        this.render();
-        
-        // Highlight the current page based on URL
-        this._highlightActive();
-        
-        // Initialize the logic to hide the nav when calls are active
-        this._setupVisibilityToggle();
-
-        // Initialize the unread message listener
-        this._initUnreadListener();
-    }
-
-    /**
-     * Renders the internal styling and HTML structure for the component.
-     */
-    render() {
-        this.innerHTML = `
-        <style>
-            /* ==========================================================================
-               CSS VARIABLES & THEMING
-               ========================================================================== */
-            :host {
-                display: block;
-                /* Light Mode (Refined) */
-                --nav-bg: rgba(255, 255, 255, 0.75);
-                --nav-border: rgba(0, 0, 0, 0.08);
-                --icon-inactive: #8e8e93; 
-                --icon-active: #007aff;   
-                --bites-color: #00d2ff;   
-                --nav-height: 64px;
-                --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-                
-                transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                            transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-
-            /* Dark Mode Variables */
-            @media (prefers-color-scheme: dark) {
-                :host {
-                    --nav-bg: rgba(20, 20, 20, 0.80);
-                    --nav-border: rgba(255, 255, 255, 0.12);
-                    --icon-inactive: #98989d; 
-                    --icon-active: #0a84ff;   
-                    --bites-color: #00d2ff;
-                }
-            }
-
-            /* Visibility Logic */
-            .nav-hidden {
-                opacity: 0 !important;
-                pointer-events: none !important;
-                transform: translate(-50%, 100px) !important; 
-            }
-
-            /* ==========================================================================
-               MAIN NAV CONTAINER (Enhanced Glassmorphism)
-               ========================================================================== */
-            .bottom-nav {
-                position: fixed;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 100%;
-                max-width: 600px; 
-                
-                display: flex;
-                justify-content: space-around;
-                align-items: center;
-                height: calc(var(--nav-height) + var(--safe-area-bottom));
-                padding-bottom: var(--safe-area-bottom); 
-                
-                background: var(--nav-bg);
-                backdrop-filter: blur(28px) saturate(180%) contrast(100%);
-                -webkit-backdrop-filter: blur(28px) saturate(180%) contrast(100%);
-                
-                border-top: 0.5px solid var(--nav-border);
-                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.04);
-                
-                z-index: 9999; /* Ensure priority */
-                
-                transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-                            opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-                            background-color 0.4s ease;
-            }
-
-            /* Floating Tablet/Desktop Mode */
-            @media (min-width: 601px) {
-                .bottom-nav {
-                    bottom: 24px;
-                    border-radius: 40px;
-                    border: 1px solid var(--nav-border);
-                    height: var(--nav-height);
-                    padding-bottom: 0;
-                    width: 90%;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-                }
-            }
-
-            /* ==========================================================================
-               NAVIGATION ITEMS
-               ========================================================================== */
-            .nav-item {
-                position: relative;
-                text-decoration: none;
-                color: var(--icon-inactive);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                flex: 1;
-                height: 100%;
-                -webkit-tap-highlight-color: transparent; 
-                cursor: pointer;
-                transition: color 0.3s ease;
-            }
-
-            .nav-item .material-icons-round {
-                font-size: 28px; 
-                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                            color 0.3s ease,
-                            filter 0.3s ease;
-            }
-
-            .nav-item span:not(.material-icons-round) {
-                font-size: 10px;
-                font-weight: 600;
-                margin-top: 4px;
-                opacity: 0;
-                transform: translateY(4px);
-                transition: all 0.3s ease;
-            }
-
-            /* ACTIVE STATE - Refined Scaling and Glow */
-            .nav-item.active {
-                color: var(--icon-active);
-            }
-
-            .nav-item.active .material-icons-round {
-                transform: translateY(-2px) scale(1.1); 
-                filter: drop-shadow(0px 2px 4px rgba(0,122,255,0.3)); 
-            }
-
-            .nav-item.active span:not(.material-icons-round) {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-            /* Micro-Interaction on Tap */
-            .nav-item:active .material-icons-round {
-                transform: scale(0.85);
-                opacity: 0.6;
-            }
-
-            /* ==========================================================================
-               UNREAD BADGE STYLING (Professional look)
-               ========================================================================== */
-            .icon-wrapper {
-                position: relative;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .unread-badge {
-                position: absolute;
-                top: -2px;
-                right: -6px;
-                background-color: #FF3B30; /* Professional iOS Red */
-                color: #FFFFFF;
-                font-size: 10px;
-                font-weight: 700;
-                min-width: 18px;
-                height: 18px;
-                border-radius: 9px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 4px;
-                box-sizing: border-box;
-                border: 2px solid var(--nav-bg); /* Punches out the background naturally */
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                opacity: 0;
-                transform: scale(0);
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, border-color 0.4s ease;
-                pointer-events: none; /* Let clicks pass through to the nav item */
-                z-index: 2;
-            }
-
-            .unread-badge.show {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            /* ==========================================================================
-               BITES ICON ENHANCEMENTS
-               ========================================================================== */
-            .bites-icon-container {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 32px;
-                width: 32px;
-            }
-
-            .nav-item .bites-graphic {
-                color: var(--bites-color);
-                animation: bites-skel 2.5s infinite ease-in-out;
-            }
-
-            .nav-item.active .bites-graphic {
-                filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
-                animation: bites-skel-active 1.5s infinite ease-in-out;
-            }
-
-            @keyframes bites-skel {
-                0%, 100% { opacity: 0.5; transform: scale(1); }
-                50% { opacity: 0.9; transform: scale(1.05); }
-            }
-
-            @keyframes bites-skel-active {
-                0% { transform: scale(1.1); filter: brightness(1); }
-                50% { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 15px rgba(0, 210, 255, 0.8)); }
-                100% { transform: scale(1.1); filter: brightness(1); }
-            }
-
-            /* Subtle Active Indicator Dot */
-            .nav-item::after {
-                content: '';
-                position: absolute;
-                bottom: 8px;
-                width: 4px;
-                height: 4px;
-                background: var(--icon-active);
-                border-radius: 50%;
-                opacity: 0;
-                transform: scale(0);
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-            .nav-item.active::after {
-                opacity: 1;
-                transform: scale(1);
-                bottom: 6px;
-            }
-
-        </style>
-
-        <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
-            <a href="home.html" class="nav-item" aria-label="Home">
-                <span class="material-icons-round">home</span>
-                <span>Home</span>
-            </a>
-            <a href="messages.html" class="nav-item" aria-label="Messages">
-                <div class="icon-wrapper">
-                    <span class="material-icons-round">chat_bubble_outline</span>
-                    <div class="unread-badge" id="chat-badge"></div>
-                </div>
-                <span>Chats</span>
-            </a>
-            <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round">explore</span>
-                <span>Explore</span>
-            </a>
-            <a href="visionLobby.html" class="nav-item" aria-label="Bites">
-                <div class="bites-icon-container">
-                    <span class="material-icons-round bites-graphic">dynamic_feed</span>
-                </div>
-                <span>Bites</span>
-            </a>
-            <a href="calls.html" class="nav-item" aria-label="Calls">
-                <span class="material-icons-round">phone</span>
-                <span>Calls</span>
-            </a>
-        </nav>
-        `;
-    }
-
-    /**
-     * Examines the current window URL and applies the 'active' class
-     */
-    _highlightActive() {
-        const path = window.location.pathname;
-        const page = path.split("/").pop() || "home.html";
-        const links = this.querySelectorAll('.nav-item');
-        
-        links.forEach(link => {
-            const href = link.getAttribute('href');
-            if (page === href) {
-                link.classList.add('active');
-                // The icon lookup has been updated to search within the wrapper properly
-                const icon = link.querySelector('.material-icons-round');
-                if (icon && icon.innerText === 'chat_bubble_outline') {
-                    icon.innerText = 'chat_bubble';
-                }
-            } else {
-                link.classList.remove('active');
-            }
-        });
-    }
-
-    /**
-     * Logic to observe and hide the navbar when #call-screen is visible.
-     */
-    _setupVisibilityToggle() {
-        const navContainer = this.querySelector('#main-nav-container');
-        
-        const checkVisibility = () => {
-            const callScreen = document.getElementById('call-screen');
-            
-            // Added falsy check here to prevent errors if element doesn't exist
-            if (!callScreen) {
-                navContainer.classList.remove('nav-hidden');
-                return;
-            }
-
-            if (callScreen && (callScreen.style.display === 'flex' || callScreen.classList.contains('active'))) {
-                navContainer.classList.add('nav-hidden');
-            } else {
-                navContainer.classList.remove('nav-hidden');
-            }
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            if (msg && msg.includes("ResizeObserver")) return;
+            console.error("Global Error Caught:", error);
+            return false;
         };
+    </script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-        const observer = new MutationObserver(() => {
-            checkVisibility();
-        });
+    <script src="config.js"></script>
+    <script>
+        if (typeof window.initFirebaseCore === 'function') {
+            window.initFirebaseCore();
+        } else if (!firebase.apps.length && window.firebaseConfig) {
+            firebase.initializeApp(window.firebaseConfig);
+        }
+    </script>
 
-        setTimeout(() => {
-            const target = document.getElementById('call-screen');
-            if (target) {
-                observer.observe(target, { 
-                    attributes: true, 
-                    attributeFilter: ['style', 'class'] 
-                });
-            }
-            checkVisibility();
-        }, 1000);
-    }
+    <script src="components/presence.js"></script>
+    <script src="components/call-notifier.js"></script>
+    <script src="components/chatLoader.js"></script>
+    <script src="components/navbar.js"></script>
 
-    /**
-     * Listens for unread messages and updates the badge.
-     * Uses a polling mechanism to ensure Firebase is fully loaded before attaching.
-     */
-    _initUnreadListener() {
-        // 1. Instantly display cached count to prevent layout popping
-        const cachedCount = localStorage.getItem('goorac_unread_chat_count');
-        if (cachedCount) {
-            this._updateBadgeUI(parseInt(cachedCount, 10));
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-light: #161616;
+            --border: #222;
+            --accent: #00d2ff; /* Cinematic Cyan for Vision */
+            --accent-glow: rgba(0, 210, 255, 0.4);
+            --text: #ffffff;
+            --text-dim: #888;
+            --safe-top: env(safe-area-inset-top, 20px);
+            --verified-color: #0095f6;
+            --live-color: #32D74B;
         }
 
-        // 2. Poll for Firebase initialization (fixes Web Component timing issues)
-        const checkFirebaseReady = setInterval(() => {
-            if (typeof window.firebase !== 'undefined' && firebase.apps.length > 0) {
-                clearInterval(checkFirebaseReady); // Stop polling
-                this._startFirestoreListener();    // Start the real listener
-            }
-        }, 500); // Check every half second
-    }
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+        }
 
-    /**
-     * Safely attaches the Firebase Snapshot listener once Firebase is confirmed active.
-     */
-    _startFirestoreListener() {
-        firebase.auth().onAuthStateChanged(user => {
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', sans-serif;
+            height: 100dvh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .top-nav {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: calc(15px + var(--safe-top)) 20px 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 50;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            transition: 0.2s;
+        }
+        .back-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+
+        /* LOBBY UI */
+        #lobby-view {
+            display: flex; flex-direction: column; height: 100%;
+            background: var(--bg); overflow: hidden;
+        }
+
+        .lobby-hero {
+            padding: calc(70px + var(--safe-top)) 20px 30px;
+            /* Blue cinematic gradient for Vision */
+            background: radial-gradient(circle at 50% 0%, #001a22 0%, #000 70%);
+            border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .connect-viz {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; max-width: 280px; margin-bottom: 30px; position: relative;
+        }
+        
+        .pfp-node {
+            width: 70px; height: 70px; border-radius: 50%;
+            position: relative; z-index: 2;
+            display: flex; align-items: center; justify-content: center;
+            background: #111; border: 2px solid #222;
+        }
+        .pfp-node.me img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .pfp-node.me::after {
+            content: 'YOU'; position: absolute; bottom: -20px;
+            font-size: 10px; font-weight: 700; color: #555; letter-spacing: 1px;
+        }
+        .pfp-node.target { border: 2px dashed #444; color: #444; }
+        .pfp-node.target::after {
+            content: 'CO-WATCH'; position: absolute; bottom: -20px;
+            font-size: 10px; font-weight: 700; color: #555; letter-spacing: 1px;
+        }
+
+        .data-stream {
+            flex: 1; height: 2px; background: #222; margin: 0 10px;
+            position: relative; overflow: hidden;
+        }
+        .data-stream::after {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 40%; height: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation: stream 1.5s infinite linear;
+        }
+        @keyframes stream { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+        .search-container {
+            width: 100%; background: var(--surface-light);
+            border: 1px solid var(--border); border-radius: 14px;
+            padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+        }
+        .search-inp {
+            background: transparent; border: none; color: white; width: 100%;
+            font-size: 14px; font-weight: 500; outline: none;
+        }
+
+        .list-label {
+            padding: 20px 24px 10px; font-size: 12px; font-weight: 700; 
+            color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .mutuals-scroll {
+            flex: 1; overflow-y: auto; padding: 0 20px 20px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        
+        .m-card {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px; border-radius: 16px;
+            background: transparent; border: 1px solid transparent;
+            cursor: pointer; transition: 0.2s; position: relative;
+        }
+        .m-card:active { background: var(--surface-light); transform: scale(0.98); }
+        
+        .m-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #222; border: 2px solid transparent; transition:0.3s;}
+        .m-details { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        
+        .m-name { 
+            font-size: 14px; font-weight: 700; color: #fff; 
+            display: flex; align-items: center; gap: 4px;
+        }
+        .verified-badge { font-size: 14px; color: var(--verified-color); }
+        .m-handle { font-size: 12px; color: #666; font-weight: 500; }
+        
+        .m-btn {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--surface-light); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent); transition: 0.3s;
+        }
+
+        /* --- ACTIVE STATE STYLES --- */
+        .m-card.is-active .m-img { border-color: var(--live-color); }
+        
+        .m-card.is-active .m-btn {
+            background: var(--live-color); 
+            color: #000;
+            border-color: var(--live-color);
+            box-shadow: 0 0 15px rgba(50, 215, 75, 0.4);
+            animation: pulse-btn 1.5s infinite;
+        }
+
+        .live-tag {
+            display: none;
+            font-size: 9px; font-weight: 800; color: #000;
+            background: var(--live-color); padding: 2px 6px;
+            border-radius: 4px; margin-left: 6px; letter-spacing: 0.5px;
+        }
+        .m-card.is-active .live-tag { display: inline-block; }
+
+        @keyframes pulse-btn {
+            0% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 10px rgba(50, 215, 75, 0); transform: scale(1.1); }
+            100% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0); transform: scale(1); }
+        }
+
+        /* --- PROFESSIONAL INVITE MODAL --- */
+        #invite-modal {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        #invite-modal.active { opacity: 1; pointer-events: auto; }
+
+        .invite-card {
+            background: #111; border: 1px solid #222;
+            width: 90%; max-width: 320px; border-radius: 30px;
+            padding: 35px 25px; text-align: center;
+            transform: scale(0.9); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+        #invite-modal.active .invite-card { transform: scale(1); }
+
+        .invite-ring {
+            width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 20px;
+            position: relative; padding: 4px;
+            background: linear-gradient(135deg, var(--accent), #00ff88);
+        }
+        .invite-ring img { 
+            width: 100%; height: 100%; border-radius: 50%; 
+            object-fit: cover; border: 4px solid #000; display: block;
+        }
+        
+        /* Ring Animation */
+        .invite-ring::before {
+            content: ''; position: absolute; inset: -10px; border-radius: 50%;
+            border: 2px solid var(--accent); opacity: 0;
+            animation: pulse-out 1.5s infinite;
+        }
+        @keyframes pulse-out { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+
+        .invite-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+        .invite-name { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .invite-sub { font-size: 14px; color: #666; margin-bottom: 30px; }
+
+        .invite-actions { display: flex; gap: 15px; justify-content: center; }
+        
+        .btn-decline {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: #222; color: #fff; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .btn-accept {
+            height: 50px; padding: 0 30px; border-radius: 50px;
+            background: #fff; color: #000; border: none;
+            font-weight: 800; font-size: 14px; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.2);
+            animation: bounce-gentle 2s infinite;
+        }
+        @keyframes bounce-gentle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+        /* --- ONBOARDING MODAL --- */
+        #onboarding-sheet {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2000; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            background: rgba(0,0,0,0.6); opacity: 0; transition: 0.4s;
+        }
+        #onboarding-sheet.active { pointer-events: auto; opacity: 1; }
+        
+        .sheet-content {
+            background: #111; border-radius: 24px 24px 0 0;
+            padding: 30px 24px 40px; transform: translateY(100%);
+            transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            border-top: 1px solid #333;
+        }
+        #onboarding-sheet.active .sheet-content { transform: translateY(0); }
+
+        .sheet-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
+        .sheet-h1 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+        .sheet-p { font-size: 14px; color: #999; line-height: 1.5; margin-bottom: 25px; }
+        .sheet-btn {
+            width: 100%; padding: 16px; border-radius: 12px;
+            background: #fff; color: #000; font-weight: 700; border: none;
+            font-size: 14px; cursor: pointer;
+        }
+
+        /* --- ADDED FOR NAVBAR --- */
+        #vision-navbar {
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s;
+            z-index: 500;
+        }
+        #vision-navbar.nav-hidden {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .mutuals-scroll {
+            padding-bottom: 100px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <main-navbar id="vision-navbar"></main-navbar>
+
+    <call-notifier></call-notifier>
+    <chat-loader></chat-loader>
+
+    <script>
+        // Instant load cached PFP
+        try {
+            const profile = localStorage.getItem('my_goorac_profile');
+            if(profile) {
+                const data = JSON.parse(profile);
+                const pfpUrl = data.photoURL || 'https://via.placeholder.com/150';
+                document.write(`<style>#lobby-pfp { content: url("${pfpUrl}"); }</style>`);
+            }
+        } catch(e) {}
+    </script>
+
+    <div id="lobby-view">
+        <div class="top-nav">
+            <div class="back-btn" onclick="window.location.href='home.html'">
+                <span class="material-icons-round">west</span>
+            </div>
+            <div style="font-weight:800; font-size:12px; letter-spacing:1px; color:var(--accent);">VISION NETWORK</div>
+            <div style="width:40px;"></div>
+        </div>
+
+        <div class="lobby-hero">
+            <div class="connect-viz">
+                <div class="pfp-node me">
+                    <img id="lobby-pfp" src="">
+                </div>
+                <div class="data-stream"></div>
+                <div class="pfp-node target">
+                    <span class="material-icons-round" style="color:var(--accent)">visibility</span>
+                </div>
+            </div>
+            
+            <h1 style="font-size:24px; font-weight:900; letter-spacing:-0.5px;">Start a Vision</h1>
+            <p style="font-size:14px; color:#888; margin-top:5px; margin-bottom:25px;">Co-Watch YouTube videos in perfect sync.</p>
+
+            <div class="search-container">
+                <span class="material-icons-round" style="color:#666;">search</span>
+                <input type="text" id="mutual-search" class="search-inp" placeholder="Search mutual friends...">
+            </div>
+        </div>
+
+        <div class="list-label">
+            <span>Available Co-Watchers</span>
+            <span id="active-count" style="color:var(--live-color); opacity:0; transition:0.3s">0 ONLINE</span>
+        </div>
+        
+        <div class="mutuals-scroll" id="mutuals-container"></div>
+        <div class="loader-pill" id="scroll-loader" style="display:none; text-align:center; padding:20px; font-size:12px; color:#444;">SYNCING NETWORK...</div>
+    </div>
+
+    <div id="invite-modal">
+        <div class="invite-card">
+            <div class="invite-title">INCOMING VISION REQUEST</div>
+            <div class="invite-ring">
+                <img id="inviter-img" src="">
+            </div>
+            <div class="invite-name">
+                <span id="inviter-name">User</span>
+                <span id="inviter-badge" class="material-icons-round" style="color:var(--verified-color); font-size:20px; display:none;">verified</span>
+            </div>
+            <div class="invite-sub">Wants to watch a video with you...</div>
+            
+            <div class="invite-actions">
+                <button class="btn-decline" onclick="closeInviteModalWithBack()">
+                    <span class="material-icons-round">close</span>
+                </button>
+                <button class="btn-accept" id="btn-accept-vision">
+                    <span class="material-icons-round">play_arrow</span> JOIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="onboarding-sheet">
+        <div class="sheet-content">
+            <span class="material-icons-round sheet-icon">live_tv</span>
+            <h1 class="sheet-h1">Welcome to Vision</h1>
+            <p class="sheet-p">
+                Vision lets you co-watch YouTube videos flawlessly with friends. 
+                <br><br>
+                1. Pick a mutual friend from the list.<br>
+                2. Take turns passing the remote.<br>
+                3. Chat and react in real-time.
+            </p>
+            <button class="sheet-btn" onclick="closeOnboardingWithBack()">Got it, let's watch</button>
+        </div>
+    </div>
+
+    <script>
+        document.oncontextmenu = () => false;
+        document.onselectstart = () => false;
+        document.ondragstart = () => false;
+
+        const visionDb = firebase.firestore();
+        const visionAuth = firebase.auth();
+
+        let myUid = null;
+        let mutualList = [];
+        let loadedCount = 0;
+        const BATCH_SIZE = 15;
+        let mutualsCache = []; 
+        let activePresenceListener = null;
+        let inviteListener = null;
+
+        visionAuth.onAuthStateChanged(async (user) => {
             if (user) {
-                const db = firebase.firestore();
+                myUid = user.uid;
                 
-                // Optimized query: Only fetches chats where the user is a participant.
-                this._unsubscribeChats = db.collection('chats')
-                    .where('participants', 'array-contains', user.uid)
-                    .onSnapshot(snapshot => {
-                        let unreadChats = 0;
-                        
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            // Safely check the nested unreadCount object map for the current user's UID
-                            if (data.unreadCount && data.unreadCount[user.uid] > 0) {
-                                unreadChats++;
-                            }
-                        });
-                        
-                        // Update cache and UI
-                        localStorage.setItem('goorac_unread_chat_count', unreadChats.toString());
-                        this._updateBadgeUI(unreadChats);
-                        
-                    }, error => {
-                        console.error("Navbar Unread Listener Error:", error);
-                    });
+                // 1. Update Profile Cache
+                visionDb.collection('users').doc(user.uid).get().then(doc => {
+                    if(doc.exists) {
+                        const data = doc.data();
+                        const pfp = data.photoURL || 'https://via.placeholder.com/150';
+                        const elLobby = document.getElementById('lobby-pfp');
+                        if(elLobby) elLobby.src = pfp;
+                        localStorage.setItem('my_goorac_profile', JSON.stringify(data));
+                    }
+                });
+
+                // 2. Set "Vision" Presence
+                setMyPresence(true);
+                window.addEventListener('beforeunload', () => setMyPresence(false));
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) setMyPresence(false);
+                    else setMyPresence(true);
+                });
+
+                checkOnboarding();
+                initLobby();
+                listenForIncomingVisions(); // 3. The secret to bypassing chat.
             } else {
-                // Clear state if logged out
-                this._updateBadgeUI(0);
-                localStorage.removeItem('goorac_unread_chat_count');
-                if (this._unsubscribeChats) this._unsubscribeChats();
+                window.location.href = 'login.html';
             }
         });
-    }
 
-    /**
-     * Updates the physical DOM element for the badge.
-     */
-    _updateBadgeUI(count) {
-        const badge = this.querySelector('#chat-badge');
-        if (!badge) return;
+        // --- BACK BUTTON HANDLING FOR MODALS ---
+        window.addEventListener('popstate', (e) => {
+            if(document.getElementById('invite-modal').classList.contains('active')) {
+                closeInviteModal();
+            }
+            if(document.getElementById('onboarding-sheet').classList.contains('active')) {
+                closeOnboarding();
+            }
+        });
 
-        if (count > 0) {
-            // Cap the visual number at 99+ for a clean UI
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.classList.add('show');
-        } else {
-            badge.classList.remove('show');
+        // --- ONBOARDING LOGIC ---
+        function checkOnboarding() {
+            const hasSeen = localStorage.getItem('vision_onboarding_seen');
+            if(!hasSeen) {
+                history.pushState({modal: 'onboarding'}, null, window.location.href);
+                document.getElementById('onboarding-sheet').classList.add('active');
+                const nav = document.getElementById('vision-navbar');
+                if (nav) nav.classList.add('nav-hidden');
+            }
         }
-    }
-}
 
-// Register the custom element with the browser
-customElements.define('main-navbar', MainNavbar);
+        function closeOnboarding() {
+            document.getElementById('onboarding-sheet').classList.remove('active');
+            localStorage.setItem('vision_onboarding_seen', 'true');
+            const nav = document.getElementById('vision-navbar');
+            if (nav) nav.classList.remove('nav-hidden');
+        }
+
+        function closeOnboardingWithBack() {
+            closeOnboarding();
+            if (history.state && history.state.modal === 'onboarding') history.back();
+        }
+
+        // --- PRESENCE SYSTEM (Using new vision_active collection) ---
+        function setMyPresence(isOnline) {
+            const presenceRef = visionDb.collection('vision_active').doc(myUid);
+            if(isOnline) {
+                presenceRef.set({
+                    uid: myUid,
+                    status: 'waiting',
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } else {
+                presenceRef.delete();
+            }
+        }
+
+        async function initLobby() {
+            // We can reuse the pulse cache for instant UI rendering
+            const cachedMutuals = localStorage.getItem('pulse_mutuals_cache');
+            if(cachedMutuals) {
+                mutualsCache = JSON.parse(cachedMutuals);
+                renderList(mutualsCache);
+            }
+
+            try {
+                // Fetch Connections
+                const doc = await visionDb.collection('users').doc(myUid).get();
+                const data = doc.data();
+                const following = (data.following || []).map(u => typeof u === 'string' ? u : u.uid);
+                const followers = (data.followers || []).map(u => typeof u === 'string' ? u : u.uid);
+
+                mutualList = following.filter(id => followers.includes(id));
+                
+                if (mutualList.length === 0) {
+                    document.getElementById('mutuals-container').innerHTML = 
+                        `<div style="text-align:center; padding:50px; color:#555; font-size:13px;">No mutual connections found. Connect with users first.</div>`;
+                    return;
+                }
+
+                loadedCount = 0;
+                await loadMoreMutuals();
+
+                // Listen for friends actively looking for a Watch Party
+                activePresenceListener = visionDb.collection('vision_active')
+                    .where('lastSeen', '>', new Date(Date.now() - 1000 * 60 * 5)) 
+                    .onSnapshot(snapshot => {
+                        const activeUids = new Set();
+                        snapshot.forEach(doc => activeUids.add(doc.id));
+                        updateActiveStatus(activeUids);
+                    });
+
+                // Scroll & Search Logic
+                const container = document.getElementById('mutuals-container');
+                container.addEventListener('scroll', () => {
+                    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+                        loadMoreMutuals();
+                    }
+                });
+
+                document.getElementById('mutual-search').addEventListener('input', (e) => {
+                    const term = e.target.value.toLowerCase();
+                    const items = document.querySelectorAll('.m-card');
+                    items.forEach(item => {
+                        const name = item.dataset.name.toLowerCase();
+                        item.style.display = name.includes(term) ? 'flex' : 'none';
+                    });
+                });
+
+            } catch (e) { console.error(e); }
+        }
+
+        // =======================================================================
+        // THE RADAR INVITATION SYSTEM (NO CHAT MESSAGES REQUIRED)
+        // =======================================================================
+        function listenForIncomingVisions() {
+            // We listen directly to the room database. If they click our name, 
+            // they create the room and set their state to 'online'.
+            inviteListener = visionDb.collection('vision_rooms')
+                .orderBy('lastActive', 'desc')
+                .limit(10)
+                .onSnapshot(snapshot => {
+                    snapshot.forEach(doc => {
+                        const roomId = doc.id; // Format: uid1_uid2
+                        
+                        // Is this room about ME?
+                        if (roomId.includes(myUid)) {
+                            const data = doc.data();
+                            
+                            const ids = roomId.split('_');
+                            const otherUid = (ids[0] === myUid) ? ids[1] : ids[0];
+                            const myField = (ids[0] === myUid) ? 'userA' : 'userB';
+                            const otherField = (ids[0] === myUid) ? 'userB' : 'userA';
+                            
+                            // If THEY are online, but I am NOT in the room yet -> Show Invite
+                            if (data[otherField] === 'online' && (!data[myField] || data[myField] === 'offline')) {
+                                
+                                let otherUser = mutualsCache.find(u => u.uid === otherUid);
+                                
+                                if (otherUser) {
+                                    showInviteModal(otherUser);
+                                } else {
+                                    visionDb.collection('users').doc(otherUid).get().then(uDoc => {
+                                        if(uDoc.exists) showInviteModal(uDoc.data());
+                                    });
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        function showInviteModal(user) {
+            if (document.getElementById('invite-modal').classList.contains('active')) return;
+            
+            history.pushState({modal: 'invite'}, null, window.location.href);
+
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            document.getElementById('inviter-img').src = user.photoURL || 'https://via.placeholder.com/150';
+            document.getElementById('inviter-name').innerText = user.name || 'Friend';
+            
+            const badgeEl = document.getElementById('inviter-badge');
+            badgeEl.style.display = user.verified ? 'inline-block' : 'none';
+            
+            const btn = document.getElementById('btn-accept-vision');
+            // Redirect straight into the Vision room when accepted
+            btn.onclick = () => {
+                window.location.assign(`vision.html?user=${user.username}`);
+            };
+
+            document.getElementById('invite-modal').classList.add('active');
+        }
+
+        function closeInviteModal() {
+            document.getElementById('invite-modal').classList.remove('active');
+        }
+
+        function closeInviteModalWithBack() {
+            closeInviteModal();
+            if (history.state && history.state.modal === 'invite') history.back();
+        }
+
+        // --- RENDERING LIST ---
+        function updateActiveStatus(activeSet) {
+            const container = document.getElementById('mutuals-container');
+            const cards = Array.from(container.children);
+            
+            let activeCount = 0;
+
+            cards.forEach(card => {
+                const uid = card.dataset.uid;
+                if (activeSet.has(uid)) {
+                    card.classList.add('is-active');
+                    // Use play icon for Vision
+                    card.querySelector('.m-btn span').innerText = 'play_arrow'; 
+                    activeCount++;
+                } else {
+                    card.classList.remove('is-active');
+                    card.querySelector('.m-btn span').innerText = 'visibility';
+                }
+            });
+
+            // Sort online users to top
+            const sortedCards = cards.sort((a, b) => {
+                const aActive = a.classList.contains('is-active') ? 1 : 0;
+                const bActive = b.classList.contains('is-active') ? 1 : 0;
+                return bActive - aActive;
+            });
+
+            sortedCards.forEach(card => container.appendChild(card));
+
+            const countEl = document.getElementById('active-count');
+            if (activeCount > 0) {
+                countEl.innerText = `${activeCount} ONLINE`;
+                countEl.style.opacity = '1';
+            } else {
+                countEl.style.opacity = '0';
+            }
+        }
+
+        function renderList(list) {
+            const container = document.getElementById('mutuals-container');
+            if (loadedCount === 0) container.innerHTML = ''; 
+            
+            list.forEach(uData => {
+                const existing = document.querySelector(`.m-card[data-uid="${uData.uid}"]`);
+                if(!existing) container.appendChild(createMutualCard(uData));
+            });
+        }
+
+        async function loadMoreMutuals() {
+            if (loadedCount >= mutualList.length) return;
+
+            const loader = document.getElementById('scroll-loader');
+            loader.style.display = 'block';
+
+            const nextBatchIds = mutualList.slice(loadedCount, loadedCount + BATCH_SIZE);
+            let fetchedData = [];
+
+            if(nextBatchIds.length > 0) {
+                try {
+                    const chunks = [];
+                    for (let i=0; i<nextBatchIds.length; i+=10) {
+                         chunks.push(nextBatchIds.slice(i, i+10));
+                    }
+
+                    for (const chunk of chunks) {
+                        const snap = await visionDb.collection('users').where(firebase.firestore.FieldPath.documentId(), 'in', chunk).get();
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            d.uid = doc.id;
+                            fetchedData.push(d);
+                        });
+                    }
+                } catch(e) { console.log(e); }
+            }
+
+            if(loadedCount === 0) {
+                mutualsCache = fetchedData;
+            } else {
+                const newItems = fetchedData.filter(newU => !mutualsCache.some(oldU => oldU.uid === newU.uid));
+                mutualsCache = [...mutualsCache, ...newItems];
+            }
+            
+            localStorage.setItem('pulse_mutuals_cache', JSON.stringify(mutualsCache)); // Shared cache
+            renderList(fetchedData); 
+
+            loadedCount += nextBatchIds.length;
+            loader.style.display = 'none';
+        }
+
+        function createMutualCard(uData) {
+            const div = document.createElement('div');
+            div.className = 'm-card';
+            div.dataset.uid = uData.uid;
+            div.dataset.name = (uData.name || '') + (uData.username || '');
+            
+            const verifiedHtml = uData.verified ? `<span class="material-icons-round verified-badge">verified</span>` : '';
+
+            div.innerHTML = `
+                <img src="${uData.photoURL || 'https://via.placeholder.com/150'}" class="m-img">
+                <div class="m-details">
+                    <div class="m-name">
+                        ${uData.name || 'User'} ${verifiedHtml} 
+                        <span class="live-tag">READY</span>
+                    </div>
+                    <div class="m-handle">@${uData.username}</div>
+                </div>
+                <div class="m-btn">
+                    <span class="material-icons-round">visibility</span>
+                </div>
+            `;
+
+            // THIS IS THE TRIGGER - Just opens Vision room, no chat injection
+            div.onclick = () => {
+                if(navigator.vibrate) navigator.vibrate(10);
+                window.location.assign(`vision.html?user=${uData.username}`); 
+            };
+            return div;
+        }
+    </script>
+</body>
+</html>
