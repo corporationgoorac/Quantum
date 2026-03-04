@@ -34,6 +34,7 @@
     <script src="components/navbar.js"></script>
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 
     <style>
@@ -285,7 +286,8 @@
         /* --- ADDED FOR NAVBAR --- */
         #vision-navbar {
             transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s;
-            z-index: 500;
+            z-index: 6000; /* Ensure it stays above everything */
+            display: block;
         }
         #vision-navbar.nav-hidden {
             transform: translateY(100%);
@@ -455,6 +457,7 @@
             if(!hasSeen) {
                 history.pushState({modal: 'onboarding'}, null, window.location.href);
                 document.getElementById('onboarding-sheet').classList.add('active');
+                // HIDE NAVBAR ON FIRST MODAL
                 const nav = document.getElementById('vision-navbar');
                 if (nav) nav.classList.add('nav-hidden');
             }
@@ -463,6 +466,7 @@
         function closeOnboarding() {
             document.getElementById('onboarding-sheet').classList.remove('active');
             localStorage.setItem('vision_onboarding_seen', 'true');
+            // SHOW NAVBAR AGAIN
             const nav = document.getElementById('vision-navbar');
             if (nav) nav.classList.remove('nav-hidden');
         }
