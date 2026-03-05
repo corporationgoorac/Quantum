@@ -1657,25 +1657,38 @@ box-shadow: var(--received-shadow);
         const emojiTray = document.getElementById('emoji-tray');
         if (window.isEmojiTrayOpen) {
             // Switch back to text keyboard
-            emojiTray.style.display = 'none';
+            mInput.focus(); // Focus first to bring up native keyboard
+            
+            // Delay hiding the emoji tray slightly so the capsule stays locked while keyboard rises
+            setTimeout(() => {
+                emojiTray.style.display = 'none';
+                window.scrollToBottom();
+            }, 100);
+
             window.isEmojiTrayOpen = false;
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             if(history.state && history.state.modal === 'emoji') history.back();
-            mInput.focus(); 
         } else {
             // Open Emoji Picker 
-            mInput.blur(); // Hide soft keyboard seamlessly
+            const wasKeyboardOpen = document.activeElement === mInput;
             
-            // Wait slightly for the native keyboard to slide down before showing tray to prevent giant jumping
+            // Show emoji tray immediately to lock the capsule's position
+            emojiTray.style.display = 'block'; 
+            
+            if (wasKeyboardOpen) {
+                mInput.blur(); // Hide soft keyboard securely, tray replaces its visual space
+            }
+            
+            window.isEmojiTrayOpen = true;
+            document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
+            document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
+            
             setTimeout(() => {
-                emojiTray.style.display = 'block';
-                window.isEmojiTrayOpen = true;
-                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
-                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
                 window.scrollToBottom();
-                pushModalState('emoji');
-            }, 50); 
+            }, 50);
+            
+            pushModalState('emoji');
         }
     };
 
