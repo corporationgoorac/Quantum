@@ -4361,6 +4361,122 @@ box-shadow: var(--received-shadow);
         }
     });
 
+    // =========================================
+    //  22. REAL-TIME AI EMOTION FINDER (NEW FEATURE)
+    // =========================================
+    // This engine uses NLP-inspired lexicon scoring and emoji weighting to simulate ML sentiment analysis locally.
+    
+    (function initAIEngine() {
+        const moodMap = { happy: '😊', sad: '😢', angry: '😠', love: '❤️', funny: '😂', surprised: '😮', neutral: '😐' };
+        
+        const lexicon = {
+            happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best', '😊', '😁', '😄', '🙂', '🥳', '😎'],
+            sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain', '😢', '😭', '😞', '😔', '💔', '☹️'],
+            angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious', '😠', '😡', '🤬', '😾', '😤'],
+            love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute', '❤️', '😍', '🥰', '😘', '💕', '💖'],
+            funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious', '😂', '🤣', '💀', '😹'],
+            surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane', '😮', '😱', '😲', '🤯']
+        };
+
+        function calculateEmotion() {
+            if (!targetUid || messagesMap.size === 0) return moodMap.neutral;
+
+            // Extract the last 10 messages from the opposite person
+            const oppositeMsgs = Array.from(messagesMap.values())
+                .filter(m => m.sender === targetUid)
+                .sort((a, b) => {
+                    const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestampIso || 0).getTime();
+                    const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestampIso || 0).getTime();
+                    return tB - tA; // Sort descending (newest first)
+                })
+                .slice(0, 10);
+
+            if (oppositeMsgs.length === 0) return moodMap.neutral;
+
+            const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
+            
+            // Analyze with Time-Decay Weighting (Newer messages impact mood more)
+            oppositeMsgs.forEach((msg, index) => {
+                const text = (msg.text || '').toLowerCase();
+                const weight = 1.0 - (index * 0.05); // Top message is 1.0, 10th is 0.55
+                
+                // Tokenize and analyze
+                for (const [emotion, words] of Object.entries(lexicon)) {
+                    words.forEach(word => {
+                        if (text.includes(word)) {
+                            // Give emojis double weight for stronger sentiment signals
+                            const isEmoji = /[\u1000-\uFFFF]/.test(word); 
+                            scores[emotion] += (isEmoji ? 2.0 : 1.0) * weight;
+                        }
+                    });
+                }
+            });
+
+            // Find max score
+            let dominant = 'neutral';
+            let maxScore = 0.5; // Threshold to prevent random noise triggers
+            
+            for (const [emotion, score] of Object.entries(scores)) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    dominant = emotion;
+                }
+            }
+
+            return moodMap[dominant];
+        }
+
+        function runMoodCycle() {
+            // Wait 15 seconds showing normal icon
+            setTimeout(() => {
+                const headerIcons = document.querySelectorAll('.header-actions .header-icon');
+                let videoIconEl = null;
+                // Find the video icon dynamically without altering HTML structure
+                for(let icon of headerIcons) {
+                    if(icon.innerHTML.includes('videocam') || icon.dataset.isVidIcon) {
+                        videoIconEl = icon;
+                        icon.dataset.isVidIcon = "true"; // Mark it for easy finding
+                        break;
+                    }
+                }
+
+                if (videoIconEl && targetUid) {
+                    const iconSpan = videoIconEl.querySelector('span');
+                    const detectedMood = calculateEmotion();
+                    
+                    // Transform to Mood Emoji
+                    iconSpan.classList.remove('material-icons-round');
+                    iconSpan.style.fontFamily = 'system-ui, sans-serif'; // Support native emoji
+                    iconSpan.style.fontSize = '24px'; // Fit standard icon size
+                    iconSpan.innerText = detectedMood;
+                    
+                    // Add smooth transition effect
+                    videoIconEl.style.transform = 'scale(1.2)';
+                    setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
+
+                    // Revert after 5 seconds
+                    setTimeout(() => {
+                        iconSpan.classList.add('material-icons-round');
+                        iconSpan.style.fontFamily = '';
+                        iconSpan.innerText = 'videocam';
+                        
+                        videoIconEl.style.transform = 'scale(1.2)';
+                        setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
+                        
+                        // Restart cycle
+                        runMoodCycle();
+                    }, 5000);
+                } else {
+                    // Try again if DOM wasn't ready or targetUid missing
+                    runMoodCycle();
+                }
+            }, 15000);
+        }
+
+        // Start the continuous cycle
+        runMoodCycle();
+    })();
+
 </script>
 
 <script src="components/call-notifier.js" defer></script>
