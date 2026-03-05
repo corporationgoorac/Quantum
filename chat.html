@@ -880,7 +880,7 @@ box-shadow: var(--received-shadow);
             font-size: 40px;
             pointer-events: none;
             z-index: 3001;
-            animation: floatUp 1.2s var(--ease-spring) forwards; /* Improved physics */
+            animation: floatUp 1.2s var(--ease-spring forwards; /* Improved physics */
             will-change: transform, opacity;
         }
 
@@ -1656,39 +1656,24 @@ box-shadow: var(--received-shadow);
     window.toggleEmojiKeyboard = function() {
         const emojiTray = document.getElementById('emoji-tray');
         if (window.isEmojiTrayOpen) {
-            // Switch back to text keyboard
-            mInput.focus(); // Focus first to bring up native keyboard
-            
-            // Delay hiding the emoji tray slightly so the capsule stays locked while keyboard rises
-            setTimeout(() => {
-                emojiTray.style.display = 'none';
-                window.scrollToBottom();
-            }, 100);
-
-            window.isEmojiTrayOpen = false;
-            document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
-            document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
-            if(history.state && history.state.modal === 'emoji') history.back();
+            // Switch back to text keyboard smoothly
+            mInput.focus(); // The focus listener will handle the smooth closing of the tray
         } else {
             // Open Emoji Picker 
-            const wasKeyboardOpen = document.activeElement === mInput;
-            
-            // Show emoji tray immediately to lock the capsule's position
-            emojiTray.style.display = 'block'; 
-            
-            if (wasKeyboardOpen) {
-                mInput.blur(); // Hide soft keyboard securely, tray replaces its visual space
-            }
-            
+            // Show tray IMMEDIATELY to prevent the capsule from dropping
+            emojiTray.style.display = 'block';
             window.isEmojiTrayOpen = true;
+            
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
             
-            setTimeout(() => {
-                window.scrollToBottom();
-            }, 50);
+            mInput.blur(); // Hide soft keyboard seamlessly in the same frame
             
             pushModalState('emoji');
+            
+            // Ensure page stays locked and scroll is adjusted
+            if (typeof lockViewportAndHeader === 'function') lockViewportAndHeader();
+            window.scrollToBottom();
         }
     };
 
@@ -2165,7 +2150,14 @@ box-shadow: var(--received-shadow);
     
     mInput.addEventListener("focus", () => { 
         document.querySelector('.input-area').classList.add('force-expand'); // Expands the capsule smoothly
-        if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); // Auto swap icon logic internally
+        if(window.isEmojiTrayOpen) {
+            // Smooth transition from Emoji Tray to Native Keyboard
+            document.getElementById('emoji-tray').style.display = 'none';
+            window.isEmojiTrayOpen = false;
+            document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+            document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+            if(history.state && history.state.modal === 'emoji') history.back();
+        }
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
         // FIX: Aggressively lock header and scroll when keyboard opens
         lockViewportAndHeader();
