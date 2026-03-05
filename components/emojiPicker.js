@@ -172,8 +172,6 @@ class EmojiPicker extends HTMLElement {
                 // Adding some generic tech items for developer context (Goorac related)
                 {c:'📡', k:'antenna signal broadcast connection wifi internet transmit space tech radar'}, {c:'🛰️', k:'satellite space orbit tech signal transmit gps connection beam machine array'}
             ]},
-            // Note: Symbols & Flags categories are preserved perfectly from original code but omitted in this text block purely due to extreme length.
-            // *Wait, the user said "Don't remove any lines not even a single lines give me whole code". I MUST include the remaining original arrays.*
             { id: 'symbols', name: 'Symbols', icon: '❤️', emojis: [
                 {c:'❤️', k:'heart red love like passion romance true'}, {c:'🧡', k:'orange heart love warm friend'}, {c:'💛', k:'yellow heart love happy sun friend'}, {c:'💚', k:'green heart love nature envy money earth'}, {c:'💙', k:'blue heart love water cold sad sad'}, 
                 {c:'💜', k:'purple heart love magic royal'}, {c:'🖤', k:'black heart love dark goth sad emotion'}, {c:'🤍', k:'white heart love pure clean snow peace'}, {c:'🤎', k:'brown heart love chocolate wood earth'}, {c:'💔', k:'broken heart love sad split tear ache'}, 
@@ -290,10 +288,13 @@ class EmojiPicker extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     background: #121212;
-                    height: 100%;
+                    /* Feature: Match size to mobile keyboard dynamically using CSS environment variables */
+                    height: var(--emoji-keyboard-height, 320px);
+                    max-height: 50vh;
                     width: 100%;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                     overflow: hidden;
+                    padding-bottom: env(safe-area-inset-bottom);
                 }
                 .ep-header {
                     padding: 8px 12px;
@@ -370,6 +371,7 @@ class EmojiPicker extends HTMLElement {
                 /* Optional glow for AI specific categories to make it look advanced */
                 #cat-suggested .ep-category-title { color: #a162f7; }
                 #cat-related .ep-category-title { color: #00d2ff; }
+                #cat-chatmood .ep-category-title { color: #ff3366; text-shadow: 0 0 8px rgba(255, 51, 102, 0.4); }
                 
                 .ep-grid {
                     display: grid;
@@ -468,6 +470,132 @@ class EmojiPicker extends HTMLElement {
                 this.updateActiveNavOnScroll();
             }, 50);
         });
+    }
+
+    // New Feature: Use local storage of chats to calculate VADER-inspired AI Mood Context
+    getRecentChatContext() {
+        let allChatMessages = [];
+        
+        // Loop through localStorage to find active chat messages
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key && key.startsWith('chat_msgs_')) {
+                try {
+                    let msgs = JSON.parse(localStorage.getItem(key)) || [];
+                    allChatMessages = allChatMessages.concat(msgs);
+                } catch(e) {}
+            }
+        }
+
+        // Sort all messages descending to analyze latest context
+        allChatMessages.sort((a, b) => {
+            const tA = new Date(a.timestampIso || 0).getTime();
+            const tB = new Date(b.timestampIso || 0).getTime();
+            return tB - tA; 
+        });
+
+        // Take only the last 15 active messages to compute immediate mood
+        return allChatMessages.slice(0, 15);
+    }
+
+    calculateChatMood() {
+        const messages = this.getRecentChatContext();
+        if (messages.length === 0) return null;
+
+        const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
+        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
+        
+        const lexicons = {
+            emojis: {
+                happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍'],
+                sad: ['😢', '😭', '😞', '😔', '💔', '☹️', '😓', '👎'],
+                angry: ['😠', '😡', '🤬', '😾', '😤', '🖕'],
+                love: ['❤️', '😍', '🥰', '😘', '💕', '💖', '💗', '🫂', '🖤', '🤍', '🤎', '💙', '💜', '💚', '💛', '🧡'],
+                funny: ['😂', '🤣', '💀', '😹'],
+                surprised: ['😮', '😱', '😲', '🤯', '😳', '👀']
+            },
+            tamil: {
+                happy: ['santhosham', 'magilchi', 'super', 'sema', 'nalla', 'nandri', 'சந்தோஷம்', 'மகிழ்ச்சி', 'நன்று', 'mass', 'verithanam'],
+                sad: ['kavalai', 'varutham', 'sogam', 'kavala', 'kashtam', 'vali', 'கவலை', 'வருத்தம்', 'சோகம்', 'paavam'],
+                angry: ['kovam', 'kaduppu', 'erichal', 'poda', 'loosu', 'mutal', 'கோபம்', 'கடுப்பு', 'எரிச்சல்', 'eruma'],
+                love: ['kadhal', 'anbu', 'chellam', 'kutti', 'pondatti', 'purushan', 'uyire', 'காதல்', 'அன்பு', 'செல்லம்', 'thangam', 'kannu'],
+                funny: ['sirippu', 'nagaichuvai', 'கலக்கல்', 'சிரிப்பு', 'siripa'],
+                surprised: ['achariyam', 'athirchi', 'enna', 'nijamava', 'ஆச்சரியம்', 'அதிர்ச்சி', 'appadiya', 'unmaiyava']
+            },
+            english: {
+                happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best'],
+                sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain'],
+                angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious'],
+                love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute'],
+                funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious'],
+                surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane']
+            }
+        };
+
+        // NLP NLP.js/VADER Engine loop
+        messages.forEach((msg, index) => {
+            const rawText = (msg.text || '').toLowerCase();
+            const tokens = rawText.split(/[\s,.\?!]+/);
+            const timeWeight = 1.0 - (index * 0.06); 
+
+            // Emojis (x3.0 Priority)
+            for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
+                emojiList.forEach(emoji => {
+                    if (rawText.includes(emoji)) scores[emotion] += 3.0 * timeWeight;
+                });
+            }
+
+            // Word Tokens (Tamil x2.0, English x1.0)
+            for (let i = 0; i < tokens.length; i++) {
+                let word = tokens[i];
+                if (!word) continue;
+
+                let isNegated = false;
+                if (i > 0 && negations.includes(tokens[i - 1])) isNegated = true;
+
+                const applyScore = (emotion, value) => {
+                    if (isNegated) {
+                        if (emotion === 'happy' || emotion === 'love' || emotion === 'funny') scores.sad += value * timeWeight;
+                        else if (emotion === 'sad' || emotion === 'angry') scores.happy += value * timeWeight;
+                    } else {
+                        scores[emotion] += value * timeWeight;
+                    }
+                };
+
+                for (const [emotion, tamilList] of Object.entries(lexicons.tamil)) {
+                    if (tamilList.includes(word)) applyScore(emotion, 2.0);
+                }
+
+                for (const [emotion, engList] of Object.entries(lexicons.english)) {
+                    if (engList.includes(word)) applyScore(emotion, 1.0);
+                }
+            }
+        });
+
+        // Determine dominant mood
+        let dominant = null;
+        let maxScore = 0.5; // Threshold
+        for (const [emotion, score] of Object.entries(scores)) {
+            if (score > maxScore) {
+                maxScore = score;
+                dominant = emotion;
+            }
+        }
+
+        if (dominant) {
+            // New Feature: Show multiple emojis based on the dominant ML calculated mood
+            const moodDisplayMap = {
+                happy: { name: 'Happy', list: ['😁', '😃', '🥳', '😎', '😇', '😌', '🙌', '🌞'] },
+                sad: { name: 'Sad', list: ['😢', '💔', '😔', '😞', '🥺', '🌧️', '🫂', '🩹'] },
+                angry: { name: 'Angry', list: ['😠', '😡', '🤬', '😤', '💥', '💢', '👎', '🛑'] },
+                love: { name: 'In Love', list: ['❤️', '😍', '🥰', '😘', '💕', '💘', '🌹', '✨'] },
+                funny: { name: 'Funny', list: ['😂', '🤣', '💀', '🤡', '😹', '🤪', '🎭', '🔥'] },
+                surprised: { name: 'Surprised', list: ['😮', '🤯', '😲', '😱', '👀', '⁉️', '🚨', '⚡'] }
+            };
+            return { name: moodDisplayMap[dominant].name, emojis: moodDisplayMap[dominant].list };
+        }
+        
+        return null;
     }
 
     // AI suggestion engine (Upgraded for 1 line & multiple data points)
@@ -608,6 +736,15 @@ class EmojiPicker extends HTMLElement {
         body.innerHTML = '';
 
         let displayData = [...this.emojiData];
+
+        // NEW Feature: Inject VADER NLP AI Mood Row reading directly from Local Storage
+        const chatMoodData = this.calculateChatMood();
+        if (chatMoodData && chatMoodData.emojis.length > 0) {
+            displayData.unshift({
+                id: 'chatmood', name: `Chat Vibe: ${chatMoodData.name}`, icon: '🧠',
+                emojis: chatMoodData.emojis.map(e => ({c: e, k: 'ai mood chat context dynamic'}))
+            });
+        }
         
         // Feature 2: Inject "Related" Row Context based on very last click
         const relatedList = this.getRelatedEmojis();
@@ -779,7 +916,7 @@ class EmojiPicker extends HTMLElement {
         }
         
         // AI Tracking feature 10: Category Affinity
-        if (categoryId && categoryId !== 'recents' && categoryId !== 'suggested' && categoryId !== 'related') {
+        if (categoryId && categoryId !== 'recents' && categoryId !== 'suggested' && categoryId !== 'related' && categoryId !== 'chatmood') {
              this.categoryAffinity[categoryId] = (this.categoryAffinity[categoryId] || 0) + 1;
              localStorage.setItem('goorac_cat_affinity', JSON.stringify(this.categoryAffinity));
         }
