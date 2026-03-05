@@ -4362,21 +4362,42 @@ box-shadow: var(--received-shadow);
     });
 
     // =========================================
-    //  22. REAL-TIME AI EMOTION FINDER (NEW FEATURE)
+    //  22. REAL-TIME AI EMOTION FINDER (VADER-INSPIRED NLP MODEL)
     // =========================================
-    // This engine uses NLP-inspired lexicon scoring and emoji weighting to simulate ML sentiment analysis locally.
     
     (function initAIEngine() {
         const moodMap = { happy: '😊', sad: '😢', angry: '😠', love: '❤️', funny: '😂', surprised: '😮', neutral: '😐' };
         
-        const lexicon = {
-            happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best', '😊', '😁', '😄', '🙂', '🥳', '😎'],
-            sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain', '😢', '😭', '😞', '😔', '💔', '☹️'],
-            angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious', '😠', '😡', '🤬', '😾', '😤'],
-            love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute', '❤️', '😍', '🥰', '😘', '💕', '💖'],
-            funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious', '😂', '🤣', '💀', '😹'],
-            surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane', '😮', '😱', '😲', '🤯']
+        // VADER-style dictionaries separated by language & type for strict weighted multipliers
+        const lexicons = {
+            emojis: {
+                happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍'],
+                sad: ['😢', '😭', '😞', '😔', '💔', '☹️', '😓', '👎'],
+                angry: ['😠', '😡', '🤬', '😾', '😤', '🖕'],
+                love: ['❤️', '😍', '🥰', '😘', '💕', '💖', '💗', '🫂'],
+                funny: ['😂', '🤣', '💀', '😹'],
+                surprised: ['😮', '😱', '😲', '🤯', '😳', '👀']
+            },
+            tamil: {
+                happy: ['santhosham', 'magilchi', 'super', 'sema', 'nalla', 'nandri', 'சந்தோஷம்', 'மகிழ்ச்சி', 'நன்று', 'mass', 'verithanam'],
+                sad: ['kavalai', 'varutham', 'sogam', 'kavala', 'kashtam', 'vali', 'கவலை', 'வருத்தம்', 'சோகம்', 'paavam'],
+                angry: ['kovam', 'kaduppu', 'erichal', 'poda', 'loosu', 'mutal', 'கோபம்', 'கடுப்பு', 'எரிச்சல்', 'eruma'],
+                love: ['kadhal', 'anbu', 'chellam', 'kutti', 'pondatti', 'purushan', 'uyire', 'காதல்', 'அன்பு', 'செல்லம்', 'thangam', 'kannu'],
+                funny: ['sirippu', 'nagaichuvai', 'கலக்கல்', 'சிரிப்பு', 'siripa'],
+                surprised: ['achariyam', 'athirchi', 'enna', 'nijamava', 'ஆச்சரியம்', 'அதிர்ச்சி', 'appadiya', 'unmaiyava']
+            },
+            english: {
+                happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best'],
+                sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain'],
+                angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious'],
+                love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute'],
+                funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious'],
+                surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane']
+            }
         };
+
+        // NLP Negation Heuristics (Flips polarity if spotted before a keyword)
+        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
 
         function calculateEmotion() {
             if (!targetUid || messagesMap.size === 0) return moodMap.neutral;
@@ -4395,24 +4416,59 @@ box-shadow: var(--received-shadow);
 
             const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
             
-            // Analyze with Time-Decay Weighting (Newer messages impact mood more)
+            // Analyze with Time-Decay Weighting & Multipliers
             oppositeMsgs.forEach((msg, index) => {
-                const text = (msg.text || '').toLowerCase();
-                const weight = 1.0 - (index * 0.05); // Top message is 1.0, 10th is 0.55
+                const rawText = (msg.text || '').toLowerCase();
+                const tokens = rawText.split(/[\s,.\?!]+/); // Tokenize
+                const timeWeight = 1.0 - (index * 0.05); // Top message is 1.0, 10th is 0.55
                 
-                // Tokenize and analyze
-                for (const [emotion, words] of Object.entries(lexicon)) {
-                    words.forEach(word => {
-                        if (text.includes(word)) {
-                            // Give emojis double weight for stronger sentiment signals
-                            const isEmoji = /[\u1000-\uFFFF]/.test(word); 
-                            scores[emotion] += (isEmoji ? 2.0 : 1.0) * weight;
+                // 1. Process Emojis globally (Highest Priority: x3.0)
+                // Emojis often sit without spaces, so string.includes() is safest
+                for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
+                    emojiList.forEach(emoji => {
+                        if (rawText.includes(emoji)) { 
+                            scores[emotion] += 3.0 * timeWeight; 
                         }
                     });
                 }
+
+                // 2. Process Text Tokens (Tamil = x2.0, English = x1.0)
+                for (let i = 0; i < tokens.length; i++) {
+                    let word = tokens[i];
+                    if (!word) continue;
+
+                    // NLP Negation Check: Look at the preceding word
+                    let isNegated = false;
+                    if (i > 0 && negations.includes(tokens[i - 1])) {
+                        isNegated = true;
+                    }
+
+                    // Helper function to apply scores with heuristic polarity flipping
+                    const applyScore = (emotion, value) => {
+                        if (isNegated) {
+                            if (emotion === 'happy' || emotion === 'love' || emotion === 'funny') {
+                                scores.sad += value * timeWeight; // "not happy" -> sad
+                            } else if (emotion === 'sad' || emotion === 'angry') {
+                                scores.happy += value * timeWeight; // "not sad" -> happy
+                            }
+                        } else {
+                            scores[emotion] += value * timeWeight;
+                        }
+                    };
+
+                    // Check Tamil lexicons (Medium Priority)
+                    for (const [emotion, tamilList] of Object.entries(lexicons.tamil)) {
+                        if (tamilList.includes(word)) applyScore(emotion, 2.0);
+                    }
+
+                    // Check English lexicons (Lowest Text Priority)
+                    for (const [emotion, engList] of Object.entries(lexicons.english)) {
+                        if (engList.includes(word)) applyScore(emotion, 1.0);
+                    }
+                }
             });
 
-            // Find max score
+            // Find dominant emotion mathematically
             let dominant = 'neutral';
             let maxScore = 0.5; // Threshold to prevent random noise triggers
             
