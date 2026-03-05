@@ -17,12 +17,39 @@ class EmojiPicker extends HTMLElement {
         this.emojiData = this.getComprehensiveEmojiData();
         this.activeFilter = '';
         this.scrollTimeout = null;
+        
+        // FIX: Track the last known mood to prevent unnecessary DOM re-renders
+        this.lastMoodName = null;
     }
 
     connectedCallback() {
         this.render();
         this.setupEvents();
         this.loadEmojis('all');
+
+        // FIX: Automatically check for chat mood changes every 2 seconds without page reload
+        this.moodRefreshInterval = setInterval(() => {
+            this.refreshChatMood();
+        }, 2000);
+    }
+
+    // FIX: Cleanup interval if the component is removed from the DOM
+    disconnectedCallback() {
+        if (this.moodRefreshInterval) {
+            clearInterval(this.moodRefreshInterval);
+        }
+    }
+
+    // FIX: Method to quietly check if the mood changed and trigger a reload if it did
+    refreshChatMood() {
+        if (this.lastSearchedTerm) return; // Do not interrupt if the user is actively searching
+        
+        const newMoodData = this.calculateChatMood();
+        const newMoodName = newMoodData ? newMoodData.name : null;
+        
+        if (this.lastMoodName !== newMoodName) {
+            this.loadEmojis('all'); // Reload the picker to show the new mood
+        }
     }
 
     getComprehensiveEmojiData() {
@@ -776,6 +803,8 @@ class EmojiPicker extends HTMLElement {
 
         // 2. NEW Feature: Inject VADER NLP AI Mood Row reading directly from Local Storage
         const chatMoodData = this.calculateChatMood();
+        this.lastMoodName = chatMoodData ? chatMoodData.name : null; // FIX: Keep track of the actual current mood
+        
         if (chatMoodData && chatMoodData.emojis.length > 0) {
             displayData.unshift({
                 id: 'chatmood', name: `Chat Vibe: ${chatMoodData.name}`, icon: '🧠',
