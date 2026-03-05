@@ -4538,5 +4538,40 @@ box-shadow: var(--received-shadow);
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
 
+<script>
+// --- GOORAC QUANTUM EMOJI TRAY SYNC ---
+(function initSmartEmojiTray() {
+    // 1. DYNAMIC KEYBOARD SIZING (Passes exact pixel height to your EmojiPicker)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const viewportHeight = window.visualViewport.height;
+            const totalHeight = window.innerHeight;
+            const keyboardHeight = totalHeight - viewportHeight;
+            
+            const picker = document.querySelector('emoji-picker');
+            if (picker && keyboardHeight > 100) { 
+                // Matches the exact pixel height of your mobile keyboard!
+                picker.style.setProperty('--emoji-keyboard-height', keyboardHeight + 'px');
+            } else if (picker) {
+                // Default fallback if keyboard is closed
+                picker.style.setProperty('--emoji-keyboard-height', '320px');
+            }
+        });
+    }
+
+    // 2. LIVE CHAT VIBE REFRESH 
+    const emojiToggles = document.querySelectorAll('.emoji-toggle-btn');
+    emojiToggles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const picker = document.querySelector('emoji-picker');
+            if (picker) {
+                picker.loadEmojis('all'); // Forces math to recalculate using the newest messages!
+            }
+        });
+    });
+})();
+</script>
+
+    
 </body>
 </html>
