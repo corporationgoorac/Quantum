@@ -53,85 +53,86 @@ class EmojiPicker extends HTMLElement {
     }
 
     getComprehensiveEmojiData() {
-        // Added 50+ new emojis and expanded keywords extensively across all categories
+        // Massively expanded deep dictionary for production-ready search and AI context
         return [
             { id: 'smileys', name: 'Smileys & Emotion', icon: '😀', emojis: [
-                {c:'😀', k:'smile happy joy excited positive'}, {c:'😃', k:'smile happy big eyes'}, {c:'😄', k:'smile happy warm glad'}, {c:'😁', k:'grin teeth happy big'}, {c:'😆', k:'laugh squint haha'}, {c:'😅', k:'sweat smile nervous relief'}, 
-                {c:'🤣', k:'rofl rolling floor laughing dead'}, {c:'😂', k:'joy tears laugh cry haha lmao'}, {c:'🙂', k:'smile plain simple'}, {c:'🙃', k:'upside down silly sarcasm'}, {c:'😉', k:'wink flirt joke'}, {c:'😊', k:'blush warm happy cute'}, 
-                {c:'😇', k:'halo angel good innocent'}, {c:'🥰', k:'love affection warm hearts'}, {c:'😍', k:'heart eyes love crush'}, {c:'🤩', k:'star eyes excited amazing wow'}, {c:'😘', k:'kiss heart flirt'}, {c:'😗', k:'kiss simple'}, 
-                {c:'☺️', k:'smile shy warm'}, {c:'😚', k:'kiss blush'}, {c:'😙', k:'kiss smile'}, {c:'😋', k:'yum delicious food hungry'}, {c:'😛', k:'tongue silly'}, {c:'😜', k:'wink tongue crazy joke'}, 
-                {c:'🤪', k:'zany goofy crazy silly wack'}, {c:'😝', k:'squint tongue haha'}, {c:'🤑', k:'money rich cash dollar wealth'}, {c:'🤗', k:'hugs open hands warm welcome'}, {c:'🤭', k:'hand mouth oops giggle secret'}, {c:'🤫', k:'shh quiet secret hush'}, 
-                {c:'🤔', k:'think hmm wonder ponder'}, {c:'🤐', k:'zipper quiet secret silent'}, {c:'🤨', k:'eyebrow suspect the rock wtf'}, {c:'😐', k:'neutral plain bruh'}, {c:'😑', k:'expressionless annoyed tired'}, {c:'😶', k:'no mouth silent blank speechless'}, 
-                {c:'😏', k:'smirk flirt smug'}, {c:'😒', k:'unamused meh annoyed'}, {c:'🙄', k:'roll eyes whatever sigh'}, {c:'😬', k:'grimace awkward yikes'}, {c:'🤥', k:'lying pinocchio fake'}, {c:'😌', k:'relieved peace calm zen'}, 
-                {c:'😔', k:'pensive sad sorry down'}, {c:'😪', k:'sleepy tired'}, {c:'🤤', k:'drool hungry thirsty'}, {c:'😴', k:'sleep zzz tired bed'}, {c:'😷', k:'mask sick covid health'}, {c:'🤒', k:'thermometer fever ill'}, 
-                {c:'🤕', k:'bandage hurt injury pain'}, {c:'🤢', k:'nauseated sick gross ew'}, {c:'🤮', k:'vomit throw up puke gross barf'}, {c:'🤧', k:'sneeze bless you sick cold'}, {c:'🥵', k:'hot sweat spicy heat summer'}, {c:'🥶', k:'cold freezing winter ice'}, 
-                {c:'🥴', k:'woozy drunk dizzy'}, {c:'😵', k:'dizzy dead faint'}, {c:'🤯', k:'explode mind blown wow omg'}, {c:'🤠', k:'cowboy yeehaw texas'}, {c:'🥳', k:'party celebrate birthday fun'}, {c:'😎', k:'cool sunglasses boss swag'}, 
-                {c:'🤓', k:'nerd geek smart glasses'}, {c:'🧐', k:'monocle fancy hmm search'}, {c:'😕', k:'confused huh what'}, {c:'😟', k:'worried anxious'}, {c:'🙁', k:'frown sad bad'}, {c:'😮', k:'open mouth wow omg surprise'}, 
-                {c:'😯', k:'hushed surprise'}, {c:'😲', k:'astonished shock gasp'}, {c:'😳', k:'flushed embarrassed shy'}, {c:'🥺', k:'pleading puppy eyes cute beg bottom'}, {c:'😦', k:'frowning sad'}, {c:'😧', k:'anguished shock'}, 
-                {c:'😨', k:'fearful scared scary'}, {c:'😰', k:'cold sweat nervous anxious'}, {c:'😥', k:'disappointed relief phew'}, {c:'😢', k:'cry tear sad tear'}, {c:'😭', k:'sob crying loudly weeping bawling'}, {c:'😱', k:'scream horror scary halloween'}, 
-                {c:'😖', k:'confounded pain'}, {c:'😣', k:'persevering struggle hold'}, {c:'😞', k:'disappointed sad sigh'}, {c:'😓', k:'sweat hard work tired'}, {c:'😩', k:'weary tired sigh pain'}, {c:'😫', k:'tired exhausted sleep'}, 
-                {c:'🥱', k:'yawn sleepy tired boring'}, {c:'😤', k:'triumph mad angry huff'}, {c:'😡', k:'pout angry mad rage red'}, {c:'😠', k:'angry mad upset'}, {c:'🤬', k:'cursing swear mad words rage'}, {c:'😈', k:'devil evil bad grin'}, 
-                {c:'👿', k:'devil angry evil'}, {c:'💀', k:'skull dead bruh im dead'}, {c:'☠️', k:'skull bones danger poison'}, {c:'💩', k:'poop crap shit turd funny'}, {c:'🤡', k:'clown fool joke idiot'}, {c:'👹', k:'ogre monster demon red'}, 
-                {c:'👺', k:'goblin mask red'}, {c:'👻', k:'ghost spooky boo snapchat'}, {c:'👽', k:'alien ufo space et'}, {c:'👾', k:'monster game space invader retro'}, {c:'🤖', k:'robot ai bot tech machine'}, {c:'😺', k:'cat smile kitty'}, 
-                {c:'😸', k:'cat grin kitty'}, {c:'😹', k:'cat joy tears laugh kitty'}, {c:'😻', k:'cat love heart eyes kitty'}, {c:'😼', k:'cat wry smirk kitty'}, {c:'😽', k:'cat kiss kitty'}, {c:'🙀', k:'cat scream scared kitty'}, 
-                {c:'😿', k:'cat crying sad kitty'}, {c:'😾', k:'cat pout mad kitty'}, {c:'💋', k:'kiss mark lips lipstick makeup'}, {c:'👋', k:'wave hello bye hi greet'}, {c:'🤚', k:'back hand stop'}, 
-                {c:'🖐️', k:'fingers splayed stop hand'}, {c:'✋', k:'hand high five stop'}, {c:'🖖', k:'vulcan star trek spock'}, {c:'👌', k:'ok perfect good gotcha'}, {c:'🤌', k:'pinched fingers italian wtf chef'}, 
-                {c:'🤏', k:'pinching tiny small little'}, {c:'✌️', k:'victory peace two'}, {c:'🤞', k:'crossed luck hope promise'}, {c:'🤟', k:'love you hand sign'}, {c:'🤘', k:'rock on metal heavy sign'}, 
-                {c:'🤙', k:'call me shaka chill phone'}, {c:'👈', k:'point left direction'}, {c:'👉', k:'point right direction'}, {c:'👆', k:'point up above'}, {c:'🖕', k:'middle finger fuck you mad'}, 
-                {c:'👇', k:'point down below'}, {c:'☝️', k:'index up wait one minute'}, {c:'👍', k:'thumbs up yes good cool agree'}, {c:'👎', k:'thumbs down no bad disagree'}, {c:'✊', k:'fist power blm resist'}, 
-                {c:'👊', k:'punch brofist hit bump'}, {c:'🤛', k:'left fist bump'}, {c:'🤜', k:'right fist bump'}, {c:'👏', k:'clap applause good job praise'}, {c:'🙌', k:'hands up praise yay'}, 
-                {c:'👐', k:'open hands hug'}, {c:'🤲', k:'palms up pray beg'}, {c:'🤝', k:'handshake deal agree meet'}, {c:'🙏', k:'pray please thanks namaste high five'}, {c:'✍️', k:'write pen pencil sign'}, 
-                {c:'💅', k:'nail polish sassy bad bitch'}, {c:'🤳', k:'selfie phone camera snap'}, {c:'💪', k:'muscle strong flex workout gym gymbro'}, {c:'🦵', k:'leg kick limb'}, {c:'🦶', k:'foot toe step'}, 
-                {c:'👂', k:'ear listen hear'}, {c:'🦻', k:'hearing aid deaf'}, {c:'👃', k:'nose smell sniff'}, {c:'🧠', k:'brain smart mind intelligence genius'}, {c:'🫀', k:'anatomical heart real organ'}, 
-                {c:'🫁', k:'lungs breathe air organ'}, {c:'🦷', k:'tooth dentist bite'}, {c:'🦴', k:'bone dog skeleton structure'}, {c:'👀', k:'eyes look stare see watch drama tea'}, {c:'👁️', k:'eye illuminati vision'}, {c:'👅', k:'tongue lick taste'}, {c:'👄', k:'mouth lips kiss speak'}
+                {c:'😀', k:'smile happy joy excited positive glad face'}, {c:'😃', k:'smile happy big eyes positive face open mouth'}, {c:'😄', k:'smile happy warm glad laugh big face'}, {c:'😁', k:'grin teeth happy big beaming face'}, {c:'😆', k:'laugh squint haha funny joking rofl'}, {c:'😅', k:'sweat smile nervous relief awkward face'}, 
+                {c:'🤣', k:'rofl rolling floor laughing dead funny hilarious'}, {c:'😂', k:'joy tears laugh cry haha lmao rofl fun'}, {c:'🙂', k:'smile plain simple fine okay face'}, {c:'🙃', k:'upside down silly sarcasm irony joking'}, {c:'😉', k:'wink flirt joke secret eye face'}, {c:'😊', k:'blush warm happy cute sweet face'}, 
+                {c:'😇', k:'halo angel good innocent pure holy face'}, {c:'🥰', k:'love affection warm hearts crush face'}, {c:'😍', k:'heart eyes love crush adore beautiful'}, {c:'🤩', k:'star eyes excited amazing wow starstruck'}, {c:'😘', k:'kiss heart flirt love romance face'}, {c:'😗', k:'kiss simple face duck lips'}, 
+                {c:'☺️', k:'smile shy warm pleasant face'}, {c:'😚', k:'kiss blush sweet face eyes closed'}, {c:'😙', k:'kiss smile friendly face'}, {c:'😋', k:'yum delicious food hungry tasty face'}, {c:'😛', k:'tongue silly joke face'}, {c:'😜', k:'wink tongue crazy joke playful flirt'}, 
+                {c:'🤪', k:'zany goofy crazy silly wack wild face'}, {c:'😝', k:'squint tongue haha gross joke face'}, {c:'🤑', k:'money rich cash dollar wealth greedy face'}, {c:'🤗', k:'hugs open hands warm welcome care face'}, {c:'🤭', k:'hand mouth oops giggle secret shy face'}, {c:'🤫', k:'shh quiet secret hush silence face'}, 
+                {c:'🤔', k:'think hmm wonder ponder curious face'}, {c:'🤐', k:'zipper quiet secret silent lips locked face'}, {c:'🤨', k:'eyebrow suspect the rock wtf doubt face'}, {c:'😐', k:'neutral plain bruh unamused face'}, {c:'😑', k:'expressionless annoyed tired done face'}, {c:'😶', k:'no mouth silent blank speechless mute'}, 
+                {c:'😏', k:'smirk flirt smug arrogant face'}, {c:'😒', k:'unamused meh annoyed bored face'}, {c:'🙄', k:'roll eyes whatever sigh sarcastic face'}, {c:'😬', k:'grimace awkward yikes nervous cringe face'}, {c:'🤥', k:'lying pinocchio fake liar nose face'}, {c:'😌', k:'relieved peace calm zen sigh face'}, 
+                {c:'😔', k:'pensive sad sorry down depressed face'}, {c:'😪', k:'sleepy tired exhaustion face'}, {c:'🤤', k:'drool hungry thirsty desire face'}, {c:'😴', k:'sleep zzz tired bed resting face'}, {c:'😷', k:'mask sick covid health doctor face'}, {c:'🤒', k:'thermometer fever ill sick hot face'}, 
+                {c:'🤕', k:'bandage hurt injury pain clumsy face'}, {c:'🤢', k:'nauseated sick gross ew vomit face'}, {c:'🤮', k:'vomit throw up puke gross barf sick face'}, {c:'🤧', k:'sneeze bless you sick cold allergies face'}, {c:'🥵', k:'hot sweat spicy heat summer sweating face'}, {c:'🥶', k:'cold freezing winter ice shivering face'}, 
+                {c:'🥴', k:'woozy drunk dizzy confused face'}, {c:'😵', k:'dizzy dead faint shocked face'}, {c:'🤯', k:'explode mind blown wow omg shock face'}, {c:'🤠', k:'cowboy yeehaw texas country face'}, {c:'🥳', k:'party celebrate birthday fun festive face'}, {c:'😎', k:'cool sunglasses boss swag chill face'}, 
+                {c:'🤓', k:'nerd geek smart glasses dork face'}, {c:'🧐', k:'monocle fancy hmm search rich face'}, {c:'😕', k:'confused huh what lost face'}, {c:'😟', k:'worried anxious nervous face'}, {c:'🙁', k:'frown sad bad upset face'}, {c:'😮', k:'open mouth wow omg surprise shocked face'}, 
+                {c:'😯', k:'hushed surprise quiet wow face'}, {c:'😲', k:'astonished shock gasp amazed face'}, {c:'😳', k:'flushed embarrassed shy blushing face'}, {c:'🥺', k:'pleading puppy eyes cute beg bottom shy'}, {c:'😦', k:'frowning sad open mouth face'}, {c:'😧', k:'anguished shock pained face'}, 
+                {c:'😨', k:'fearful scared scary terrified face'}, {c:'😰', k:'cold sweat nervous anxious stressed face'}, {c:'😥', k:'disappointed relief phew sweat face'}, {c:'😢', k:'cry tear sad tear upset face'}, {c:'😭', k:'sob crying loudly weeping bawling sad'}, {c:'😱', k:'scream horror scary halloween shock face'}, 
+                {c:'😖', k:'confounded pain frustrated face'}, {c:'😣', k:'persevering struggle hold tough face'}, {c:'😞', k:'disappointed sad sigh let down face'}, {c:'😓', k:'sweat hard work tired stressed face'}, {c:'😩', k:'weary tired sigh pain exhausted face'}, {c:'😫', k:'tired exhausted sleep drained face'}, 
+                {c:'🥱', k:'yawn sleepy tired boring morning face'}, {c:'😤', k:'triumph mad angry huff proud face'}, {c:'😡', k:'pout angry mad rage red furious face'}, {c:'😠', k:'angry mad upset frustrated face'}, {c:'🤬', k:'cursing swear mad words rage symbols face'}, {c:'😈', k:'devil evil bad grin naughty face'}, 
+                {c:'👿', k:'devil angry evil mad demon face'}, {c:'💀', k:'skull dead bruh im dead skeleton'}, {c:'☠️', k:'skull bones danger poison pirate'}, {c:'💩', k:'poop crap shit turd funny pile'}, {c:'🤡', k:'clown fool joke idiot circus face'}, {c:'👹', k:'ogre monster demon red scary face'}, 
+                {c:'👺', k:'goblin mask red tengu scary face'}, {c:'👻', k:'ghost spooky boo snapchat halloween'}, {c:'👽', k:'alien ufo space et extraterrestrial'}, {c:'👾', k:'monster game space invader retro gaming'}, {c:'🤖', k:'robot ai bot tech machine mechanical face'}, {c:'😺', k:'cat smile kitty happy animal face'}, 
+                {c:'😸', k:'cat grin kitty happy animal face'}, {c:'😹', k:'cat joy tears laugh kitty funny animal'}, {c:'😻', k:'cat love heart eyes kitty crush animal'}, {c:'😼', k:'cat wry smirk kitty cool animal'}, {c:'😽', k:'cat kiss kitty sweet animal'}, {c:'🙀', k:'cat scream scared kitty shocked animal'}, 
+                {c:'😿', k:'cat crying sad kitty tear animal'}, {c:'😾', k:'cat pout mad kitty angry animal'}, {c:'💋', k:'kiss mark lips lipstick makeup romance'}, {c:'👋', k:'wave hello bye hi greet hand'}, {c:'🤚', k:'back hand stop halt'}, 
+                {c:'🖐️', k:'fingers splayed stop hand wait'}, {c:'✋', k:'hand high five stop halt'}, {c:'🖖', k:'vulcan star trek spock live long prosper'}, {c:'👌', k:'ok perfect good gotcha agree hand'}, {c:'🤌', k:'pinched fingers italian wtf chef kiss'}, 
+                {c:'🤏', k:'pinching tiny small little bit hand'}, {c:'✌️', k:'victory peace two v sign hand'}, {c:'🤞', k:'crossed luck hope promise fingers hand'}, {c:'🤟', k:'love you hand sign romance'}, {c:'🤘', k:'rock on metal heavy sign music hand'}, 
+                {c:'🤙', k:'call me shaka chill phone hang loose'}, {c:'👈', k:'point left direction finger hand'}, {c:'👉', k:'point right direction finger hand'}, {c:'👆', k:'point up above finger hand'}, {c:'🖕', k:'middle finger fuck you mad curse hand'}, 
+                {c:'👇', k:'point down below finger hand'}, {c:'☝️', k:'index up wait one minute number hand'}, {c:'👍', k:'thumbs up yes good cool agree approve'}, {c:'👎', k:'thumbs down no bad disagree disapprove'}, {c:'✊', k:'fist power blm resist solidarity hand'}, 
+                {c:'👊', k:'punch brofist hit bump attack hand'}, {c:'🤛', k:'left fist bump greeting hand'}, {c:'🤜', k:'right fist bump greeting hand'}, {c:'👏', k:'clap applause good job praise hands'}, {c:'🙌', k:'hands up praise yay celebrate hallelujah'}, 
+                {c:'👐', k:'open hands hug jazz hands'}, {c:'🤲', k:'palms up pray beg supplication hands'}, {c:'🤝', k:'handshake deal agree meet greeting hands'}, {c:'🙏', k:'pray please thanks namaste high five hands'}, {c:'✍️', k:'write pen pencil sign signature hand'}, 
+                {c:'💅', k:'nail polish sassy bad bitch beauty hand'}, {c:'🤳', k:'selfie phone camera snap photo hand'}, {c:'💪', k:'muscle strong flex workout gym gymbro bicep'}, {c:'🦾', k:'mechanical arm robot prosthetic muscle strong'}, {c:'🦿', k:'mechanical leg robot prosthetic strong'},
+                {c:'🦵', k:'leg kick limb body'}, {c:'🦶', k:'foot toe step limb body'}, {c:'👂', k:'ear listen hear body'}, {c:'🦻', k:'hearing aid deaf accessibility ear'}, {c:'👃', k:'nose smell sniff body'}, 
+                {c:'🧠', k:'brain smart mind intelligence genius thought'}, {c:'🫀', k:'anatomical heart real organ life'}, {c:'🫁', k:'lungs breathe air organ breath'}, {c:'🦷', k:'tooth dentist bite mouth'}, {c:'🦴', k:'bone dog skeleton structure body'}, 
+                {c:'👀', k:'eyes look stare see watch drama tea vision'}, {c:'👁️', k:'eye illuminati vision look'}, {c:'👅', k:'tongue lick taste mouth'}, {c:'👄', k:'mouth lips kiss speak talk'}
             ]},
             { id: 'people', name: 'People', icon: '👤', emojis: [
-                {c:'👶', k:'baby infant child young newborn'}, {c:'🧒', k:'child kid toddler'}, {c:'👦', k:'boy young male'}, {c:'👧', k:'girl young female'}, {c:'🧑', k:'person adult neutral human'}, 
-                {c:'👱', k:'blond hair blonde guy girl'}, {c:'👨', k:'man guy adult male'}, {c:'🧔', k:'beard hipster lumberjack facial hair'}, {c:'👨‍🦰', k:'red hair ginger man'}, {c:'👨‍🦱', k:'curly hair man boy'}, 
-                {c:'👨‍🦳', k:'white hair old man senior'}, {c:'👨‍🦲', k:'bald no hair man'}, {c:'👩', k:'woman lady adult female'}, {c:'👩‍🦰', k:'red hair ginger woman'}, {c:'👩‍🦱', k:'curly hair woman'}, 
-                {c:'👩‍🦳', k:'white hair old woman senior'}, {c:'👩‍🦲', k:'bald woman'}, {c:'🧓', k:'older person elder senior'}, {c:'👴', k:'old man grandpa grandfather'}, {c:'👵', k:'old woman grandma grandmother'}, 
-                {c:'🙍', k:'frowning person upset disappointed'}, {c:'🙎', k:'pouting person mad sulk'}, {c:'🙅', k:'no gesture cross x stop block'}, {c:'🙆', k:'ok gesture circle yes fine'}, 
-                {c:'💁', k:'tipping hand sassy whatever care'}, {c:'🙋', k:'raising hand question ask me'}, {c:'🙇', k:'bowing sorry respect apologize'}, {c:'🤦', k:'facepalm stupid sigh bruh idiot'}, {c:'🤷', k:'shrug idk whatever unsure'}, 
-                {c:'👨‍⚕️', k:'health worker doctor nurse medic'}, {c:'👨‍🎓', k:'student graduate college school diploma'}, {c:'👨‍🏫', k:'teacher professor class school'}, {c:'👨‍⚖️', k:'judge lawyer court legal law'}, {c:'👨‍🌾', k:'farmer tractor field crop'}, 
-                {c:'👨‍🍳', k:'cook chef food kitchen restaurant'}, {c:'👨‍🔧', k:'mechanic fix wrench repair tool'}, {c:'👨‍🏭', k:'factory worker industry'}, {c:'👨‍💼', k:'office worker boss ceo business suit'}, {c:'👨‍🔬', k:'scientist lab chemistry beaker'}, 
-                {c:'👨‍💻', k:'technologist coder dev hacker computer pc'}, {c:'👨‍🎤', k:'singer star music artist'}, {c:'👨‍🎨', k:'artist painter brush draw'}, {c:'👨‍✈️', k:'pilot fly plane aviation'}, {c:'👨‍🚀', k:'astronaut space rocket moon'}, 
-                {c:'👨‍🚒', k:'firefighter fire hose danger'}, {c:'👮', k:'police cop arrest law'}, {c:'🕵️', k:'detective spy secret investigate'}, {c:'💂', k:'guard protect london'}, {c:'👷', k:'construction builder hardhat tool'}, 
-                {c:'🤴', k:'prince king royal crown'}, {c:'👸', k:'princess queen royal tiara'}, {c:'👳', k:'turban wrap head'}, {c:'👲', k:'cap hat asian'}, {c:'🧕', k:'headscarf hijab muslim islam'}, 
-                {c:'🤵', k:'tuxedo groom fancy wedding suit'}, {c:'👰', k:'veil bride wedding dress'}, {c:'🤰', k:'pregnant expecting baby bump'}, {c:'🤱', k:'breast feeding mother baby care'}, {c:'👼', k:'angel cute holy wing'}, 
-                {c:'🎅', k:'santa christmas xmas holiday december'}, {c:'🧛', k:'vampire dracula blood bat bite'}, {c:'🧟', k:'zombie dead walking brain halloween'}, {c:'🧞', k:'genie magic wish lamp'}, {c:'🧜', k:'merperson mermaid ocean sea'}, 
-                {c:'🧚', k:'fairy magic wings fly forest'}, {c:'🚶', k:'walking stroll pedestrian step'}, {c:'🧍', k:'standing wait still'}, {c:'🧎', k:'kneeling pray beg'}, {c:'🏃', k:'running fast dash run escape jog'}, 
-                {c:'💃', k:'dancing party salsa dress woman'}, {c:'🕺', k:'man dancing disco groove move'}, {c:'👯', k:'people dancing twins showgirls bunny'}, {c:'🧖', k:'steamy room sauna spa relax heat'}, {c:'🧘', k:'yoga meditate zen peace calm'},
-                {c:'🗣️', k:'speaking talking shout profile yell'}, {c:'👤', k:'silhouette shadow user account profile'}, {c:'👥', k:'silhouettes users group team friends'}, {c:'🫂', k:'hug embrace support love care comfort'}
+                {c:'👶', k:'baby infant child young newborn kid'}, {c:'🧒', k:'child kid toddler young person'}, {c:'👦', k:'boy young male kid'}, {c:'👧', k:'girl young female kid'}, {c:'🧑', k:'person adult neutral human'}, 
+                {c:'👱', k:'blond hair blonde guy girl person'}, {c:'👨', k:'man guy adult male human'}, {c:'🧔', k:'beard hipster lumberjack facial hair man'}, {c:'👨‍🦰', k:'red hair ginger man male'}, {c:'👨‍🦱', k:'curly hair man boy male'}, 
+                {c:'👨‍🦳', k:'white hair old man senior male'}, {c:'👨‍🦲', k:'bald no hair man male'}, {c:'👩', k:'woman lady adult female human'}, {c:'👩‍🦰', k:'red hair ginger woman female'}, {c:'👩‍🦱', k:'curly hair woman female'}, 
+                {c:'👩‍🦳', k:'white hair old woman senior female'}, {c:'👩‍🦲', k:'bald woman female'}, {c:'🧓', k:'older person elder senior age'}, {c:'👴', k:'old man grandpa grandfather elder'}, {c:'👵', k:'old woman grandma grandmother elder'}, 
+                {c:'🙍', k:'frowning person upset disappointed sad'}, {c:'🙎', k:'pouting person mad sulk angry'}, {c:'🙅', k:'no gesture cross x stop block reject'}, {c:'🙆', k:'ok gesture circle yes fine agree'}, 
+                {c:'💁', k:'tipping hand sassy whatever care help'}, {c:'🙋', k:'raising hand question ask me query'}, {c:'🙇', k:'bowing sorry respect apologize defer'}, {c:'🤦', k:'facepalm stupid sigh bruh idiot mistake'}, {c:'🤷', k:'shrug idk whatever unsure doubt'}, 
+                {c:'👨‍⚕️', k:'health worker doctor nurse medic hospital'}, {c:'👨‍🎓', k:'student graduate college school diploma degree'}, {c:'👨‍🏫', k:'teacher professor class school education'}, {c:'👨‍⚖️', k:'judge lawyer court legal law justice'}, {c:'👨‍🌾', k:'farmer tractor field crop agriculture'}, 
+                {c:'👨‍🍳', k:'cook chef food kitchen restaurant culinary'}, {c:'👨‍🔧', k:'mechanic fix wrench repair tool worker'}, {c:'👨‍🏭', k:'factory worker industry manufacturing'}, {c:'👨‍💼', k:'office worker boss ceo business suit corporate'}, {c:'👨‍🔬', k:'scientist lab chemistry beaker research'}, 
+                {c:'👨‍💻', k:'technologist coder dev hacker computer pc programmer'}, {c:'👨‍🎤', k:'singer star music artist band performer'}, {c:'👨‍🎨', k:'artist painter brush draw creative'}, {c:'👨‍✈️', k:'pilot fly plane aviation travel'}, {c:'👨‍🚀', k:'astronaut space rocket moon galaxy'}, 
+                {c:'👨‍🚒', k:'firefighter fire hose danger rescue'}, {c:'👮', k:'police cop arrest law enforcement security'}, {c:'🕵️', k:'detective spy secret investigate private eye'}, {c:'💂', k:'guard protect london soldier'}, {c:'👷', k:'construction builder hardhat tool worker'}, 
+                {c:'🤴', k:'prince king royal crown monarch'}, {c:'👸', k:'princess queen royal tiara monarch'}, {c:'👳', k:'turban wrap head culture'}, {c:'👲', k:'cap hat asian culture'}, {c:'🧕', k:'headscarf hijab muslim islam culture'}, 
+                {c:'🤵', k:'tuxedo groom fancy wedding suit formal'}, {c:'👰', k:'veil bride wedding dress marriage'}, {c:'🤰', k:'pregnant expecting baby bump mother'}, {c:'🤱', k:'breast feeding mother baby care parent'}, {c:'👼', k:'angel cute holy wing cherub'}, 
+                {c:'🎅', k:'santa christmas xmas holiday december claus'}, {c:'🧛', k:'vampire dracula blood bat bite halloween'}, {c:'🧟', k:'zombie dead walking brain halloween scary'}, {c:'🧞', k:'genie magic wish lamp fantasy'}, {c:'🧜', k:'merperson mermaid ocean sea fantasy'}, 
+                {c:'🧚', k:'fairy magic wings fly forest fantasy'}, {c:'🚶', k:'walking stroll pedestrian step move'}, {c:'🧍', k:'standing wait still posture'}, {c:'🧎', k:'kneeling pray beg posture'}, {c:'🏃', k:'running fast dash run escape jog sport'}, 
+                {c:'💃', k:'dancing party salsa dress woman move'}, {c:'🕺', k:'man dancing disco groove move party'}, {c:'👯', k:'people dancing twins showgirls bunny party'}, {c:'🧖', k:'steamy room sauna spa relax heat sweat'}, {c:'🧘', k:'yoga meditate zen peace calm pose'},
+                {c:'🗣️', k:'speaking talking shout profile yell voice'}, {c:'👤', k:'silhouette shadow user account profile person'}, {c:'👥', k:'silhouettes users group team friends people'}, {c:'🫂', k:'hug embrace support love care comfort friendship'}
             ]},
             { id: 'nature', name: 'Nature', icon: '🐻', emojis: [
-                {c:'🐶', k:'dog puppy pet bark cute animal'}, {c:'🐱', k:'cat kitten pet meow feline'}, {c:'🐭', k:'mouse rat squeak'}, {c:'🐹', k:'hamster pet cute fluff'}, {c:'🐰', k:'rabbit bunny hop easter'}, {c:'🦊', k:'fox sneaky wild orange'}, 
-                {c:'🐻', k:'bear grizzly wild animal'}, {c:'🐼', k:'panda cute bear bamboo'}, {c:'🐨', k:'koala australia tree bear'}, {c:'🐯', k:'tiger wild cat rawr'}, {c:'🦁', k:'lion king roar jungle africa'}, {c:'🐮', k:'cow moo milk farm animal'}, 
-                {c:'🐷', k:'pig oink farm bacon'}, {c:'🐽', k:'pig nose snout smell'}, {c:'🐸', k:'frog toad ribbit amphibian meme'}, {c:'🐵', k:'monkey ape jungle funny'}, {c:'🙈', k:'see no evil shy blind monkeys'}, {c:'🙉', k:'hear no evil deaf monkeys'}, 
-                {c:'🙊', k:'speak no evil secret silent mute'}, {c:'🐒', k:'monkey tail climb wild'}, {c:'🐔', k:'chicken hen farm egg'}, {c:'🐧', k:'penguin cold winter bird ice snow'}, {c:'🐦', k:'bird tweet fly wing sky'}, {c:'🐤', k:'chick baby bird yellow'}, 
-                {c:'🐣', k:'hatching chick egg born break'}, {c:'🐥', k:'front chick bird cute'}, {c:'🦆', k:'duck quack pond water bird'}, {c:'🦅', k:'eagle bird of prey america fly soar'}, {c:'🦉', k:'owl wise night bird hoot dark'}, {c:'🦇', k:'bat vampire fly night dark'}, 
-                {c:'🐺', k:'wolf howl moon wild pack dog'}, {c:'🐗', k:'boar wild pig tusk'}, {c:'🐴', k:'horse ride farm mane neigh'}, {c:'🦄', k:'unicorn magic fantasy horn rainbow mythical'}, {c:'🐝', k:'bee honey bug sting yellow fly'}, {c:'🐛', k:'bug caterpillar insect leaf crawl'}, 
-                {c:'🦋', k:'butterfly beautiful bug insect fly wing'}, {c:'🐌', k:'snail slow slime shell'}, {c:'🐚', k:'shell beach sea ocean sand sound'}, {c:'🐞', k:'beetle ladybug insect red spot bug'}, {c:'🐜', k:'ant insect bug small colony worker'}, {c:'🦗', k:'cricket chirp bug noise jump'}, 
-                {c:'🕷️', k:'spider web creepy bug insect halloween'}, {c:'🕸️', k:'web spider sticky trap net'}, {c:'🦂', k:'scorpion sting poison desert bug'}, {c:'🦟', k:'mosquito bite bug itch blood fly'}, {c:'🦠', k:'microbe virus covid germ sick health biology'}, {c:'🐢', k:'turtle slow shell reptile sea ocean'}, 
-                {c:'🐍', k:'snake slither toxic venom reptile hiss'}, {c:'🦎', k:'lizard reptile gecko scale tail'}, {c:'🦖', k:'t-rex dinosaur t rex roar jurassic extinct'}, {c:'🦕', k:'sauropod dinosaur dino long neck extinct'}, {c:'🐙', k:'octopus ocean sea tentacles kraken squid'}, {c:'🦑', k:'squid kraken ocean sea tentacle ink'}, 
-                {c:'🦐', k:'shrimp prawn seafood ocean tiny'}, {c:'🦞', k:'lobster crab red claws sea seafood'}, {c:'🦀', k:'crab snip claws beach sand ocean sea'}, {c:'🐡', k:'blowfish puffer spike ocean sea poison'}, {c:'🐠', k:'tropical fish nemo ocean sea swim reef'}, {c:'🐟', k:'fish swim ocean sea water gill'}, 
-                {c:'🐬', k:'dolphin flipper ocean sea smart swim jump'}, {c:'🐳', k:'whale sea ocean huge water mammal'}, {c:'🐋', k:'spouting whale ocean sea blowhole big'}, {c:'🦈', k:'shark jaws danger ocean sea teeth predator'}, {c:'🐊', k:'crocodile gator reptile teeth swamp swamp'}, {c:'🐅', k:'tiger full cat wild stripes jungle beast'}, 
-                {c:'🐆', k:'leopard cheetah fast wild cat spots sprint'}, {c:'🦓', k:'zebra stripes black white wild africa'}, {c:'🦍', k:'gorilla harambe monkey ape strong silverback'}, {c:'🦧', k:'orangutan monkey ape jungle orange wild'}, {c:'🐘', k:'elephant trunk big wild africa safari tusks'}, {c:'🦛', k:'hippo water huge hungry mouth wild river'}, 
-                {c:'🦏', k:'rhino horn wild charge thick skin safari'}, {c:'🐪', k:'camel desert hot sand hump dry water'}, {c:'🐫', k:'two-hump camel desert ride arabia'}, {c:'🦒', k:'giraffe tall long neck spots wild safari'}, {c:'🦘', k:'kangaroo jump pouch australia hop joey'}, {c:'🐃', k:'water buffalo horns wild strong'}, 
-                {c:'🐂', k:'ox bull horns farm strong zodiac'}, {c:'🐄', k:'bull cow farm milk grass fields'}, {c:'🐎', k:'horse full gallop ride fast mane pony'}, {c:'🐖', k:'pig full farm bacon oink mud pink'}, {c:'🐏', k:'ram horns sheep wool farm climb'}, {c:'🐑', k:'sheep wool farm baa flock white'}, 
-                {c:'🦙', k:'llama alpaca spit peru mountain wool'}, {c:'🐐', k:'goat greatest of all time horns farm climb bleat'}, {c:'🦌', k:'deer buck antlers wild forest bambi'}, {c:'🐕', k:'dog full pet bark fetch leash walk'}, {c:'🐩', k:'poodle dog fancy pet show fluff'}, {c:'🦮', k:'guide dog blind help assist lead sight'}, 
-                {c:'🐕‍🦺', k:'service dog help vest work assist'}, {c:'🐈', k:'cat full pet meow purr feline walk'}, {c:'🐓', k:'rooster cock farm morning wake crow'}, {c:'🦃', k:'turkey thanksgiving bird gobble fall'}, {c:'🦚', k:'peacock beautiful bird feathers spread color'}, {c:'🦜', k:'parrot talk bird pirate fly color tropic'}, 
-                {c:'🦢', k:'swan elegant white bird pond lake grace'}, {c:'🦩', k:'flamingo pink bird stand one leg tropical'}, {c:'🕊️', k:'dove peace fly white bird holy spirit'}, {c:'🐇', k:'rabbit full bunny hop white pet easter'}, {c:'🦝', k:'raccoon trash panda bandit wild mask'}, {c:'🦨', k:'skunk smell stink spray stripe tail black white'}, 
-                {c:'🦡', k:'badger honey wild dig stripe fierce'}, {c:'🦦', k:'otter cute water swim river play shell'}, {c:'🦥', k:'sloth slow lazy sleep hang branch jungle'}, {c:'🐁', k:'mouse full tail rodent small run squeak'}, {c:'🐀', k:'rat snitch rodent tail cheese dirty'}, {c:'🐿️', k:'chipmunk squirrel nut tree acorn climb wild'}, 
-                {c:'🦔', k:'hedgehog sonic cute spike roll ball small'}, {c:'🐾', k:'paw prints dog cat pet track step walk animal'}, {c:'🐉', k:'dragon mythical lizard fire fantasy magic china'}, {c:'🐲', k:'dragon face fantasy fire mythical beast roar'}, {c:'🌵', k:'cactus desert plant prick spike dry hot succulent'}, {c:'🎄', k:'christmas tree xmas holiday pine decorate lights december'}, 
-                {c:'🌲', k:'evergreen pine wood tree forest nature green outdoor'}, {c:'🌳', k:'deciduous tree wood nature forest green leaves park'}, {c:'🌴', k:'palm beach tropical tree vacation ocean sand hot'}, {c:'🌱', k:'seedling plant grow nature green sprout dirt earth'}, {c:'🌿', k:'herb leaf green weed nature plant medicine spice cook'}, {c:'☘️', k:'shamrock clover green ireland luck st patricks day'}, 
-                {c:'🍀', k:'four leaf clover luck lucky green irish nature chance'}, {c:'🎍', k:'bamboo plant wood japan green panda food'}, {c:'🎋', k:'tanabata tree bamboo paper wish japan festival'}, {c:'🍃', k:'wind leaves fall blow nature green autumn fly'}, {c:'🍂', k:'fallen leaf autumn fall brown orange nature tree'}, {c:'🍁', k:'maple leaf canada autumn fall red orange nature tree'}, 
-                {c:'🍄', k:'mushroom shroom fungi red spots toxic forest magic nature'}, {c:'🌾', k:'sheaf wheat farming crop grow field agriculture bread yellow'}, {c:'💐', k:'bouquet flowers romantic gift love date wedding color spring'}, {c:'🌷', k:'tulip flower spring pink nature garden bloom plant'}, {c:'🌹', k:'rose red love romantic flower date valentine thorn beautiful'}, {c:'🥀', k:'wilted flower dead sad break up wilting dry dead droop'}, 
-                {c:'🌺', k:'hibiscus hawaii flower pink tropical island vacation bloom petal'}, {c:'🌸', k:'cherry blossom sakura pink flower japan spring tree bloom season'}, {c:'🌼', k:'blossom flower yellow bloom nature spring plant bright field'}, {c:'🌻', k:'sunflower happy summer yellow flower tall nature field seed'}, {c:'🌞', k:'sun face happy hot bright summer light sky morning ray'}, {c:'🌝', k:'full sun smile face moon bright light sky night glow'}, 
-                {c:'🌛', k:'full moon face sleep night sky dark stars dream bedtime'}, {c:'🌜', k:'last quarter moon face night sky dark space dream sleep'}, {c:'🌚', k:'new moon face dark night sky space black shadow shade'}, {c:'🌕', k:'full moon night dark sky space stars bright light glow'}, {c:'🌖', k:'waning gibbous moon space sky night dark phase shadow'}, 
-                {c:'🌗', k:'last quarter moon half night space sky dark shadow light'}, {c:'🌘', k:'waning crescent moon dark night sky space shadow phase sliver'}, {c:'🌑', k:'new moon dark space night sky black eclipse phase none'}, {c:'🌒', k:'waxing crescent moon sky night dark space sliver phase light'}, {c:'🌓', k:'first quarter moon half night dark space sky phase light'}, 
-                {c:'🌔', k:'waxing gibbous moon dark night sky space light phase mostly'}, {c:'🌙', k:'crescent moon sleep night dark sky space bedtime dream stars'}, {c:'🌎', k:'earth americas planet globe world space map ocean green blue'}, {c:'🌍', k:'earth africa globe planet world space map ocean green blue'}, {c:'🌏', k:'earth asia globe planet world space map ocean green blue'}, 
-                {c:'🪐', k:'planet saturn rings space galaxy universe orbit stars orbit'}, {c:'💫', k:'dizzy star shining shooting fly orbit spin circle bright yellow'}, {c:'⭐', k:'star favorite shine bright yellow point sky night space rank'}, {c:'🌟', k:'glowing star magic shine bright yellow twinkle sky space night'}, {c:'✨', k:'sparkles magic clean aesthetic shine twinkle glitter fairy stars pure'}, {c:'⚡', k:'zap lightning fast thunder electric storm flash power storm weather'}, 
-                {c:'☄️', k:'comet space rock fly fire tail crash star meteor burn'}, {c:'🔥', k:'fire flame hot lit fire burn blaze heat warmth danger'}, {c:'🌊', k:'wave ocean sea surf water beach tide blue splash tsunami'}, {c:'💧', k:'droplet water tear wet rain drop cry sweat blue liquid'}
+                {c:'🐶', k:'dog puppy pet bark cute animal canine'}, {c:'🐱', k:'cat kitten pet meow feline animal'}, {c:'🐭', k:'mouse rat squeak rodent animal'}, {c:'🐹', k:'hamster pet cute fluff rodent animal'}, {c:'🐰', k:'rabbit bunny hop easter animal'}, {c:'🦊', k:'fox sneaky wild orange animal forest'}, 
+                {c:'🐻', k:'bear grizzly wild animal forest roar'}, {c:'🐼', k:'panda cute bear bamboo animal asia'}, {c:'🐨', k:'koala australia tree bear animal cute'}, {c:'🐯', k:'tiger wild cat rawr animal jungle'}, {c:'🦁', k:'lion king roar jungle africa animal'}, {c:'🐮', k:'cow moo milk farm animal livestock'}, 
+                {c:'🐷', k:'pig oink farm bacon animal livestock'}, {c:'🐽', k:'pig nose snout smell animal face'}, {c:'🐸', k:'frog toad ribbit amphibian meme animal'}, {c:'🐵', k:'monkey ape jungle funny animal face'}, {c:'🙈', k:'see no evil shy blind monkeys animal'}, {c:'🙉', k:'hear no evil deaf monkeys animal'}, 
+                {c:'🙊', k:'speak no evil secret silent mute monkeys animal'}, {c:'🐒', k:'monkey tail climb wild animal ape'}, {c:'🐔', k:'chicken hen farm egg bird animal'}, {c:'🐧', k:'penguin cold winter bird ice snow animal'}, {c:'🐦', k:'bird tweet fly wing sky animal'}, {c:'🐤', k:'chick baby bird yellow cute animal'}, 
+                {c:'🐣', k:'hatching chick egg born break bird animal'}, {c:'🐥', k:'front chick bird cute animal face'}, {c:'🦆', k:'duck quack pond water bird animal'}, {c:'🦅', k:'eagle bird of prey america fly soar animal'}, {c:'🦉', k:'owl wise night bird hoot dark animal'}, {c:'🦇', k:'bat vampire fly night dark animal cave'}, 
+                {c:'🐺', k:'wolf howl moon wild pack dog animal'}, {c:'🐗', k:'boar wild pig tusk animal forest'}, {c:'🐴', k:'horse ride farm mane neigh animal'}, {c:'🦄', k:'unicorn magic fantasy horn rainbow mythical animal'}, {c:'🐝', k:'bee honey bug sting yellow fly insect'}, {c:'🐛', k:'bug caterpillar insect leaf crawl nature'}, 
+                {c:'🦋', k:'butterfly beautiful bug insect fly wing nature'}, {c:'🐌', k:'snail slow slime shell insect nature'}, {c:'🐚', k:'shell beach sea ocean sand sound nature'}, {c:'🐞', k:'beetle ladybug insect red spot bug nature'}, {c:'🐜', k:'ant insect bug small colony worker nature'}, {c:'🦗', k:'cricket chirp bug noise jump insect'}, 
+                {c:'🕷️', k:'spider web creepy bug insect halloween nature'}, {c:'🕸️', k:'web spider sticky trap net nature'}, {c:'🦂', k:'scorpion sting poison desert bug insect'}, {c:'🦟', k:'mosquito bite bug itch blood fly insect'}, {c:'🦠', k:'microbe virus covid germ sick health biology'}, {c:'🐢', k:'turtle slow shell reptile sea ocean animal'}, 
+                {c:'🐍', k:'snake slither toxic venom reptile hiss animal'}, {c:'🦎', k:'lizard reptile gecko scale tail animal'}, {c:'🦖', k:'t-rex dinosaur t rex roar jurassic extinct animal'}, {c:'🦕', k:'sauropod dinosaur dino long neck extinct animal'}, {c:'🐙', k:'octopus ocean sea tentacles kraken squid animal'}, {c:'🦑', k:'squid kraken ocean sea tentacle ink animal'}, 
+                {c:'🦐', k:'shrimp prawn seafood ocean tiny animal'}, {c:'🦞', k:'lobster crab red claws sea seafood animal'}, {c:'🦀', k:'crab snip claws beach sand ocean sea animal'}, {c:'🐡', k:'blowfish puffer spike ocean sea poison animal'}, {c:'🐠', k:'tropical fish nemo ocean sea swim reef animal'}, {c:'🐟', k:'fish swim ocean sea water gill animal'}, 
+                {c:'🐬', k:'dolphin flipper ocean sea smart swim jump animal'}, {c:'🐳', k:'whale sea ocean huge water mammal animal'}, {c:'🐋', k:'spouting whale ocean sea blowhole big animal'}, {c:'🦈', k:'shark jaws danger ocean sea teeth predator animal'}, {c:'🐊', k:'crocodile gator reptile teeth swamp swamp animal'}, {c:'🐅', k:'tiger full cat wild stripes jungle beast animal'}, 
+                {c:'🐆', k:'leopard cheetah fast wild cat spots sprint animal'}, {c:'🦓', k:'zebra stripes black white wild africa animal'}, {c:'🦍', k:'gorilla harambe monkey ape strong silverback animal'}, {c:'🦧', k:'orangutan monkey ape jungle orange wild animal'}, {c:'🐘', k:'elephant trunk big wild africa safari tusks animal'}, {c:'🦛', k:'hippo water huge hungry mouth wild river animal'}, 
+                {c:'🦏', k:'rhino horn wild charge thick skin safari animal'}, {c:'🐪', k:'camel desert hot sand hump dry water animal'}, {c:'🐫', k:'two-hump camel desert ride arabia animal'}, {c:'🦒', k:'giraffe tall long neck spots wild safari animal'}, {c:'🦘', k:'kangaroo jump pouch australia hop joey animal'}, {c:'🐃', k:'water buffalo horns wild strong animal'}, 
+                {c:'🐂', k:'ox bull horns farm strong zodiac animal'}, {c:'🐄', k:'bull cow farm milk grass fields animal'}, {c:'🐎', k:'horse full gallop ride fast mane pony animal'}, {c:'🐖', k:'pig full farm bacon oink mud pink animal'}, {c:'🐏', k:'ram horns sheep wool farm climb animal'}, {c:'🐑', k:'sheep wool farm baa flock white animal'}, 
+                {c:'🦙', k:'llama alpaca spit peru mountain wool animal'}, {c:'🐐', k:'goat greatest of all time horns farm climb bleat animal'}, {c:'🦌', k:'deer buck antlers wild forest bambi animal'}, {c:'🐕', k:'dog full pet bark fetch leash walk animal'}, {c:'🐩', k:'poodle dog fancy pet show fluff animal'}, {c:'🦮', k:'guide dog blind help assist lead sight animal'}, 
+                {c:'🐕‍🦺', k:'service dog help vest work assist animal'}, {c:'🐈', k:'cat full pet meow purr feline walk animal'}, {c:'🐓', k:'rooster cock farm morning wake crow animal'}, {c:'🦃', k:'turkey thanksgiving bird gobble fall animal'}, {c:'🦚', k:'peacock beautiful bird feathers spread color animal'}, {c:'🦜', k:'parrot talk bird pirate fly color tropic animal'}, 
+                {c:'🦢', k:'swan elegant white bird pond lake grace animal'}, {c:'🦩', k:'flamingo pink bird stand one leg tropical animal'}, {c:'🕊️', k:'dove peace fly white bird holy spirit animal'}, {c:'🐇', k:'rabbit full bunny hop white pet easter animal'}, {c:'🦝', k:'raccoon trash panda bandit wild mask animal'}, {c:'🦨', k:'skunk smell stink spray stripe tail black white animal'}, 
+                {c:'🦡', k:'badger honey wild dig stripe fierce animal'}, {c:'🦦', k:'otter cute water swim river play shell animal'}, {c:'🦥', k:'sloth slow lazy sleep hang branch jungle animal'}, {c:'🐁', k:'mouse full tail rodent small run squeak animal'}, {c:'🐀', k:'rat snitch rodent tail cheese dirty animal'}, {c:'🐿️', k:'chipmunk squirrel nut tree acorn climb wild animal'}, 
+                {c:'🦔', k:'hedgehog sonic cute spike roll ball small animal'}, {c:'🐾', k:'paw prints dog cat pet track step walk animal footprints'}, {c:'🐉', k:'dragon mythical lizard fire fantasy magic china animal'}, {c:'🐲', k:'dragon face fantasy fire mythical beast roar animal'}, {c:'🌵', k:'cactus desert plant prick spike dry hot succulent nature'}, {c:'🎄', k:'christmas tree xmas holiday pine decorate lights december nature'}, 
+                {c:'🌲', k:'evergreen pine wood tree forest nature green outdoor'}, {c:'🌳', k:'deciduous tree wood nature forest green leaves park'}, {c:'🌴', k:'palm beach tropical tree vacation ocean sand hot nature'}, {c:'🌱', k:'seedling plant grow nature green sprout dirt earth nature'}, {c:'🌿', k:'herb leaf green weed nature plant medicine spice cook nature'}, {c:'☘️', k:'shamrock clover green ireland luck st patricks day nature'}, 
+                {c:'🍀', k:'four leaf clover luck lucky green irish nature chance'}, {c:'🎍', k:'bamboo plant wood japan green panda food nature'}, {c:'🎋', k:'tanabata tree bamboo paper wish japan festival nature'}, {c:'🍃', k:'wind leaves fall blow nature green autumn fly nature'}, {c:'🍂', k:'fallen leaf autumn fall brown orange nature tree season'}, {c:'🍁', k:'maple leaf canada autumn fall red orange nature tree season'}, 
+                {c:'🍄', k:'mushroom shroom fungi red spots toxic forest magic nature'}, {c:'🌾', k:'sheaf wheat farming crop grow field agriculture bread yellow nature'}, {c:'💐', k:'bouquet flowers romantic gift love date wedding color spring nature'}, {c:'🌷', k:'tulip flower spring pink nature garden bloom plant'}, {c:'🌹', k:'rose red love romantic flower date valentine thorn beautiful nature'}, {c:'🥀', k:'wilted flower dead sad break up wilting dry dead droop nature'}, 
+                {c:'🌺', k:'hibiscus hawaii flower pink tropical island vacation bloom petal nature'}, {c:'🌸', k:'cherry blossom sakura pink flower japan spring tree bloom season nature'}, {c:'🌼', k:'blossom flower yellow bloom nature spring plant bright field'}, {c:'🌻', k:'sunflower happy summer yellow flower tall nature field seed'}, {c:'🌞', k:'sun face happy hot bright summer light sky morning ray nature'}, {c:'🌝', k:'full sun smile face moon bright light sky night glow nature'}, 
+                {c:'🌛', k:'full moon face sleep night sky dark stars dream bedtime nature'}, {c:'🌜', k:'last quarter moon face night sky dark space dream sleep nature'}, {c:'🌚', k:'new moon face dark night sky space black shadow shade nature'}, {c:'🌕', k:'full moon night dark sky space stars bright light glow nature'}, {c:'🌖', k:'waning gibbous moon space sky night dark phase shadow nature'}, 
+                {c:'🌗', k:'last quarter moon half night space sky dark shadow light nature'}, {c:'🌘', k:'waning crescent moon dark night sky space shadow phase sliver nature'}, {c:'🌑', k:'new moon dark space night sky black eclipse phase none nature'}, {c:'🌒', k:'waxing crescent moon sky night dark space sliver phase light nature'}, {c:'🌓', k:'first quarter moon half night dark space sky phase light nature'}, 
+                {c:'🌔', k:'waxing gibbous moon dark night sky space light phase mostly nature'}, {c:'🌙', k:'crescent moon sleep night dark sky space bedtime dream stars nature'}, {c:'🌎', k:'earth americas planet globe world space map ocean green blue nature'}, {c:'🌍', k:'earth africa globe planet world space map ocean green blue nature'}, {c:'🌏', k:'earth asia globe planet world space map ocean green blue nature'}, 
+                {c:'🪐', k:'planet saturn rings space galaxy universe orbit stars orbit nature'}, {c:'💫', k:'dizzy star shining shooting fly orbit spin circle bright yellow nature'}, {c:'⭐', k:'star favorite shine bright yellow point sky night space rank nature'}, {c:'🌟', k:'glowing star magic shine bright yellow twinkle sky space night nature'}, {c:'✨', k:'sparkles magic clean aesthetic shine twinkle glitter fairy stars pure nature'}, {c:'⚡', k:'zap lightning fast thunder electric storm flash power storm weather nature'}, 
+                {c:'☄️', k:'comet space rock fly fire tail crash star meteor burn nature'}, {c:'🔥', k:'fire flame hot lit fire burn blaze heat warmth danger nature'}, {c:'🌊', k:'wave ocean sea surf water beach tide blue splash tsunami nature'}, {c:'💧', k:'droplet water tear wet rain drop cry sweat blue liquid nature'}
             ]},
             { id: 'food', name: 'Food', icon: '🍔', emojis: [
                 {c:'🍇', k:'grapes fruit purple vine sweet wine'}, {c:'🍈', k:'melon cantaloupe fruit green sweet'}, {c:'🍉', k:'watermelon summer fruit red seed juicy slice'}, {c:'🍊', k:'tangerine orange fruit citrus sweet sour peel'}, {c:'🍋', k:'lemon sour fruit yellow citrus tart'}, {c:'🍌', k:'banana monkey fruit yellow peel healthy sweet'}, 
@@ -152,7 +153,8 @@ class EmojiPicker extends HTMLElement {
                 {c:'🍰', k:'shortcake slice dessert sweet strawberry layer frost bake piece plate cream'}, {c:'🧁', k:'cupcake sweet dessert bakery frost sprinkle paper mini cake bake muffin'}, {c:'🥧', k:'pie slice dessert bake crust fruit apple thanksgiving warm cut pastry'}, {c:'🍫', k:'chocolate bar sweet cocoa dessert brown break block candy sugar rich dark'}, {c:'🍬', k:'candy sweet sugar wrapper twist piece treat kid drop flavor color'}, {c:'🍭', k:'lollipop sweet candy sugar stick spiral color lick kid treat suck'}, 
                 {c:'🍮', k:'custard flan dessert sweet caramel pudding jiggle plate mold yellow bake'}, {c:'🍯', k:'honey pot sweet bee sticky gold syrup drip jar bear liquid dipper'}, {c:'🍼', k:'baby bottle milk drink infant formula nipple plastic feed child nurse'}, {c:'🥛', k:'milk glass dairy drink white cold calcium cow bone cup tall pour'}, {c:'☕', k:'coffee hot tea mug cafe wake morning caffeine bean brew steam cup'}, {c:'🍵', k:'tea matcha green warm cup leaf brew hot japan china steep drink'}, 
                 {c:'🍶', k:'sake bottle japanese drink alcohol cup rice clear warm asia pour glass'}, {c:'🍾', k:'champagne bottle pop celebrate party alcohol bubbly new year spray foam cork'}, {c:'🍷', k:'wine glass red alcohol drink grape cheers fine dine relax stem pour'}, {c:'🍸', k:'cocktail glass martini alcohol drink olive party mixer stir sip fancy'}, {c:'🍹', k:'tropical drink cocktail summer beach umbrella fruit straw alcohol vacation fruit'}, {c:'🍺', k:'beer mug pint alcohol drink foam pub bar yellow glass froth cheers'}, 
-                {c:'🍻', k:'beers clink cheers alcohol pub bar toast celebrate party mugs foam glass'}, {c:'🥂', k:'clinking glasses cheers celebrate toast champagne wine party alcohol tall stem'}, {c:'🥃', k:'whiskey glass shot alcohol liquor brown rock ice sip bar pour strong'}, {c:'🥤', k:'cup straw soda drink fast food plastic lid red cold pop beverage sip'}, {c:'🧃', k:'juice box drink apple kid straw fruit sweet pack liquid squeeze lunch'}, {c:'🧉', k:'mate drink tea herb gourd straw south america green leaf brew sip warm'}, {c:'🧊', k:'ice cube cold freeze water square block freeze clear chill melt drink'}
+                {c:'🍻', k:'beers clink cheers alcohol pub bar toast celebrate party mugs foam glass'}, {c:'🥂', k:'clinking glasses cheers celebrate toast champagne wine party alcohol tall stem'}, {c:'🥃', k:'whiskey glass shot alcohol liquor brown rock ice sip bar pour strong'}, {c:'🥤', k:'cup straw soda drink fast food plastic lid red cold pop beverage sip'}, {c:'🧃', k:'juice box drink apple kid straw fruit sweet pack liquid squeeze lunch'}, {c:'🧉', k:'mate drink tea herb gourd straw south america green leaf brew sip warm'}, {c:'🧊', k:'ice cube cold freeze water square block freeze clear chill melt drink'},
+                {c:'🧋', k:'bubble tea boba drink sweet tapioca pearls milk cold asia'}, {c:'🫔', k:'tamale mexican food wrap corn leaf steam dough'}, {c:'🫕', k:'fondue cheese chocolate dip warm pot switzerland winter'}, {c:'🫖', k:'teapot brew hot water drink ceramic pour tea'}
             ]},
             { id: 'activity', name: 'Activity', icon: '⚽', emojis: [
                 {c:'⚽', k:'soccer ball football sport kick goal game'}, {c:'🏀', k:'basketball sport hoop dribble court game'}, {c:'🏈', k:'football nfl sport american pigskin throw touchdown'}, {c:'⚾', k:'baseball sport bat pitch hit run game'}, {c:'🥎', k:'softball sport ball yellow pitch hit game'}, {c:'🎾', k:'tennis sport racket court ball match net'}, 
@@ -168,19 +170,33 @@ class EmojiPicker extends HTMLElement {
                 {c:'🤹', k:'juggling trick circus play balls hands skill perform clown toss'}, {c:'🎭', k:'performing arts theater drama masks comedy tragedy act play stage'}, {c:'🎨', k:'art palette paint draw creative colors brush canvas artist maker'}, {c:'🎬', k:'clapper board movie film action cut cinema direct hollywood video'}, {c:'🎤', k:'microphone sing karaoke mic music talk podcast stage record stand'}, {c:'🎧', k:'headphone music listen dj audio sound beat earphone gear play'}, 
                 {c:'🎼', k:'score music sheet treble clef note staff compose sound written'}, {c:'🎹', k:'musical keyboard piano play keys instrument sound black white melody'}, {c:'🥁', k:'drum beat instrument music band loud stick snare rhythm percussion'}, {c:'🎷', k:'sax saxophone jazz instrument brass music brass band horn blow gold'}, {c:'🎺', k:'trumpet brass instrument music band horn loud blow play gold'}, {c:'🎸', k:'guitar rock instrument band string acoustic electric music strum play'}, 
                 {c:'🪕', k:'banjo music instrument country folk string pick pluck play round'}, {c:'🎻', k:'violin strings classical instrument orchestra bow play music fiddle wood'}, {c:'🎲', k:'game die dice random luck casino roll board chance dot number'}, {c:'♟️', k:'pawn chess strategy board game piece black white checkmate move'}, {c:'🎯', k:'bullseye dart target focus aim board game red center hit board'}, {c:'🎳', k:'bowling pin strike alley ball game roll hit spare lane sport'}, 
-                {c:'🎮', k:'game controller video games ps xbox play nintendo button pad joy'}, {c:'🎰', k:'slot machine casino gamble 777 lucky spin win jackpot machine coin'}, {c:'🧩', k:'puzzle piece solve logic game fit match connect shape brain autism'}
+                {c:'🎮', k:'game controller video games ps xbox play nintendo button pad joy'}, {c:'🎰', k:'slot machine casino gamble 777 lucky spin win jackpot machine coin'}, {c:'🧩', k:'puzzle piece solve logic game fit match connect shape brain autism'}, {c:'🪄', k:'magic wand spell wizard witch trick sparkle fantasy'}
             ]},
             { id: 'travel', name: 'Travel & Places', icon: '✈️', emojis: [
-                {c:'🚗', k:'car auto drive vehicle ride trip'}, {c:'🚕', k:'taxi cab yellow ride city'}, {c:'🚙', k:'suv blue car drive vehicle trip'}, {c:'🚌', k:'bus transit school city public'},
-                {c:'🚎', k:'trolleybus transit public city'}, {c:'🏎️', k:'race car fast speed sport'}, {c:'🚓', k:'police car cop siren law'}, {c:'🚑', k:'ambulance hospital sick emergency'},
-                {c:'🚒', k:'fire engine truck red rescue'}, {c:'🚐', k:'minivan bus vehicle drive'}, {c:'🚚', k:'truck delivery transport ship'}, {c:'🚛', k:'articulated truck semi transport'},
-                {c:'🚜', k:'tractor farm agriculture field'}, {c:'🛵', k:'scooter motor ride bike'}, {c:'🏍️', k:'motorcycle bike ride fast'}, {c:'🚲', k:'bicycle bike ride pedal cycle'},
-                {c:'🚄', k:'high speed train bullet rail fast'}, {c:'🚅', k:'bullet train fast japan rail'}, {c:'🚆', k:'train rail commute transit'}, {c:'🚇', k:'metro subway underground train'},
-                {c:'🚈', k:'light rail transit commute train'}, {c:'🚉', k:'station train rail stop wait'}, {c:'🚊', k:'tram light rail transit public'}, {c:'🚝', k:'monorail train transit ride'},
-                {c:'🚞', k:'mountain railway train steep'}, {c:'🚋', k:'tram car transit city'}, {c:'✈️', k:'airplane fly travel sky trip fly'}, {c:'🛫', k:'airplane departure fly take off trip'}, 
-                {c:'🛬', k:'airplane arrival land fly trip'}, {c:'🛩️', k:'small airplane fly travel sky'}, {c:'🚁', k:'helicopter fly chopper air'}, {c:'🚠', k:'mountain cableway gondola ski ride'}, 
-                {c:'🚡', k:'aerial tramway ski lift ride mountain'}, {c:'🛰️', k:'satellite space orbit tech'}, {c:'🚀', k:'rocket space fly launch moon'}, {c:'🛸', k:'flying saucer ufo alien space'}, 
-                {c:'🛎️', k:'bellhop bell hotel service desk'}, {c:'🧳', k:'luggage suitcase travel bag pack'}, {c:'⌛', k:'hourglass sand time wait'}
+                {c:'🚗', k:'car auto drive vehicle ride trip'}, {c:'🚕', k:'taxi cab yellow ride city transport'}, {c:'🚙', k:'suv blue car drive vehicle trip'}, {c:'🚌', k:'bus transit school city public transport'},
+                {c:'🚎', k:'trolleybus transit public city transport'}, {c:'🏎️', k:'race car fast speed sport f1 vehicle'}, {c:'🚓', k:'police car cop siren law emergency'}, {c:'🚑', k:'ambulance hospital sick emergency rescue'},
+                {c:'🚒', k:'fire engine truck red rescue emergency'}, {c:'🚐', k:'minivan bus vehicle drive transport'}, {c:'🚚', k:'truck delivery transport ship vehicle'}, {c:'🚛', k:'articulated truck semi transport vehicle logisitic'},
+                {c:'🚜', k:'tractor farm agriculture field heavy vehicle'}, {c:'🛵', k:'scooter motor ride bike vehicle transport'}, {c:'🏍️', k:'motorcycle bike ride fast chopper vehicle'}, {c:'🚲', k:'bicycle bike ride pedal cycle transport'},
+                {c:'🚄', k:'high speed train bullet rail fast transport'}, {c:'🚅', k:'bullet train fast japan rail transport'}, {c:'🚆', k:'train rail commute transit transport railway'}, {c:'🚇', k:'metro subway underground train transit city'},
+                {c:'🚈', k:'light rail transit commute train city'}, {c:'🚉', k:'station train rail stop wait terminal'}, {c:'🚊', k:'tram light rail transit public streetcar'}, {c:'🚝', k:'monorail train transit ride transport'},
+                {c:'🚞', k:'mountain railway train steep transport'}, {c:'🚋', k:'tram car transit city streetcar'}, {c:'✈️', k:'airplane fly travel sky trip fly aviation'}, {c:'🛫', k:'airplane departure fly take off trip airport'}, 
+                {c:'🛬', k:'airplane arrival land fly trip airport'}, {c:'🛩️', k:'small airplane fly travel sky aviation'}, {c:'🚁', k:'helicopter fly chopper air rescue vehicle'}, {c:'🚠', k:'mountain cableway gondola ski ride transport'}, 
+                {c:'🚡', k:'aerial tramway ski lift ride mountain transport'}, {c:'🛰️', k:'satellite space orbit tech communication'}, {c:'🚀', k:'rocket space fly launch moon nasa'}, {c:'🛸', k:'flying saucer ufo alien space ship'}, 
+                {c:'🛎️', k:'bellhop bell hotel service desk reception'}, {c:'🧳', k:'luggage suitcase travel bag pack vacation'}, {c:'⌛', k:'hourglass sand time wait clock timer'}, {c:'🧭', k:'compass navigation south east west north'},
+                {c:'🏔️', k:'snow capped mountain peak cold nature landscape'}, {c:'⛰️', k:'mountain nature landscape peak rock'}, {c:'🌋', k:'volcano eruption lava hot disaster mountain'}, {c:'🗻', k:'mount fuji japan mountain snow peak nature'},
+                {c:'🏕️', k:'camping tent outdoors nature forest fire'}, {c:'🏖️', k:'beach umbrella ocean sea sand summer vacation'}, {c:'🏜️', k:'desert cactus sand hot dry sahara'}, {c:'🏝️', k:'desert island palm tree ocean sea tropical'},
+                {c:'🏞️', k:'national park nature mountain river tree landscape'}, {c:'🏟️', k:'stadium sports arena game concert event venue'}, {c:'🏛️', k:'classical building architecture rome greece column museum bank'}, {c:'🏗️', k:'building construction crane site structure architecture'},
+                {c:'🧱', k:'brick wall build red block house construction mason stack mortar clay'}, {c:'🏘️', k:'houses neighborhood suburb town real estate property home'}, {c:'🏚️', k:'derelict house old broken abandon ruin empty'}, {c:'🏠', k:'house home real estate property building live'},
+                {c:'🏡', k:'house with garden home yard tree real estate property live'}, {c:'🏢', k:'office building city business work block corporate'}, {c:'🏣', k:'japanese post office building mail service japan'}, {c:'🏤', k:'post office building mail letter package service'},
+                {c:'🏥', k:'hospital building medical doctor health care clinic'}, {c:'🏦', k:'bank building money finance save cash vault'}, {c:'🏨', k:'hotel building sleep stay room bed vacation resort'}, {c:'🏩', k:'love hotel heart pink building stay sleep romance'},
+                {c:'🏪', k:'convenience store shop 24/7 buy market retail mart'}, {c:'🏫', k:'school building education learn teach student class'}, {c:'🏬', k:'department store shop mall retail buy market clothing'}, {c:'🏭', k:'factory building industry smoke stack manufacture work'},
+                {c:'🏯', k:'japanese castle building culture history asia samurai'}, {c:'🏰', k:'castle building fort medieval europe history prince princess royal'}, {c:'💒', k:'wedding church building marry love heart romance chapel'}, {c:'🗼', k:'tokyo tower building japan eiffel metal red landmark'},
+                {c:'🗽', k:'statue of liberty building new york usa america monument landmark'}, {c:'⛪', k:'church building religion christian cross pray god worship'}, {c:'🕌', k:'mosque building religion islam muslim pray god allah minaret'}, {c:'🛕', k:'hindu temple building religion india asia pray god worship'},
+                {c:'🕍', k:'synagogue building religion jewish judaism star david pray god'}, {c:'⛩️', k:'shinto shrine building religion japan torii gate red culture'}, {c:'🕋', k:'kaaba building religion islam muslim mecca saudi arabia pray god'}, {c:'⛲', k:'fountain water park city feature flow decorative jet'},
+                {c:'⛺', k:'tent camp outdoors nature sleep night forest'}, {c:'🌁', k:'foggy bridge city weather mist san francisco golden gate'}, {c:'🌃', k:'night with stars city dark sky skyline evening lights'}, {c:'🏙️', k:'cityscape building skyline urban town metropolis daytime'},
+                {c:'🌄', k:'sunrise over mountains sun morning dawn nature landscape light'}, {c:'🌅', k:'sunrise ocean sea sun morning dawn nature water light'}, {c:'🌆', k:'cityscape at dusk sunset sky town metropolis evening urban'}, {c:'🌇', k:'sunset city sky evening dusk building town urban'},
+                {c:'🌉', k:'bridge at night city lights water architecture structure evening'}, {c:'♨️', k:'hot springs heat warm water steam bath relax boil boil sign symbol'}, {c:'🎠', k:'carousel horse ride amusement park fair fun carnival ride'}, {c:'🎡', k:'ferris wheel ride amusement park fair fun carnival tall spin'},
+                {c:'🎢', k:'roller coaster ride amusement park fair fun fast thrill drop'}, {c:'💈', k:'barber pole hair cut salon shave stripe red blue white spiral spin twist'}, {c:'🎪', k:'circus tent show event clown acrobat fair carnival ring magic tent'}
             ]},
             { id: 'objects', name: 'Objects', icon: '💡', emojis: [
                 {c:'👟', k:'shoe running sneaker sports foot fashion walk gym lace'}, {c:'👞', k:'shoe men leather fancy formal dress brown step tie lace'}, {c:'🥾', k:'hiking boot outdoor shoe walk mountain trail camp brown lace'}, {c:'🥿', k:'flat shoe ballet slip on fashion comfortable simple women foot'}, {c:'👠', k:'high heel stiletto fashion shoe women fancy tall red dress'}, 
@@ -190,7 +206,7 @@ class EmojiPicker extends HTMLElement {
                 {c:'🩱', k:'swimsuit bathing suit beach summer pool swim one piece color women'}, {c:'🩲', k:'briefs underwear pants white men boy clothes inner under tight cloth'}, {c:'🩳', k:'shorts pants summer beach legs short run sport casual cloth active'}, {c:'👙', k:'bikini swimsuit beach summer hot pool women two piece tie sun'}, {c:'👚', k:'clothes blouse shirt top pink women girl female wear collar button'}, {c:'👛', k:'purse coin bag money wallet pink snap pocket cash lady fashion'}, 
                 {c:'👜', k:'handbag fashion bag lady leather carry handle strap women accessory tote'}, {c:'👝', k:'pouch bag makeup zip small carry cosmetic pencil case zipper accessory'}, {c:'🛍️', k:'shopping bags buy store mall retail gift paper carry buy color'}, {c:'🎒', k:'backpack school travel bag bag pack strap carry student hike camp'}, {c:'👑', k:'crown king queen royal prince gold jewel rule power hat monarch'}, {c:'👒', k:'hat sun lady fashion beach straw green ribbon wide brim summer'}, 
                 {c:'🎩', k:'top hat magic fancy gentleman black tall formal prom trick rabbit'}, {c:'🎓', k:'grad cap school college smart diploma university student hat tassel ceremony'}, {c:'🧢', k:'cap baseball hat casual blue sport head cover brim team fashion'}, {c:'⛑️', k:'helmet rescue safety red cross hard hat protect head construction work'}, {c:'📿', k:'beads prayer religion rosary necklace chain meditate faith spirit god monk'}, {c:'💄', k:'lipstick makeup beauty kiss fashion red lips cosmetic paint tube gloss'}, 
-                {c:'💍', k:'ring diamond engagement marry propose jewel gold band love promise finger'}, {c:'💎', k:'gem diamond jewel shiny rich blue stone precious sparkle luxury rock'}, {c:'⌚', k:'watch time clock wrist apple tick smart accessory band wear metal'}, {c:'📱', k:'mobile phone call iphone app cellular screen device text talk text'}, {c:'💻', k:'computer laptop mac pc tech code work screen keyboard type portable'}, {c:'⌨️', k:'keyboard type computer tech keys board button input office typing tech'}, 
+                {c:'💍', k:'ring diamond engagement marry propose jewel gold band love promise finger'}, {c:'💎', k:'gem diamond jewel shiny rich blue stone precious sparkle luxury rock'}, {c:'⌚', k:'watch time clock wrist apple tick smart accessory band wear metal'}, {c:'📱', k:'mobile phone call iphone app cellular screen device text talk text cell'}, {c:'💻', k:'computer laptop mac pc tech code work screen keyboard type portable'}, {c:'⌨️', k:'keyboard type computer tech keys board button input office typing tech'}, 
                 {c:'🖥️', k:'desktop computer pc mac monitor screen display work desk screen stand'}, {c:'🖨️', k:'printer paper ink tech office copy page document machine output tray'}, {c:'🖱️', k:'mouse computer tech click scroll point wire desktop input peripheral device'}, {c:'🖲️', k:'trackball mouse computer tech input roll wheel point control device ball'}, {c:'🕹️', k:'joystick game play arcade retro stick controller video game button vintage'}, {c:'🗜️', k:'clamp tool vice squeeze press hold tighten fix tool hardware metal'}, 
                 {c:'💽', k:'minidisc music retro disc storage save player record audio data media'}, {c:'💾', k:'floppy disk save retro computer tech storage 90s data square magnetic'}, {c:'💿', k:'cd disc music compact software silver circle data optical store record'}, {c:'📀', k:'dvd disc movie video gold circle data optical store film record'}, {c:'📼', k:'vhs tape video retro movie cassette black box film record 90s'}, {c:'📷', k:'camera photo picture shoot lens snap focus flash capture image device'}, 
                 {c:'📸', k:'flash camera photo snap flash pop light burst capture picture device'}, {c:'📹', k:'video camera record tape shoot film movie camcorder tape memory shoot'}, {c:'🎥', k:'movie camera film cinema video tape direct shoot hollywood record studio'}, {c:'📽️', k:'projector movie film cinema reel screen play light show reel beam'}, {c:'🎞️', k:'film frames movie cinema picture strip roll reel negative photo cell'}, {c:'📞', k:'telephone call phone dial ring receiver talk hear handset talk connection'}, 
@@ -208,8 +224,7 @@ class EmojiPicker extends HTMLElement {
                 {c:'🩺', k:'stethoscope doctor listen heart beat chest health sick clinic pulse breath ear tube'}, {c:'🧬', k:'dna spiral helix gene science biology code life strand trait medical curve chain'}, {c:'🚪', k:'door wood open close enter exit room home house knob portal walk through panel'}, {c:'🛏️', k:'bed sleep rest lie night room home house mattress comfort blanket pillow frame'}, {c:'🛋️', k:'couch sofa sit rest room furniture home lounge house cushion living relax lazy'}, {c:'🪑', k:'chair sit rest wood furniture seat room home house table dining stool leg four'}, 
                 {c:'🚽', k:'toilet bathroom washroom flush pee poop pot seat water home bowl plumbing crap'}, {c:'🚿', k:'shower wash bathroom water clean soap wet home bathe washroom spray head rinse'}, {c:'🛁', k:'bath tub wash soap water clean wet bubble bathroom home soak ceramic suds'}, {c:'🪒', k:'razor shave cut hair sharp bathroom tool barber blade groom facial skin handle'}, {c:'🧴', k:'lotion cream soap bottle squeeze smooth rub skin sun block moisture pump hygiene'}, {c:'🧷', k:'pin safety needle tack attach hold metal secure stick fasten diaper clip cloth'}, 
                 {c:'🧹', k:'broom sweep clean brush floor dust house tidy witch wood straw handle dirt'}, {c:'🧺', k:'basket laundry carry picnic weave wood clothes home carry store handle hamper wicker'}, {c:'🧻', k:'paper roll toilet wipe bathroom tissue wipe sheet clean soft tube hygiene clean'}, {c:'🧼', k:'soap wash clean bubble bathroom hand froth suds scrub fresh bar slide lather'}, {c:'🧽', k:'sponge wash clean wipe scrub absorb dish kitchen soft yellow porous soak scrub'}, {c:'🛒', k:'cart shop buy grocery store supermarket wheel market buy push basket metal roll'},
-                // Adding some generic tech items for developer context (Goorac related)
-                {c:'📡', k:'antenna signal broadcast connection wifi internet transmit space tech radar'}, {c:'🛰️', k:'satellite space orbit tech signal transmit gps connection beam machine array'}
+                {c:'📡', k:'antenna signal broadcast connection wifi internet transmit space tech radar goorac quantum'}, {c:'🛰️', k:'satellite space orbit tech signal transmit gps connection beam machine array'}
             ]},
             { id: 'symbols', name: 'Symbols', icon: '❤️', emojis: [
                 {c:'❤️', k:'heart red love like passion romance true'}, {c:'🧡', k:'orange heart love warm friend'}, {c:'💛', k:'yellow heart love happy sun friend'}, {c:'💚', k:'green heart love nature envy money earth'}, {c:'💙', k:'blue heart love water cold sad sad'}, 
@@ -533,41 +548,49 @@ class EmojiPicker extends HTMLElement {
             return tB - tA; 
         });
 
-        // Take only the last 15 active messages to compute immediate mood
-        return allChatMessages.slice(0, 15);
+        // Take only the last 25 active messages to compute immediate mood (Increased from 15 for better context)
+        return allChatMessages.slice(0, 25);
     }
 
     calculateChatMood() {
         const messages = this.getRecentChatContext();
         if (messages.length === 0) return null;
 
-        const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
-        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
+        const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0, party: 0, work: 0 };
+        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை', 'வேண்டாம்', 'matten'];
+        const intensifiers = ['very', 'really', 'so', 'too', 'extremely', 'romba', 'rumba', 'migavum', 'மிகவும்', 'ரொம்ப'];
         
+        // Vastly expanded lexicons for better NLP context
         const lexicons = {
             emojis: {
-                happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍'],
-                sad: ['😢', '😭', '😞', '😔', '💔', '☹️', '😓', '👎'],
-                angry: ['😠', '😡', '🤬', '😾', '😤', '🖕'],
-                love: ['❤️', '😍', '🥰', '😘', '💕', '💖', '💗', '🫂', '🖤', '🤍', '🤎', '💙', '💜', '💚', '💛', '🧡'],
-                funny: ['😂', '🤣', '💀', '😹'],
-                surprised: ['😮', '😱', '😲', '🤯', '😳', '👀']
+                happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍', '☀️', '🌻'],
+                sad: ['😢', '😭', '😞', '😔', '💔', '☹️', '😓', '👎', '🌧️', '🩹'],
+                angry: ['😠', '😡', '🤬', '😾', '😤', '🖕', '💥', '🛑', '💢'],
+                love: ['❤️', '😍', '🥰', '😘', '💕', '💖', '💗', '🫂', '🖤', '🤍', '🤎', '💙', '💜', '💚', '💛', '🧡', '🌹'],
+                funny: ['😂', '🤣', '💀', '😹', '🤡', '🤪', '🤭'],
+                surprised: ['😮', '😱', '😲', '🤯', '😳', '👀', '⁉️', '🚨'],
+                party: ['🎉', '🎊', '🍻', '🥂', '🍾', '💃', '🕺', '🥳', '🎈'],
+                work: ['💻', '📝', '📈', '🏢', '💼', '☕', '🧠', '🛠️']
             },
             tamil: {
-                happy: ['santhosham', 'magilchi', 'super', 'sema', 'nalla', 'nandri', 'சந்தோஷம்', 'மகிழ்ச்சி', 'நன்று', 'mass', 'verithanam', 'jolly', 'kushi'],
-                sad: ['kavalai', 'varutham', 'sogam', 'kavala', 'kashtam', 'vali', 'கவலை', 'வருத்தம்', 'சோகம்', 'paavam', 'feel', 'azhugai'],
-                angry: ['kovam', 'kaduppu', 'erichal', 'poda', 'loosu', 'mutal', 'கோபம்', 'கடுப்பு', 'எரிச்சல்', 'eruma', 'tension', 'veri'],
-                love: ['kadhal', 'anbu', 'chellam', 'kutti', 'pondatti', 'purushan', 'uyire', 'காதல்', 'அன்பு', 'செல்லம்', 'thangam', 'kannu', 'pasam', 'muththam'],
-                funny: ['sirippu', 'nagaichuvai', 'கலக்கல்', 'சிரிப்பு', 'siripa', 'kalaai', 'comedy'],
-                surprised: ['achariyam', 'athirchi', 'enna', 'nijamava', 'ஆச்சரியம்', 'அதிர்ச்சி', 'appadiya', 'unmaiyava', 'shok', 'bayam']
+                happy: ['santhosham', 'magilchi', 'super', 'sema', 'nalla', 'nandri', 'சந்தோஷம்', 'மகிழ்ச்சி', 'நன்று', 'mass', 'verithanam', 'jolly', 'kushi', 'arputham', 'sirappu', 'nalladhu'],
+                sad: ['kavalai', 'varutham', 'sogam', 'kavala', 'kashtam', 'vali', 'கவலை', 'வருத்தம்', 'சோகம்', 'paavam', 'feel', 'azhugai', 'kaneer', 'valikuthu', 'veruppu'],
+                angry: ['kovam', 'kaduppu', 'erichal', 'poda', 'loosu', 'mutal', 'கோபம்', 'கடுப்பு', 'எரிச்சல்', 'eruma', 'tension', 'veri', 'paithiyam', 'moodu', 'chi'],
+                love: ['kadhal', 'anbu', 'chellam', 'kutti', 'pondatti', 'purushan', 'uyire', 'காதல்', 'அன்பு', 'செல்லம்', 'thangam', 'kannu', 'pasam', 'muththam', 'azhage', 'kanmani'],
+                funny: ['sirippu', 'nagaichuvai', 'கலக்கல்', 'சிரிப்பு', 'siripa', 'kalaai', 'comedy', 'mokkai', 'fun'],
+                surprised: ['achariyam', 'athirchi', 'enna', 'nijamava', 'ஆச்சரியம்', 'அதிர்ச்சி', 'appadiya', 'unmaiyava', 'shok', 'bayam', 'thigil', 'aiyo'],
+                party: ['party', 'kondaattam', 'kondaatam', 'enjoy', 'kudhukalam', 'vibes'],
+                work: ['velai', 'office', 'project', 'work', 'code', 'padipu', 'exam', 'test']
             },
             english: {
-                happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best', 'brilliant', 'fantastic', 'delighted'],
-                sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain', 'heartbroken', 'gloomy', 'tragic'],
-                angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious', 'livid', 'fuming', 'bullshit'],
-                love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute', 'adore', 'soulmate', 'precious'],
-                funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious', 'comical', 'goofy', 'silliness'],
-                surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane', 'flabbergasted', 'stunned', 'unbelievable']
+                happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best', 'brilliant', 'fantastic', 'delighted', 'glad', 'joy', 'perfect', 'excellent'],
+                sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain', 'heartbroken', 'gloomy', 'tragic', 'awful', 'terrible', 'upset', 'grief', 'lonely'],
+                angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious', 'livid', 'fuming', 'bullshit', 'pissed', 'crap', 'garbage', 'worst'],
+                love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute', 'adore', 'soulmate', 'precious', 'darling', 'honey', 'sweetheart', 'gorgeous'],
+                funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious', 'comical', 'goofy', 'silliness', 'silly', 'laugh', 'giggle', 'meme'],
+                surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane', 'flabbergasted', 'stunned', 'unbelievable', 'wtf', 'sudden', 'unexpected'],
+                party: ['party', 'drink', 'drunk', 'celebrate', 'weekend', 'club', 'dance', 'vibes', 'turn up', 'lit', 'fire', 'cheers'],
+                work: ['work', 'job', 'busy', 'meeting', 'tired', 'code', 'deploy', 'office', 'boss', 'stress', 'deadline', 'study', 'school', 'homework']
             }
         };
 
@@ -575,7 +598,8 @@ class EmojiPicker extends HTMLElement {
         messages.forEach((msg, index) => {
             const rawText = (msg.text || '').toLowerCase();
             const tokens = rawText.split(/[\s,.\?!]+/);
-            const timeWeight = 1.0 - (index * 0.06); 
+            // Decay formula: messages further back matter less.
+            const timeWeight = 1.0 - (index * 0.04); 
 
             // Emojis (x3.0 Priority)
             for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
@@ -590,14 +614,28 @@ class EmojiPicker extends HTMLElement {
                 if (!word) continue;
 
                 let isNegated = false;
-                if (i > 0 && negations.includes(tokens[i - 1])) isNegated = true;
+                let isIntensified = false;
 
-                const applyScore = (emotion, value) => {
+                // Lookback window of 2 words for negations and intensifiers
+                for(let j = 1; j <= 2; j++) {
+                    if (i - j >= 0) {
+                        if (negations.includes(tokens[i - j])) isNegated = true;
+                        if (intensifiers.includes(tokens[i - j])) isIntensified = true;
+                    }
+                }
+
+                const applyScore = (emotion, baseValue) => {
+                    let finalValue = baseValue * timeWeight;
+                    if (isIntensified) finalValue *= 1.5; // Boost score if intensified
+
                     if (isNegated) {
-                        if (emotion === 'happy' || emotion === 'love' || emotion === 'funny') scores.sad += value * timeWeight;
-                        else if (emotion === 'sad' || emotion === 'angry') scores.happy += value * timeWeight;
+                        if (emotion === 'happy' || emotion === 'love' || emotion === 'funny' || emotion === 'party') {
+                            scores.sad += finalValue;
+                        } else if (emotion === 'sad' || emotion === 'angry') {
+                            scores.happy += finalValue;
+                        }
                     } else {
-                        scores[emotion] += value * timeWeight;
+                        scores[emotion] += finalValue;
                     }
                 };
 
@@ -613,7 +651,7 @@ class EmojiPicker extends HTMLElement {
 
         // Determine dominant mood
         let dominant = null;
-        let maxScore = 0.5; // Threshold
+        let maxScore = 0.8; // Increased Threshold slightly to avoid false positives
         for (const [emotion, score] of Object.entries(scores)) {
             if (score > maxScore) {
                 maxScore = score;
@@ -629,7 +667,9 @@ class EmojiPicker extends HTMLElement {
                 angry: { name: 'Angry', list: ['😠', '😡', '🤬', '😤', '💥', '💢', '👎', '🛑'] },
                 love: { name: 'In Love', list: ['❤️', '😍', '🥰', '😘', '💕', '💘', '🌹', '✨'] },
                 funny: { name: 'Funny', list: ['😂', '🤣', '💀', '🤡', '😹', '🤪', '🎭', '🔥'] },
-                surprised: { name: 'Surprised', list: ['😮', '🤯', '😲', '😱', '👀', '⁉️', '🚨', '⚡'] }
+                surprised: { name: 'Surprised', list: ['😮', '🤯', '😲', '😱', '👀', '⁉️', '🚨', '⚡'] },
+                party: { name: 'Vibes / Party', list: ['🎉', '🍻', '🥳', '🍾', '💃', '🕺', '🔥', '✨'] },
+                work: { name: 'Grind / Work', list: ['💻', '☕', '🧠', '🛠️', '📉', '💼', '💪', '🥱'] }
             };
             return { name: moodDisplayMap[dominant].name, emojis: moodDisplayMap[dominant].list };
         }
@@ -637,22 +677,36 @@ class EmojiPicker extends HTMLElement {
         return null;
     }
 
-    // AI suggestion engine (Upgraded for 1 line & multiple data points)
+    // AI suggestion engine (Upgraded for deep context checking)
     getSuggestedEmojis() {
-        // Feature 3 & 4: Context Variables (Time of day and Month)
-        const hour = new Date().getHours();
-        const month = new Date().getMonth();
+        const date = new Date();
+        const hour = date.getHours();
+        const month = date.getMonth();
+        const dayOfWeek = date.getDay(); // 0 is Sunday, 6 is Saturday
+        
         let timeModifier = "";
         let seasonModifier = "";
         
-        if (hour > 5 && hour < 11) timeModifier = "morning coffee wake sun breakfast";
-        else if (hour >= 11 && hour < 15) timeModifier = "lunch sandwich food";
-        else if (hour >= 18 && hour < 22) timeModifier = "dinner wine relax evening";
-        else if (hour >= 22 || hour <= 5) timeModifier = "sleep night zzz bed moon";
+        // Deep Circadian rhythms
+        if (hour >= 5 && hour < 9) timeModifier = "morning coffee wake sun breakfast yawn stretch sunrise";
+        else if (hour >= 9 && hour < 12) timeModifier = "work code office computer busy brain desk";
+        else if (hour >= 12 && hour < 14) timeModifier = "lunch sandwich food hungry eat break";
+        else if (hour >= 14 && hour < 17) timeModifier = "afternoon tea work tired sleep yawn screen";
+        else if (hour >= 17 && hour < 20) timeModifier = "sunset evening drive home relax train commute";
+        else if (hour >= 20 && hour < 23) timeModifier = "dinner wine relax tv movie night couch chill";
+        else timeModifier = "sleep night zzz bed moon dark dream stars";
         
-        if (month === 9) seasonModifier = "halloween pumpkin ghost spooky"; // October
-        else if (month === 11) seasonModifier = "christmas tree xmas santa winter cold"; // December
-        else if (month >= 5 && month <= 7) seasonModifier = "summer beach hot sun swim vacation"; // Summer
+        // Deep Weekly rhythms
+        if (dayOfWeek === 5 && hour >= 16) timeModifier += " party beer weekend celebrate dance lit music";
+        if (dayOfWeek === 6) timeModifier += " relax party weekend fun chill outside park";
+        if (dayOfWeek === 1 && hour < 12) timeModifier += " sad tired work stress coffee";
+        
+        // Deep Seasonal rhythms
+        if (month === 9) seasonModifier = "halloween pumpkin ghost spooky scary skull bat spider fall autumn";
+        else if (month === 11) seasonModifier = "christmas tree xmas santa winter cold snow gift cold ice family";
+        else if (month === 0 || month === 1) seasonModifier = "winter cold snow ice freeze mountain snowboard ski fire";
+        else if (month >= 5 && month <= 7) seasonModifier = "summer beach hot sun swim vacation island travel sea heat shades";
+        else if (month === 3 || month === 4) seasonModifier = "spring flower rain sprout bloom tulip bunny green";
 
         // Feature 1: Sequential Prediction Check
         const lastUsed = this.recentEmojis[0] || null;
@@ -668,20 +722,21 @@ class EmojiPicker extends HTMLElement {
                 let score = 0;
                 
                 // 1. Frequency Score (Feature 6: includes implicit decay over time via scoring logic in addToRecents)
-                score += (this.emojiFrequency[e.c] || 0) * 2;
+                score += (this.emojiFrequency[e.c] || 0) * 2.5;
                 
                 // 2. Sequential Score
                 const pairIndex = likelyNext.findIndex(p => p[0] === e.c);
-                if (pairIndex !== -1) score += (10 - pairIndex) * 3; // Massive boost for predicted pairs
+                if (pairIndex !== -1) score += (15 - pairIndex) * 4; // Massive boost for predicted pairs
                 
-                // 3. Time/Circadian Score
-                if (timeModifier && e.k.split(' ').some(word => timeModifier.includes(word))) score += 5;
+                // 3. Time/Circadian & Weekly Score
+                const keywords = e.k.split(' ');
+                if (timeModifier && keywords.some(word => timeModifier.includes(word))) score += 6;
                 
                 // 4. Seasonal Score
-                if (seasonModifier && e.k.split(' ').some(word => seasonModifier.includes(word))) score += 5;
+                if (seasonModifier && keywords.some(word => seasonModifier.includes(word))) score += 5;
                 
                 // 5. Category Affinity Score
-                if (this.categoryAffinity[cat.id]) score += this.categoryAffinity[cat.id] * 0.5;
+                if (this.categoryAffinity[cat.id]) score += this.categoryAffinity[cat.id] * 0.8;
 
                 if (score > 0) {
                     allScores.push({ c: e.c, score: score, k: e.k });
@@ -708,7 +763,7 @@ class EmojiPicker extends HTMLElement {
         return topSuggestions.slice(0, 8);
     }
     
-    // Feature 2: Semantic Context Matching
+    // Feature 2: Semantic Context Matching (Upgraded TF-IDF)
     getRelatedEmojis() {
         if(this.recentEmojis.length === 0) return [];
         const lastUsed = this.recentEmojis[0];
@@ -725,25 +780,41 @@ class EmojiPicker extends HTMLElement {
         
         if(lastUsedKeywords.length === 0) return [];
         
-        // Find other emojis that share these keywords
+        // Calculate document frequency for crude TF-IDF
+        let docFrequency = {};
+        let totalDocs = 0;
+        this.emojiData.forEach(cat => {
+            cat.emojis.forEach(e => {
+                totalDocs++;
+                const words = e.k.split(' ');
+                words.forEach(w => {
+                    docFrequency[w] = (docFrequency[w] || 0) + 1;
+                });
+            });
+        });
+
         let relatedScores = [];
         this.emojiData.forEach(cat => {
             cat.emojis.forEach(e => {
                 if(e.c === lastUsed) return;
-                let overlap = 0;
+                let score = 0;
                 const currentKeywords = e.k.split(' ');
                 
-                // Simple TF-IDF conceptual approach
+                // TF-IDF inspired calculation
                 lastUsedKeywords.forEach(kw => {
-                    if(kw.length > 2 && currentKeywords.includes(kw)) overlap++;
+                    if(kw.length > 2 && currentKeywords.includes(kw)) {
+                        // Rare words have higher weight
+                        let idf = Math.log(totalDocs / (docFrequency[kw] || 1));
+                        score += (1 * idf); 
+                    }
                 });
                 
-                if(overlap > 0) relatedScores.push({c: e.c, overlap: overlap, k: e.k});
+                if(score > 0) relatedScores.push({c: e.c, score: score, k: e.k});
             });
         });
         
-        // Sort by highest overlap, slice to 1 line (8 emojis)
-        return relatedScores.sort((a,b) => b.overlap - a.overlap).slice(0, 8).map(item => ({ c: item.c, k: 'related context' }));
+        // Sort by highest TF-IDF score, slice to 1 line (8 emojis)
+        return relatedScores.sort((a,b) => b.score - a.score).slice(0, 8).map(item => ({ c: item.c, k: 'related context' }));
     }
 
     updateActiveNavOnScroll() {
