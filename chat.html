@@ -880,7 +880,7 @@ box-shadow: var(--received-shadow);
             font-size: 40px;
             pointer-events: none;
             z-index: 3001;
-            animation: floatUp 1.2s var(--ease-spring forwards; /* Improved physics */
+            animation: floatUp 1.2s var(--ease-spring) forwards; /* Improved physics */
             will-change: transform, opacity;
         }
 
@@ -4360,101 +4360,6 @@ box-shadow: var(--received-shadow);
             // Browser handles navigation
         }
     });
-
-    // =========================================
-    //  NEW FEATURE: AI EMOTION/MOOD DETECTION
-    // =========================================
-    const moodDictionary = {
-        happy: { words: ['good', 'great', 'happy', 'yay', 'awesome', 'haha', 'lol', 'nice', 'love', 'fun'], emojis: ['😀','😃','😄','😁','😆','😂','🤣','😊','😇','🙂','🙃','😉','😌'], icon: '😄' },
-        sad: { words: ['sad', 'bad', 'sorry', 'depressed', 'unhappy', 'cry', 'miss', 'pain', 'hurts'], emojis: ['😔','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭'], icon: '😢' },
-        angry: { words: ['angry', 'mad', 'hate', 'stupid', 'furious', 'annoying', 'wtf', 'argh'], emojis: ['😤','😠','😡','🤬','👿'], icon: '😠' },
-        love: { words: ['love', 'babe', 'sweet', 'cute', 'heart', 'miss you', 'beautiful'], emojis: ['🥰','😍','🤩','😘','😗','☺️','😚','😙','❤️','💕','💞'], icon: '😍' }
-    };
-
-    function calculateMood(messages) {
-        let scores = { happy: 0, sad: 0, angry: 0, love: 0, neutral: 1 }; // Base neutral score
-        
-        messages.forEach(msg => {
-            const text = (msg || "").toLowerCase();
-            
-            for (const [mood, data] of Object.entries(moodDictionary)) {
-                // Check Words (Weight: 2)
-                data.words.forEach(word => {
-                    if (new RegExp(`\\b${word}\\b`, 'i').test(text)) scores[mood] += 2;
-                });
-                // Check Emojis (Weight: 3 - highly indicative of tone)
-                data.emojis.forEach(emoji => {
-                    if (text.includes(emoji)) scores[mood] += 3;
-                });
-            }
-        });
-
-        let topMood = 'neutral';
-        let maxScore = scores.neutral;
-
-        for (const [mood, score] of Object.entries(scores)) {
-            if (score > maxScore) {
-                maxScore = score;
-                topMood = mood;
-            }
-        }
-        
-        return topMood === 'neutral' ? '😐' : moodDictionary[topMood].icon;
-    }
-
-    function cycleMoodDisplay() {
-        // Find the video icon dynamically to avoid touching original HTML structure
-        const headerIcons = document.querySelectorAll('.header-actions .header-icon span');
-        let videoIconSpan = null;
-        headerIcons.forEach(span => {
-            if (span.innerText === 'videocam' || span.dataset.isMoodCycle === 'true') {
-                videoIconSpan = span;
-            }
-        });
-
-        if (!videoIconSpan) return;
-        videoIconSpan.dataset.isMoodCycle = 'true';
-
-        // 1. Get the last 10 messages from the opposite person (targetUid) from local messagesMap
-        const oppositeMessages = Array.from(messagesMap.values())
-            .filter(m => m.sender === targetUid && m.text) // Only target user & has text
-            .sort((a, b) => {
-                const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestampIso || 0).getTime();
-                const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestampIso || 0).getTime();
-                return tA - tB;
-            })
-            .slice(-10) // Limit to the last 10 messages
-            .map(m => m.text);
-
-        if (oppositeMessages.length === 0) return; // No text history to analyze yet
-
-        // 2. Run the Machine Learning Heuristic calculation
-        const detectedMoodEmoji = calculateMood(oppositeMessages);
-
-        // 3. Update the UI for 5 seconds
-        const originalClass = videoIconSpan.className; // usually 'material-icons-round'
-        
-        // Transform into Emoji
-        videoIconSpan.innerHTML = detectedMoodEmoji;
-        videoIconSpan.className = ""; // Remove material font class temporarily so the emoji renders properly
-        videoIconSpan.style.fontSize = "22px";
-        videoIconSpan.style.transition = "transform 0.4s var(--ease-spring)";
-        videoIconSpan.style.transform = "scale(1.2)";
-
-        // 4. Revert back to video icon after 5 seconds
-        setTimeout(() => {
-            videoIconSpan.innerHTML = 'videocam';
-            videoIconSpan.className = originalClass; 
-            videoIconSpan.style.transform = "scale(1)";
-            videoIconSpan.style.fontSize = ""; // reset inline style
-        }, 5000);
-    }
-
-    // Start the continuous AI analysis cycle (every 15 seconds)
-    // Waited 5 seconds on boot to ensure messagesMap is hydrated
-    setTimeout(() => {
-        setInterval(cycleMoodDisplay, 15000);
-    }, 5000);
 
 </script>
 
