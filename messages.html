@@ -46,7 +46,7 @@
             backdrop-filter: blur(20px);
             padding-top: max(15px, env(safe-area-inset-top));
         }
-        .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
         /* SEARCH */
         .search-wrap { padding: 12px 20px; padding-bottom: 0; }
@@ -99,12 +99,12 @@
         }
         .online-indicator.active { display: block; }
 
-        .chat-info { flex: 1; min-width: 0; pointer-events: none; }
+        .chat-info { flex: 1; min-width: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
         .chat-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         
         .u-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: #fff; }
         .v-badge { height: 14px; width: 14px; }
-        .last-msg { color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%; transition: color 0.3s; }
+        .last-msg { color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; transition: color 0.3s; flex: 1; padding-right: 10px; }
         .typing-text { color: var(--accent); font-weight: 600; font-style: italic; animation: pulseType 1s infinite; }
         @keyframes pulseType { 50% { opacity: 0.6; } }
 
@@ -119,14 +119,17 @@
             background: rgba(0, 210, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 210, 255, 0.3); 
             padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;
             pointer-events: auto; /* MUST BE AUTO TO CLICK */
+            flex-shrink: 0;
         }
 
-        /* UNREAD BADGE */
+        /* UNREAD BADGE - ALIGNMENT FIXED */
         .unread-badge { 
             width: 14px !important; height: 14px !important; 
             min-width: 14px !important; min-height: 14px !important;
             border-radius: 50%; 
-            display: inline-block !important; /* Fixed rendering style */
+            display: flex !important; 
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0 !important;
             opacity: 1 !important;
             visibility: visible !important;
@@ -137,6 +140,7 @@
             margin: 0 !important;
             padding: 0 !important;
             animation: popBadge 0s forwards; /* Disabled duration to prevent flickering on re-render */
+            position: relative;
         }
         /* Neutralized keyframes so the badge doesn't pulse rapidly when Firebase updates */
         @keyframes popBadge { from { transform: scale(1); } to { transform: scale(1); } }
@@ -178,13 +182,24 @@
         #search-results { display: none; background: #000; min-height: 100vh; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; }
+
+        /* NETWORK TOAST */
+        #offline-toast {
+            display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+            background: #ff4444; color: #fff; padding: 6px 16px; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 700; z-index: 2000; box-shadow: 0 4px 15px rgba(255,68,68,0.4);
+            animation: slideDownToast 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideDownToast { from { top: 40px; opacity: 0; } to { top: 70px; opacity: 1; } }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <header>
-    <div class="header-logo">GOORAC</div>
+    <div class="header-logo" ondblclick="clearAllUnreadBages()">GOORAC</div>
 </header>
+
+<div id="offline-toast">Waiting for network...</div>
 
 <div class="search-wrap">
     <input type="text" class="search-input" id="main-search" placeholder="Search transmissions..." oninput="handleSearch(this.value)" autocomplete="off">
@@ -230,6 +245,10 @@
 <call-notifier></call-notifier>
 
 <script>
+    // --- NEW FEATURE: NETWORK STATUS LISTENERS ---
+    window.addEventListener('offline', () => document.getElementById('offline-toast').style.display = 'block');
+    window.addEventListener('online', () => document.getElementById('offline-toast').style.display = 'none');
+
     // --- 1. IMMEDIATE CACHE LOAD (Zero-Gap) ---
     (function loadInboxCache() {
         const cachedHTML = localStorage.getItem('goorac_inbox_html');
@@ -239,7 +258,7 @@
         }
     })();
 
-    // --- QUANTUM AI FLOATING BUTTON (0ms Cache) ---
+    // --- QUANTUM AI FLOATING BUTTON (Dynamic Update + 0ms Cache) ---
     (function initAIFab() {
         const fab = document.getElementById('ai-fab');
         const fabImg = document.getElementById('ai-fab-img');
@@ -247,22 +266,44 @@
         const cached = localStorage.getItem('quantum_ai_pfp_cache');
         
         fab.style.display = 'block';
+        
+        // Load immediately from cache to ensure 0ms render
         if (cached && cached !== defaultUrl) {
             fabImg.src = cached;
         } else {
             fabImg.src = defaultUrl;
-            fetch(defaultUrl).then(r => r.blob()).then(blob => {
+        }
+
+        // Background Check: See if a new version of the image exists on the server
+        fetch(defaultUrl + '?t=' + new Date().getTime(), { cache: 'no-store' })
+            .then(r => r.blob())
+            .then(blob => {
                 const reader = new FileReader();
-                reader.onloadend = () => localStorage.setItem('quantum_ai_pfp_cache', reader.result);
+                reader.onloadend = () => {
+                    const latestBase64 = reader.result;
+                    // If the server image is different from cache, update it live!
+                    if (cached !== latestBase64) {
+                        localStorage.setItem('quantum_ai_pfp_cache', latestBase64);
+                        fabImg.src = latestBase64;
+                    }
+                };
                 reader.readAsDataURL(blob);
             }).catch(e => {
-                localStorage.setItem('quantum_ai_pfp_cache', defaultUrl);
+                if (!cached) localStorage.setItem('quantum_ai_pfp_cache', defaultUrl);
             });
-        }
         
         fab.addEventListener('touchstart', () => fab.style.transform = 'scale(0.9)');
         fab.addEventListener('touchend', () => fab.style.transform = 'scale(1)');
     })();
+
+    // --- NEW FEATURE: DOUBLE TAP CLEAR UNREAD ---
+    window.clearAllUnreadBages = function() {
+        if(currentChatData.length > 0) {
+            currentChatData.forEach(c => c.isUnread = false);
+            renderInbox();
+            if(navigator.vibrate) navigator.vibrate([30, 50, 30]);
+        }
+    };
 
     // --- FIREBASE INIT ---
     // 1. Check for shared init function (from config.js)
@@ -428,6 +469,10 @@
                 return (b.chat.lastTimestamp?.seconds || 0) - (a.chat.lastTimestamp?.seconds || 0);
             });
 
+            // NEW FEATURE: Update Tab Title with total unread count
+            const totalUnread = currentChatData.filter(c => c.isUnread).length;
+            document.title = totalUnread > 0 ? `(${totalUnread}) Goorac | Quantum Inbox` : `Goorac | Quantum Inbox`;
+
             renderInbox();
         });
     }
@@ -475,6 +520,7 @@
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
             item.setAttribute("onclick", `enterChat(event, '${u.username}')`); 
 
+            // Alignment fixed by making text flex: 1 and meta section flex-shrink: 0
             item.innerHTML = `
                 <div class="pfp-container">
                     <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="chat-pfp">
@@ -493,7 +539,7 @@
                         <div class="last-msg" id="last-msg-${id}" style="${isUnread ? 'color:#fff; font-weight:700;' : ''}">
                             ${lastMsg}
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;" id="meta-${id}">
+                        <div style="display:flex; align-items:center; gap:8px; flex-shrink: 0; justify-content: flex-end;" id="meta-${id}">
                             ${!amIFollowing ? `<button class="follow-btn" onclick="visitProfile(event, '${u.username}')">Profile</button>` : ''}
                             ${isUnread ? `<div class="unread-badge" style="background:${randomColor} !important; box-shadow: 0 0 12px ${randomColor} !important;"></div>` : ''}
                         </div>
