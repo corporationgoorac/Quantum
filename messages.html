@@ -31,6 +31,7 @@
             --glass: rgba(255, 255, 255, 0.03);
             --sheet-bg: #121212;
             --online: #00ff41;
+            --text-main: #ffffff;
         }
 
         body {
@@ -53,6 +54,11 @@
         }
         .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
+        /* NEW HEADER ICON STYLES */
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-icon { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.08); display: block; }
+        .header-title { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.3px; color: var(--text-main); }
+
         /* SEARCH */
         .search-wrap { padding: 12px 20px; padding-bottom: 0; width: 100%; }
         .search-input {
@@ -205,86 +211,81 @@
         .chat-info { width: calc(100% - 73px) !important; }
         .unread-badge { right: 4px !important; } /* Tiny nudge to ensure full glow is visible */
 
-        /* --- NEW STYLES: HEADER PROFILE ICON & ONBOARDING MODAL --- */
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header-pfp { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
-        .header-title { font-weight: 800; font-size: 1.3rem; color: #fff; letter-spacing: -0.5px; }
-
-        #onboarding-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 1000000; display: none;
-            flex-direction: column; overflow-y: auto; padding-bottom: 30px;
-        }
-        .onboard-header {
-            display: flex; align-items: center; padding: 20px;
-            position: sticky; top: 0; background: var(--bg); z-index: 10;
-            padding-top: max(20px, env(safe-area-inset-top));
-        }
-        .onboard-back {
-            background: none; border: none; color: white; font-size: 1.2rem; font-weight: 600;
-            cursor: pointer; padding: 5px 10px 5px 0; margin-right: 15px; display: flex; align-items: center; gap: 5px;
-        }
-        .onboard-content { padding: 20px; text-align: center; max-width: 500px; margin: 0 auto; width: 100%; }
-        .onboard-icon { font-size: 4.5rem; margin-bottom: 20px; animation: floatIcon 3s ease-in-out infinite; }
-        .onboard-title { font-size: 2rem; font-weight: 900; margin-bottom: 10px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .onboard-text { color: var(--text-dim); font-size: 1rem; line-height: 1.6; margin-bottom: 40px; }
-        .onboard-feature { display: flex; align-items: center; text-align: left; gap: 18px; margin-bottom: 20px; background: #111; padding: 20px; border-radius: 20px; border: 1px solid var(--border); }
-        .feature-icon { font-size: 2rem; background: rgba(0, 210, 255, 0.08); min-width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 16px; color: var(--accent); border: 1px solid rgba(0,210,255,0.2); }
-        .feature-text h4 { margin: 0 0 6px 0; font-size: 1.15rem; color: #fff; font-weight: 700; }
-        .feature-text p { margin: 0; font-size: 0.9rem; color: var(--text-dim); line-height: 1.4; }
-        .onboard-btn { background: var(--accent); color: #000; font-weight: 800; font-size: 1.1rem; padding: 18px 30px; border-radius: 24px; border: none; width: 100%; cursor: pointer; margin-top: 30px; box-shadow: 0 4px 20px rgba(0, 210, 255, 0.25); transition: transform 0.2s, background 0.2s; }
-        .onboard-btn:active { transform: scale(0.96); background: #00b8e6; }
-        @keyframes floatIcon { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+        /* --- NEW: INTRO BOTTOM MODAL --- */
+        .modal-overlay-intro { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200000; display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .bottom-modal-intro { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-radius: 32px 32px 0 0; z-index: 200001; padding: 24px 24px calc(40px + env(safe-area-inset-bottom)); transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid var(--border); box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.8); }
+        .modal-handle-intro { width: 48px; height: 5px; background: #333333; border-radius: 10px; margin: 0 auto 24px; cursor: pointer; }
+        .modal-title-intro { font-size: 1.3rem; font-weight: 800; margin-bottom: 12px; color: #ffffff; letter-spacing: -0.5px; }
+        .modal-desc-intro { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 28px; }
+        .feature-list-intro { list-style: none; margin-bottom: 36px; padding: 0; }
+        .feature-list-intro li { display: flex; align-items: flex-start; gap: 16px; font-size: 0.95rem; margin-bottom: 20px; color: #d1d1d1; line-height: 1.5; font-weight: 500; }
+        .feature-list-intro li svg { width: 22px; height: 22px; color: var(--text-main); flex-shrink: 0; margin-top: 2px; }
+        .modal-btn-intro { width: 100%; background: var(--text-main); color: #000000; border: none; padding: 18px; border-radius: 16px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
+        .modal-btn-intro:active { transform: scale(0.97); opacity: 0.9; }
+        
+        /* PERFECT AI FAB DOT ANIMATION */
+        @keyframes pulseOnlineFAB { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(0, 255, 65, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); } }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-<div id="onboarding-modal">
-    <div class="onboard-header">
-        <button class="onboard-back" onclick="closeOnboarding()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            Back
-        </button>
-    </div>
-    <div class="onboard-content">
-        <div class="onboard-icon">🌌</div>
-        <div class="onboard-title">Quantum Inbox</div>
-        <div class="onboard-text">Welcome to your secure, real-time messaging hub. Connect across the network instantly.</div>
-        
-        <div class="onboard-feature">
-            <div class="feature-icon">⚡</div>
-            <div class="feature-text">
-                <h4>Real-Time Sync</h4>
-                <p>Messages arrive at the speed of light with active presence indicators.</p>
-            </div>
-        </div>
-        
-        <div class="onboard-feature">
-            <div class="feature-icon">📌</div>
-            <div class="feature-text">
-                <h4>Pin Transmissions</h4>
-                <p>Long-press any chat to pin your most important conversations to the top.</p>
-            </div>
-        </div>
-
-        <div class="onboard-feature">
-            <div class="feature-icon">🛡️</div>
-            <div class="feature-text">
-                <h4>Secure Erase</h4>
-                <p>Delete history instantly for both parties. Complete data control.</p>
-            </div>
-        </div>
-
-        <button class="onboard-btn" onclick="closeOnboarding()">Start Messaging</button>
-    </div>
+<div class="modal-overlay-intro" id="msg-intro-overlay" onclick="closeIntroModal()"></div>
+<div class="bottom-modal-intro" id="msg-intro-modal">
+    <div class="modal-handle-intro" onclick="closeIntroModal()"></div>
+    <div class="modal-title-intro">Welcome to Messages</div>
+    <div class="modal-desc-intro">Your secure, real-time quantum inbox. Connect with your network instantly.</div>
+    <ul class="feature-list-intro">
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Instant delivery with live presence and typing indicators.</span>
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Long-press any chat to securely erase history for both parties.</span>
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Double-tap the header "Messages" title to clear all unread badges.</span>
+        </li>
+    </ul>
+    <button class="modal-btn-intro" onclick="closeIntroModal()">Got it, start messaging</button>
 </div>
 
 <header>
     <div class="header-left">
-        <img src="https://via.placeholder.com/150" id="my-header-pfp" class="header-pfp" onclick="window.location.href='profile.html'">
+        <img src="images/icon.png" class="header-icon" id="header-app-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/000000/fff?text=G'">
         <div class="header-title" ondblclick="clearAllUnreadBages()">Messages</div>
     </div>
 </header>
+
+<script>
+    (function loadAppIconInstant() {
+        const el = document.getElementById('header-app-icon');
+        const cached = localStorage.getItem('goorac_app_icon_cache_b64');
+        if (cached && el) el.src = cached;
+        
+        // Background fetch to ensure icon is up-to-date
+        fetch('images/icon.png?t=' + new Date().getTime())
+            .then(r => r.blob())
+            .then(b => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (cached !== reader.result) {
+                        localStorage.setItem('goorac_app_icon_cache_b64', reader.result);
+                        if (el) el.src = reader.result;
+                    }
+                }
+                reader.readAsDataURL(b);
+            }).catch(e=>{});
+    })();
+</script>
 
 <div id="offline-toast">Waiting for network...</div>
 
@@ -321,9 +322,9 @@
     </div>
 </div>
 
-<div id="ai-fab" onclick="window.location.href='ai.html'" style="display: none; position: fixed; bottom: 85px; right: 20px; width: 40px; height: 40px; border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.15); background: #111; overflow: hidden; transition: transform 0.2s; touch-action: manipulation;">
-    <img id="ai-fab-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-    <div style="position: absolute; bottom: 0px; right: 0px; width: 10px; height: 10px; background: #00ff41; border-radius: 50%; border: 2px solid #111; z-index: 2;"></div>
+<div id="ai-fab" onclick="window.location.href='ai.html'" style="display: none; position: fixed; bottom: 85px; right: 20px; width: 46px; height: 46px; border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8); border: 1.5px solid rgba(255,255,255,0.15); background: #111; overflow: hidden; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); touch-action: manipulation;">
+    <img id="ai-fab-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
+    <div style="position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background: #00ff41; border-radius: 50%; border: 2px solid #111; z-index: 2; animation: pulseOnlineFAB 2s infinite;"></div>
 </div>
 
 <script src="components/navbar.js" defer></script>
@@ -379,7 +380,7 @@
                 if (!cached) localStorage.setItem('quantum_ai_pfp_cache', defaultUrl);
             });
         
-        fab.addEventListener('touchstart', () => fab.style.transform = 'scale(0.9)');
+        fab.addEventListener('touchstart', () => fab.style.transform = 'scale(0.85)');
         fab.addEventListener('touchend', () => fab.style.transform = 'scale(1)');
     })();
 
@@ -389,6 +390,47 @@
             currentChatData.forEach(c => c.isUnread = false);
             renderInbox();
             if(navigator.vibrate) navigator.vibrate([30, 50, 30]);
+        }
+    };
+
+    // --- NEW FEATURE: FIRST-TIME ONBOARDING LOGIC ---
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('goorac_messages_intro_seen')) {
+            setTimeout(() => {
+                const overlay = document.getElementById('msg-intro-overlay');
+                const modal = document.getElementById('msg-intro-modal');
+                
+                overlay.style.display = 'block';
+                const nav = document.querySelector('main-navbar');
+                if(nav) nav.style.display = 'none';
+                
+                // History state for back button support
+                history.pushState({ modal: 'intro' }, "", "#intro");
+
+                setTimeout(() => {
+                    overlay.style.opacity = '1';
+                    modal.style.bottom = '0';
+                }, 20);
+            }, 600);
+        }
+    });
+
+    window.closeIntroModal = function(shouldGoBack = true) {
+        localStorage.setItem('goorac_messages_intro_seen', 'true');
+        const overlay = document.getElementById('msg-intro-overlay');
+        const modal = document.getElementById('msg-intro-modal');
+        
+        modal.style.bottom = '-100%';
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            const nav = document.querySelector('main-navbar');
+            if(nav) nav.style.display = 'block';
+        }, 350);
+
+        if(shouldGoBack && window.location.hash === "#intro") {
+            history.back();
         }
     };
 
@@ -443,12 +485,6 @@
                 myPinnedChats = data?.pinnedChats || [];
                 myBlockedList = (data?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
                 myShowActivityStatus = data?.showActivityStatus !== false;
-
-                // UPDATE MY HEADER PROFILE PICTURE
-                if(data?.photoURL) {
-                    document.getElementById('my-header-pfp').src = data.photoURL;
-                }
-
                 listenToInbox();
             });
         } else { window.location.href = 'login.html'; }
@@ -712,12 +748,13 @@
         if(nav) nav.classList.add('hide-nav');
     }
 
-    // --- MODIFIED POPSTATE TO SUPPORT BOTH ONBOARDING AND DELETE MENU ---
+    // UPDATED ONPOPSTATE TO HANDLE BOTH MODALS
     window.onpopstate = (e) => { 
-        if(document.getElementById('delete-menu').classList.contains('active')) closeDeleteMenu(false); 
-        if(document.getElementById('onboarding-modal').style.display === 'flex') {
-            document.getElementById('onboarding-modal').style.display = 'none';
-            localStorage.setItem('goorac_inbox_onboarded', 'true');
+        if(document.getElementById('delete-menu').classList.contains('active')) {
+            closeDeleteMenu(false); 
+        }
+        if(document.getElementById('msg-intro-overlay').style.display === 'block') {
+            closeIntroModal(false);
         }
     };
 
@@ -818,20 +855,6 @@
         if(day < 7) return `${day}d ago`;
         return date.toLocaleDateString();
     }
-
-    // --- NEW FEATURE: ONBOARDING MODAL LOGIC ---
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!localStorage.getItem('goorac_inbox_onboarded')) {
-            document.getElementById('onboarding-modal').style.display = 'flex';
-            history.pushState({ modal: 'onboarding' }, '', '#onboard');
-        }
-    });
-
-    window.closeOnboarding = function() {
-        localStorage.setItem('goorac_inbox_onboarded', 'true');
-        document.getElementById('onboarding-modal').style.display = 'none';
-        if (window.location.hash === '#onboard') history.back();
-    };
 </script>
 </body>
 </html>
