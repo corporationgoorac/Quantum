@@ -1399,7 +1399,12 @@ const NotesManager = {
             const cached = localStorage.getItem('my_note_cache_' + user.uid);
             if (cached) {
                 const data = JSON.parse(cached);
-                if (!data.expiresAt || new Date(data.expiresAt) > new Date()) {
+                
+                // FIX: Calculate proper expiry using createdAt as a fallback
+                const createdAtDate = data.createdAt ? new Date(data.createdAt) : new Date();
+                const expiryTime = data.expiresAt ? new Date(data.expiresAt) : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
+
+                if (expiryTime > new Date()) {
                     preview.classList.add('visible');
                     preview.style.background = data.bgColor || '#262626'; 
                     preview.style.color = data.textColor || '#fff';
@@ -1436,7 +1441,11 @@ const NotesManager = {
                     data = doc.data();
                     noteId = doc.id;
                     
-                    if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+                    // FIX: Reliable expiry check inside the snapshot
+                    const createdAtDate = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date();
+                    const expiryTime = data.expiresAt ? data.expiresAt.toDate() : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
+
+                    if (expiryTime < new Date()) {
                         db.collection("notes").doc(noteId).update({ isActive: false });
                         data = null;
                     }
@@ -1495,7 +1504,12 @@ const NotesManager = {
             if (cached) {
                 cachedMutualNotes = JSON.parse(cached);
                 for (const [userUid, noteData] of Object.entries(cachedMutualNotes)) {
-                    if (noteData.expiresAt && new Date(noteData.expiresAt) > new Date()) {
+                    
+                    // FIX: Fallback expiry calculation for cached mutual notes
+                    const createdAtDate = noteData.createdAt ? new Date(noteData.createdAt) : new Date();
+                    const expiryTime = noteData.expiresAt ? new Date(noteData.expiresAt) : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
+
+                    if (expiryTime > new Date()) {
                         const existingEl = document.getElementById(`note-${userUid}`);
                         if(existingEl) existingEl.remove();
 
@@ -1574,7 +1588,11 @@ const NotesManager = {
                             const existingEl = document.getElementById(`note-${userUid}`);
                             if(existingEl) existingEl.remove();
 
-                            if (change.type !== "removed" && (!noteData.expiresAt || noteData.expiresAt.toDate() > new Date())) {
+                            // FIX: Reliable expiry check for incoming snapshots
+                            const createdAtDate = noteData.createdAt ? (noteData.createdAt.toDate ? noteData.createdAt.toDate() : new Date(noteData.createdAt)) : new Date();
+                            const expiryTime = noteData.expiresAt ? noteData.expiresAt.toDate() : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
+
+                            if (change.type !== "removed" && expiryTime > new Date()) {
                                 
                                 if (noteData.audience === 'close_friends' && noteData.uid !== user.uid) {
                                     try {
