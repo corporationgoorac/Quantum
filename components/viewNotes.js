@@ -1399,8 +1399,12 @@ const NotesManager = {
         try {
             const rawCacheStr = localStorage.getItem('my_note_cache_' + user.uid);
             if (!rawCacheStr) {
-                preview.classList.remove('visible');
+                preview.classList.add('visible'); 
+                preview.style.background = 'rgba(255,255,255,0.1)';
+                preview.style.color = 'rgba(255,255,255,0.7)';
+                preview.innerHTML = `<div class="note-text-content" style="font-size:0.7rem; font-weight:400;">What's on your mind?</div>`;
                 btn.classList.remove('has-note');
+                btn.onclick = () => window.location.href = 'notes.html';
             }
         } catch(e) {}
 
@@ -1433,8 +1437,12 @@ const NotesManager = {
                     };
                 } else {
                     localStorage.removeItem('my_note_cache_' + user.uid);
-                    preview.classList.remove('visible'); // ADDED HTML REMOVAL
-                    btn.classList.remove('has-note');    // ADDED HTML REMOVAL
+                    preview.classList.add('visible'); 
+                    preview.style.background = 'rgba(255,255,255,0.1)';
+                    preview.style.color = 'rgba(255,255,255,0.7)';
+                    preview.innerHTML = `<div class="note-text-content" style="font-size:0.7rem; font-weight:400;">What's on your mind?</div>`;
+                    btn.classList.remove('has-note');
+                    btn.onclick = () => window.location.href = 'notes.html';
                 }
             }
         } catch(e) {}
@@ -1494,7 +1502,7 @@ const NotesManager = {
                     // If snapshot is empty, the note was archived or deleted. Wipe the cache AND the screen.
                     localStorage.removeItem('my_note_cache_' + user.uid);
                     
-                    preview.classList.remove('visible');
+                    preview.classList.add('visible'); 
                     preview.style.background = 'rgba(255,255,255,0.1)';
                     preview.style.color = 'rgba(255,255,255,0.7)';
                     preview.innerHTML = `<div class="note-text-content" style="font-size:0.7rem; font-weight:400;">What's on your mind?</div>`;
