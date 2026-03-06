@@ -236,14 +236,6 @@
             </label>
         </div>
 
-        <div class="setting-row">
-            <span style="font-size:14px; font-weight:600;">Show on Search Results</span>
-            <label class="switch">
-                <input type="checkbox" id="search-result-toggle" onchange="updateSearchResultPref(this.checked)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
         <div class="setting-row" onclick="history.back(); setTimeout(() => document.getElementById('cf-selector').open(), 50);">
             <span style="font-size:14px; font-weight:600;">Close Friends</span>
             <span class="material-icons-round" style="color:var(--secondary);">chevron_right</span>
@@ -252,6 +244,14 @@
         <div class="setting-row" onclick="openBlockedList()">
             <span style="font-size:14px; font-weight:600;">Blocked Accounts</span>
             <span class="material-icons-round" style="color:var(--secondary);">chevron_right</span>
+        </div>
+
+        <div class="setting-row">
+            <span style="font-size:14px; font-weight:600;">Show my profile on speech</span>
+            <label class="switch">
+                <input type="checkbox" id="search-result-toggle" onchange="updateSearchResultPref(this.checked)">
+                <span class="slider"></span>
+            </label>
         </div>
 
         <div style="padding:40px 0; text-align:center; color:var(--secondary); font-size:11px; letter-spacing:1px; font-weight:800;">
@@ -430,7 +430,7 @@
         try {
             await db.collection("users").doc(user.uid).update({ searchResult: isEnabled });
             if (navigator.vibrate) navigator.vibrate(30);
-            showToast(isEnabled ? "Visible in Search" : "Hidden from Search");
+            showToast(isEnabled ? "Visible on Speech" : "Hidden from Speech");
         } catch (error) {
             console.error("Failed to update search pref", error);
             showToast("Update failed");
