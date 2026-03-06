@@ -1,6 +1,6 @@
 {
   "name": "Quantum",
-  "short_name": "Goorac",
+  "short_name": "Quantum",
   "start_url": "/home.html",
   "scope": "/",
   "display": "standalone",
@@ -9,12 +9,12 @@
   "description": "The Goorac Quantum official web app.",
   "icons": [
     {
-      "src": "images/icon.png",
+      "src": "images/icon.png?v=2",
       "type": "image/png",
       "sizes": "128x128"
     },
     {
-      "src": "images/icon.png",
+      "src": "images/icon.png?v=2",
       "type": "image/png",
       "sizes": "512x512"
     }
