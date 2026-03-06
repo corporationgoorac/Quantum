@@ -217,6 +217,23 @@
         .read-btn-big { background: rgba(255, 109, 0, 0.1); color: var(--accent); border: 1px solid rgba(255, 109, 0, 0.2); }
         .copy-btn-big { background: #1a1a1a; color: #fff; border: 1px solid var(--border); }
         .cancel-btn-msg { background: transparent; color: #666; font-size: 0.9rem; margin-top: 10px; padding: 10px; }
+
+        /* --- NEW ADDITIONS: TTS WORD HIGHLIGHT OVERLAY --- */
+        #tts-overlay-text {
+            position: fixed;
+            top: 15%; left: 5%; width: 90%; height: 35%;
+            display: none; align-content: flex-start; justify-content: center; flex-wrap: wrap; gap: 8px;
+            z-index: 100001; pointer-events: none; overflow: hidden;
+        }
+        #tts-overlay-text.active { display: flex; }
+        .tts-word {
+            font-size: 2rem; font-weight: 800; color: rgba(255, 255, 255, 0.2);
+            transition: color 0.15s ease, transform 0.15s var(--ease-spring);
+            font-family: 'Playfair Display', serif; text-align: center;
+        }
+        .tts-word.spoken {
+            color: var(--accent); transform: scale(1.15); text-shadow: 0 0 20px var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -242,7 +259,7 @@
             </div>
             <div class="h-info">
                 <div class="h-name-wrapper">
-                    <div class="h-name" id="h-display-name">Quantum</div>
+                    <div class="h-name" id="h-display-name">Quantum AI</div>
                     <img id="v-badge" class="v-badge" style="display: block;" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231DA1F2' d='M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .495.083.965.238 1.4-1.272.65-2.147 2.02-2.147 3.6 0 1.457.746 2.74 1.863 3.494C2.988 16.68 2.66 17.59 2.66 18.5c0 2.11 1.81 3.818 3.962 3.818.84 0 1.624-.306 2.23-.83-.015.108-.02.217-.02.327 0 1.34 1.438 2.43 3.21 2.43s3.213-1.09 3.213-2.43c0-.11-.005-.218-.02-.327.605.524 1.39.83 2.23.83 2.15 0 3.96-1.71 3.96-3.82 0-.91-.328-1.82-.704-2.505 1.117-.754 1.864-2.037 1.864-3.494z'/%3E%3Cpath fill='%23000000' d='M10.135 16.253l-3.32-3.46c-.39-.407-.377-1.054.03-1.444.406-.39 1.053-.377 1.443.03l2.03 2.114 4.86-6.52c.337-.453.977-.545 1.43-.208.453.337.545.977.208 1.43l-5.6 7.51c-.2.27-.516.425-.852.418-.337-.007-.647-.18-.83-.47z'/%3E%3C/svg%3E">
                 </div>
                 <div class="h-username-sub" id="h-username-label">Active now</div>
@@ -304,6 +321,7 @@
 </div>
 
 <div class="msg-menu-overlay" id="msg-overlay" onclick="closeMsgMenu(true)"></div>
+<div id="tts-overlay-text" class="tts-display-container"></div>
 <div id="msg-options-menu">
     <div style="width: 40px; height: 4px; background: #333; border-radius: 4px; margin: 0 auto 20px auto;"></div>
     <div class="msg-action-list">
@@ -389,7 +407,7 @@
                 setTimeout(() => window.scrollToBottom(), 100);
             } catch(e) {}
         } else {
-            setTimeout(() => { addLocalMessage("Hello! I am Quantum, your verified AI assistant. How can I help you today?", targetUid); }, 500);
+            setTimeout(() => { addLocalMessage("Hello! I am Quantum AI, your verified AI assistant. How can I help you today?", targetUid); }, 500);
         }
     })();
 
@@ -585,9 +603,11 @@
     const mainPicker = document.getElementById('main-picker');
     if(mainPicker) { mainPicker.addEventListener('emoji-click', event => { mInput.value += event.detail.emoji || event.detail.unicode; mInput.dispatchEvent(new Event('input')); }); }
 
-    // --- NEW ADDITION: LONG PRESS AND MODAL LOGIC ---
+    // --- NEW ADDITION: LONG PRESS, DOUBLE TAP, AND TTS LOGIC ---
     let msgPressTimer;
     let selectedMsgText = "";
+    let lastTapTime = 0;
+    let lastTapId = null;
 
     window.startMsgLongPress = function(e, textElementId) {
         const el = document.getElementById(textElementId);
@@ -599,11 +619,36 @@
         msgPressTimer = setTimeout(() => {
             if(navigator.vibrate) navigator.vibrate(40);
             openMsgMenu();
-        }, 500); // 500ms hold time
+        }, 500); 
     };
     
     window.cancelMsgLongPress = function() { clearTimeout(msgPressTimer); };
     window.endMsgLongPress = function() { clearTimeout(msgPressTimer); };
+
+    window.handleMsgDoubleTap = function(e, textElementId, side) {
+        const currentTime = new Date().getTime();
+        const tapLen = currentTime - lastTapTime;
+        
+        if (tapLen < 300 && tapLen > 0 && lastTapId === textElementId) {
+            const el = document.getElementById(textElementId);
+            if(!el) return;
+            const text = el.innerText || el.textContent;
+            
+            if (side === 'sent') {
+                mInput.value = text;
+                mInput.dispatchEvent(new Event('input'));
+                mInput.focus();
+            } else {
+                selectedMsgText = text;
+                openMsgMenu();
+                setTimeout(() => readAloudSelected(), 250); // Auto-play listen mode
+            }
+            lastTapTime = 0; 
+        } else {
+            lastTapTime = currentTime;
+            lastTapId = textElementId;
+        }
+    };
 
     window.openMsgMenu = function() {
         history.pushState({ msgMenuOpen: true }, "", "#msgoptions");
@@ -614,8 +659,9 @@
     window.closeMsgMenu = function(goBack) {
         document.getElementById('msg-options-menu').classList.remove('active');
         document.getElementById('msg-overlay').style.display = 'none';
+        document.getElementById('tts-overlay-text').classList.remove('active'); // Hide TTS blur layer overlay
         if(goBack && window.location.hash === "#msgoptions") history.back();
-        window.speechSynthesis.cancel(); // Stop reading if closed
+        if('speechSynthesis' in window) window.speechSynthesis.cancel(); 
     };
 
     window.addEventListener('popstate', (e) => { 
@@ -639,22 +685,58 @@
 
     window.readAloudSelected = function() {
         if (!('speechSynthesis' in window)) return alert("Text-to-speech not supported on this device.");
-        window.speechSynthesis.cancel(); // Stop any current speech
+        window.speechSynthesis.cancel(); 
         
+        const ttsContainer = document.getElementById('tts-overlay-text');
+        ttsContainer.innerHTML = '';
+        ttsContainer.classList.add('active');
+
+        // Render words on blur layer to highlight sequentially
+        const words = selectedMsgText.match(/\S+/g) || [];
+        let charOffset = 0;
+        const wordData = [];
+
+        words.forEach((word, index) => {
+            const span = document.createElement('span');
+            span.className = 'tts-word';
+            span.id = 'tts-word-' + index;
+            span.innerText = word;
+            ttsContainer.appendChild(span);
+            
+            const actualStart = selectedMsgText.indexOf(word, charOffset);
+            wordData.push({ start: actualStart, end: actualStart + word.length, element: span });
+            charOffset = actualStart + word.length;
+        });
+
         const utterance = new SpeechSynthesisUtterance(selectedMsgText);
         
-        // Find best professional/premium voice
+        // Find Professional Google Voice 
         const voices = window.speechSynthesis.getVoices();
-        let bestVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Premium') || v.name.includes('Natural') || v.name.includes('Samantha'));
+        let bestVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('en'));
+        if(!bestVoice) bestVoice = voices.find(v => v.name.includes('Google'));
+        if(!bestVoice) bestVoice = voices.find(v => v.name.includes('Premium') || v.name.includes('Natural'));
         if(!bestVoice) bestVoice = voices.find(v => v.lang.startsWith('en-'));
         if(bestVoice) utterance.voice = bestVoice;
         
-        utterance.rate = 1.0; // Professional pacing
+        utterance.rate = 0.95; // Optimal professional pace
         
+        // Synced highlight animation
+        utterance.onboundary = (event) => {
+            if (event.name === 'word') {
+                const charIndex = event.charIndex;
+                wordData.forEach(w => w.element.classList.remove('spoken'));
+                const currentWord = wordData.find(w => charIndex >= w.start && charIndex <= w.end);
+                if (currentWord) {
+                    currentWord.element.classList.add('spoken');
+                    currentWord.element.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            }
+        };
+
+        utterance.onend = () => { ttsContainer.classList.remove('active'); };
         window.speechSynthesis.speak(utterance);
     };
 
-    // Pre-load voices for mobile devices
     if('speechSynthesis' in window) {
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
@@ -708,13 +790,14 @@
         if(isFirstInGroup && isLastInGroup) rowClass += ' single';
         rowDiv.className = rowClass;
         
-        // NEW ADDITION: Long press listeners attached to the message row
+        // NEW ADDITION: Long press AND double tap listeners attached to the message row
         rowDiv.setAttribute("ontouchstart", `startMsgLongPress(event, 'text-${id}')`);
         rowDiv.setAttribute("ontouchend", "endMsgLongPress()");
         rowDiv.setAttribute("ontouchmove", "cancelMsgLongPress()");
         rowDiv.setAttribute("onmousedown", `startMsgLongPress(event, 'text-${id}')`);
         rowDiv.setAttribute("onmouseup", "endMsgLongPress()");
         rowDiv.setAttribute("onmouseleave", "cancelMsgLongPress()");
+        rowDiv.setAttribute("onclick", `handleMsgDoubleTap(event, 'text-${id}', '${side}')`);
 
         let groupClass = (isFirstInGroup && isLastInGroup) ? 'single' : isFirstInGroup ? 'group-top' : isLastInGroup ? 'group-bottom' : 'group-mid';
         let mediaHtml = ''; let bubbleClass = `bubble ${groupClass}`; let bubbleStyle = '';
