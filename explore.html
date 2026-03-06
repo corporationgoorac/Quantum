@@ -18,15 +18,18 @@
     <script src="components/chatLoader.js" defer></script>
     <chat-loader></chat-loader>
 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --bg: #000000;
-            --surface: #121212;
+            --surface: #0a0a0a;
+            --surface-press: #151515;
             --card: #0a0a0a;
             --accent: #00d2ff;
-            --border: #262626;
-            --text-main: #ffffff;
-            --text-dim: #8e8e8e;
+            --border: #1f1f1f;
+            --text-main: #FFFFFF;
+            --text-dim: #888888;
             --safe-top: env(safe-area-inset-top);
         }
 
@@ -35,10 +38,11 @@
         body {
             background-color: var(--bg);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding-bottom: 100px;
             overflow-x: hidden;
             user-select: none; -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* --- HEADER --- */
@@ -50,30 +54,31 @@
             border-bottom: 1px solid var(--border);
         }
         .header-icon { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
-        .header-title { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.3px; }
+        .header-title { font-weight: 800; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
 
         /* --- SEARCH BAR --- */
         .search-container { padding: 16px; position: sticky; top: calc(52px + var(--safe-top)); background: var(--bg); z-index: 40; }
         .search-wrapper {
-            background: #262626; border-radius: 12px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
             display: flex; align-items: center; padding: 0 12px;
-            height: 40px; transition: 0.2s;
+            height: 44px; transition: 0.2s;
         }
-        .search-wrapper:focus-within { background: #333; border: 1px solid #444; }
-        .search-icon { color: var(--text-dim); font-size: 1.1rem; margin-right: 8px; }
+        .search-wrapper:focus-within { background: var(--surface-press); border-color: var(--accent); }
+        .search-icon { color: var(--text-dim); margin-right: 8px; display: flex; align-items: center; justify-content: center; }
         
         .search-input {
             flex: 1; background: transparent; border: none; color: white;
-            font-size: 0.95rem; outline: none; height: 100%;
+            font-size: 14px; outline: none; height: 100%; font-family: 'Inter', sans-serif;
             -webkit-user-select: text !important; user-select: text !important;
         }
-        .search-input::placeholder { color: var(--text-dim); }
+        .search-input::placeholder { color: var(--text-dim); font-weight: 500; }
 
         .kbd-toggle {
             background: transparent; border: none; color: var(--text-dim);
-            font-size: 1.2rem; cursor: pointer; padding: 4px;
-            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; padding: 4px;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
+        .kbd-toggle:active { transform: scale(0.9); color: var(--text-main); }
 
         /* --- RESULTS GRID --- */
         #result-area { padding: 0 16px; display: flex; flex-direction: column; gap: 16px; }
@@ -84,45 +89,46 @@
             display: flex; flex-direction: column; gap: 12px;
         }
         .uc-top { display: flex; align-items: center; gap: 12px; }
-        .uc-pfp { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: #333; border: 1px solid #444; }
+        .uc-pfp { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: #111; border: 1px solid var(--border); }
         .uc-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .uc-name-row { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 1rem; color: #fff; }
+        .uc-name-row { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 15px; color: #fff; letter-spacing: -0.3px;}
         .v-badge { width: 14px; height: 14px; }
-        .uc-username { color: var(--text-dim); font-size: 0.85rem; font-weight: 500; margin-top: 2px; }
-        .uc-stats { font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-top: 4px; }
+        .uc-username { color: var(--text-dim); font-size: 13px; font-weight: 500; margin-top: 2px; }
+        .uc-stats { font-size: 11px; color: var(--accent); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .uc-actions { display: flex; gap: 8px; }
         .btn {
-            flex: 1; height: 36px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
-            display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+            flex: 1; height: 38px; border-radius: 10px; font-weight: 700; font-size: 13px;
+            display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s;
         }
-        .btn-view { background: #262626; color: white; }
-        .btn-msg { background: var(--accent); color: black; }
+        .btn-view { background: #1a1a1a; color: white; border: 1px solid var(--border); }
+        .btn-msg { background: var(--text-main); color: #000; }
+        .btn:active { transform: scale(0.97); }
         
-        .no-results { text-align: center; color: var(--text-dim); padding: 40px 20px; font-size: 0.9rem; }
+        .no-results { text-align: center; color: var(--text-dim); padding: 40px 20px; font-size: 13px; font-weight: 500; }
 
         /* --- SKELETON LOADING --- */
-        .skeleton { background: #222 !important; position: relative; overflow: hidden; border-color: transparent !important; color: transparent !important; }
-        .skeleton * { visibility: hidden; }
+        .skeleton { position: relative; overflow: hidden; }
+        .skeleton-block { background: #1a1a1a; border-radius: 4px; }
         .skeleton::after {
             content: ""; position: absolute; inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-            animation: shimmer 1.2s infinite;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            animation: shimmer 1.2s infinite; pointer-events: none;
         }
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
         /* --- TOAST --- */
         #toast {
             position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-            background: #ff4444; color: white; padding: 12px 24px; border-radius: 30px;
-            font-weight: 600; font-size: 0.85rem; z-index: 9999; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(255,0,0,0.3);
+            background: var(--text-main); color: #000; padding: 12px 24px; border-radius: 16px;
+            font-weight: 700; font-size: 13px; z-index: 9999; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 8px;
         }
         #toast.show { top: calc(20px + var(--safe-top)); }
 
         /* --- ONE-TIME MODAL --- */
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             z-index: 2000; display: none; opacity: 0; transition: opacity 0.3s;
         }
         .bottom-modal {
@@ -132,39 +138,49 @@
             transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             border-top: 1px solid var(--border);
         }
-        .modal-handle { width: 40px; height: 4px; background: #444; border-radius: 10px; margin: 0 auto 20px; }
-        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; color: #fff; }
-        .modal-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 20px; }
-        .feature-list { list-style: none; margin-bottom: 25px; }
-        .feature-list li { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; margin-bottom: 12px; color: #ccc; }
-        .feature-list li span { font-size: 1.2rem; }
+        .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 10px; margin: 0 auto 20px; }
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; color: #fff; letter-spacing: -0.5px;}
+        .modal-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 24px; }
+        .feature-list { list-style: none; margin-bottom: 30px; }
+        .feature-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; margin-bottom: 16px; color: #ccc; line-height: 1.4; font-weight: 500;}
+        .feature-list li svg { width: 20px; height: 20px; color: var(--text-main); flex-shrink: 0; margin-top: 2px;}
         .modal-btn {
-            width: 100%; background: var(--accent); color: #000; border: none; padding: 16px;
-            border-radius: 14px; font-weight: 800; font-size: 1rem; cursor: pointer;
+            width: 100%; background: var(--text-main); color: #000; border: none; padding: 16px;
+            border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s;
         }
+        .modal-btn:active { transform: scale(0.97); }
         
-        #load-more { text-align: center; padding: 20px; color: var(--text-dim); display: none; font-size: 0.85rem; }
+        #load-more { text-align: center; padding: 20px; color: var(--text-dim); display: none; font-size: 13px; font-weight: 500; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <header>
-    <img src="images/icon.png" class="header-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/28/00d2ff/000?text=G'">
+    <img src="images/icon.png" class="header-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/28/000000/fff?text=G'">
     <div class="header-title">Explore People</div>
 </header>
 
 <div class="search-container">
     <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </span>
         <input type="text" 
                id="search-input" 
                class="search-input" 
                placeholder="Search Name or Username" 
-               autocomplete="off" 
+               autocomplete="nope" 
                autocorrect="off" 
                spellcheck="false" 
-               data-lpignore="true">
-        <button class="kbd-toggle" id="kbd-toggle" title="Switch to Goorac ID Search">🔢</button>
+               autocapitalize="none"
+               role="presentation"
+               name="goorac_explore_search"
+               data-lpignore="true"
+               data-1p-ignore="true"
+               data-form-type="other">
+        <button class="kbd-toggle" id="kbd-toggle" title="Switch to Goorac ID Search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+        </button>
     </div>
 </div>
 
@@ -172,7 +188,10 @@
     </div>
 <div id="load-more">Fetching more...</div>
 
-<div id="toast">Error Message</div>
+<div id="toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span id="toast-msg">Error Message</span>
+</div>
 
 <div class="modal-overlay" id="intro-overlay"></div>
 <div class="bottom-modal" id="intro-modal">
@@ -180,10 +199,22 @@
     <div class="modal-title">Welcome to Explore</div>
     <div class="modal-desc">Discover and connect with people securely across the Goorac network.</div>
     <ul class="feature-list">
-        <li><span>🔍</span> Find users by Name or Username.</li>
-        <li><span>🔢</span> Tap the numbers icon to search via exact Goorac ID.</li>
-        <li><span>🛡️</span> Privacy first: Users who hide their profile from search can only be found via their exact Goorac ID.</li>
-        <li><span>✨</span> Machine learning prioritizes verified and relevant accounts.</li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Find users by their Name or Username.</span>
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+            <span>Tap the grid icon to search via exact Goorac ID numbers.</span>
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Privacy first: Users who hide their profile from search can only be found via their exact 10-digit Goorac ID.</span>
+        </li>
+        <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Machine learning prioritizes verified and relevant accounts globally.</span>
+        </li>
     </ul>
     <button class="modal-btn" onclick="closeIntroModal()">Got it, let's explore</button>
 </div>
@@ -210,7 +241,12 @@
     const resultArea = document.getElementById('result-area');
     const loadMoreIndicator = document.getElementById('load-more');
     const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
     const mainNav = document.getElementById('main-nav');
+
+    // SVGs for the toggle button
+    const iconNumpad = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>`;
+    const iconKeyboard = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="8" y1="12" x2="8.01" y2="12"></line><line x1="12" y1="12" x2="12.01" y2="12"></line><line x1="16" y1="12" x2="16.01" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>`;
 
     let isNumericMode = false;
     let searchTimeout = null;
@@ -242,7 +278,7 @@
     }
 
     function showToast(msg) {
-        toast.innerText = msg;
+        toastMsg.innerText = msg;
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
@@ -251,13 +287,13 @@
     kbdToggle.onclick = () => {
         isNumericMode = !isNumericMode;
         if (isNumericMode) {
-            searchInput.type = 'tel'; // Best for numbers without UI arrows, prevents password popups
+            searchInput.type = 'tel'; 
             searchInput.placeholder = 'Enter 10-digit Goorac ID';
-            kbdToggle.innerText = '🔤';
+            kbdToggle.innerHTML = iconKeyboard;
         } else {
             searchInput.type = 'text';
             searchInput.placeholder = 'Search Name or Username';
-            kbdToggle.innerText = '🔢';
+            kbdToggle.innerHTML = iconNumpad;
         }
         searchInput.value = '';
         resultArea.innerHTML = '';
@@ -272,7 +308,7 @@
         currentLimit = 10; // reset pagination
 
         if (isNumericMode) {
-            // Force numbers only
+            // Force numbers only for ID Search
             e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
             if (e.target.value.length === 10) {
                 renderSkeletons();
@@ -281,9 +317,10 @@
                 resultArea.innerHTML = '';
             }
         } else {
+            // Name/Username Text Search
             if (query.length >= 2) {
                 renderSkeletons();
-                searchTimeout = setTimeout(() => executeSearch(query), 500); // 500ms debounce
+                searchTimeout = setTimeout(() => executeSearch(query), 500); 
             } else {
                 resultArea.innerHTML = '';
             }
@@ -292,42 +329,37 @@
 
     async function executeSearch(query) {
         try {
-            let resultsMap = new Map(); // Use Map to deduplicate by UID
+            let resultsMap = new Map(); 
 
             if (isNumericMode) {
-                // Exact Goorac ID Match (Bypasses Discoverability Toggle)
+                // Exact Goorac ID Match -> Show Everyone (Bypasses Discoverability Toggle)
                 const snapshot = await db.collection('users').where('gooracNumber', '==', parseInt(query)).get();
                 snapshot.forEach(doc => resultsMap.set(doc.id, doc.data()));
             } else {
-                // Prefix search for username and name. 
-                // Using \uf8ff is the standard Firebase way to do "startsWith" string queries.
+                // Name or Username Search -> Strictly requires discoverability to be enabled (searchResult === true)
                 const userRef = db.collection('users');
                 
-                // Query 1: Username
                 const userSnap = await userRef
                     .where('username', '>=', query)
                     .where('username', '<=', query + '\uf8ff')
                     .limit(currentLimit)
                     .get();
                 
-                // Query 2: Name (Requires lowercase indexing or exact match, assuming basic matching for now)
-                // Note: Firestore is case sensitive. We assume name searches might need exact or proper case matching,
-                // but we will do our best with standard queries.
                 const nameSnap = await userRef
                     .where('name', '>=', query)
                     .where('name', '<=', query + '\uf8ff')
                     .limit(currentLimit)
                     .get();
 
+                // Apply strict searchResult filter
                 userSnap.forEach(doc => {
                     const data = doc.data();
-                    // Apply discoverability filter ONLY for name/username search
-                    if (data.searchResult !== false) resultsMap.set(doc.id, data);
+                    if (data.searchResult === true) resultsMap.set(doc.id, data);
                 });
                 
                 nameSnap.forEach(doc => {
                     const data = doc.data();
-                    if (data.searchResult !== false) resultsMap.set(doc.id, data);
+                    if (data.searchResult === true) resultsMap.set(doc.id, data);
                 });
             }
 
@@ -369,22 +401,23 @@
         let html = '';
         for(let i=0; i<3; i++) {
             html += `
-            <div class="user-card skeleton">
+            <div class="user-card skeleton" style="border: 1px solid var(--border); background: var(--surface);">
                 <div class="uc-top">
-                    <div class="uc-pfp"></div>
+                    <div class="uc-pfp skeleton-block" style="border:none;"></div>
                     <div class="uc-info">
-                        <div style="height: 16px; width: 60%; background: #444; border-radius: 4px; margin-bottom: 6px;"></div>
-                        <div style="height: 12px; width: 40%; background: #444; border-radius: 4px;"></div>
+                        <div class="skeleton-block" style="height: 15px; width: 50%; margin-bottom: 6px;"></div>
+                        <div class="skeleton-block" style="height: 13px; width: 35%; margin-bottom: 6px;"></div>
+                        <div class="skeleton-block" style="height: 11px; width: 45%;"></div>
                     </div>
                 </div>
                 <div class="uc-actions">
-                    <div class="btn" style="background: #444;"></div>
-                    <div class="btn" style="background: #444;"></div>
+                    <div class="btn skeleton-block" style="height: 38px; border: none; background: #1a1a1a;"></div>
+                    <div class="btn skeleton-block" style="height: 38px; border: none; background: #1a1a1a;"></div>
                 </div>
             </div>`;
         }
         resultArea.innerHTML = html;
-        observer.disconnect(); // pause observer while loading
+        observer.disconnect(); 
     }
 
     function renderResults(users) {
