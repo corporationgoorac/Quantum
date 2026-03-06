@@ -49,6 +49,10 @@
             --accent-green: #00ff9d;
             --accent-gold: #ffd700;
 
+            /* Depth & Polish */
+            --shadow-glow: 0 0 20px rgba(0, 112, 243, 0.15);
+            --shadow-deep: 0 20px 60px rgba(0,0,0,0.9);
+
             /* Fonts */
             --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -138,8 +142,9 @@
             width: 36px; height: 36px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             color: var(--text-muted); cursor: pointer; transition: 0.2s;
+            box-shadow: inset 0 0 0 1px transparent;
         }
-        .act-btn:hover { color: #fff; background: var(--bg-surface); }
+        .act-btn:hover { color: #fff; background: var(--bg-surface); box-shadow: inset 0 0 0 1px var(--border-mid); }
         .act-btn.highlight { color: #000; background: #fff; }
 
         /* Status Bar */
@@ -160,9 +165,9 @@
             width: 100%; height: 44px; padding-left: 44px; padding-right: 16px;
             background: var(--bg-input); border: 1px solid var(--border-mid);
             border-radius: 10px; color: #fff; font-family: var(--font-ui); font-size: 14px;
-            transition: 0.2s;
+            transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .search-inp:focus { border-color: #fff; background: #141414; }
+        .search-inp:focus { border-color: var(--accent-blue); background: #141414; box-shadow: var(--shadow-glow); }
 
         /* User List */
         .list-container { flex: 1; overflow-y: auto; position: relative; background: var(--bg-body); }
@@ -206,7 +211,7 @@
             background: #080808; border-left: 1px solid var(--border-mid);
             transform: translateX(100%); transition: 0.4s var(--ease-snap);
             z-index: 1001; display: flex; flex-direction: column;
-            box-shadow: -20px 0 60px rgba(0,0,0,0.7);
+            box-shadow: var(--shadow-deep), -1px 0 0 var(--border-high);
         }
         .backdrop.active .drawer { transform: translateX(0); }
 
@@ -236,7 +241,7 @@
             border: 1px solid var(--border-dim); border-radius: 8px;
             color: #fff; font-family: var(--font-ui); font-size: 14px; transition: 0.2s;
         }
-        .input:focus { border-color: var(--accent-blue); background: #0f0f0f; }
+        .input:focus { border-color: var(--accent-blue); background: #0f0f0f; box-shadow: var(--shadow-glow); }
 
         /* Toggles */
         .toggle-item {
@@ -284,7 +289,7 @@
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
             width: 90%; max-width: 480px; background: #0F0F0F; border: 1px solid var(--border-mid);
             border-radius: 16px; z-index: 1005; opacity: 0; pointer-events: none;
-            transition: 0.3s var(--ease-snap); box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+            transition: 0.3s var(--ease-snap); box-shadow: var(--shadow-deep), 0 0 0 1px var(--border-high);
         }
         .backdrop.active .modal.active { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
 
@@ -294,13 +299,15 @@
             background: #222; border-radius: 6px; color: #888; margin-bottom: 16px;
         }
         .target-tag.hl { color: var(--accent-blue); background: rgba(0,112,243,0.1); }
+        .target-tag.ver-hl { color: var(--accent-gold); background: rgba(255, 215, 0, 0.1); }
 
         .area {
             width: 100%; height: 140px; background: #050505; border: 1px solid var(--border-dim);
             border-radius: 8px; padding: 16px; color: #fff; font-family: var(--font-ui);
             resize: none; font-size: 14px; margin-bottom: 12px;
+            white-space: pre-wrap; /* Preserves spaces and folder formats naturally */
         }
-        .area:focus { border-color: #444; }
+        .area:focus { border-color: #444; box-shadow: var(--shadow-glow); }
 
         /* Notifications */
         .toast {
@@ -358,9 +365,10 @@
                 </div>
             </div>
             <div class="actions">
-                <div class="act-btn highlight" onclick="openCast('ALL')"><span class="material-icons-round">campaign</span></div>
-                <div class="act-btn" onclick="refreshData()"><span class="material-icons-round">refresh</span></div>
-                <div class="act-btn" onclick="firebase.auth().signOut()"><span class="material-icons-round">logout</span></div>
+                <div class="act-btn" title="Broadcast Verified" onclick="openCast('VERIFIED')" style="color:var(--accent-gold); background:rgba(255,215,0,0.1);"><span class="material-icons-round">verified</span></div>
+                <div class="act-btn highlight" title="Broadcast All" onclick="openCast('ALL')"><span class="material-icons-round">campaign</span></div>
+                <div class="act-btn" title="Refresh" onclick="refreshData()"><span class="material-icons-round">refresh</span></div>
+                <div class="act-btn" title="Logout" onclick="firebase.auth().signOut()"><span class="material-icons-round">logout</span></div>
             </div>
         </header>
 
@@ -466,7 +474,7 @@
             <div class="modal-body">
                 <div class="target-tag" id="cast-target">TARGET: ALL</div>
                 
-                <textarea id="cast-msg" class="area" placeholder="Enter transmission..."></textarea>
+                <textarea id="cast-msg" class="area" placeholder="Enter transmission... (Supports full folder structure & spaces)"></textarea>
                 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
                     <input type="text" class="input" id="cast-img" placeholder="Image Link" style="font-size:12px;">
@@ -474,7 +482,7 @@
                 </div>
 
                 <div style="font-family:var(--font-mono); font-size:10px; color:#555;">
-                    SENDER: @goorac (OFFICIAL)<br>ENCRYPTION: QUANTUM-256
+                    SENDER: @quantum (OFFICIAL)<br>ENCRYPTION: QUANTUM-256
                 </div>
             </div>
             <div class="drawer-foot" style="grid-template-columns:1fr;">
@@ -521,7 +529,7 @@
             const doc = await db.collection("users").doc(u.uid).get();
             if (doc.exists) {
                 const d = doc.data();
-                if (d.admin || d.username === 'goorac' || d.username === 'sivamanihandan') {
+                if (d.admin || d.username === 'quantum' || d.username === 'sivamanihandan') {
                     // Access Granted
                 } else {
                     document.getElementById('denied').style.display = 'flex';
@@ -557,8 +565,8 @@
         // 3. DATA & SCROLLING
         // =========================================
         function init() {
-            // Get Official ID
-            db.collection("users").where("username","==","goorac").get().then(s=>{
+            // Get Official ID (Updated to quantum)
+            db.collection("users").where("username","==","quantum").get().then(s=>{
                 if(!s.empty) gooracId = s.docs[0].id;
             });
 
@@ -757,7 +765,7 @@
         }
 
         // =========================================
-        // 5. BROADCAST & UTILS
+        // 5. BROADCAST & UTILS (BATCHED & HIGH SPEED)
         // =========================================
         function openCast(mode) {
             castMode = mode;
@@ -767,6 +775,9 @@
             if(mode === 'ALL') {
                 pill.innerText = "TARGET: ALL USERS";
                 pill.className = "target-tag hl";
+            } else if (mode === 'VERIFIED') {
+                pill.innerText = "TARGET: VERIFIED USERS";
+                pill.className = "target-tag ver-hl";
             } else {
                 pill.innerText = "TARGET: " + editId;
                 pill.className = "target-tag";
@@ -784,11 +795,15 @@
             const file = document.getElementById('cast-file').value;
             if(!txt && !img && !file) return toast("Empty Payload");
             
-            document.getElementById('btn-send').innerText = "Sending...";
+            document.getElementById('btn-send').innerText = "Initiating Quantum Sync...";
             
             let targets = [];
+            
             if(castMode === 'ALL') {
                 const s = await db.collection("users").get();
+                s.forEach(d => targets.push(d.id));
+            } else if (castMode === 'VERIFIED') {
+                const s = await db.collection("users").where("verified", "==", true).get();
                 s.forEach(d => targets.push(d.id));
             } else {
                 targets = [editId];
@@ -796,24 +811,64 @@
             
             targets = targets.filter(id => id !== gooracId);
             
-            const batch = targets.map(async uid => {
-                const chatId = gooracId < uid ? `${gooracId}_${uid}` : `${uid}_${gooracId}`;
-                const ts = firebase.firestore.FieldValue.serverTimestamp();
-                const m = { text: txt, sender: gooracId, timestamp: ts, seen: false, reactions: {} };
-                if(img) m.imageUrl = img;
-                if(file) m.fileUrl = file;
+            if (targets.length === 0) {
+                document.getElementById('btn-send').innerText = "Transmit Signal";
+                return toast("No active targets found for this criteria.");
+            }
+
+            // High-Speed Firestore Batching Protocol
+            try {
+                let batches = [db.batch()];
+                let currentBatch = 0;
+                let operationCounter = 0;
+
+                for (const uid of targets) {
+                    const chatId = gooracId < uid ? `${gooracId}_${uid}` : `${uid}_${gooracId}`;
+                    const ts = firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    // Create References
+                    const chatRef = db.collection("chats").doc(chatId);
+                    const msgRef = chatRef.collection("messages").doc();
+                    
+                    // Message Payload (preserves newlines and spaces automatically as string)
+                    const m = { text: txt, sender: gooracId, timestamp: ts, seen: false, reactions: {} };
+                    if(img) m.imageUrl = img;
+                    if(file) m.fileUrl = file;
+                    
+                    // Add Message to batch
+                    batches[currentBatch].set(msgRef, m);
+                    operationCounter++;
+                    
+                    // Add Last Message Meta to batch
+                    batches[currentBatch].set(chatRef, {
+                        lastMessage: txt || (img?"📷 Image":"📄 File"), lastSender: gooracId, lastTimestamp: ts,
+                        participants: [gooracId, uid], 
+                        seen: false, 
+                        [`unreadCount.${uid}`]: firebase.firestore.FieldValue.increment(1)
+                    }, {merge:true});
+                    operationCounter++;
+
+                    // Firestore limit is 500 operations per batch. 
+                    // Safely cap at 490 to prevent overflow.
+                    if (operationCounter >= 490) {
+                        batches.push(db.batch());
+                        currentBatch++;
+                        operationCounter = 0;
+                    }
+                }
                 
-                await db.collection("chats").doc(chatId).collection("messages").add(m);
-                await db.collection("chats").doc(chatId).set({
-                    lastMessage: txt || (img?"📷 Image":"📄 File"), lastSender: gooracId, lastTimestamp: ts,
-                    participants: [gooracId, uid], 
-                    seen: false, // Explicitly set seen to false
-                    [`unreadCount.${uid}`]: firebase.firestore.FieldValue.increment(1)
-                }, {merge:true});
-            });
+                // Commit all batches
+                document.getElementById('btn-send').innerText = `Batching ${targets.length} Nodes...`;
+                for (const b of batches) {
+                    await b.commit();
+                }
+                
+                toast(`Transmission successful to ${targets.length} entities`);
+            } catch (err) {
+                console.error("Transmission Error:", err);
+                toast("Transmission Error. Check logs.");
+            }
             
-            await Promise.all(batch);
-            toast(`Sent to ${targets.length} users`);
             document.getElementById('btn-send').innerText = "Transmit Signal";
             closeModals();
         }
