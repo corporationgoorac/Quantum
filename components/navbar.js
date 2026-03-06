@@ -5,24 +5,27 @@
  * A professional, sleek bottom navigation bar.
  * Features:
  * - Premium Glassmorphism & adaptive dark/light mode
- * - Mobile safe-area support for modern smartphones (notch/home indicator)
+ * - Mobile safe-area support for modern smartphones
+ * - Custom SVGs for Home, Chat, and Explore (stored in localStorage)
  * - Dynamic active states and high-fidelity micro-animations
  * - MutationObserver to automatically hide during active calls
- * - Real-time Unread Messages Badge (Firebase + Local Cache optimized)
  */
 class MainNavbar extends HTMLElement {
     
-    /**
-     * Called when the element is inserted into the DOM.
-     * Contains initialization logic, DOM rendering, and event bindings.
-     */
     connectedCallback() {
         // --- AUTO-STORAGE LOGIC ---
         // Stores the class definition code to local storage automatically
-        // (Retained exactly as requested)
         localStorage.setItem('goorac_navbar_component', this.constructor.toString());
 
-        // Import Google Material Icons Round dynamically if not already present
+        // Define SVGs and store them in local storage as requested
+        const navSVGs = {
+            home: `<svg viewBox="0 0 24 24" class="nav-svg"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+            chat: `<svg viewBox="0 0 24 24" class="nav-svg"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+            explore: `<svg viewBox="0 0 24 24" class="nav-svg"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>`
+        };
+        localStorage.setItem('goorac_nav_svgs', JSON.stringify(navSVGs));
+
+        // Import Google Material Icons Round dynamically for Vision and Calls
         if (!document.getElementById('material-icons-round-css')) {
             const link = document.createElement('link');
             link.id = 'material-icons-round-css';
@@ -31,23 +34,17 @@ class MainNavbar extends HTMLElement {
             document.head.appendChild(link);
         }
 
-        // Render the HTML and CSS
-        this.render();
+        // Render the HTML and CSS, passing in our SVGs
+        this.render(navSVGs);
         
         // Highlight the current page based on URL
         this._highlightActive();
         
         // Initialize the logic to hide the nav when calls are active
         this._setupVisibilityToggle();
-
-        // Initialize the unread message listener
-        this._initUnreadListener();
     }
 
-    /**
-     * Renders the internal styling and HTML structure for the component.
-     */
-    render() {
+    render(svgs) {
         this.innerHTML = `
         <style>
             /* ==========================================================================
@@ -110,14 +107,13 @@ class MainNavbar extends HTMLElement {
                 border-top: 0.5px solid var(--nav-border);
                 box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.04);
                 
-                z-index: 9999; /* Ensure priority */
+                z-index: 9999; 
                 
                 transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
                             opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
                             background-color 0.4s ease;
             }
 
-            /* Floating Tablet/Desktop Mode */
             @media (min-width: 601px) {
                 .bottom-nav {
                     bottom: 24px;
@@ -131,7 +127,7 @@ class MainNavbar extends HTMLElement {
             }
 
             /* ==========================================================================
-               NAVIGATION ITEMS
+               NAVIGATION ITEMS & ICONS
                ========================================================================== */
             .nav-item {
                 position: relative;
@@ -151,8 +147,20 @@ class MainNavbar extends HTMLElement {
             .nav-item .material-icons-round {
                 font-size: 28px; 
                 transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                            color 0.3s ease,
-                            filter 0.3s ease;
+                            color 0.3s ease, filter 0.3s ease;
+            }
+
+            /* Custom SVG Styling */
+            .nav-item .nav-svg {
+                width: 26px;
+                height: 26px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                            fill 0.3s ease, filter 0.3s ease;
             }
 
             .nav-item span:not(.material-icons-round) {
@@ -164,14 +172,20 @@ class MainNavbar extends HTMLElement {
                 transition: all 0.3s ease;
             }
 
-            /* ACTIVE STATE - Refined Scaling and Glow */
+            /* ACTIVE STATE */
             .nav-item.active {
                 color: var(--icon-active);
             }
 
-            .nav-item.active .material-icons-round {
+            .nav-item.active .material-icons-round,
+            .nav-item.active .nav-svg {
                 transform: translateY(-2px) scale(1.1); 
                 filter: drop-shadow(0px 2px 4px rgba(0,122,255,0.3)); 
+            }
+            
+            /* Fill SVGs slightly when active for a distinct look */
+            .nav-item.active .nav-svg {
+                fill: rgba(0, 122, 255, 0.15);
             }
 
             .nav-item.active span:not(.material-icons-round) {
@@ -179,50 +193,10 @@ class MainNavbar extends HTMLElement {
                 transform: translateY(0);
             }
 
-            /* Micro-Interaction on Tap */
-            .nav-item:active .material-icons-round {
+            .nav-item:active .material-icons-round,
+            .nav-item:active .nav-svg {
                 transform: scale(0.85);
                 opacity: 0.6;
-            }
-
-            /* ==========================================================================
-               UNREAD BADGE STYLING (Professional look)
-               ========================================================================== */
-            .icon-wrapper {
-                position: relative;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .unread-badge {
-                position: absolute;
-                top: -2px;
-                right: -6px;
-                background-color: #FF3B30; /* Professional iOS Red */
-                color: #FFFFFF;
-                font-size: 10px;
-                font-weight: 700;
-                min-width: 18px;
-                height: 18px;
-                border-radius: 9px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 4px;
-                box-sizing: border-box;
-                border: 2px solid var(--nav-bg); /* Punches out the background naturally */
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                opacity: 0;
-                transform: scale(0);
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, border-color 0.4s ease;
-                pointer-events: none; /* Let clicks pass through to the nav item */
-                z-index: 2;
-            }
-
-            .unread-badge.show {
-                opacity: 1;
-                transform: scale(1);
             }
 
             /* ==========================================================================
@@ -271,6 +245,7 @@ class MainNavbar extends HTMLElement {
                 transform: scale(0);
                 transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
+            
             .nav-item.active::after {
                 opacity: 1;
                 transform: scale(1);
@@ -281,18 +256,15 @@ class MainNavbar extends HTMLElement {
 
         <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
             <a href="home.html" class="nav-item" aria-label="Home">
-                <span class="material-icons-round">home</span>
+                ${svgs.home}
                 <span>Home</span>
             </a>
             <a href="messages.html" class="nav-item" aria-label="Messages">
-                <div class="icon-wrapper">
-                    <span class="material-icons-round">chat_bubble_outline</span>
-                    <div class="unread-badge" id="chat-badge"></div>
-                </div>
+                ${svgs.chat}
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round">explore</span>
+                ${svgs.explore}
                 <span>Explore</span>
             </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
@@ -309,9 +281,6 @@ class MainNavbar extends HTMLElement {
         `;
     }
 
-    /**
-     * Examines the current window URL and applies the 'active' class
-     */
     _highlightActive() {
         const path = window.location.pathname;
         const page = path.split("/").pop() || "home.html";
@@ -321,27 +290,18 @@ class MainNavbar extends HTMLElement {
             const href = link.getAttribute('href');
             if (page === href) {
                 link.classList.add('active');
-                // The icon lookup has been updated to search within the wrapper properly
-                const icon = link.querySelector('.material-icons-round');
-                if (icon && icon.innerText === 'chat_bubble_outline') {
-                    icon.innerText = 'chat_bubble';
-                }
             } else {
                 link.classList.remove('active');
             }
         });
     }
 
-    /**
-     * Logic to observe and hide the navbar when #call-screen is visible.
-     */
     _setupVisibilityToggle() {
         const navContainer = this.querySelector('#main-nav-container');
         
         const checkVisibility = () => {
             const callScreen = document.getElementById('call-screen');
             
-            // Added falsy check here to prevent errors if element doesn't exist
             if (!callScreen) {
                 navContainer.classList.remove('nav-hidden');
                 return;
@@ -368,80 +328,6 @@ class MainNavbar extends HTMLElement {
             }
             checkVisibility();
         }, 1000);
-    }
-
-    /**
-     * Listens for unread messages and updates the badge.
-     * Uses a polling mechanism to ensure Firebase is fully loaded before attaching.
-     */
-    _initUnreadListener() {
-        // 1. Instantly display cached count to prevent layout popping
-        const cachedCount = localStorage.getItem('goorac_unread_chat_count');
-        if (cachedCount) {
-            this._updateBadgeUI(parseInt(cachedCount, 10));
-        }
-
-        // 2. Poll for Firebase initialization (fixes Web Component timing issues)
-        const checkFirebaseReady = setInterval(() => {
-            if (typeof window.firebase !== 'undefined' && firebase.apps.length > 0) {
-                clearInterval(checkFirebaseReady); // Stop polling
-                this._startFirestoreListener();    // Start the real listener
-            }
-        }, 500); // Check every half second
-    }
-
-    /**
-     * Safely attaches the Firebase Snapshot listener once Firebase is confirmed active.
-     */
-    _startFirestoreListener() {
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                const db = firebase.firestore();
-                
-                // Optimized query: Only fetches chats where the user is a participant.
-                this._unsubscribeChats = db.collection('chats')
-                    .where('participants', 'array-contains', user.uid)
-                    .onSnapshot(snapshot => {
-                        let unreadChats = 0;
-                        
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            // Safely check the nested unreadCount object map for the current user's UID
-                            if (data.unreadCount && data.unreadCount[user.uid] > 0) {
-                                unreadChats++;
-                            }
-                        });
-                        
-                        // Update cache and UI
-                        localStorage.setItem('goorac_unread_chat_count', unreadChats.toString());
-                        this._updateBadgeUI(unreadChats);
-                        
-                    }, error => {
-                        console.error("Navbar Unread Listener Error:", error);
-                    });
-            } else {
-                // Clear state if logged out
-                this._updateBadgeUI(0);
-                localStorage.removeItem('goorac_unread_chat_count');
-                if (this._unsubscribeChats) this._unsubscribeChats();
-            }
-        });
-    }
-
-    /**
-     * Updates the physical DOM element for the badge.
-     */
-    _updateBadgeUI(count) {
-        const badge = this.querySelector('#chat-badge');
-        if (!badge) return;
-
-        if (count > 0) {
-            // Cap the visual number at 99+ for a clean UI
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.classList.add('show');
-        } else {
-            badge.classList.remove('show');
-        }
     }
 }
 
