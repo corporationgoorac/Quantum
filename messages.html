@@ -19,50 +19,111 @@
     <chat-loader></chat-loader>
 
     <style>
-        /* GLOBAL RESET FOR HORIZONTAL SCROLL FIX */
+        /* ==========================================================================
+           GLOBAL RESET & THEME VARIABLES
+           ========================================================================== */
         * { box-sizing: border-box !important; }
 
         :root {
             --bg: #000;
             --accent: #00d2ff;
+            --accent-glow: rgba(0, 210, 255, 0.4);
             --border: rgba(255, 255, 255, 0.1);
+            --border-light: rgba(255, 255, 255, 0.15);
             --text-dim: #888;
+            --text-light: #e0e0e0;
             --danger: #ff4444;
+            --danger-glow: rgba(255, 68, 68, 0.3);
             --glass: rgba(255, 255, 255, 0.03);
             --sheet-bg: #121212;
             --online: #00ff41;
+            --online-glow: rgba(0, 255, 65, 0.5);
+            --warning: #ff9900;
+            --story-ring: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
 
         body {
             background: var(--bg); color: white; margin: 0;
-            font-family: -apple-system, system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             padding-bottom: 90px; overflow-x: hidden;
             -webkit-user-select: none; user-select: none;
             -webkit-tap-highlight-color: transparent;
             width: 100% !important; max-width: 100vw !important; /* LOCKED HORIZONTAL */
         }
 
-        /* HEADER */
+        /* ==========================================================================
+           HEADER & NAVIGATION
+           ========================================================================== */
         header {
             position: sticky; top: 0; background: rgba(0,0,0,0.9);
             padding: 15px 20px; display: flex; justify-content: space-between;
             align-items: center; border-bottom: 1px solid var(--border); z-index: 1000;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding-top: max(15px, env(safe-area-inset-top));
             width: 100%;
         }
-        .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
-        /* SEARCH */
+        .header-logo { 
+            font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; 
+            background: linear-gradient(to right, #fff, var(--accent)); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            cursor: pointer; 
+            transition: transform 0.2s ease;
+        }
+        .header-logo:active { transform: scale(0.95); }
+
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { 
+            background: transparent; border: none; color: white; 
+            font-size: 1.2rem; cursor: pointer; padding: 5px;
+            border-radius: 50%; transition: background 0.2s;
+        }
+        .icon-btn:active { background: rgba(255,255,255,0.1); }
+        
+        /* ==========================================================================
+           QUANTUM STORIES (NEW FEATURE UI)
+           ========================================================================== */
+        .stories-container {
+            display: flex; gap: 15px; padding: 15px 20px; overflow-x: auto;
+            scrollbar-width: none; -ms-overflow-style: none; border-bottom: 1px solid var(--glass);
+        }
+        .stories-container::-webkit-scrollbar { display: none; }
+        
+        .story-item {
+            display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+            width: 65px; flex-shrink: 0;
+        }
+        .story-ring {
+            width: 65px; height: 65px; border-radius: 50%; padding: 3px;
+            background: var(--story-ring);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .story-ring.viewed { background: var(--border); }
+        .story-ring.add-story { background: var(--glass); border: 2px dashed var(--border); padding: 0; }
+        .story-pfp {
+            width: 100%; height: 100%; border-radius: 50%; border: 3px solid var(--bg);
+            object-fit: cover;
+        }
+        .story-add-icon { color: var(--text-dim); font-size: 1.5rem; font-weight: 300; }
+        .story-name {
+            font-size: 0.7rem; color: var(--text-light); white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;
+        }
+
+        /* ==========================================================================
+           SEARCH & FILTERS
+           ========================================================================== */
         .search-wrap { padding: 12px 20px; padding-bottom: 0; width: 100%; }
         .search-input {
             width: 100%; background: #111; border: 1px solid var(--border);
             padding: 12px 15px; border-radius: 14px; color: white; outline: none;
             font-size: 16px !important; transition: all 0.3s ease;
         }
-        .search-input:focus { border-color: var(--accent); background: #161616; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
+        .search-input:focus { 
+            border-color: var(--accent); background: #161616; 
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); 
+        }
 
-        /* FILTER CHIPS */
         .filter-scroll {
             display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto;
             scrollbar-width: none; -ms-overflow-style: none; width: 100%;
@@ -80,7 +141,9 @@
             border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
         }
 
-        /* CHAT LIST ITEM - LAYOUT LOCKED */
+        /* ==========================================================================
+           CHAT LIST ITEMS
+           ========================================================================== */
         .chat-item { 
             display: flex; align-items: center; padding: 15px 20px; 
             cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -90,46 +153,72 @@
         }
         .chat-item:active { background: var(--glass); transform: scale(0.98); }
 
-        /* PFP Container for Online Dot */
         .pfp-container { position: relative; margin-right: 15px; flex-shrink: 0; }
-        .chat-pfp { width: 58px; height: 58px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); pointer-events: none; display: block; }
+        .chat-pfp { 
+            width: 58px; height: 58px; border-radius: 20px; 
+            object-fit: cover; border: 1px solid var(--border); 
+            pointer-events: none; display: block; 
+        }
         
-        /* The Real-Time Green Dot */
+        /* Real-Time Green Dot */
         .online-indicator {
             position: absolute; bottom: 2px; right: 2px;
             width: 12px; height: 12px; background: var(--online);
             border-radius: 50%; border: 2px solid #000;
-            box-shadow: 0 0 8px var(--online);
-            display: none; /* Hidden by default */
-            z-index: 2;
+            box-shadow: 0 0 8px var(--online-glow);
+            display: none; z-index: 2;
         }
         .online-indicator.active { display: block; }
 
-        .chat-info { flex: 1; min-width: 0; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; } 
-        .chat-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; width: 100%; }
+        .chat-info { 
+            flex: 1; min-width: 0; width: 100%; pointer-events: none; 
+            display: flex; flex-direction: column; justify-content: center; 
+            overflow: hidden; 
+        } 
         
-        .u-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-top-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 4px; width: 100%; 
+        }
+        /* FIX: Ensure duplicate unread badges don't show in the top row above the timestamp */
+        .chat-top-row .unread-badge { display: none !important; }
+        
+        .u-name { 
+            font-weight: 700; font-size: 1rem; display: flex; align-items: center; 
+            gap: 6px; color: #fff; flex: 1; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; 
+        }
         .v-badge { height: 14px; width: 14px; flex-shrink: 0; }
         
-        .last-msg { color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; transition: color 0.3s; flex: 1; min-width: 0; padding-right: 10px; display: block; } 
-        .typing-text { color: var(--accent); font-weight: 600; font-style: italic; animation: pulseType 1s infinite; }
+        .last-msg { 
+            color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; max-width: 100%; 
+            transition: color 0.3s; flex: 1; min-width: 0; padding-right: 10px; display: block; 
+        } 
+        
+        .typing-text { 
+            color: var(--accent); font-weight: 600; font-style: italic; 
+            animation: pulseType 1s infinite; 
+        }
         @keyframes pulseType { 50% { opacity: 0.6; } }
 
         .pin-indicator { 
-            width: 14px; height: 14px; 
-            background: var(--accent);
+            width: 14px; height: 14px; background: var(--accent);
             clip-path: polygon(44% 0%, 100% 0%, 56% 44%, 100% 44%, 0% 100%, 35% 50%, 0% 50%);
-            display: inline-block; filter: drop-shadow(0 0 5px var(--accent)); margin-left: 4px; flex-shrink: 0;
+            display: inline-block; filter: drop-shadow(0 0 5px var(--accent)); 
+            margin-left: 4px; flex-shrink: 0;
         }
 
         .follow-btn { 
-            background: rgba(0, 210, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 210, 255, 0.3); 
-            padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;
-            pointer-events: auto; /* MUST BE AUTO TO CLICK */
-            flex-shrink: 0;
+            background: rgba(0, 210, 255, 0.1); color: var(--accent); 
+            border: 1px solid rgba(0, 210, 255, 0.3); 
+            padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; 
+            font-weight: 700; cursor: pointer; pointer-events: auto; flex-shrink: 0;
         }
 
-        /* UNREAD BADGE - ALIGNMENT FIXED */
+        /* ==========================================================================
+           FIX: UNREAD BADGE ALIGNMENT & CLIPPING FIX
+           ========================================================================== */
         .unread-badge { 
             width: 14px !important; height: 14px !important; 
             min-width: 14px !important; min-height: 14px !important;
@@ -144,21 +233,41 @@
             border: 2px solid #000 !important; 
             box-shadow: 0 0 10px rgba(255,255,255,0.3);
             z-index: 10;
-            margin: 0 !important;
+            
+            /* THE FIX: Changed from 'margin: 0 !important;' to give it right spacing 
+               so it doesn't get cut off by the overflow:hidden boundary */
+            margin: 0 12px 0 0 !important; 
             padding: 0 !important;
-            animation: popBadge 0s forwards; 
+            animation: popBadge 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
             position: relative;
         }
-        @keyframes popBadge { from { transform: scale(1); } to { transform: scale(1); } }
+        @keyframes popBadge { 
+            from { transform: scale(0); opacity: 0; } 
+            to { transform: scale(1); opacity: 1; } 
+        }
 
-        /* SKELETON */
-        .skeleton-item { display: flex; align-items: center; padding: 15px 20px; opacity: 0.5; animation: quantumPulse 1.5s infinite ease-in-out; width: 100%; }
-        .skeleton-circle { width: 55px; height: 55px; border-radius: 50%; background: #222; margin-right: 15px; flex-shrink: 0; }
+        /* ==========================================================================
+           SKELETON LOADERS (EXPANDED)
+           ========================================================================== */
+        .skeleton-container { display: flex; flex-direction: column; width: 100%; }
+        .skeleton-item { 
+            display: flex; align-items: center; padding: 15px 20px; 
+            opacity: 0.5; animation: quantumPulse 1.5s infinite ease-in-out; width: 100%; 
+        }
+        .skeleton-circle { 
+            width: 58px; height: 58px; border-radius: 20px; 
+            background: #222; margin-right: 15px; flex-shrink: 0; 
+        }
         .skeleton-line { height: 12px; background: #222; border-radius: 4px; margin-bottom: 8px; }
+        .skeleton-line.short { width: 40%; }
+        .skeleton-line.medium { width: 60%; }
+        .skeleton-line.long { width: 80%; }
         @keyframes quantumPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
-        /* MODAL */
-        #delete-menu {
+        /* ==========================================================================
+           MODALS & CONTEXT MENUS
+           ========================================================================== */
+        #delete-menu, #settings-menu {
             position: fixed; bottom: -100%; left: 0; width: 100%;
             background: var(--sheet-bg); border-top: 1px solid var(--border);
             z-index: 100000; border-radius: 30px 30px 0 0;
@@ -166,49 +275,91 @@
             padding: 20px 20px calc(30px + env(safe-area-inset-bottom));
             box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
         }
-        #delete-menu.active { bottom: 0; }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99999; display: none; backdrop-filter: blur(8px); }
-
-        @media (min-width: 768px) {
-            #delete-menu { width: 400px; left: 50%; transform: translateX(-50%); bottom: -100%; border-radius: 24px; border: 1px solid var(--border); padding-bottom: 20px; }
-            #delete-menu.active { bottom: 50%; transform: translate(-50%, 50%); }
+        #delete-menu.active, #settings-menu.active { bottom: 0; }
+        .menu-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+            z-index: 99999; display: none; backdrop-filter: blur(8px); 
         }
 
-        /* CONTEXT UI */
+        @media (min-width: 768px) {
+            #delete-menu, #settings-menu { 
+                width: 400px; left: 50%; transform: translateX(-50%); 
+                bottom: -100%; border-radius: 24px; border: 1px solid var(--border); padding-bottom: 20px; 
+            }
+            #delete-menu.active, #settings-menu.active { bottom: 50%; transform: translate(-50%, 50%); }
+        }
+
         .sheet-context { display: flex; flex-direction: column; align-items: center; padding-bottom: 25px; margin-bottom: 10px; width: 100%; }
         .context-pfp { width: 70px; height: 70px; border-radius: 25px; border: 2px solid var(--accent); margin-bottom: 12px; object-fit: cover; }
         .context-name { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .context-username { color: var(--text-dim); font-size: 0.85rem; font-weight: 500; margin-top: 2px; }
+        
         .action-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-        .btn-action { width: 100%; padding: 18px; border-radius: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; }
+        .btn-action { width: 100%; padding: 18px; border-radius: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; transition: transform 0.1s; }
+        .btn-action:active { transform: scale(0.98); }
         .del-btn-big { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(255, 68, 68, 0.2); }
         .pin-btn-big { background: #1a1a1a; color: var(--accent); border: 1px solid var(--border); }
+        .archive-btn-big { background: rgba(255, 153, 0, 0.1); color: var(--warning); border: 1px solid rgba(255, 153, 0, 0.2); }
         .cancel-btn { background: transparent; color: #666; font-size: 0.9rem; margin-top: 10px; }
 
+        /* ==========================================================================
+           UTILITY CLASSES & NOTIFICATIONS
+           ========================================================================== */
         #search-results { display: none; background: #000; min-height: 100vh; width: 100%; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; width: 100%; }
 
-        /* NETWORK TOAST */
+        /* Enhanced Network Toast */
         #offline-toast {
             display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-            background: #ff4444; color: #fff; padding: 6px 16px; border-radius: 20px;
+            background: #ff4444; color: #fff; padding: 8px 20px; border-radius: 25px;
             font-size: 0.85rem; font-weight: 700; z-index: 2000; box-shadow: 0 4px 15px rgba(255,68,68,0.4);
-            animation: slideDownToast 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: slideDownToast 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 8px;
         }
+        .toast-icon { width: 16px; height: 16px; fill: currentColor; }
         @keyframes slideDownToast { from { top: 40px; opacity: 0; } to { top: 70px; opacity: 1; } }
 
-        /* FIX: Ensure duplicate unread badges don't show in the top row above the timestamp */
-        .chat-top-row .unread-badge { display: none !important; }
+        /* Floating AI Action Button */
+        #ai-fab {
+            display: none; position: fixed; bottom: 85px; right: 20px; width: 45px; height: 45px; 
+            border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); 
+            border: 1px solid rgba(255,255,255,0.15); background: #111; overflow: hidden; 
+            transition: transform 0.2s, box-shadow 0.2s; touch-action: manipulation;
+        }
+        #ai-fab:active { transform: scale(0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+        #ai-fab-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ai-fab-dot {
+            position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; 
+            background: var(--online); border-radius: 50%; border: 2px solid #111; z-index: 2;
+        }
+
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <header>
-    <div class="header-logo" ondblclick="clearAllUnreadBages()">GOORAC</div>
+    <div class="header-logo" ondblclick="clearAllUnreadBages()" title="Double tap to clear unread">GOORAC</div>
+    <div class="header-actions">
+        <button class="icon-btn" onclick="openSettingsMenu()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+    </div>
 </header>
 
-<div id="offline-toast">Waiting for network...</div>
+<div id="offline-toast" style="display: none;">
+    <svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    Waiting for network...
+</div>
+
+<div class="stories-container" id="stories-strip">
+    <div class="story-item">
+        <div class="story-ring add-story">
+            <span class="story-add-icon">+</span>
+        </div>
+        <span class="story-name">Add Story</span>
+    </div>
+    </div>
 
 <div class="search-wrap">
     <input type="text" class="search-input" id="main-search" placeholder="Search transmissions..." oninput="handleSearch(this.value)" autocomplete="off">
@@ -217,18 +368,21 @@
 <div class="filter-scroll">
     <div class="filter-chip active" onclick="setFilter('all', this)">All</div>
     <div class="filter-chip" onclick="setFilter('unread', this)">Unread</div>
-</div>
+    <div class="filter-chip" onclick="setFilter('pinned', this)">Pinned</div> </div>
 
 <div id="search-results"></div>
 
 <div id="inbox-content">
-    <div id="chats-list">
-        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:70%"></div></div></div>
-        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:30%"></div><div class="skeleton-line" style="width:60%"></div></div></div>
+    <div id="chats-list" class="skeleton-container">
+        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line medium"></div><div class="skeleton-line long"></div></div></div>
+        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div></div>
+        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line medium"></div><div class="skeleton-line long"></div></div></div>
+        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div></div>
     </div>
 </div>
 
-<div class="menu-overlay" id="overlay" onclick="closeDeleteMenu(true)"></div>
+<div class="menu-overlay" id="overlay" onclick="closeAllMenus(true)"></div>
+
 <div id="delete-menu">
     <div class="sheet-context" id="sheet-user-info">
         <img src="" class="context-pfp" id="active-pfp">
@@ -238,14 +392,25 @@
     
     <div class="action-list">
         <button class="btn-action pin-btn-big" id="pin-chat-btn">Pin Transmission</button>
-        <button class="btn-action del-btn-big" id="confirm-delete">Erase History For Both</button>
-        <button class="btn-action cancel-btn" onclick="closeDeleteMenu(true)">Close Options</button>
+        <button class="btn-action archive-btn-big" id="archive-chat-btn" onclick="alert('Archive feature coming soon!')">Archive Chat</button> <button class="btn-action del-btn-big" id="confirm-delete">Erase History For Both</button>
+        <button class="btn-action cancel-btn" onclick="closeAllMenus(true)">Close Options</button>
     </div>
 </div>
 
-<div id="ai-fab" onclick="window.location.href='ai.html'" style="display: none; position: fixed; bottom: 85px; right: 20px; width: 40px; height: 40px; border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.15); background: #111; overflow: hidden; transition: transform 0.2s; touch-action: manipulation;">
-    <img id="ai-fab-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-    <div style="position: absolute; bottom: 0px; right: 0px; width: 10px; height: 10px; background: #00ff41; border-radius: 50%; border: 2px solid #111; z-index: 2;"></div>
+<div id="settings-menu">
+    <div class="sheet-context">
+        <div class="context-name" style="margin-bottom: 20px;">Inbox Settings</div>
+    </div>
+    <div class="action-list">
+        <button class="btn-action pin-btn-big" onclick="toggleActivityStatus()">Toggle Activity Status</button>
+        <button class="btn-action pin-btn-big" onclick="clearLocalCache()">Clear Local Cache</button>
+        <button class="btn-action cancel-btn" onclick="closeAllMenus(true)">Close Menu</button>
+    </div>
+</div>
+
+<div id="ai-fab" onclick="window.location.href='ai.html'">
+    <img id="ai-fab-img" src="" alt="AI">
+    <div class="ai-fab-dot"></div>
 </div>
 
 <script src="components/navbar.js" defer></script>
@@ -254,11 +419,27 @@
 <call-notifier></call-notifier>
 
 <script>
-    // --- NEW FEATURE: NETWORK STATUS LISTENERS ---
-    window.addEventListener('offline', () => document.getElementById('offline-toast').style.display = 'block');
-    window.addEventListener('online', () => document.getElementById('offline-toast').style.display = 'none');
+    /* ==========================================================================
+       NETWORK MONITORING (Enhanced)
+       ========================================================================== */
+    const offlineToast = document.getElementById('offline-toast');
+    window.addEventListener('offline', () => {
+        offlineToast.style.display = 'flex';
+        offlineToast.innerHTML = '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Connection Lost';
+        offlineToast.style.background = 'var(--danger)';
+    });
+    window.addEventListener('online', () => {
+        offlineToast.innerHTML = '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Back Online';
+        offlineToast.style.background = 'var(--online)';
+        offlineToast.style.color = '#000';
+        setTimeout(() => {
+            offlineToast.style.display = 'none';
+        }, 2000);
+    });
 
-    // --- 1. IMMEDIATE CACHE LOAD (Zero-Gap) ---
+    /* ==========================================================================
+       CACHE MANAGEMENT & INITIALIZATION
+       ========================================================================== */
     (function loadInboxCache() {
         const cachedHTML = localStorage.getItem('goorac_inbox_html');
         if (cachedHTML && cachedHTML.trim() !== "") {
@@ -267,7 +448,7 @@
         }
     })();
 
-    // --- QUANTUM AI FLOATING BUTTON (Dynamic Update + 0ms Cache) ---
+    // Initialize AI PFP Button
     (function initAIFab() {
         const fab = document.getElementById('ai-fab');
         const fabImg = document.getElementById('ai-fab-img');
@@ -276,21 +457,18 @@
         
         fab.style.display = 'block';
         
-        // Load immediately from cache to ensure 0ms render
         if (cached && cached !== defaultUrl) {
             fabImg.src = cached;
         } else {
             fabImg.src = defaultUrl;
         }
 
-        // Background Check: See if a new version of the image exists on the server
         fetch(defaultUrl + '?t=' + new Date().getTime(), { cache: 'no-store' })
             .then(r => r.blob())
             .then(blob => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     const latestBase64 = reader.result;
-                    // If the server image is different from cache, update it live!
                     if (cached !== latestBase64) {
                         localStorage.setItem('quantum_ai_pfp_cache', latestBase64);
                         fabImg.src = latestBase64;
@@ -300,12 +478,9 @@
             }).catch(e => {
                 if (!cached) localStorage.setItem('quantum_ai_pfp_cache', defaultUrl);
             });
-        
-        fab.addEventListener('touchstart', () => fab.style.transform = 'scale(0.9)');
-        fab.addEventListener('touchend', () => fab.style.transform = 'scale(1)');
     })();
 
-    // --- NEW FEATURE: DOUBLE TAP CLEAR UNREAD ---
+    // Double tap header to clear unread badges (Visual only until server sync)
     window.clearAllUnreadBages = function() {
         if(currentChatData.length > 0) {
             currentChatData.forEach(c => c.isUnread = false);
@@ -314,31 +489,29 @@
         }
     };
 
-    // --- FIREBASE INIT ---
-    // 1. Check for shared init function (from config.js)
+    /* ==========================================================================
+       FIREBASE SETUP
+       ========================================================================== */
     if (typeof window.initFirebaseCore === 'function') {
         window.initFirebaseCore();
-    } 
-    // 2. Strict Check: If config.js didn't load, look for window.firebaseConfig
-    else if (!firebase.apps.length && window.firebaseConfig) {
+    } else if (!firebase.apps.length && window.firebaseConfig) {
         firebase.initializeApp(window.firebaseConfig);
     }
-    // 3. No fallback hardcoded keys anymore.
 
     const db = firebase.firestore();
     const rdb = firebase.database();
     const auth = firebase.auth();
     const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
 
+    // Application State Variables
     let myUid = "";
     let myFollowingList = [];
     let myFollowersList = [];
     let myPinnedChats = [];
     let myBlockedList = []; 
     let myShowActivityStatus = true;
-    let offlineTimers = {}; // TRACKS OFFLINE DELAY FOR EACH USER
+    let offlineTimers = {}; 
     
-    // Interaction Variables
     let longPressTimer;
     let isLongPress = false;
     let activeChatId = null;
@@ -346,18 +519,21 @@
     let userCache = JSON.parse(localStorage.getItem('goorac_u_cache')) || {};
     let inboxListener = null;
     
-    // Filter Variable
     let currentFilter = 'all'; 
     let currentChatData = []; 
 
-    // Neon Palette for Badges
     const badgeColors = ['#ff00ff', '#00ff41', '#00d2ff', '#ffff00', '#ff4444', '#aa00ff', '#ff9900'];
 
+    /* ==========================================================================
+       AUTHENTICATION & DATA FETCHING
+       ========================================================================== */
     auth.onAuthStateChanged(user => {
         if (user) {
             myUid = user.uid;
             setupPresence(); 
             fetchUserData();
+            loadDummyStories(); // Load new feature UI
+            
             db.collection("users").doc(myUid).onSnapshot(doc => {
                 const data = doc.data();
                 myFollowingList = data?.following || [];
@@ -367,7 +543,9 @@
                 myShowActivityStatus = data?.showActivityStatus !== false;
                 listenToInbox();
             });
-        } else { window.location.href = 'login.html'; }
+        } else { 
+            window.location.href = 'login.html'; 
+        }
     });
 
     window.addEventListener('pageshow', (event) => {
@@ -377,7 +555,9 @@
         }
     });
 
-    // --- REALTIME PRESENCE HEARTBEAT (USER'S OWN STATUS) ---
+    /* ==========================================================================
+       PRESENCE SYSTEM (Online Status)
+       ========================================================================== */
     function setupPresence() {
         const userStatusDatabaseRef = rdb.ref('/status/' + myUid);
         const isOfflineForDatabase = { state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP };
@@ -386,17 +566,18 @@
         rdb.ref('.info/connected').on('value', (snapshot) => {
             if (snapshot.val() === false) return;
             userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(() => {
-                // INSTANT ONLINE
                 userStatusDatabaseRef.set(isOnlineForDatabase);
             });
         });
     }
 
     async function fetchUserData() {
-        const userDoc = await db.collection("users").doc(myUid).get();
-        const data = userDoc.data();
-        myFollowingList = data?.following || [];
-        myFollowersList = data?.followers || [];
+        try {
+            const userDoc = await db.collection("users").doc(myUid).get();
+            const data = userDoc.data();
+            myFollowingList = data?.following || [];
+            myFollowersList = data?.followers || [];
+        } catch (e) { console.error("Error fetching user data", e); }
     }
 
     async function syncUserProfile(uid) {
@@ -416,6 +597,9 @@
         return null; 
     }
 
+    /* ==========================================================================
+       INBOX LISTENER & RENDER ENGINE
+       ========================================================================== */
     function listenToInbox() {
         if(!myUid) return;
         if(inboxListener) inboxListener();
@@ -427,13 +611,12 @@
                 const chat = d.data();
                 const otherUid = chat.participants.find(id => id !== myUid);
                 
-                // Fetch other user's block list for reciprocal block check
                 const otherDoc = await db.collection("users").doc(otherUid).get();
                 const otherData = otherDoc.data();
                 const theirBlockedList = (otherData?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
 
                 if(myBlockedList.includes(otherUid) || theirBlockedList.includes(myUid)) {
-                    return null; // FILTER BLOCKED PERSON CHAT
+                    return null; // Exclude blocked users
                 }
 
                 let userData = otherData || userCache[otherUid];
@@ -454,7 +637,6 @@
                 
                 const isPinned = myPinnedChats.includes(d.id);
                 
-                // --- PRE-CALCULATE UNREAD STATUS ---
                 let isUnread = false;
                 let count = 0;
                 if (chat.unreadCount && chat.unreadCount[myUid] !== undefined) count = Number(chat.unreadCount[myUid]);
@@ -470,15 +652,11 @@
             currentChatData.sort((a,b) => {
                 if (a.isPinned && !b.isPinned) return -1;
                 if (!a.isPinned && b.isPinned) return 1;
-
-                // --- UNREAD SORTING FIX ---
                 if (a.isUnread && !b.isUnread) return -1;
                 if (!a.isUnread && b.isUnread) return 1;
-
                 return (b.chat.lastTimestamp?.seconds || 0) - (a.chat.lastTimestamp?.seconds || 0);
             });
 
-            // NEW FEATURE: Update Tab Title with total unread count
             const totalUnread = currentChatData.filter(c => c.isUnread).length;
             document.title = totalUnread > 0 ? `(${totalUnread}) Goorac | Quantum Inbox` : `Goorac | Quantum Inbox`;
 
@@ -499,15 +677,23 @@
         const list = document.getElementById('chats-list');
         list.innerHTML = "";
 
-        // --- FILTERING FIX ---
         const filteredData = currentChatData.filter((item) => {
             if (currentFilter === 'all') return true;
             if (currentFilter === 'unread') return item.isUnread;
+            if (currentFilter === 'pinned') return item.isPinned;
             return true;
         });
 
         if (filteredData.length === 0) {
-            list.innerHTML = `<p style='text-align:center; padding:50px; color:#444; font-weight:700;'>${currentFilter === 'unread' ? "All caught up!" : "No transmissions found."}</p>`;
+            let emptyMsg = "No transmissions found.";
+            if(currentFilter === 'unread') emptyMsg = "All caught up!";
+            if(currentFilter === 'pinned') emptyMsg = "No pinned transmissions.";
+            
+            list.innerHTML = `
+                <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px 20px; opacity:0.6;'>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:15px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <p style='text-align:center; color:#fff; font-weight:600; font-size:1.1rem; margin:0;'>${emptyMsg}</p>
+                </div>`;
             return;
         }
 
@@ -529,10 +715,11 @@
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
             item.setAttribute("onclick", `enterChat(event, '${u.username}')`); 
 
-            // Absolute physics constraint applied here
+            // The specific issue was fixed via CSS (.unread-badge margin-right: 12px)
+            // ensuring the neon shadow isn't sliced off by container overflow.
             item.innerHTML = `
                 <div class="pfp-container">
-                    <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="chat-pfp">
+                    <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="chat-pfp" loading="lazy">
                     <div class="online-indicator" id="online-${otherUid}"></div>
                 </div>
                 <div class="chat-info">
@@ -564,7 +751,6 @@
                 else { msgEl.innerHTML = lastMsg; }
             });
 
-            // --- INSTANT ONLINE / 20S OFFLINE DELAY LOGIC ---
             if (myShowActivityStatus) {
                 rdb.ref(`/status/${otherUid}/state`).on('value', snap => {
                     const dot = document.getElementById(`online-${otherUid}`);
@@ -572,11 +758,9 @@
 
                     const state = snap.val();
                     if (state === 'online') {
-                        // CANCEL ANY PENDING OFFLINE HIDE
                         clearTimeout(offlineTimers[otherUid]);
-                        dot.classList.add('active'); // SHOW INSTANTLY
+                        dot.classList.add('active'); 
                     } else {
-                        // DELAY REMOVAL BY 20 SECONDS
                         clearTimeout(offlineTimers[otherUid]);
                         offlineTimers[otherUid] = setTimeout(() => {
                             dot.classList.remove('active');
@@ -589,8 +773,9 @@
         if(currentFilter === 'all') localStorage.setItem('goorac_inbox_html', list.innerHTML);
     }
 
-    // --- GLOBAL HANDLERS ---
-    
+    /* ==========================================================================
+       INTERACTIONS & MENUS
+       ========================================================================== */
     window.startLongPress = function(el, chatId, isPinned, userStr) {
         isLongPress = false;
         const u = JSON.parse(decodeURIComponent(userStr));
@@ -600,7 +785,7 @@
             el.style.transform = "scale(0.96)";
             setTimeout(() => el.style.transform = "scale(1)", 200);
             openDeleteMenu(chatId, isPinned, u);
-        }, 600);
+        }, 500); // slightly faster response
     };
 
     window.cancelLongPress = function(el) { clearTimeout(longPressTimer); el.style.transform = "scale(1)"; };
@@ -611,7 +796,10 @@
         window.location.href = `chat.html?user=${username}`;
     };
 
-    window.visitProfile = function(e, username) { e.stopPropagation(); window.location.href = `userProfile.html?user=${username}`; };
+    window.visitProfile = function(e, username) { 
+        e.stopPropagation(); 
+        window.location.href = `userProfile.html?user=${username}`; 
+    };
 
     function openDeleteMenu(chatId, isPinned, userObj) {
         activeChatId = chatId;
@@ -619,59 +807,74 @@
         document.getElementById('active-pfp').src = userObj.photoURL || 'https://via.placeholder.com/150';
         document.getElementById('active-name').innerHTML = `${userObj.name} ${userObj.verified ? `<img src="${V_URL}" class="v-badge">` : ''}`;
         document.getElementById('active-username').innerText = `@${userObj.username}`;
+        
         const pinBtn = document.getElementById('pin-chat-btn');
         pinBtn.innerText = isPinned ? "Unpin Conversation" : "Pin Conversation";
         pinBtn.onclick = () => togglePin(chatId, isPinned);
+        
         document.getElementById('delete-menu').classList.add('active');
+        document.getElementById('overlay').style.display = 'block';
+        
+        const nav = document.querySelector('main-navbar');
+        if(nav) nav.classList.add('hide-nav');
+    }
+
+    function openSettingsMenu() {
+        history.pushState({ menuOpen: true }, "", "#settings");
+        document.getElementById('settings-menu').classList.add('active');
         document.getElementById('overlay').style.display = 'block';
         const nav = document.querySelector('main-navbar');
         if(nav) nav.classList.add('hide-nav');
     }
 
-    window.onpopstate = (e) => { if(document.getElementById('delete-menu').classList.contains('active')) closeDeleteMenu(false); };
+    window.onpopstate = (e) => { 
+        if(document.getElementById('delete-menu').classList.contains('active') || 
+           document.getElementById('settings-menu').classList.contains('active')) {
+            closeAllMenus(false); 
+        }
+    };
+
+    window.closeAllMenus = function(shouldGoBack) {
+        activeChatId = null;
+        document.getElementById('delete-menu').classList.remove('active');
+        document.getElementById('settings-menu').classList.remove('active');
+        document.getElementById('overlay').style.display = 'none';
+        const nav = document.querySelector('main-navbar');
+        if(nav) nav.classList.remove('hide-nav');
+        if(shouldGoBack && (window.location.hash === "#menu" || window.location.hash === "#settings")) {
+            history.back();
+        }
+    }
 
     async function togglePin(chatId, isPinned) {
-        closeDeleteMenu(true);
+        closeAllMenus(true);
         const userRef = db.collection("users").doc(myUid);
         if (isPinned) await userRef.update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(chatId) });
         else await userRef.update({ pinnedChats: firebase.firestore.FieldValue.arrayUnion(chatId) });
     }
 
-    window.closeDeleteMenu = function(shouldGoBack) {
-        activeChatId = null;
-        document.getElementById('delete-menu').classList.remove('active');
-        document.getElementById('overlay').style.display = 'none';
-        const nav = document.querySelector('main-navbar');
-        if(nav) nav.classList.remove('hide-nav');
-        if(shouldGoBack && window.location.hash === "#menu") history.back();
-    }
-
     document.getElementById('confirm-delete').onclick = async () => {
         if(!activeChatId) return;
         const cid = activeChatId; 
-        closeDeleteMenu(true);
-        if(confirm("Are you sure? This action is irreversible.")) {
-            // === 1. LOCAL STORAGE & CACHE CLEANUP ===
+        closeAllMenus(true);
+        if(confirm("Are you sure? This action is irreversible and affects both sides.")) {
+            // Cleanup cache instantly for snappy UI
             localStorage.removeItem('goorac_inbox_html'); 
             localStorage.removeItem('chat_msgs_' + cid); 
             
             try {
-                // === 2. CRITICAL: DELETE CHAT DOCUMENT FIRST ===
-                // Separating this from the batch ensures the chat disappears from the Inbox
-                // instantly, even if the message deletion batch limit (500) is hit later.
+                // Delete the core doc first so it leaves the stream immediately
                 await db.collection("chats").doc(cid).delete();
 
-                // === 3. SUB-RESOURCE CLEANUP ===
+                // Unpin fallback
                 db.collection("users").doc(myUid).update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(cid) }).catch(e=>{});
                 rdb.ref(`typing/${cid}`).remove();
                 
-                // === 4. BATCH MESSAGE DELETION (WITH SAFETY LIMIT) ===
+                // Batch delete messages safely to avoid 500 doc limit panic
                 const msgs = await db.collection("chats").doc(cid).collection("messages").get();
                 if (!msgs.empty) {
                     const batch = db.batch();
                     let count = 0;
-                    // Prevent Batch Limit Crash (>500 ops makes the whole batch fail)
-                    // We cap it at 480 to be safe.
                     msgs.docs.forEach((d, index) => {
                         if (index < 480) { 
                             batch.delete(d.ref);
@@ -680,52 +883,130 @@
                     });
                     if (count > 0) await batch.commit();
                 }
-                
             } catch(e) { console.error("Erase failed:", e); }
         }
     };
 
-    window.handleSearch = function(val) { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => searchUsers(val), 400); }
+    /* ==========================================================================
+       SETTINGS FUNCTIONS (NEW FEATURES)
+       ========================================================================== */
+    window.toggleActivityStatus = function() {
+        myShowActivityStatus = !myShowActivityStatus;
+        db.collection("users").doc(myUid).update({ showActivityStatus: myShowActivityStatus })
+        .then(() => {
+            alert(`Activity status is now ${myShowActivityStatus ? 'ON' : 'OFF'}.`);
+            closeAllMenus(true);
+        });
+    };
+
+    window.clearLocalCache = function() {
+        localStorage.removeItem('goorac_inbox_html');
+        localStorage.removeItem('goorac_u_cache');
+        localStorage.removeItem('quantum_ai_pfp_cache');
+        userCache = {};
+        alert("Cache cleared. UI will refresh from server.");
+        renderInbox();
+        closeAllMenus(true);
+    };
+
+    /* ==========================================================================
+       SEARCH ENGINE LOGIC
+       ========================================================================== */
+    window.handleSearch = function(val) { 
+        clearTimeout(searchTimeout); 
+        searchTimeout = setTimeout(() => searchUsers(val), 400); 
+    }
 
     function searchUsers(val) {
         const results = document.getElementById('search-results');
         const content = document.getElementById('inbox-content');
-        if(val.length < 1) { results.style.display = 'none'; content.style.display = 'block'; return; }
-        results.style.display = 'block'; content.style.display = 'none';
+        if(val.length < 1) { 
+            results.style.display = 'none'; 
+            content.style.display = 'block'; 
+            return; 
+        }
+        
+        results.style.display = 'block'; 
+        content.style.display = 'none';
         const q = val.toLowerCase();
         const allContacts = [...new Set([...myFollowingList, ...myFollowersList].map(f => typeof f === 'string' ? f : f.uid))];
-        if(allContacts.length === 0) { results.innerHTML = "<p style='text-align:center; padding:50px; color:#444;'>No contacts found.</p>"; return; }
+        
+        if(allContacts.length === 0) { 
+            results.innerHTML = `
+                <div style='text-align:center; padding:50px; color:#444; display:flex; flex-direction:column; align-items:center;'>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:10px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <p>No contacts found.</p>
+                </div>`; 
+            return; 
+        }
 
         db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', allContacts.slice(0, 10))
         .get().then(snap => {
-            // --- SEARCH RESULTS LAYOUT FIX ---
-            results.innerHTML = snap.docs.filter(d => {
+            const matches = snap.docs.filter(d => {
                 const u = d.data();
                 return (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
-            }).map(d => {
+            });
+
+            if (matches.length === 0) {
+                 results.innerHTML = `<p style='text-align:center; padding:50px; color:#444;'>No match for "${val}"</p>`;
+                 return;
+            }
+
+            results.innerHTML = matches.map(d => {
                 const u = d.data();
                 return `<div class="chat-item" onclick="window.location.href='chat.html?user=${u.username}'">
                     <div class="pfp-container" style="margin-right: 15px;">
-                        <img src="${u.photoURL||'https://via.placeholder.com/150'}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
+                        <img src="${u.photoURL||'https://via.placeholder.com/150'}" class="chat-pfp" style="width:45px; height:45px; border-radius: 14px;">
                     </div>
                     <div class="chat-info">
                         <div class="u-name">${u.name} ${u.verified?`<img src="${V_URL}" class="v-badge">`:''}</div>
-                        <div style="font-size:0.8rem; color:#444;">@${u.username}</div>
+                        <div style="font-size:0.8rem; color:var(--text-dim); margin-top:2px;">@${u.username}</div>
                     </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </div>`;
             }).join('');
         });
     }
 
+    /* ==========================================================================
+       UTILITIES
+       ========================================================================== */
     function formatTime(date) {
         const now = new Date();
         const diff = now - date;
-        const sec = Math.floor(diff / 1000), min = Math.floor(sec / 60), hour = Math.floor(min / 60), day = Math.floor(hour / 24);
+        const sec = Math.floor(diff / 1000), min = Math.floor(sec / 60);
+        const hour = Math.floor(min / 60), day = Math.floor(hour / 24);
         if(sec < 60) return "Just now";
         if(min < 60) return `${min}m ago`;
         if(hour < 24) return `${hour}h ago`;
         if(day < 7) return `${day}d ago`;
-        return date.toLocaleDateString();
+        
+        // Return short date if older than a week (e.g., Oct 12)
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    // Load dummy stories for UI presentation (New Feature logic hook)
+    function loadDummyStories() {
+        const strip = document.getElementById('stories-strip');
+        if(!strip) return;
+        // This is a placeholder for where you would map over your DB stories collection
+        const dummyData = [
+            { name: "Goorac", pfp: "https://via.placeholder.com/150/00d2ff" },
+            { name: "Sumaiya", pfp: "https://via.placeholder.com/150/ff4444" },
+            { name: "VoidUpLift", pfp: "https://via.placeholder.com/150/00ff41" }
+        ];
+        
+        dummyData.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'story-item';
+            div.innerHTML = `
+                <div class="story-ring">
+                    <img src="${d.pfp}" class="story-pfp">
+                </div>
+                <span class="story-name">${d.name}</span>
+            `;
+            strip.appendChild(div);
+        });
     }
 </script>
 </body>
