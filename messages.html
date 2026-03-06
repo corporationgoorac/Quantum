@@ -36,6 +36,7 @@
             padding-bottom: 90px; overflow-x: hidden;
             -webkit-user-select: none; user-select: none;
             -webkit-tap-highlight-color: transparent;
+            width: 100% !important; max-width: 100% !important; /* FIXED HORIZONTAL SCROLLING */
         }
 
         /* HEADER */
@@ -99,12 +100,12 @@
         }
         .online-indicator.active { display: block; }
 
-        .chat-info { flex: 1; min-width: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
+        .chat-info { flex: 1; min-width: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; } /* ADDED OVERFLOW HIDDEN FOR SAFETY */
         .chat-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         
         .u-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: #fff; }
         .v-badge { height: 14px; width: 14px; }
-        .last-msg { color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; transition: color 0.3s; flex: 1; padding-right: 10px; }
+        .last-msg { color: var(--text-dim); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; transition: color 0.3s; flex: 1; min-width: 0; padding-right: 10px; } /* ADDED MIN-WIDTH 0 TO FORCE TRUNCATION */
         .typing-text { color: var(--accent); font-weight: 600; font-style: italic; animation: pulseType 1s infinite; }
         @keyframes pulseType { 50% { opacity: 0.6; } }
 
@@ -520,7 +521,7 @@
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
             item.setAttribute("onclick", `enterChat(event, '${u.username}')`); 
 
-            // Alignment fixed by making text flex: 1 and meta section flex-shrink: 0
+            // Alignment fixed by adding width:100% and min-width:0 to the flex container to force proper boundaries
             item.innerHTML = `
                 <div class="pfp-container">
                     <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="chat-pfp">
@@ -535,7 +536,7 @@
                         </span>
                         <span style="font-size:0.7rem; color:#444;">${chat.lastTimestamp ? formatTime(chat.lastTimestamp.toDate()) : ''}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; min-width:0;">
                         <div class="last-msg" id="last-msg-${id}" style="${isUnread ? 'color:#fff; font-weight:700;' : ''}">
                             ${lastMsg}
                         </div>
