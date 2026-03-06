@@ -236,6 +236,14 @@
             </label>
         </div>
 
+        <div class="setting-row">
+            <span style="font-size:14px; font-weight:600;">Show on Search Results</span>
+            <label class="switch">
+                <input type="checkbox" id="search-result-toggle" onchange="updateSearchResultPref(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
         <div class="setting-row" onclick="history.back(); setTimeout(() => document.getElementById('cf-selector').open(), 50);">
             <span style="font-size:14px; font-weight:600;">Close Friends</span>
             <span class="material-icons-round" style="color:var(--secondary);">chevron_right</span>
@@ -363,18 +371,22 @@
         }
     });
 
-    // --- UI CONTROLS ---
-    function toggleMenu(show) {
+    // --- UI CONTROLS (Bug Fixed) ---
+    function toggleMenu(show, isPopState = false) {
         const overlay = document.getElementById('modal-overlay');
         const modal = document.getElementById('bottom-modal');
         if (show) {
-            history.pushState({modal: 'settings'}, ""); 
+            if(!isPopState) history.pushState({modal: 'settings'}, ""); 
             overlay.style.display = 'block';
             setTimeout(() => modal.classList.add('active'), 10);
             if(navigator.vibrate) navigator.vibrate(20);
         } else {
             modal.classList.remove('active');
             setTimeout(() => overlay.style.display = 'none', 400);
+            // This fix ensures we don't duplicate history state issues 
+            if(!isPopState && window.history.state && window.history.state.modal === 'settings') {
+                history.back();
+            }
         }
     }
 
@@ -384,19 +396,20 @@
         fetchBlockedUsers();
     }
 
-    function closeBlockedList() {
+    // Bug Fixed for Blocked List close tracking
+    function closeBlockedList(isPopState = false) {
         document.getElementById('blocked-modal').classList.remove('active');
-        if(window.history.state && window.history.state.modal === 'blocked') {
+        if(!isPopState && window.history.state && window.history.state.modal === 'blocked') {
             history.back();
         }
     }
 
-    // Fixed Back Button Logic
+    // Fixed Back Button Logic to pass isPopState as true
     window.onpopstate = function(e) {
         if(document.getElementById('blocked-modal').classList.contains('active')) {
-            document.getElementById('blocked-modal').classList.remove('active');
+            closeBlockedList(true);
         } else if(document.getElementById('bottom-modal').classList.contains('active')) {
-            toggleMenu(false);
+            toggleMenu(false, true);
         }
     };
 
@@ -408,6 +421,20 @@
         const statusRef = rdb.ref('/status/' + user.uid);
         await statusRef.set({ state: isEnabled ? 'online' : 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP });
         if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    // --- SEARCH RESULT TOGGLE LOGIC ---
+    async function updateSearchResultPref(isEnabled) {
+        const user = auth.currentUser;
+        if (!user) return;
+        try {
+            await db.collection("users").doc(user.uid).update({ searchResult: isEnabled });
+            if (navigator.vibrate) navigator.vibrate(30);
+            showToast(isEnabled ? "Visible in Search" : "Hidden from Search");
+        } catch (error) {
+            console.error("Failed to update search pref", error);
+            showToast("Update failed");
+        }
     }
 
     // --- BLOCKED USERS LOGIC ---
@@ -544,6 +571,10 @@
 
         const toggle = document.getElementById('activity-toggle');
         if(toggle) toggle.checked = data.showActivityStatus !== false;
+
+        // Apply new Search Result Default rendering
+        const searchToggle = document.getElementById('search-result-toggle');
+        if(searchToggle) searchToggle.checked = data.searchResult === true; // Automatically defaults false if undefined
     }
 
     function safeText(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
