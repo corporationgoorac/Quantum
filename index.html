@@ -21,7 +21,6 @@
 
     <style>
         :root {
-            --primary: #00d2ff;
             --bg: #000000;
         }
 
@@ -57,60 +56,43 @@
 
         /* Splash Screen Image */
         .splash-logo {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             object-fit: contain;
             /* Subtle heartbeat scaling */
             animation: splash-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-            margin-bottom: 20px;
-        }
-
-        /* Brand Font Style */
-        .brand-text {
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: 0.5rem;
-            text-transform: uppercase;
-            color: #ffffff;
-            margin-bottom: 5px;
         }
 
         @keyframes splash-pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
+            0% { transform: scale(0.95); opacity: 0.9; }
             100% { transform: scale(1.05); opacity: 1; }
         }
 
+        /* Professional Bottom Branding */
         .bottom-section {
             position: absolute;
-            bottom: 60px;
+            bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 4px;
             width: 100%;
         }
 
-        .loader {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            border-top: 2px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .from-text {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
         }
 
-        .quantum-text {
-            font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .company-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.15rem;
+            color: #ffffff;
+            /* Optional: You can change the color above to var(--primary) if you want it blue */
         }
     </style>
 </head>
@@ -118,11 +100,10 @@
 
     <div class="container">
         <img src="images/icon.png" alt="Goorac" class="splash-logo" onerror="this.style.display='none'">
-        <div class="brand-text">GOORAC</div>
         
         <div class="bottom-section">
-            <div class="loader"></div>
-            <div class="quantum-text">Quantum</div>
+            <div class="from-text">from</div>
+            <div class="company-text">GOORAC</div>
         </div>
     </div>
 
@@ -145,7 +126,6 @@
             
             auth.onAuthStateChanged((user) => {
                 // Redirects instantly as soon as Firebase finishes checking the auth state.
-                // Using .replace() prevents the splash screen from staying in the browser history.
                 if (user) {
                     window.location.replace("home.html");
                 } else {
