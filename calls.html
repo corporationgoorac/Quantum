@@ -31,6 +31,8 @@
         }
 
         /* Anti-Copy & Layout CSS */
+        * { box-sizing: border-box !important; }
+        
         body {
             background: #000; color: white; margin: 0;
             font-family: -apple-system, system-ui, sans-serif;
@@ -44,14 +46,41 @@
 
         input { -webkit-user-select: text; user-select: text; }
 
-        header { padding: 15px 20px; border-bottom: 1px solid var(--border); background: #000; }
-        .header-logo { font-weight: 900; font-size: 1.4rem; color: var(--accent); letter-spacing: 2px; }
-        .search-box { padding: 15px; }
-        .search-box input { width: 100%; background: #111; border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none; box-sizing: border-box; }
+        /* MODIFIED: Matches messages.html UI perfectly */
+        header { 
+            position: sticky; top: 0; background: rgba(0,0,0,0.9); 
+            padding: 0; border-bottom: 1px solid var(--border); z-index: 1000; 
+            backdrop-filter: blur(20px); 
+            padding-top: max(15px, env(safe-area-inset-top)); 
+            width: 100%; box-sizing: border-box; 
+        }
+        .header-logo { 
+            font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; 
+            background: linear-gradient(to right, #fff, var(--accent)); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            cursor: pointer; padding: 0 20px; 
+        }
         
-        .tabs { display: flex; padding: 0 20px 10px; gap: 20px; border-bottom: 1px solid var(--border); }
-        .tab { font-size: 0.8rem; font-weight: 800; color: var(--text-dim); cursor: pointer; padding-bottom: 5px; text-transform: uppercase; }
-        .tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        .search-box { padding: 12px 20px; width: 100%; box-sizing: border-box; }
+        .search-box input { 
+            width: 100%; background: #111; border: 1px solid var(--border); 
+            padding: 12px 15px; border-radius: 14px; color: white; outline: none; 
+            box-sizing: border-box; font-size: 16px !important; transition: all 0.3s ease; 
+        }
+        .search-box input:focus { border-color: var(--accent); background: #161616; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
+        
+        .tabs { display: flex; padding: 0 20px 10px; gap: 10px; overflow-x: auto; scrollbar-width: none; border-bottom: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { 
+            padding: 8px 16px; border-radius: 20px; background: #1a1a1a; 
+            border: 1px solid var(--border); color: #888; font-size: 0.85rem; 
+            font-weight: 600; white-space: nowrap; transition: all 0.2s; 
+            cursor: pointer; text-transform: none; 
+        }
+        .tab.active { 
+            background: rgba(0, 210, 255, 0.15); color: var(--accent); 
+            border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); 
+        }
 
         #list-container { 
             flex: 1; 
@@ -155,6 +184,16 @@
 <chat-loader></chat-loader>
 
     <div id="list-container"></div>
+    <script>
+        // --- ZERO-MS CACHE ENGINE ---
+        (function loadCallsCache() {
+            const cachedHTML = localStorage.getItem('goorac_calls_html');
+            if (cachedHTML && cachedHTML.trim() !== "") {
+                const list = document.getElementById('list-container');
+                if(list) list.innerHTML = cachedHTML;
+            }
+        })();
+    </script>
 
     <call-notifier></call-notifier>
 
@@ -408,6 +447,7 @@
         const auth = firebase.auth();
 
         let myUid, myData, peer, currentCall, localStream, timerInterval, connectionRetry;
+        let myBlockedList = []; // NEW: Global block list array
         let isCaller = false;
         let isLogged = false; 
         let secondsElapsed = 0;
@@ -422,6 +462,9 @@
                 myUid = user.uid;
                 const doc = await db.collection("users").doc(myUid).get();
                 myData = doc.data() || {};
+                
+                // NEW: Populate user's blocked list
+                myBlockedList = (myData.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
                 
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('autoAnswer') === 'true') {
@@ -661,7 +704,7 @@
         }
 
         /* -------------------------------------------------------------------------- */
-        /* UI RENDERING & DATA                                                        */
+        /* UI RENDERING & DATA WITH TWO-WAY BLOCK LOGIC                               */
         /* -------------------------------------------------------------------------- */
         function switchTab(tab) {
             activeTab = tab;
@@ -678,20 +721,30 @@
         async function loadRecent() {
             const snapshot = await db.collection("call_logs")
                 .where('participants', 'array-contains', myUid)
-                .orderBy('timestamp', 'desc').limit(10).get();
+                .orderBy('timestamp', 'desc').limit(20).get();
             
             let html = "";
-            snapshot.forEach(doc => {
+            const callPromises = snapshot.docs.map(async doc => {
                 const call = doc.data();
                 const isOutgoing = call.callerId === myUid;
                 const otherUid = isOutgoing ? call.receiverId : call.callerId;
+                
+                // NEW: My Block Check
+                if (myBlockedList.includes(otherUid)) return null;
+
+                const otherDoc = await db.collection("users").doc(otherUid).get();
+                const otherData = otherDoc.exists ? otherDoc.data() : {};
+                
+                // NEW: Their Block Check
+                const theirBlockedList = (otherData?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
+                if (theirBlockedList.includes(myUid)) return null;
+
                 const name = isOutgoing ? call.receiverName : call.callerName;
                 const pfp = isOutgoing ? call.receiverPfp : call.callerPfp;
-                // CHANGED: Added hour12: true to force 12-hour format
                 const time = new Date(call.timestamp).toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', hour12: true});
                 const statusClass = (call.status === 'missed' || call.status === 'cancelled') ? 'status-missed' : (isOutgoing ? 'status-outgoing' : 'status-incoming');
 
-                html += `
+                return `
                     <div class="call-item">
                         <img src="${pfp || 'https://via.placeholder.com/150'}" class="call-pfp">
                         <div class="call-info">
@@ -701,11 +754,19 @@
                         <button class="btn-call" onclick="startCall('${otherUid}', '${name}', '${pfp}', false)">📞</button>
                     </div>`;
             });
+
+            const results = await Promise.all(callPromises);
+            html = results.filter(res => res !== null).join('');
+            
             document.getElementById('list-container').innerHTML = html || "<p style='text-align:center; padding:40px; opacity:0.5;'>No call history</p>";
+            
+            // NEW: Set cache for 0ms loading
+            if (activeTab === 'recent') {
+                localStorage.setItem('goorac_calls_html', document.getElementById('list-container').innerHTML);
+            }
         }
 
         async function loadContacts() {
-            // CHANGED: Handle both array of objects and array of strings
             const following = myData.following || [];
             if (following.length === 0) {
                 document.getElementById('list-container').innerHTML = "<p style='text-align:center; padding:40px; opacity:0.5;'>No mutual contacts</p>";
@@ -714,24 +775,27 @@
 
             let html = "";
             
-            // Iterate safely regardless of whether 'following' contains objects (with timestamps) or just UIDs
             for (let item of following) {
-                // Safely extract UID: check if item is object with 'uid' property, else assume it's a string
                 const uid = (typeof item === 'object' && item.uid) ? item.uid : item;
                 
                 if (!uid) continue;
+
+                // NEW: My Block Check
+                if (myBlockedList.includes(uid)) continue;
 
                 const uDoc = await db.collection("users").doc(uid).get();
                 if (!uDoc.exists) continue;
 
                 const u = uDoc.data();
                 
-                // Check if target user follows me back
+                // NEW: Their Block Check
+                const theirBlockedList = (u?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
+                if (theirBlockedList.includes(myUid)) continue;
+                
                 let isMutual = false;
                 if (u && u.following) {
                     if (Array.isArray(u.following)) {
                         isMutual = u.following.some(f => {
-                            // Also handle if the OTHER user has the new structure or the old structure
                             const fUid = (typeof f === 'object' && f.uid) ? f.uid : f;
                             return fUid === myUid;
                         });
@@ -835,6 +899,3 @@
     </script>
 </body>
 </html>
-
-
-
