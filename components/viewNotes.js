@@ -888,7 +888,7 @@ class ViewNotes extends HTMLElement {
                     try {
                         await this.db.collection("notes").doc(note.id).update({ isActive: false });
                         this.closeActionsModal();
-                        if(typeof NotesManager !== 'undefined') NotesManager.init();
+                        this.close(); // Close viewer so snapshot listener can clear it visually!
                     } catch(e) { console.error(e); }
                 }
             };
@@ -901,7 +901,7 @@ class ViewNotes extends HTMLElement {
                     try {
                         await this.db.collection("notes").doc(note.id).delete();
                         this.closeActionsModal();
-                        this.close(); // Close main note too
+                        this.close(); // Close viewer!
                         window.location.reload(); 
                     } catch(e) { console.error(e); }
                 }
@@ -1400,7 +1400,7 @@ const NotesManager = {
             if (cached) {
                 const data = JSON.parse(cached);
                 
-                // FIX: Calculate proper expiry using createdAt as a fallback
+                // Calculate proper expiry using createdAt as a fallback
                 const createdAtDate = data.createdAt ? new Date(data.createdAt) : new Date();
                 const expiryTime = data.expiresAt ? new Date(data.expiresAt) : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
 
@@ -1441,13 +1441,13 @@ const NotesManager = {
                     data = doc.data();
                     noteId = doc.id;
                     
-                    // FIX: Reliable expiry check inside the snapshot
+                    // Reliable expiry check inside the snapshot
                     const createdAtDate = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date();
                     const expiryTime = data.expiresAt ? data.expiresAt.toDate() : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
 
                     if (expiryTime < new Date()) {
                         db.collection("notes").doc(noteId).update({ isActive: false });
-                        data = null;
+                        data = null; // Mark as null so it falls into the cleanup block below
                     }
                 }
 
@@ -1458,13 +1458,8 @@ const NotesManager = {
                         if(cacheData.expiresAt && cacheData.expiresAt.toDate) cacheData.expiresAt = cacheData.expiresAt.toDate().toISOString();
                         localStorage.setItem('my_note_cache_' + user.uid, JSON.stringify(cacheData));
                     } catch(e){}
-                } else {
-                    localStorage.removeItem('my_note_cache_' + user.uid);
-                }
 
-                preview.classList.add('visible');
-
-                if(data && (data.text || data.songName)) {
+                    preview.classList.add('visible');
                     preview.style.background = data.bgColor || '#262626'; 
                     preview.style.color = data.textColor || '#fff';
                     
@@ -1483,7 +1478,13 @@ const NotesManager = {
                         const viewer = document.querySelector('view-notes');
                         if(data && viewer) viewer.open({ ...data, id: noteId }, true);
                     };
+
                 } else {
+                    // 🚀 THE GHOST FIX FOR YOUR OWN NOTE:
+                    // If snapshot is empty, the note was archived or deleted. Wipe the cache AND the screen.
+                    localStorage.removeItem('my_note_cache_' + user.uid);
+                    
+                    preview.classList.remove('visible');
                     preview.style.background = 'rgba(255,255,255,0.1)';
                     preview.style.color = 'rgba(255,255,255,0.7)';
                     preview.innerHTML = `<div class="note-text-content" style="font-size:0.7rem; font-weight:400;">What's on your mind?</div>`;
@@ -1505,7 +1506,7 @@ const NotesManager = {
                 cachedMutualNotes = JSON.parse(cached);
                 for (const [userUid, noteData] of Object.entries(cachedMutualNotes)) {
                     
-                    // FIX: Fallback expiry calculation for cached mutual notes
+                    // Fallback expiry calculation for cached mutual notes
                     const createdAtDate = noteData.createdAt ? new Date(noteData.createdAt) : new Date();
                     const expiryTime = noteData.expiresAt ? new Date(noteData.expiresAt) : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
 
@@ -1580,6 +1581,27 @@ const NotesManager = {
                     .where("uid", "in", chunk) 
                     .where("isActive", "==", true)
                     .onSnapshot(snapshot => {
+                        
+                        // 🚀 THE GHOST FIX FOR FRIEND NOTES:
+                        // Find exactly who is STILL active right now from this database chunk
+                        const currentlyActiveUidsInSnapshot = snapshot.docs.map(doc => doc.data().uid);
+                        
+                        // Check our cache against the live database snapshot
+                        chunk.forEach(uid => {
+                            // If this UID is in our chunk but NOT in the live snapshot, it means they deleted/archived it!
+                            if (!currentlyActiveUidsInSnapshot.includes(uid)) {
+                                // 1. Purge from local JSON Cache
+                                if (cachedMutualNotes[uid]) {
+                                    delete cachedMutualNotes[uid];
+                                    localStorage.setItem('mutual_notes_cache_' + user.uid, JSON.stringify(cachedMutualNotes));
+                                }
+                                // 2. Purge the ghost HTML element from the screen instantly
+                                const deadNoteElement = document.getElementById(`note-${uid}`);
+                                if (deadNoteElement) deadNoteElement.remove();
+                            }
+                        });
+
+
                         snapshot.docChanges().forEach(async change => {
                             const noteData = change.doc.data();
                             const noteId = change.doc.id; 
@@ -1588,7 +1610,7 @@ const NotesManager = {
                             const existingEl = document.getElementById(`note-${userUid}`);
                             if(existingEl) existingEl.remove();
 
-                            // FIX: Reliable expiry check for incoming snapshots
+                            // Reliable expiry check for incoming snapshots
                             const createdAtDate = noteData.createdAt ? (noteData.createdAt.toDate ? noteData.createdAt.toDate() : new Date(noteData.createdAt)) : new Date();
                             const expiryTime = noteData.expiresAt ? noteData.expiresAt.toDate() : new Date(createdAtDate.getTime() + 24 * 60 * 60 * 1000);
 
