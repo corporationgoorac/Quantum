@@ -1413,6 +1413,25 @@
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
+
+            // 🚀 [GLITCH FIX]: CLEAN UP GHOST HTML NOTES INJECTED BY 0ms CACHE
+            try {
+                const notesContainer = document.getElementById('notes-container');
+                if (notesContainer) {
+                    const rawCache = localStorage.getItem('mutual_notes_cache_' + user.uid);
+                    const validNotesData = rawCache ? JSON.parse(rawCache) : {};
+                    
+                    notesContainer.querySelectorAll('.friend-note').forEach(noteEl => {
+                        const friendUid = noteEl.id.replace('note-', '');
+                        // If the JSON cache doesn't have this note anymore (it expired), remove the visual HTML!
+                        if (!validNotesData[friendUid]) {
+                            noteEl.remove();
+                        }
+                    });
+                }
+            } catch(e) { console.error("Ghost note cleanup failed:", e); }
+            // -----------------------------------------------------------------
+
             const doc = await db.collection("users").doc(user.uid).get();
             if (doc.exists) {
                 const userData = doc.data();
