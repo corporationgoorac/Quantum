@@ -1,22 +1,42 @@
 {
   "name": "Quantum",
   "short_name": "Quantum",
+  "description": "The Goorac Quantum official web app.",
   "start_url": "/home.html",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "description": "The Goorac Quantum official web app.",
+  "dir": "ltr",
+  "lang": "en",
+  "categories": ["utilities", "productivity"],
   "icons": [
     {
-      "src": "images/icon.png?v=2",
+      "src": "images/icon-quantum.png",
       "type": "image/png",
-      "sizes": "128x128"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "images/icon.png?v=2",
+      "src": "images/icon-quantum.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Home",
+      "short_name": "Home",
+      "description": "Go directly to the home screen",
+      "url": "/home.html",
+      "icons": [
+        {
+          "src": "images/icon-quantum.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
