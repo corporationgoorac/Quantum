@@ -13,15 +13,18 @@
         :root {
             --bg: #000000;
             --surface: #0a0a0a;
-            --accent: #00d2ff;
-            --accent-dim: rgba(0, 210, 255, 0.1);
+            --accent: #bc38ff; /* Quantum Purple */
+            --vision-blue: #00d2ff;
+            --pulse-red: #ff3860;
+            --accent-dim: rgba(188, 56, 255, 0.1);
             --border: #1a1a1a;
             --text-main: #ffffff;
             --text-dim: #888888;
             --danger: #ff4444;
+            --gradient: linear-gradient(135deg, #bc38ff 0%, #ff3860 100%);
         }
 
-        /* --- PROFESSIONAL RESET (NO ANIMATIONS) --- */
+        /* --- PROFESSIONAL RESET --- */
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
@@ -39,6 +42,7 @@
             align-items: center;
             min-height: 100vh;
             overflow-x: hidden;
+            background-image: radial-gradient(circle at top center, #1a0b1a 0%, #000 70%);
         }
 
         /* --- HEADER --- */
@@ -60,7 +64,7 @@
             font-weight: 700; 
             letter-spacing: 4px;
             text-transform: uppercase;
-            background: linear-gradient(to right, #fff, var(--accent)); 
+            background: var(--gradient); 
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         }
 
@@ -81,11 +85,11 @@
         .app-icon {
             width: 100%;
             height: 100%;
-            border-radius: 24px;
+            border-radius: 30px;
             border: 1px solid var(--border);
             background: #000;
             object-fit: cover;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 0 50px rgba(188, 56, 255, 0.3);
         }
 
         .status-badge {
@@ -95,23 +99,24 @@
             background: var(--accent-dim);
             color: var(--accent);
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: 20px;
             font-size: 0.7rem;
             font-weight: 700;
             letter-spacing: 1px;
             margin-bottom: 24px;
-            border: 1px solid rgba(0, 210, 255, 0.2);
+            border: 1px solid rgba(188, 56, 255, 0.2);
         }
 
-        /* Steady dot - No Pulse */
-        .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+        .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
 
         h1 { 
-            font-size: 2.8rem; 
+            font-size: 3.2rem; 
             font-weight: 800; 
             margin: 0; 
             line-height: 1; 
-            letter-spacing: -1.5px; 
+            letter-spacing: -2px; 
+            background: linear-gradient(to bottom, #fff, #888);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         
         .hero p { 
@@ -119,7 +124,7 @@
             font-size: 1.1rem; 
             margin-top: 20px; 
             line-height: 1.6;
-            max-width: 400px;
+            max-width: 450px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -130,35 +135,37 @@
             max-width: 440px;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 32px;
             margin-bottom: 60px;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
         }
 
-        /* HIGH VISIBILITY CENTERED BUTTON */
         #install-btn {
-            background: var(--text-main); /* High contrast white */
+            background: var(--text-main);
             color: #000;
             border: none;
             width: 100%;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 1.1rem;
             font-weight: 800;
             cursor: pointer;
-            display: none; /* Logic remains */
+            display: none; 
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 10px;
+            box-shadow: 0 5px 15px rgba(255,255,255,0.1);
         }
-        #install-btn:active { transform: scale(0.98); opacity: 0.9; }
+        #install-btn:active { transform: scale(0.96); }
 
-        /* --- FEATURES GRID --- */
+        /* --- FEATURES GRID (Updated to Match Screens) --- */
         .features {
             display: grid;
             grid-template-columns: 1fr;
@@ -172,14 +179,15 @@
             display: flex;
             gap: 16px;
             align-items: flex-start;
+            padding: 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
 
-        .feat-icon {
-            color: var(--accent);
-            font-size: 1.2rem;
-            font-weight: bold;
-            line-height: 1;
-        }
+        .feat-icon-ai { color: #ff8c00; font-size: 1.2rem; }
+        .feat-icon-vision { color: var(--vision-blue); font-size: 1.2rem; }
+        .feat-icon-pulse { color: var(--pulse-red); font-size: 1.2rem; }
 
         .feat-text b { display: block; color: #fff; font-size: 1rem; margin-bottom: 4px; }
         .feat-text span { color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
@@ -198,7 +206,7 @@
             text-transform: uppercase; 
             color: var(--text-dim); 
             font-weight: 800; 
-            letter-spacing: 2px; 
+            letter-spacing: 3px; 
             margin-bottom: 40px; 
             display: block;
         }
@@ -206,10 +214,12 @@
         .privacy-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1px; /* Divider effect */
+            gap: 1px;
             background: var(--border);
             border: 1px solid var(--border);
             text-align: left;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .priv-card {
@@ -224,19 +234,20 @@
         .ios-notice {
             display: none;
             text-align: left;
-            background: #111;
+            background: #050505;
             padding: 24px;
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--accent);
         }
-        .ios-notice b { color: var(--accent); display: block; margin-bottom: 16px; font-size: 1rem; }
-        .ios-step { font-size: 0.95rem; color: #fff; margin: 12px 0; display: flex; gap: 12px; }
+        .ios-notice b { color: var(--accent); display: block; margin-bottom: 16px; font-size: 1.1rem; }
+        .ios-step { font-size: 0.95rem; color: #fff; margin: 16px 0; display: flex; gap: 12px; align-items: center; }
+        .ios-step i { color: var(--accent); font-style: normal; font-weight: bold; background: rgba(188, 56, 255, 0.2); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
     <header>
-        <div class="logo">GOORAC</div>
+        <div class="logo">GOORAC QUANTUM</div>
     </header>
 
     <div class="hero">
@@ -244,65 +255,72 @@
             <img src="images/icon.png" alt="Goorac" class="app-icon">
         </div>
         
-        <div class="status-badge"><div class="dot"></div> VERSION 3.0 STABLE</div>
+        <div class="status-badge"><div class="dot"></div> QUANTUM CORE v3.0 ONLINE</div>
         
-        <h1>Goorac Quantum</h1>
-        <p>The next generation of private communication. Secure, seamless, and optimized for your device.</p>
+        <h1>The Quantum Era</h1>
+        <p>A unified network for real-time vision, rhythmic pulses, and intelligent AI interaction. Experience the future of connection.</p>
     </div>
 
     <div class="card">
-        <button id="install-btn">Install Now</button>
+        <button id="install-btn">Install App</button>
 
-        <div id="unsupported-msg" style="color: var(--text-dim); font-size: 0.9rem;">
-            Analyzing system compatibility...
+        <div id="unsupported-msg" style="color: var(--text-dim); font-size: 0.9rem; margin-top: 10px;">
+            Initializing Quantum Secure Link...
         </div>
 
         <div id="ios-guide" class="ios-notice">
-            <b>iPhone & iPad Instructions</b>
-            <div class="ios-step"><span>1.</span> Tap the "Share" icon in Safari.</div>
-            <div class="ios-step"><span>2.</span> Select "Add to Home Screen".</div>
-            <div class="ios-step"><span>3.</span> Launch Goorac from your desktop.</div>
+            <b>Setup Goorac on iOS</b>
+            <div class="ios-step"><i>1</i> Tap the "Share" button at the bottom.</div>
+            <div class="ios-step"><i>2</i> Select "Add to Home Screen" from the menu.</div>
+            <div class="ios-step"><i>3</i> Open Goorac from your home screen.</div>
         </div>
 
         <div class="features">
             <div class="feat-item">
-                <div class="feat-icon">⚡</div>
+                <div class="feat-icon-ai">✦</div>
                 <div class="feat-text">
-                    <b>Quantum Speed</b>
-                    <span>Optimized local caching for 0ms navigation transitions.</span>
+                    <b>Quantum AI</b>
+                    <span>Your verified assistant, integrated directly into every chat.</span>
                 </div>
             </div>
             <div class="feat-item">
-                <div class="feat-icon">🛡️</div>
+                <div class="feat-icon-vision">⊙</div>
                 <div class="feat-text">
-                    <b>Secure Access</b>
-                    <span>Biometric-ready and sandbox environment protection.</span>
+                    <b>Vision Network</b>
+                    <span>Co-watch YouTube and media with zero latency.</span>
+                </div>
+            </div>
+            <div class="feat-item">
+                <div class="feat-icon-pulse">🗲</div>
+                <div class="feat-text">
+                    <b>Pulse Sync</b>
+                    <span>Real-time song sharing and synchronized listening.</span>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="privacy-footer">
-        <span class="section-label">Privacy Manifesto</span>
+        <span class="section-label">Privacy & Security</span>
         <div class="privacy-grid">
             <div class="priv-card">
-                <b>Zero Tracking</b>
-                <small>No analytics or third-party trackers. Your activity remains yours.</small>
+                <b>Verified Identity</b>
+                <small>Secure, blockchain-ready verification for all Quantum users.</small>
             </div>
             <div class="priv-card">
-                <b>Encryption</b>
-                <small>End-to-end data handling powered by Firebase Secure.</small>
+                <b>Firebase Secure</b>
+                <small>End-to-end encryption across the entire Goorac infrastructure.</small>
             </div>
             <div class="priv-card">
-                <b>Sandbox</b>
-                <small>Isolated execution to prevent data leaks to other apps.</small>
+                <b>No Intrusions</b>
+                <small>A clean, focused interface. No ads. No tracking. Period.</small>
             </div>
             <div class="priv-card">
-                <b>No Ads</b>
-                <small>A clean, focused interface with zero external intrusions.</small>
+                <b>Encapsulated</b>
+                <small>Runs in a secure sandbox to keep your device data private.</small>
             </div>
         </div>
-        <p style="font-size: 0.75rem; color: #444; margin-top: 40px; letter-spacing: 1px;">© 2026 Goorac Quantum. All systems operational.</p>
+        <p style="font-size: 0.75rem; color: #333; margin-top: 40px; letter-spacing: 2px;">GOORAC QUANTUM © 2026. ALL SYSTEMS STABLE.</p>
     </div>
 
     <script type="module">
@@ -325,17 +343,32 @@
         const iosGuide = document.getElementById('ios-guide');
         let deferredPrompt;
 
-        // PWA Detection Logic
-        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        // --- BROWSER BREAKOUT LOGIC ---
+        const ua = navigator.userAgent || navigator.vendor;
+        const isInstagram = ua.indexOf('Instagram') > -1 || ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
+        const isAndroid = /Android/i.test(ua);
+        const isIos = /iPhone|iPad|iPod/.test(ua);
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-        if (isStandalone) {
-            msg.textContent = "✅ System Optimized & Installed";
+        // Auto-Redirect logic for Android Instagram
+        if (isInstagram && isAndroid) {
+            const chromeIntent = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
+            window.location.href = chromeIntent;
+            
+            // Fallback button if auto-redirect fails
+            installBtn.textContent = "Open in Chrome to Install";
+            installBtn.style.display = 'block';
+            installBtn.onclick = () => { window.location.href = chromeIntent; };
+            msg.textContent = "⚠️ In-app browser detected. Please open in Chrome.";
+        } 
+        else if (isStandalone) {
+            msg.textContent = "✅ Quantum Core Installed & Optimized";
             installBtn.style.display = 'none';
         } else if (isIos) {
             msg.style.display = 'none';
             iosGuide.style.display = 'block';
         } else {
+            // Standard PWA Logic
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -357,7 +390,7 @@
 
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
-            msg.textContent = "✅ Welcome to the Quantum Network";
+            msg.textContent = "✅ Connection Established. Welcome.";
             msg.style.display = 'block';
         });
 
