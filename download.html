@@ -50,9 +50,10 @@
         /* --- HEADER --- */
         header {
             width: 100%;
-            padding: 24px;
+            padding: 16px 24px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 1px solid var(--border);
             backdrop-filter: blur(20px);
             position: sticky;
@@ -62,7 +63,7 @@
         }
 
         .logo { 
-            font-size: 1.2rem; 
+            font-size: 1rem; 
             font-weight: 700; 
             letter-spacing: 4px;
             text-transform: uppercase;
@@ -70,110 +71,163 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         }
 
-        /* --- HERO SECTION --- */
+        /* --- PLAY STORE STYLE HERO SECTION --- */
         .hero {
-            padding: 60px 24px 30px;
-            text-align: center;
-            max-width: 600px;
+            padding: 40px 24px 20px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
         }
 
         .app-icon-container {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 32px;
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
             position: relative;
         }
 
         .app-icon {
             width: 100%;
             height: 100%;
-            border-radius: 30px;
+            border-radius: 22px;
             border: 1px solid var(--border);
             background: #000;
             object-fit: cover;
-            box-shadow: 0 0 50px rgba(188, 56, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(188, 56, 255, 0.2);
+        }
+
+        .hero-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             background: var(--accent-dim);
             color: var(--accent);
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             letter-spacing: 1px;
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             border: 1px solid rgba(188, 56, 255, 0.2);
         }
 
-        .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+        .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
 
         h1 { 
-            font-size: 3.2rem; 
+            font-size: 2.2rem; 
             font-weight: 800; 
             margin: 0; 
-            line-height: 1; 
-            letter-spacing: -2px; 
+            line-height: 1.1; 
+            letter-spacing: -1px; 
             background: linear-gradient(to bottom, #fff, #888);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         
         .hero p { 
             color: var(--text-dim); 
-            font-size: 1.1rem; 
-            margin-top: 20px; 
-            line-height: 1.6;
+            font-size: 0.95rem; 
+            margin-top: 12px; 
+            line-height: 1.5;
             max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
         }
 
-        /* --- CENTERED INSTALL CARD --- */
-        .card {
-            width: 95%;
-            max-width: 480px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 32px;
-            margin-bottom: 60px;
-            text-align: center;
+        /* --- PLAY STORE STYLE INSTALL SECTION --- */
+        .install-section {
+            width: 100%;
+            max-width: 800px;
+            padding: 0 24px 30px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
+            gap: 12px;
         }
 
         #install-btn {
-            background: var(--text-main);
-            color: #000;
+            background: var(--gradient);
+            color: #fff;
             border: none;
             width: 100%;
-            padding: 20px;
-            border-radius: 14px;
+            padding: 16px;
+            border-radius: 30px; /* Pill shape for Play Store look */
             font-size: 1.1rem;
             font-weight: 800;
             cursor: pointer;
             display: none; 
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 10px;
-            box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+            box-shadow: 0 10px 25px rgba(188, 56, 255, 0.3);
+            transition: transform 0.2s ease;
         }
         #install-btn:active { transform: scale(0.96); }
 
-        /* --- FEATURES GRID (Expanded for Vision, Pulse, Messages, Moments, Notes) --- */
+        /* --- SCREENSHOTS GALLERY --- */
+        .gallery-container {
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .gallery-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding: 10px 24px 20px;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        .gallery-scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+        .gallery-scroll img {
+            height: 320px;
+            width: auto;
+            border-radius: 16px;
+            scroll-snap-align: center;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        /* --- CENTERED INSTALL CARD (Now just for features) --- */
+        .card {
+            width: 100%;
+            max-width: 800px;
+            background: transparent;
+            padding: 0 24px 60px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        /* --- FEATURES GRID --- */
         .features {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 20px;
+            gap: 16px;
             width: 100%;
-            margin-top: 32px;
+        }
+
+        @media (min-width: 600px) {
+            .features {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         .feat-item {
@@ -182,7 +236,7 @@
             gap: 16px;
             align-items: flex-start;
             padding: 20px;
-            background: rgba(255,255,255,0.02);
+            background: var(--surface);
             border-radius: 16px;
             border: 1px solid var(--border);
             transition: border-color 0.3s ease;
@@ -245,6 +299,7 @@
             padding: 24px;
             border-radius: 16px;
             border: 1px solid var(--accent);
+            margin-bottom: 16px;
         }
         .ios-notice b { color: var(--accent); display: block; margin-bottom: 16px; font-size: 1.1rem; }
         .ios-step { font-size: 0.95rem; color: #fff; margin: 16px 0; display: flex; gap: 12px; align-items: center; }
@@ -255,23 +310,25 @@
 
     <header>
         <div class="logo">GOORAC QUANTUM</div>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     </header>
 
     <div class="hero">
         <div class="app-icon-container">
-            <img src="images/icon.png" alt="Goorac" class="app-icon">
+            <img src="images/icon.png" alt="Goorac" class="app-icon" onerror="this.src='https://ui-avatars.com/api/?name=G&background=bc38ff&color=fff&size=120'">
         </div>
         
-        <div class="status-badge"><div class="dot"></div> QUANTUM CORE v3.0 ONLINE</div>
-        
-        <h1>The Quantum Era</h1>
-        <p>A unified network for real-time vision, rhythmic pulses, and intelligent AI interaction.</p>
+        <div class="hero-text">
+            <h1>The Quantum Era</h1>
+            <div class="status-badge"><div class="dot"></div> QUANTUM CORE v3.0 ONLINE</div>
+            <p>A unified network for real-time vision, rhythmic pulses, and intelligent AI interaction.</p>
+        </div>
     </div>
 
-    <div class="card">
+    <div class="install-section">
         <button id="install-btn">Install App</button>
 
-        <div id="unsupported-msg" style="color: var(--text-dim); font-size: 0.9rem; margin-top: 10px;">
+        <div id="unsupported-msg" style="color: var(--text-dim); font-size: 0.9rem; text-align: center;">
             Initializing Quantum Secure Link...
         </div>
 
@@ -281,7 +338,23 @@
             <div class="ios-step"><i>2</i> Select "Add to Home Screen" from the menu.</div>
             <div class="ios-step"><i>3</i> Open Goorac from your home screen.</div>
         </div>
+    </div>
 
+    <div class="gallery-container">
+        <div class="gallery-scroll">
+            <img src="https://drive.google.com/uc?export=view&id=1Q9e3m8BOV2icyxeIlZWKJ8fbZkLobaE8" alt="Screenshot 1">
+            <img src="https://drive.google.com/uc?export=view&id=1f78RXs7GyMHVKQ_5zr4VhngtHYoLNpdp" alt="Screenshot 2">
+            <img src="https://drive.google.com/uc?export=view&id=1cCXYZJnmGffGUtPAB0dVECjFMsSFP7wX" alt="Screenshot 3">
+            <img src="https://drive.google.com/uc?export=view&id=1h2jI9CcVTdLT1VgvNUa6M-6DeN7z5K8E" alt="Screenshot 4">
+            <img src="https://drive.google.com/uc?export=view&id=1JoJtHTkZg05Ag9vql2ZotPpLdMHu4hgs" alt="Screenshot 5">
+            <img src="https://drive.google.com/uc?export=view&id=1UAF4z4rWDAOzsCdhjAYvQFV0AOsGUMjH" alt="Screenshot 6">
+            <img src="https://drive.google.com/uc?export=view&id=17hwQ4qWr87iPv7Q8B5sPfTWK8zVonMJ_" alt="Screenshot 7">
+            <img src="https://drive.google.com/uc?export=view&id=1N5fvm95PY-Hc6x1A7spmiHNbxXCHXA5m" alt="Screenshot 8">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title">About this app</div>
         <div class="features">
             <div class="feat-item">
                 <div class="feat-icon-vision">⊙</div>
