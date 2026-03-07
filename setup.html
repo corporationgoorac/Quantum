@@ -189,7 +189,7 @@
             <span class="setting-desc">When enabled, users can easily find you via search. Otherwise, your exact Network ID is required to locate you.</span>
         </div>
         <label class="switch">
-            <input type="checkbox" id="search-result-toggle">
+            <input type="checkbox" id="search-result-toggle" checked>
             <span class="slider"></span>
         </label>
     </div>
@@ -234,10 +234,10 @@
         document.getElementById('bio').value = data.bio || "";
         document.getElementById('display-id').innerText = data.gooracNumber || "--------";
         
-        // Populate the real-time status of the search toggle (defaults false if undefined)
+        // Populate the real-time status of the search toggle (defaults ON for new users)
         const searchToggle = document.getElementById('search-result-toggle');
         if (searchToggle) {
-            searchToggle.checked = data.searchResult === true;
+            searchToggle.checked = data.searchResult !== false; 
         }
 
         // If data.photoURL exists, use it. If not, use the specific stars image.
@@ -296,6 +296,7 @@
             } else {
                 if (!finalGooracID) finalGooracID = Math.floor(1000000000 + Math.random() * 9000000000);
                 document.getElementById('display-id').innerText = finalGooracID;
+                document.getElementById('search-result-toggle').checked = true;
                 launchBtn.style.display = "block";
             }
         } catch (error) { console.error("Cloud Sync failed:", error); }
