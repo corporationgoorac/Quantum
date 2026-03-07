@@ -171,6 +171,13 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             padding-top: calc(var(--safe-top));
             display: flex; align-items: center; justify-content: center;
+            transition: flex 0.3s ease, min-height 0.3s ease; /* Smooth transition for keyboard open/close */
+        }
+
+        /* Responsive scaling when the mobile keyboard is open */
+        body.keyboard-open .video-zone {
+            flex: 0 0 22vh;
+            min-height: 160px; /* Video becomes slightly smaller so text area remains visible */
         }
 
         #video-placeholder {
@@ -512,9 +519,19 @@
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
 
         // --- iOS PWA KEYBOARD RESIZE FIX & AUTO SCROLL FIX ---
+        let baseViewportHeight = window.innerHeight;
         if (window.visualViewport) {
+            baseViewportHeight = window.visualViewport.height;
             window.visualViewport.addEventListener('resize', () => {
                 document.body.style.height = window.visualViewport.height + 'px';
+                
+                // Smart Keyboard Detection: If the viewport shrinks significantly, add class to scale video
+                if (window.visualViewport.height < baseViewportHeight - 100) {
+                    document.body.classList.add('keyboard-open');
+                } else {
+                    document.body.classList.remove('keyboard-open');
+                }
+                
                 window.scrollTo(0, 0);
                 scrollToBottom(); 
             });
