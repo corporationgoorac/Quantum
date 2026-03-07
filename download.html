@@ -16,6 +16,8 @@
             --accent: #bc38ff; /* Quantum Purple */
             --vision-blue: #00d2ff;
             --pulse-red: #ff3860;
+            --message-green: #00ffa3;
+            --moment-gold: #ffb800;
             --accent-dim: rgba(188, 56, 255, 0.1);
             --border: #1a1a1a;
             --text-main: #ffffff;
@@ -131,8 +133,8 @@
 
         /* --- CENTERED INSTALL CARD --- */
         .card {
-            width: 90%;
-            max-width: 440px;
+            width: 95%;
+            max-width: 480px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 24px;
@@ -165,11 +167,11 @@
         }
         #install-btn:active { transform: scale(0.96); }
 
-        /* --- FEATURES GRID (Updated to Match Screens) --- */
+        /* --- FEATURES GRID (Expanded for Vision, Pulse, Messages, Moments, Notes) --- */
         .features {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 20px;
             width: 100%;
             margin-top: 32px;
         }
@@ -179,17 +181,22 @@
             display: flex;
             gap: 16px;
             align-items: flex-start;
-            padding: 16px;
+            padding: 20px;
             background: rgba(255,255,255,0.02);
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--border);
+            transition: border-color 0.3s ease;
         }
+        .feat-item:hover { border-color: rgba(188, 56, 255, 0.4); }
 
-        .feat-icon-ai { color: #ff8c00; font-size: 1.2rem; }
-        .feat-icon-vision { color: var(--vision-blue); font-size: 1.2rem; }
-        .feat-icon-pulse { color: var(--pulse-red); font-size: 1.2rem; }
+        .feat-icon-vision { color: var(--vision-blue); font-size: 1.4rem; }
+        .feat-icon-pulse { color: var(--pulse-red); font-size: 1.4rem; }
+        .feat-icon-msg { color: var(--message-green); font-size: 1.4rem; }
+        .feat-icon-ai { color: var(--accent); font-size: 1.4rem; }
+        .feat-icon-moments { color: var(--moment-gold); font-size: 1.4rem; }
+        .feat-icon-notes { color: #888; font-size: 1.4rem; }
 
-        .feat-text b { display: block; color: #fff; font-size: 1rem; margin-bottom: 4px; }
+        .feat-text b { display: block; color: #fff; font-size: 1.1rem; margin-bottom: 6px; }
         .feat-text span { color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
 
         /* --- PRIVACY --- */
@@ -258,7 +265,7 @@
         <div class="status-badge"><div class="dot"></div> QUANTUM CORE v3.0 ONLINE</div>
         
         <h1>The Quantum Era</h1>
-        <p>A unified network for real-time vision, rhythmic pulses, and intelligent AI interaction. Experience the future of connection.</p>
+        <p>A unified network for real-time vision, rhythmic pulses, and intelligent AI interaction.</p>
     </div>
 
     <div class="card">
@@ -277,24 +284,50 @@
 
         <div class="features">
             <div class="feat-item">
-                <div class="feat-icon-ai">✦</div>
-                <div class="feat-text">
-                    <b>Quantum AI</b>
-                    <span>Your verified assistant, integrated directly into every chat.</span>
-                </div>
-            </div>
-            <div class="feat-item">
                 <div class="feat-icon-vision">⊙</div>
                 <div class="feat-text">
                     <b>Vision Network</b>
-                    <span>Co-watch YouTube and media with zero latency.</span>
+                    <span>Watch YouTube and media with friends in perfect sync. Zero latency co-viewing.</span>
                 </div>
             </div>
+
             <div class="feat-item">
                 <div class="feat-icon-pulse">🗲</div>
                 <div class="feat-text">
                     <b>Pulse Sync</b>
-                    <span>Real-time song sharing and synchronized listening.</span>
+                    <span>Real-time song sharing. Listen to the same beat with friends, anywhere in the world.</span>
+                </div>
+            </div>
+
+            <div class="feat-item">
+                <div class="feat-icon-msg">◈</div>
+                <div class="feat-text">
+                    <b>Quantum Messaging</b>
+                    <span>Ultra-secure, instant communication built on the Goorac private network.</span>
+                </div>
+            </div>
+
+            <div class="feat-item">
+                <div class="feat-icon-ai">✦</div>
+                <div class="feat-text">
+                    <b>Quantum AI</b>
+                    <span>Your intelligent assistant integrated into every chat for instant answers and help.</span>
+                </div>
+            </div>
+
+            <div class="feat-item">
+                <div class="feat-icon-moments">◍</div>
+                <div class="feat-text">
+                    <b>Moments</b>
+                    <span>Share videos, images, and text that expire in 24 hours. Preserved in your profile archives.</span>
+                </div>
+            </div>
+
+            <div class="feat-item">
+                <div class="feat-icon-notes">✎</div>
+                <div class="feat-text">
+                    <b>Quantum Notes</b>
+                    <span>Quickly post and share songs or thoughts directly to your network feed.</span>
                 </div>
             </div>
         </div>
