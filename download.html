@@ -482,7 +482,7 @@
         const iosGuide = document.getElementById('ios-guide');
         
         let deferredPrompt;
-        const SERVER_VERSION = "3.0"; 
+        let newWorker; // Stores the new service worker instance globally
         
         const ua = navigator.userAgent || navigator.vendor;
         const isInstagram = ua.indexOf('Instagram') > -1 || ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
@@ -496,11 +496,10 @@
             msg.textContent = "✨ New Update Ready: Quantum Core 3.0";
         }
 
-        // Global capture of the install prompt to ensure we don't miss it
+        // Global capture of the install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Only show install button if we are NOT already in standalone mode
             if (!isStandalone) {
                 installBtn.style.display = 'block';
                 msg.style.display = 'none';
@@ -526,40 +525,48 @@
         // SERVICE WORKER LOGIC
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').then(reg => {
-                // Check if an update is waiting
-                if (reg.waiting) showUpdateButton();
+                
+                // 1. If there's already a waiting worker from a previous page load
+                if (reg.waiting) {
+                    newWorker = reg.waiting;
+                    showUpdateButton();
+                }
 
-                reg.onupdatefound = () => {
-                    const newWorker = reg.installing;
-                    newWorker.onstatechange = () => {
+                // 2. If a new worker is discovered while the user is on the page
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                             showUpdateButton();
                         }
-                    };
-                };
-            });
-
-            // Trigger the skip_waiting command
-            updateBtn.addEventListener('click', () => {
-                updateBtn.textContent = "Updating...";
-                navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg && reg.waiting) {
-                        reg.waiting.postMessage('SKIP_WAITING');
-                    }
+                    });
                 });
             });
 
-            // Reload exactly once when the new worker takes over
+            // Prevent infinite reload loops when the controller changes
+            let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+
+            // Trigger the skip_waiting command robustly
+            updateBtn.addEventListener('click', () => {
+                updateBtn.textContent = "Updating...";
+                if (newWorker) {
+                    newWorker.postMessage({ action: 'skipWaiting' });
+                } else {
+                    // Fallback: force reload from server if worker is lost
+                    window.location.reload(true);
+                }
             });
         }
 
         // INSTALL BUTTON LOGIC
         installBtn.addEventListener('click', async () => {
-            // Guard clause if user clicks before prompt is ready
             if (!deferredPrompt) return; 
-
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {
