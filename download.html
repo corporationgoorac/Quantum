@@ -123,7 +123,7 @@
         .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
 
         h1 { 
-            font-size: 1.8rem; /* Adjusted for better mobile fit */
+            font-size: 1.8rem; 
             font-weight: 800; 
             margin: 0; 
             line-height: 1.2; 
@@ -164,7 +164,7 @@
             border: none;
             width: 100%;
             padding: 14px;
-            border-radius: 30px; /* Pill shape for Play Store look */
+            border-radius: 30px; 
             font-size: 1.05rem;
             font-weight: 800;
             cursor: pointer;
@@ -208,11 +208,11 @@
             gap: 16px;
             padding: 10px 24px 20px;
             scroll-snap-type: x mandatory;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         
-        .gallery-scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        .gallery-scroll::-webkit-scrollbar { display: none; }
 
         .gallery-scroll img {
             height: 320px;
@@ -223,10 +223,10 @@
             border: 1px solid var(--border);
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
             background-color: var(--surface);
-            cursor: pointer; /* Added cursor pointer for clickability */
+            cursor: pointer;
         }
 
-        /* --- CENTERED INSTALL CARD (Now just for features) --- */
+        /* --- FEATURES GRID --- */
         .card {
             width: 100%;
             max-width: 800px;
@@ -244,7 +244,6 @@
             color: #fff;
         }
 
-        /* --- FEATURES GRID --- */
         .features {
             display: grid;
             grid-template-columns: 1fr;
@@ -333,7 +332,7 @@
         .ios-step { font-size: 0.95rem; color: #fff; margin: 16px 0; display: flex; gap: 12px; align-items: center; }
         .ios-step i { color: var(--accent); font-style: normal; font-weight: bold; background: rgba(188, 56, 255, 0.2); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem; }
 
-        /* --- FULL SCREEN LIGHTBOX --- */
+        /* --- LIGHTBOX --- */
         .lightbox {
             display: none;
             position: fixed;
@@ -370,7 +369,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(5px);
         }
 
         .lightbox-scroll {
@@ -379,13 +377,11 @@
             width: 100%;
             height: 100%;
             scroll-snap-type: x mandatory;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
             align-items: center;
         }
         
-        .lightbox-scroll::-webkit-scrollbar {
-            display: none; /* Chrome/Safari */
-        }
+        .lightbox-scroll::-webkit-scrollbar { display: none; }
 
         .lightbox-scroll img {
             width: 100vw;
@@ -456,7 +452,6 @@
                     <span>Watch YouTube and media with friends in perfect sync. Zero latency co-viewing.</span>
                 </div>
             </div>
-
             <div class="feat-item">
                 <div class="feat-icon-pulse">🗲</div>
                 <div class="feat-text">
@@ -464,7 +459,6 @@
                     <span>Real-time song sharing. Listen to the same beat with friends, anywhere in the world.</span>
                 </div>
             </div>
-
             <div class="feat-item">
                 <div class="feat-icon-msg">◈</div>
                 <div class="feat-text">
@@ -472,7 +466,6 @@
                     <span>Ultra-secure, instant communication built on the Goorac private network.</span>
                 </div>
             </div>
-
             <div class="feat-item">
                 <div class="feat-icon-ai">✦</div>
                 <div class="feat-text">
@@ -480,7 +473,6 @@
                     <span>Your intelligent assistant integrated into every chat for instant answers and help.</span>
                 </div>
             </div>
-
             <div class="feat-item">
                 <div class="feat-icon-moments">◍</div>
                 <div class="feat-text">
@@ -488,7 +480,6 @@
                     <span>Share videos, images, and text that expire in 24 hours. Preserved in your profile archives.</span>
                 </div>
             </div>
-
             <div class="feat-item">
                 <div class="feat-icon-notes">✎</div>
                 <div class="feat-text">
@@ -548,108 +539,86 @@
         const iosGuide = document.getElementById('ios-guide');
         let deferredPrompt;
 
-        // --- UPDATE VERIFICATION LOGIC ---
-        // Change these server variables whenever a new update is pushed
         const SERVER_VERSION = "3.0"; 
         const SERVER_ICON_HASH = "icon_v3"; 
         
-        const localVersion = localStorage.getItem('quantum_version');
-        const localIconHash = localStorage.getItem('quantum_icon_hash');
-
-        // --- BROWSER BREAKOUT LOGIC ---
         const ua = navigator.userAgent || navigator.vendor;
         const isInstagram = ua.indexOf('Instagram') > -1 || ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
         const isAndroid = /Android/i.test(ua);
         const isIos = /iPhone|iPad|iPod/.test(ua);
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-        // Auto-Redirect logic for Android Instagram
+        // Function to show Update Button and hide others
+        function showUpdateButton() {
+            updateBtn.style.display = 'block';
+            installBtn.style.display = 'none';
+            msg.textContent = "✨ New Update Ready: Quantum Core 3.0";
+        }
+
+        // --- BROWSER DETECTION LOGIC ---
         if (isInstagram && isAndroid) {
             const chromeIntent = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
             window.location.href = chromeIntent;
-            
-            // Fallback button if auto-redirect fails
             installBtn.textContent = "Open in Chrome to Install";
             installBtn.style.display = 'block';
             installBtn.onclick = () => { window.location.href = chromeIntent; };
-            msg.textContent = "⚠️ In-app browser detected. Please open in Chrome.";
+            msg.textContent = "⚠️ In-app browser detected.";
         } 
         else if (isStandalone) {
-            // Check for Update (Logic enhanced to handle SW states)
-            if (localVersion !== SERVER_VERSION || localIconHash !== SERVER_ICON_HASH) {
-                msg.textContent = "✨ New Update Available: App Icon or Version changed.";
-                updateBtn.style.display = 'block';
-                installBtn.style.display = 'none';
+            // Check version mismatch
+            const localVersion = localStorage.getItem('quantum_version');
+            if (localVersion !== SERVER_VERSION) {
+                showUpdateButton();
             } else {
                 msg.textContent = "✅ Quantum Core Installed & Optimized";
-                installBtn.style.display = 'none';
             }
         } else if (isIos) {
             msg.style.display = 'none';
             iosGuide.style.display = 'block';
         } else {
-            // Standard PWA Logic
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
                 installBtn.style.display = 'block';
                 msg.style.display = 'none';
             });
-
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                    if (outcome === 'accepted') {
-                        installBtn.style.display = 'none';
-                    }
-                }
-            });
         }
 
-        // --- SERVICE WORKER REGISTRATION & UPDATE HANDLER ---
+        // --- SERVICE WORKER LOGIC ---
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => {
-                    // Check for updates instantly when page loads
-                    reg.onupdatefound = () => {
-                        const newWorker = reg.installing;
-                        newWorker.onstatechange = () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // A new service worker is ready but waiting
-                                msg.textContent = "✨ Quantum update ready.";
-                                updateBtn.style.display = 'block';
-                                installBtn.style.display = 'none';
-                            }
-                        };
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                // Check if there is already a waiting worker on load
+                if (reg.waiting) {
+                    showUpdateButton();
+                }
+
+                // Listen for new updates found while app is open
+                reg.onupdatefound = () => {
+                    const newWorker = reg.installing;
+                    newWorker.onstatechange = () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateButton();
+                        }
                     };
-                }).catch(e => console.log(e));
+                };
             });
 
-            // Re-usable update function for the button
+            // Handle Actual Update Action
             updateBtn.addEventListener('click', () => {
-                updateBtn.textContent = "Installing...";
-                
+                updateBtn.textContent = "Updating...";
                 navigator.serviceWorker.getRegistration().then(reg => {
                     if (reg && reg.waiting) {
-                        // Send message to the waiting Service Worker to skip waiting
                         reg.waiting.postMessage('SKIP_WAITING');
-                    } else if (reg) {
-                        // If no worker is waiting, force check again
-                        reg.update().then(() => {
-                            // Fallback if no SW change found but version mismatch exists
-                            localStorage.setItem('quantum_version', SERVER_VERSION);
-                            localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
-                            setTimeout(() => window.location.reload(true), 1000);
-                        });
                     } else {
+                        // Fallback: force update if no worker waiting but version mismatch
+                        localStorage.setItem('quantum_version', SERVER_VERSION);
+                        localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
                         window.location.reload(true);
                     }
                 });
             });
 
-            // Listen for the new worker taking control, then reload
+            // Reload when the new worker actually takes over
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 localStorage.setItem('quantum_version', SERVER_VERSION);
                 localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
@@ -657,55 +626,44 @@
             });
         }
 
+        // Standard Install logic
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
         window.addEventListener('appinstalled', () => {
-            // Save initial version to storage upon fresh install
             localStorage.setItem('quantum_version', SERVER_VERSION);
             localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
             installBtn.style.display = 'none';
-            msg.textContent = "✅ Connection Established. Welcome.";
-            msg.style.display = 'block';
+            msg.textContent = "✅ Connection Established.";
         });
 
-        // --- FULL SCREEN LIGHTBOX LOGIC ---
+        // --- LIGHTBOX LOGIC ---
         const galleryImages = document.querySelectorAll('.gallery-scroll img');
         const lightbox = document.getElementById('lightbox');
         const lightboxScroll = document.getElementById('lightbox-scroll');
         const lightboxClose = document.getElementById('lightbox-close');
 
-        // Populate lightbox with ultra high-res versions of the images
         galleryImages.forEach((img, index) => {
             const lbImg = document.createElement('img');
-            // Bump the size to w1920 for full screen clarity
             lbImg.src = img.src.replace('sz=w1080', 'sz=w1920'); 
-            lbImg.alt = img.alt;
             lbImg.id = `lb-img-${index}`;
             lightboxScroll.appendChild(lbImg);
-
-            // Click listener to open full screen and scroll to specific image
             img.addEventListener('click', () => {
                 lightbox.classList.add('active');
-                // Tiny timeout allows the display change to register before scrolling
                 setTimeout(() => {
                     const target = document.getElementById(`lb-img-${index}`);
-                    if(target) target.scrollIntoView({
-                        behavior: 'instant',
-                        inline: 'center'
-                    });
+                    if(target) target.scrollIntoView({ behavior: 'instant', inline: 'center' });
                 }, 10);
             });
         });
 
-        // Close logic
-        lightboxClose.addEventListener('click', () => {
-            lightbox.classList.remove('active');
-        });
-
-        // Optional: Close on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
-                lightbox.classList.remove('active');
-            }
-        });
+        lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
     </script>
 </body>
 </html>
