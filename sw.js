@@ -56,7 +56,7 @@ self.addEventListener('notificationclick', (e) => {
 
 // 5. Update Listener (Added to connect to your UI Update Button)
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.action === 'skipWaiting') {
+    if (event.data && (event.data === 'SKIP_WAITING' || event.data.action === 'skipWaiting')) {
         self.skipWaiting();
     }
 });
