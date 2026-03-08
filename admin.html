@@ -366,6 +366,7 @@
                 </div>
             </div>
             <div class="actions">
+                <div class="act-btn" title="Deploy System Popup" onclick="openPopupDeploy()" style="color:var(--accent-purple); background:rgba(157,0,255,0.1);"><span class="material-icons-round">call_to_action</span></div>
                 <div class="act-btn" title="Broadcast Verified" onclick="openCast('VERIFIED')" style="color:var(--accent-gold); background:rgba(255,215,0,0.1);"><span class="material-icons-round">verified</span></div>
                 <div class="act-btn highlight" title="Broadcast All" onclick="openCast('ALL')"><span class="material-icons-round">campaign</span></div>
                 <div class="act-btn" title="Refresh" onclick="refreshData()"><span class="material-icons-round">refresh</span></div>
@@ -488,6 +489,33 @@
             </div>
             <div class="drawer-foot" style="grid-template-columns:1fr;">
                 <button class="btn btn-pri" id="btn-send" onclick="transmit()">Transmit Signal</button>
+            </div>
+        </div>
+
+        <div id="modal-popup" class="modal" onclick="event.stopPropagation()">
+            <div class="drawer-head">
+                <div class="drawer-title" style="display:flex; align-items:center; gap:8px;">
+                    <span class="material-icons-round" style="color:var(--accent-purple)">call_to_action</span> System Popup Deploy
+                </div>
+                <div class="act-btn" onclick="closeModals()"><span class="material-icons-round">close</span></div>
+            </div>
+            <div class="modal-body">
+                <div class="target-tag" style="color: var(--accent-purple); background: rgba(157,0,255,0.1);">TARGET: HOME PAGE (GLOBAL)</div>
+                
+                <div class="form-section">
+                    <div class="field"><input type="text" class="input" id="pop-version" placeholder="Version Number (e.g. v9.1.0)"></div>
+                    <div class="field"><input type="text" class="input" id="pop-title" placeholder="Popup Title"></div>
+                    <div class="field"><input type="text" class="input" id="pop-heading" placeholder="Headings Content"></div>
+                    <div class="field"><textarea class="area" id="pop-lines" placeholder="Lines / Description text..." style="height: 80px;"></textarea></div>
+                    <div class="field"><input type="text" class="input" id="pop-btn" placeholder="Button Text (e.g. Acknowledge)"></div>
+                </div>
+
+                <div style="font-family:var(--font-mono); font-size:10px; color:#555;">
+                    SYSTEM: QUANTUM OVERRIDE<br>DESTINATION: CLIENT_HOME
+                </div>
+            </div>
+            <div class="drawer-foot" style="grid-template-columns:1fr;">
+                <button class="btn btn-pri" id="btn-deploy" onclick="deployPopup()">Deploy to Global Home</button>
             </div>
         </div>
 
@@ -667,12 +695,14 @@
             document.getElementById('backdrop').classList.add('active');
             document.getElementById('drawer').style.transform = 'translateX(0)';
             document.getElementById('modal').classList.remove('active');
+            if(document.getElementById('modal-popup')) document.getElementById('modal-popup').classList.remove('active');
         }
 
         function closeModals(back = true) {
             document.getElementById('backdrop').classList.remove('active');
             document.getElementById('drawer').style.transform = 'translateX(100%)';
             document.getElementById('modal').classList.remove('active');
+            if(document.getElementById('modal-popup')) document.getElementById('modal-popup').classList.remove('active');
             if(back) history.back();
         }
 
@@ -786,6 +816,7 @@
             }
             
             document.getElementById('backdrop').classList.add('active');
+            if(document.getElementById('modal-popup')) document.getElementById('modal-popup').classList.remove('active');
             document.getElementById('modal').classList.add('active');
         }
 
@@ -872,6 +903,63 @@
             
             document.getElementById('btn-send').innerText = "Transmit Signal";
             closeModals();
+        }
+
+        // =========================================
+        // 6. SYSTEM POPUP DEPLOYMENT
+        // =========================================
+        function openPopupDeploy() {
+            pushHist('popup');
+            document.getElementById('backdrop').classList.add('active');
+            
+            document.getElementById('drawer').style.transform = 'translateX(100%)';
+            document.getElementById('modal').classList.remove('active');
+            
+            document.getElementById('modal-popup').classList.add('active');
+        }
+
+        async function deployPopup() {
+            const btn = document.getElementById('btn-deploy');
+            const v = document.getElementById('pop-version').value;
+            const t = document.getElementById('pop-title').value;
+            const h = document.getElementById('pop-heading').value;
+            const l = document.getElementById('pop-lines').value;
+            const b = document.getElementById('pop-btn').value;
+
+            if(!t || !l) return toast("Error: Title and Lines are required.");
+
+            btn.innerText = "Deploying to Core...";
+
+            try {
+                // By removing `{merge: true}` and setting a specific document, it strictly 
+                // overwrites this single document every time you deploy. No multiple documents.
+                await db.collection("system").doc("global_popup").set({
+                    version: v,
+                    title: t,
+                    heading: h,
+                    lines: l,
+                    buttonText: b,
+                    active: true,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    deployedBy: gooracId || "admin_system"
+                });
+
+                toast("Global System Popup Deployed!");
+                
+                // Reset fields
+                document.getElementById('pop-version').value = '';
+                document.getElementById('pop-title').value = '';
+                document.getElementById('pop-heading').value = '';
+                document.getElementById('pop-lines').value = '';
+                document.getElementById('pop-btn').value = '';
+                
+                closeModals();
+            } catch (err) {
+                console.error("Popup Deploy Error:", err);
+                toast("Deployment Failed: See Console");
+            }
+            
+            btn.innerText = "Deploy to Global Home";
         }
 
         // FIX: Toggles now correctly clean up classes
