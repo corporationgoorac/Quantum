@@ -13,7 +13,7 @@
         :root {
             --bg: #000000;
             --surface: #0a0a0a;
-            --accent: #bc38ff; /* Quantum Purple */
+            --accent: #bc38ff; 
             --vision-blue: #00d2ff;
             --pulse-red: #ff3860;
             --message-green: #00ffa3;
@@ -26,7 +26,6 @@
             --gradient: linear-gradient(135deg, #bc38ff 0%, #ff3860 100%);
         }
 
-        /* --- PROFESSIONAL RESET --- */
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
@@ -47,7 +46,6 @@
             background-image: radial-gradient(circle at top center, #1a0b1a 0%, #000 70%);
         }
 
-        /* --- HEADER --- */
         header {
             width: 100%;
             padding: 16px 24px;
@@ -71,7 +69,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         }
 
-        /* --- PLAY STORE STYLE HERO SECTION --- */
         .hero {
             padding: 40px 24px 20px;
             width: 100%;
@@ -148,7 +145,6 @@
             max-width: 450px;
         }
 
-        /* --- PLAY STORE STYLE INSTALL SECTION --- */
         .install-section {
             width: 100%;
             max-width: 800px;
@@ -194,7 +190,6 @@
         }
         #update-btn:active { transform: scale(0.96); }
 
-        /* --- SCREENSHOTS GALLERY --- */
         .gallery-container {
             width: 100%;
             max-width: 800px;
@@ -226,7 +221,6 @@
             cursor: pointer;
         }
 
-        /* --- FEATURES GRID --- */
         .card {
             width: 100%;
             max-width: 800px;
@@ -280,7 +274,6 @@
         .feat-text b { display: block; color: #fff; font-size: 1.1rem; margin-bottom: 6px; }
         .feat-text span { color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
 
-        /* --- PRIVACY --- */
         .privacy-footer {
             width: 100%;
             padding: 60px 24px;
@@ -318,7 +311,6 @@
         .priv-card b { color: #fff; font-size: 0.9rem; display: block; margin-bottom: 8px; }
         .priv-card small { color: var(--text-dim); font-size: 0.75rem; line-height: 1.5; display: block; }
 
-        /* --- iOS SPECIFIC --- */
         .ios-notice {
             display: none;
             text-align: left;
@@ -332,7 +324,6 @@
         .ios-step { font-size: 0.95rem; color: #fff; margin: 16px 0; display: flex; gap: 12px; align-items: center; }
         .ios-step i { color: var(--accent); font-style: normal; font-weight: bold; background: rgba(188, 56, 255, 0.2); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem; }
 
-        /* --- LIGHTBOX --- */
         .lightbox {
             display: none;
             position: fixed;
@@ -445,70 +436,22 @@
     <div class="card">
         <div class="section-title">About this app</div>
         <div class="features">
-            <div class="feat-item">
-                <div class="feat-icon-vision">⊙</div>
-                <div class="feat-text">
-                    <b>Vision Network</b>
-                    <span>Watch YouTube and media with friends in perfect sync. Zero latency co-viewing.</span>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon-pulse">🗲</div>
-                <div class="feat-text">
-                    <b>Pulse Sync</b>
-                    <span>Real-time song sharing. Listen to the same beat with friends, anywhere in the world.</span>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon-msg">◈</div>
-                <div class="feat-text">
-                    <b>Quantum Messaging</b>
-                    <span>Ultra-secure, instant communication built on the Goorac private network.</span>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon-ai">✦</div>
-                <div class="feat-text">
-                    <b>Quantum AI</b>
-                    <span>Your intelligent assistant integrated into every chat for instant answers and help.</span>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon-moments">◍</div>
-                <div class="feat-text">
-                    <b>Moments</b>
-                    <span>Share videos, images, and text that expire in 24 hours. Preserved in your profile archives.</span>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon-notes">✎</div>
-                <div class="feat-text">
-                    <b>Quantum Notes</b>
-                    <span>Quickly post and share songs or thoughts directly to your network feed.</span>
-                </div>
-            </div>
+            <div class="feat-item"><div class="feat-icon-vision">⊙</div><div class="feat-text"><b>Vision Network</b><span>Watch YouTube and media with friends in perfect sync. Zero latency co-viewing.</span></div></div>
+            <div class="feat-item"><div class="feat-icon-pulse">🗲</div><div class="feat-text"><b>Pulse Sync</b><span>Real-time song sharing. Listen to the same beat with friends, anywhere in the world.</span></div></div>
+            <div class="feat-item"><div class="feat-icon-msg">◈</div><div class="feat-text"><b>Quantum Messaging</b><span>Ultra-secure, instant communication built on the Goorac private network.</span></div></div>
+            <div class="feat-item"><div class="feat-icon-ai">✦</div><div class="feat-text"><b>Quantum AI</b><span>Your intelligent assistant integrated into every chat for instant answers and help.</span></div></div>
+            <div class="feat-item"><div class="feat-icon-moments">◍</div><div class="feat-text"><b>Moments</b><span>Share videos, images, and text that expire in 24 hours. Preserved in your profile archives.</span></div></div>
+            <div class="feat-item"><div class="feat-icon-notes">✎</div><div class="feat-text"><b>Quantum Notes</b><span>Quickly post and share songs or thoughts directly to your network feed.</span></div></div>
         </div>
     </div>
 
     <div class="privacy-footer">
         <span class="section-label">Privacy & Security</span>
         <div class="privacy-grid">
-            <div class="priv-card">
-                <b>Verified Identity</b>
-                <small>Secure, blockchain-ready verification for all Quantum users.</small>
-            </div>
-            <div class="priv-card">
-                <b>Firebase Secure</b>
-                <small>End-to-end encryption across the entire Goorac infrastructure.</small>
-            </div>
-            <div class="priv-card">
-                <b>No Intrusions</b>
-                <small>A clean, focused interface. No ads. No tracking. Period.</small>
-            </div>
-            <div class="priv-card">
-                <b>Encapsulated</b>
-                <small>Runs in a secure sandbox to keep your device data private.</small>
-            </div>
+            <div class="priv-card"><b>Verified Identity</b><small>Secure, blockchain-ready verification for all Quantum users.</small></div>
+            <div class="priv-card"><b>Firebase Secure</b><small>End-to-end encryption across the entire Goorac infrastructure.</small></div>
+            <div class="priv-card"><b>No Intrusions</b><small>A clean, focused interface. No ads. No tracking. Period.</small></div>
+            <div class="priv-card"><b>Encapsulated</b><small>Runs in a secure sandbox to keep your device data private.</small></div>
         </div>
         <p style="font-size: 0.75rem; color: #333; margin-top: 40px; letter-spacing: 2px;">GOORAC QUANTUM © 2026. ALL SYSTEMS STABLE.</p>
     </div>
@@ -537,10 +480,9 @@
         const updateBtn = document.getElementById('update-btn');
         const msg = document.getElementById('unsupported-msg');
         const iosGuide = document.getElementById('ios-guide');
+        
         let deferredPrompt;
-
         const SERVER_VERSION = "3.0"; 
-        const SERVER_ICON_HASH = "icon_v3"; 
         
         const ua = navigator.userAgent || navigator.vendor;
         const isInstagram = ua.indexOf('Instagram') > -1 || ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
@@ -548,51 +490,45 @@
         const isIos = /iPhone|iPad|iPod/.test(ua);
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-        // Function to show Update Button and hide others
         function showUpdateButton() {
             updateBtn.style.display = 'block';
             installBtn.style.display = 'none';
             msg.textContent = "✨ New Update Ready: Quantum Core 3.0";
         }
 
-        // --- BROWSER DETECTION LOGIC ---
+        // Global capture of the install prompt to ensure we don't miss it
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Only show install button if we are NOT already in standalone mode
+            if (!isStandalone) {
+                installBtn.style.display = 'block';
+                msg.style.display = 'none';
+            }
+        });
+
+        // BROWSER DETECTION LOGIC
         if (isInstagram && isAndroid) {
             const chromeIntent = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
-            window.location.href = chromeIntent;
             installBtn.textContent = "Open in Chrome to Install";
             installBtn.style.display = 'block';
             installBtn.onclick = () => { window.location.href = chromeIntent; };
             msg.textContent = "⚠️ In-app browser detected.";
-        } 
-        else if (isStandalone) {
-            // Check version mismatch
-            const localVersion = localStorage.getItem('quantum_version');
-            if (localVersion !== SERVER_VERSION) {
-                showUpdateButton();
-            } else {
-                msg.textContent = "✅ Quantum Core Installed & Optimized";
-            }
+        } else if (isStandalone) {
+            msg.textContent = "✅ Quantum Core Installed & Optimized";
         } else if (isIos) {
             msg.style.display = 'none';
             iosGuide.style.display = 'block';
         } else {
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                installBtn.style.display = 'block';
-                msg.style.display = 'none';
-            });
+            msg.textContent = "Checking compatibility...";
         }
 
-        // --- SERVICE WORKER LOGIC ---
+        // SERVICE WORKER LOGIC
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').then(reg => {
-                // Check if there is already a waiting worker on load
-                if (reg.waiting) {
-                    showUpdateButton();
-                }
+                // Check if an update is waiting
+                if (reg.waiting) showUpdateButton();
 
-                // Listen for new updates found while app is open
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
@@ -603,47 +539,44 @@
                 };
             });
 
-            // Handle Actual Update Action
+            // Trigger the skip_waiting command
             updateBtn.addEventListener('click', () => {
                 updateBtn.textContent = "Updating...";
                 navigator.serviceWorker.getRegistration().then(reg => {
                     if (reg && reg.waiting) {
                         reg.waiting.postMessage('SKIP_WAITING');
-                    } else {
-                        // Fallback: force update if no worker waiting but version mismatch
-                        localStorage.setItem('quantum_version', SERVER_VERSION);
-                        localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
-                        window.location.reload(true);
                     }
                 });
             });
 
-            // Reload when the new worker actually takes over
+            // Reload exactly once when the new worker takes over
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                localStorage.setItem('quantum_version', SERVER_VERSION);
-                localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
                 window.location.reload();
             });
         }
 
-        // Standard Install logic
+        // INSTALL BUTTON LOGIC
         installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
+            // Guard clause if user clicks before prompt is ready
+            if (!deferredPrompt) return; 
+
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none';
+                msg.style.display = 'block';
+                msg.textContent = "Installing app to your device...";
             }
+            deferredPrompt = null;
         });
 
         window.addEventListener('appinstalled', () => {
-            localStorage.setItem('quantum_version', SERVER_VERSION);
-            localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
             installBtn.style.display = 'none';
-            msg.textContent = "✅ Connection Established.";
+            msg.style.display = 'block';
+            msg.textContent = "✅ App Installed Successfully.";
         });
 
-        // --- LIGHTBOX LOGIC ---
+        // LIGHTBOX LOGIC
         const galleryImages = document.querySelectorAll('.gallery-scroll img');
         const lightbox = document.getElementById('lightbox');
         const lightboxScroll = document.getElementById('lightbox-scroll');
