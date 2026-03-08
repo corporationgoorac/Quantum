@@ -549,7 +549,6 @@
         let deferredPrompt;
 
         // --- UPDATE VERIFICATION LOGIC ---
-        // Change these server variables whenever a new update is pushed
         const SERVER_VERSION = "3.0"; 
         const SERVER_ICON_HASH = "icon_v3"; 
         
@@ -563,19 +562,22 @@
         const isIos = /iPhone|iPad|iPod/.test(ua);
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-        // Auto-Redirect logic for Android Instagram
+        // BUG FIX: Show helpful text if prompt takes too long (meaning PWA criteria not met)
+        setTimeout(() => {
+            if (!deferredPrompt && !isIos && !isStandalone && !isInstagram) {
+                msg.textContent = "To install: Tap the 3 dots (⋮) and select 'Install App' or 'Add to Home screen'.";
+            }
+        }, 5000);
+
         if (isInstagram && isAndroid) {
             const chromeIntent = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
             window.location.href = chromeIntent;
-            
-            // Fallback button if auto-redirect fails
             installBtn.textContent = "Open in Chrome to Install";
             installBtn.style.display = 'block';
             installBtn.onclick = () => { window.location.href = chromeIntent; };
             msg.textContent = "⚠️ In-app browser detected. Please open in Chrome.";
         } 
         else if (isStandalone) {
-            // Check for Update
             if (localVersion !== SERVER_VERSION || localIconHash !== SERVER_ICON_HASH) {
                 msg.textContent = "✨ New Update Available: App Icon or Version changed.";
                 updateBtn.style.display = 'block';
@@ -603,7 +605,6 @@
             msg.style.display = 'none';
             iosGuide.style.display = 'block';
         } else {
-            // Standard PWA Logic
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -624,7 +625,6 @@
         }
 
         window.addEventListener('appinstalled', () => {
-            // Save initial version to storage upon fresh install
             localStorage.setItem('quantum_version', SERVER_VERSION);
             localStorage.setItem('quantum_icon_hash', SERVER_ICON_HASH);
             installBtn.style.display = 'none';
@@ -634,29 +634,27 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(e => console.log(e));
+                // Ensure the path to sw.js is correct relative to your root
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('SW Registered');
+                }).catch(e => console.log('SW Registration failed: ', e));
             });
         }
 
-        // --- FULL SCREEN LIGHTBOX LOGIC ---
         const galleryImages = document.querySelectorAll('.gallery-scroll img');
         const lightbox = document.getElementById('lightbox');
         const lightboxScroll = document.getElementById('lightbox-scroll');
         const lightboxClose = document.getElementById('lightbox-close');
 
-        // Populate lightbox with ultra high-res versions of the images
         galleryImages.forEach((img, index) => {
             const lbImg = document.createElement('img');
-            // Bump the size to w1920 for full screen clarity
             lbImg.src = img.src.replace('sz=w1080', 'sz=w1920'); 
             lbImg.alt = img.alt;
             lbImg.id = `lb-img-${index}`;
             lightboxScroll.appendChild(lbImg);
 
-            // Click listener to open full screen and scroll to specific image
             img.addEventListener('click', () => {
                 lightbox.classList.add('active');
-                // Tiny timeout allows the display change to register before scrolling
                 setTimeout(() => {
                     document.getElementById(`lb-img-${index}`).scrollIntoView({
                         behavior: 'instant',
@@ -666,12 +664,10 @@
             });
         });
 
-        // Close logic
         lightboxClose.addEventListener('click', () => {
             lightbox.classList.remove('active');
         });
 
-        // Optional: Close on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && lightbox.classList.contains('active')) {
                 lightbox.classList.remove('active');
