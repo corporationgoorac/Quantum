@@ -2,7 +2,7 @@ const CACHE_NAME = 'goorac-quantum-v11';
 const ASSETS = [
     '/',
     '/home.html',
-    '/chat.html',
+    '/download.html',
     '/config.js',
     '/notification-worker.js',
     'https://cdn-icons-png.flaticon.com/128/3067/3067451.png',
