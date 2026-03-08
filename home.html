@@ -508,7 +508,7 @@
             100% { opacity: 0.6; } 
         }
 
-        /* 🚀 MAIN NAVBAR PRE-ALLOCATION TO FIX GLITCHING */
+        /* ðŸš€ MAIN NAVBAR PRE-ALLOCATION TO FIX GLITCHING */
         main-navbar {
             display: block;
             position: fixed;
@@ -740,7 +740,7 @@
         /* ==========================================================================
            FOUT ICON TEXT FLASH FIX (Pure CSS logic)
            ========================================================================== */
-        /* 🚀 FIX: Commented out transparent !important which permanently hid the icons */
+        /* ðŸš€ FIX: Commented out transparent !important which permanently hid the icons */
         /* .material-icons-round { color: transparent !important; text-shadow: none !important; } */
         body.fonts-ready .material-icons-round { color: inherit; text-shadow: inherit; }
         body.fonts-ready .msg-icon { color: #fff !important; }
@@ -799,33 +799,42 @@
         }
 
         /* ==========================================================================
-           CUSTOM APP UPDATE AVAILABLE POPUP
+           SYSTEM POPUP (BOTTOM MODAL)
            ========================================================================== */
-        .update-overlay {
+        .system-popup-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85); z-index: 100005;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.7); z-index: 100005;
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         }
-        .update-overlay.active { opacity: 1; pointer-events: all; }
-        .update-card {
-            background: var(--surface); border: 1px solid var(--border);
-            padding: 30px; border-radius: 24px; text-align: center;
-            width: 85%; max-width: 340px; transform: translateY(20px) scale(0.95);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        .system-popup-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .system-popup-card {
+            background: var(--surface); border-top: 1px solid var(--border);
+            border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+            padding: 30px 25px max(30px, env(safe-area-inset-bottom));
+            border-radius: 28px 28px 0 0; text-align: left;
+            width: 100%; max-width: 500px; transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; gap: 15px;
+            max-height: 85vh; overflow-y: auto;
         }
-        .update-overlay.active .update-card { transform: translateY(0) scale(1); }
-        .update-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
-        .update-title { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 10px; }
-        .update-text { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 25px; line-height: 1.5; }
-        .update-btn {
+        .system-popup-overlay.active .system-popup-card { transform: translateY(0); }
+        
+        .sys-pop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .sys-pop-icon { font-size: 28px; color: var(--accent); }
+        .sys-pop-title { font-size: 1.2rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+        .sys-pop-heading { font-size: 1.5rem; font-weight: 900; color: #fff; line-height: 1.2; }
+        .sys-pop-lines { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; white-space: pre-wrap; }
+        .sys-pop-img { width: 100%; border-radius: 16px; margin-top: 10px; display: none; object-fit: cover; border: 1px solid var(--border); }
+        .sys-pop-btn {
             background: var(--accent); color: #000; font-weight: 800; border: none;
-            padding: 14px 0; width: 100%; border-radius: 16px; font-size: 1rem;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); transition: 0.2s ease;
+            padding: 16px 0; width: 100%; border-radius: 16px; font-size: 1.05rem;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2); transition: 0.2s ease; margin-top: 10px;
         }
-        .update-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3); }
+        .sys-pop-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(0, 210, 255, 0.2); }
 
     </style>
 
@@ -837,18 +846,18 @@
             catch (e) { console.error("Cache parsing error", e); }
         }
 
-        // 🚀 INSTANT LOAD FIX: Hide dashboard instantly if moments cache exists to avoid flashing
+        // ðŸš€ INSTANT LOAD FIX: Hide dashboard instantly if moments cache exists to avoid flashing
         const cachedMoments = localStorage.getItem('goorac_moments_html_cache');
         if (cachedMoments && cachedMoments.length > 5) {
             document.write('<style id="dash-cache-hide">#dashboard-content { display: none !important; }</style>');
         }
 
-        // 🚀 INSTANT MSG BADGE LOAD FIX: Only show if messages > 0
+        // ðŸš€ INSTANT MSG BADGE LOAD FIX: Only show if messages > 0
         if (preloadedData && preloadedData.msgState && preloadedData.msgState.unreadTotal && preloadedData.msgState.unreadTotal > 0) {
             document.write('<style>#header-msg-btn { display: flex !important; } #header-msg-count { opacity: 1 !important; transform: scale(1) !important; }</style>');
         }
 
-        // 🚀 FAST NATIVE NOTIFICATION PROMPT ON LOAD
+        // ðŸš€ FAST NATIVE NOTIFICATION PROMPT ON LOAD
         document.addEventListener('DOMContentLoaded', () => {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
@@ -933,7 +942,7 @@
         </div>
         <img id="header-pfp" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="header-pfp skeleton" onclick="window.location.href='profile.html'">
         <script>
-            // 🚀 0ms HEADER PFP INJECTION 
+            // ðŸš€ 0ms HEADER PFP INJECTION 
             if (preloadedData && preloadedData.photoURL) {
                 const pfp = document.getElementById('header-pfp');
                 pfp.src = preloadedData.photoURL;
@@ -945,7 +954,7 @@
 
 <main-navbar id="main-nav"></main-navbar>
 <script>
-    // 🚀 INSTANT 0ms NAVBAR CACHE INJECTION
+    // ðŸš€ INSTANT 0ms NAVBAR CACHE INJECTION
     const cachedNavbarHtmlData = localStorage.getItem('goorac_navbar_html_cache');
     if (cachedNavbarHtmlData) {
         // [GLITCH FIX]: Disabled forcing raw HTML into the element, allowing the component to load its own 0ms SVGs cleanly
@@ -958,7 +967,7 @@
         <div class="note-bubble" id="my-note-preview" style="display:none;"></div>
         <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="note-pfp skeleton" id="my-note-pfp" width="65" height="65">
         <script>
-            // 🚀 0ms NOTE PFP INJECTION 
+            // ðŸš€ 0ms NOTE PFP INJECTION 
             if (preloadedData && preloadedData.photoURL) {
                 const notePfp = document.getElementById('my-note-pfp');
                 notePfp.src = preloadedData.photoURL;
@@ -969,7 +978,7 @@
     </div>
 </div>
 <script>
-    // 🚀 INSTANT 0ms NOTES CACHE INJECTION
+    // ðŸš€ INSTANT 0ms NOTES CACHE INJECTION
     const cachedNotesHtml = localStorage.getItem('goorac_notes_html_cache');
     if (cachedNotesHtml) {
         document.getElementById('notes-container').innerHTML = cachedNotesHtml;
@@ -978,7 +987,7 @@
 
 <view-moments id="moments-feed"></view-moments> 
 <script>
-    // 🚀 INSTANT 0ms MOMENTS CACHE INJECTION
+    // ðŸš€ INSTANT 0ms MOMENTS CACHE INJECTION
     const cachedMomentsHtmlData = localStorage.getItem('goorac_moments_html_cache');
     if (cachedMomentsHtmlData) {
         document.getElementById('moments-feed').innerHTML = cachedMomentsHtmlData;
@@ -1023,7 +1032,7 @@
 </div>
 
 <script>
-    // 🚀 INSTANT 0ms DASHBOARD CACHE INJECTION
+    // ðŸš€ INSTANT 0ms DASHBOARD CACHE INJECTION
     const cachedDashboardHtmlData = localStorage.getItem('goorac_dashboard_html_cache');
     if (cachedDashboardHtmlData) {
         document.getElementById('dashboard-content').innerHTML = cachedDashboardHtmlData;
@@ -1052,31 +1061,20 @@
 <call-notifier></call-notifier>
 <view-notes id="note-viewer"></view-notes>
 
-<div id="update-popup-overlay" class="update-overlay">
-    <div class="update-card">
-        <span class="material-icons-round update-icon">system_update</span>
-        <div class="update-title">Update Available</div>
-        <div class="update-text">A new version of Quantum is ready. Update now for the latest features, a new icon, and stability improvements.</div>
-        <button class="update-btn" onclick="window.location.href='download.html'">Update Now</button>
+<div id="system-popup-overlay" class="system-popup-overlay" onclick="closeSystemPopup()">
+    <div class="system-popup-card" onclick="event.stopPropagation()">
+        <div class="sys-pop-header">
+            <span class="material-icons-round sys-pop-icon">campaign</span>
+            <div class="sys-pop-title" id="sys-pop-title">System Alert</div>
+        </div>
+        <div class="sys-pop-heading" id="sys-pop-heading"></div>
+        <img id="sys-pop-img" class="sys-pop-img" src="">
+        <div class="sys-pop-lines" id="sys-pop-lines"></div>
+        <button class="sys-pop-btn" id="sys-pop-btn" onclick="closeSystemPopup()">Acknowledge</button>
     </div>
 </div>
 
 <script>
-    // 🚀 SERVICE WORKER LISTENER FOR APP UPDATES
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(reg => {
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                newWorker.addEventListener('statechange', () => {
-                    // Check if there's an existing controller so it doesn't pop up on the very first visit
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        document.getElementById('update-popup-overlay').classList.add('active');
-                    }
-                });
-            });
-        });
-    }
-
     if (preloadedData) {
         document.addEventListener('DOMContentLoaded', () => {
             if (preloadedData.name) {
@@ -1112,7 +1110,7 @@
         });
     }
 
-    // 🚀 UPGRADED: FULL SCREEN GREETING ANIMATION LOGIC
+    // ðŸš€ UPGRADED: FULL SCREEN GREETING ANIMATION LOGIC
     // Added a timestamp requirement so it doesn't get blocked if someone sends "Good Morning" twice in the same chat
     window.checkGreeting = function(text, sender, msgId, timestampStr) {
         if (!text) return;
@@ -1200,7 +1198,7 @@
             }
         }, 3500);
 
-        // 🚀 LIVE CACHE SAVER FOR DASHBOARD (0ms latency prep - stores the whole dashboard structure)
+        // ðŸš€ LIVE CACHE SAVER FOR DASHBOARD (0ms latency prep - stores the whole dashboard structure)
         const dashboardContentEl = document.getElementById('dashboard-content');
         if (dashboardContentEl) {
             new MutationObserver(() => {
@@ -1208,7 +1206,7 @@
             }).observe(dashboardContentEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
 
-        // 🚀 LIVE CACHE SAVER FOR NOTES (0ms latency prep)
+        // ðŸš€ LIVE CACHE SAVER FOR NOTES (0ms latency prep)
         const notesContainerEl = document.getElementById('notes-container');
         if (notesContainerEl) {
             new MutationObserver(() => {
@@ -1216,7 +1214,7 @@
             }).observe(notesContainerEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
 
-        // 🚀 LIVE CACHE SAVER FOR MOMENTS (0ms latency prep)
+        // ðŸš€ LIVE CACHE SAVER FOR MOMENTS (0ms latency prep)
         const momentsFeedEl = document.getElementById('moments-feed');
         if (momentsFeedEl) {
             new MutationObserver(() => {
@@ -1224,7 +1222,7 @@
             }).observe(momentsFeedEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
 
-        // 🚀 LIVE CACHE SAVER FOR NAVBAR (0ms latency prep)
+        // ðŸš€ LIVE CACHE SAVER FOR NAVBAR (0ms latency prep)
         const mainNavEl = document.getElementById('main-nav');
         if (mainNavEl) {
             // [GLITCH FIX]: Disabled observing and storing the double-render to stop the flickering
@@ -1265,7 +1263,7 @@
         }
 
         if (momentsFeed) {
-            // 🚀 UPGRADED: Moments Observer now checks shadow DOM perfectly and toggles Caught Up state
+            // ðŸš€ UPGRADED: Moments Observer now checks shadow DOM perfectly and toggles Caught Up state
             new MutationObserver(() => {
                 const isModalOpen = momentsFeed.querySelector('.m-full-modal.open') || momentsFeed.querySelector('.c-overlay.open');
                 toggleOverlays(isModalOpen);
@@ -1287,7 +1285,7 @@
                 }
             }).observe(momentsFeed, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 
-            // 🚀 UPGRADED: Bulletproof fallback interval. If moments completely empty and doesn't trigger MutationObserver, this fixes the stuck display bug permanently.
+            // ðŸš€ UPGRADED: Bulletproof fallback interval. If moments completely empty and doesn't trigger MutationObserver, this fixes the stuck display bug permanently.
             setInterval(() => {
                 const mCards = momentsFeed.shadowRoot ? momentsFeed.shadowRoot.querySelectorAll('.m-card') : momentsFeed.querySelectorAll('.m-card');
                 const hasMoments = mCards.length > 0;
@@ -1335,6 +1333,66 @@
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const db = firebase.firestore();
 
+    // ==========================================
+    // SYSTEM POPUP LOGIC
+    // ==========================================
+    let currentPopupVersion = "";
+
+    function listenToSystemPopup() {
+        db.collection("system").doc("global_popup").onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.active) {
+                    const seenVersion = localStorage.getItem('seen_sys_popup_version');
+                    if (data.version && data.version !== seenVersion) {
+                        currentPopupVersion = data.version;
+                        
+                        document.getElementById('sys-pop-title').innerText = data.title || "System Alert";
+                        document.getElementById('sys-pop-heading').innerText = data.heading || "";
+                        document.getElementById('sys-pop-lines').innerText = data.lines || "";
+                        document.getElementById('sys-pop-btn').innerText = data.buttonText || "Acknowledge";
+                        
+                        const imgEl = document.getElementById('sys-pop-img');
+                        if (data.imageUrl || data.image) {
+                            imgEl.src = data.imageUrl || data.image;
+                            imgEl.style.display = 'block';
+                        } else {
+                            imgEl.style.display = 'none';
+                        }
+
+                        // Open modal
+                        document.getElementById('system-popup-overlay').classList.add('active');
+                        
+                        // Push history state for mobile back button
+                        history.pushState({ systemPopupOpen: true }, "");
+                    }
+                }
+            }
+        });
+    }
+
+    function closeSystemPopup(fromBackButton = false) {
+        const overlay = document.getElementById('system-popup-overlay');
+        if (overlay && overlay.classList.contains('active')) {
+            overlay.classList.remove('active');
+            if (currentPopupVersion) {
+                localStorage.setItem('seen_sys_popup_version', currentPopupVersion);
+            }
+            if (!fromBackButton && history.state && history.state.systemPopupOpen) {
+                history.back();
+            }
+        }
+    }
+
+    // Handle back button for system popup
+    window.addEventListener('popstate', (e) => {
+        const overlay = document.getElementById('system-popup-overlay');
+        if (overlay && overlay.classList.contains('active')) {
+            closeSystemPopup(true);
+        }
+    });
+    // ==========================================
+
     setInterval(() => {
         const clockElement = document.getElementById('clock');
         if (clockElement) {
@@ -1355,7 +1413,7 @@
     auth.onAuthStateChanged(async (user) => {
         if (user) {
 
-            // 🚀 [GLITCH FIX]: CLEAN UP GHOST HTML NOTES INJECTED BY 0ms CACHE
+            // ðŸš€ [GLITCH FIX]: CLEAN UP GHOST HTML NOTES INJECTED BY 0ms CACHE
             try {
                 const notesContainer = document.getElementById('notes-container');
                 if (notesContainer) {
@@ -1380,6 +1438,7 @@
                 startLiveCounters(user.uid);
                 listenNotifications(user.uid);
                 checkMyMoment(user.uid, userData.photoURL);
+                listenToSystemPopup(); // <-- Added System Popup Listener Here
 
                 // ==========================================
                 // ADDED: PUSHER BEAMS REGISTRATION LOGIC
@@ -1399,10 +1458,10 @@
                         // This allows you to send private messages directly to them later.
                         await beamsClient.addDeviceInterest(user.uid); 
 
-                        // ✅ Updated console log to verify it grabbed the correct UID
-                        console.log('✅ Pusher Beams successfully registered and subscribed to UID:', user.uid);
+                        // âœ… Updated console log to verify it grabbed the correct UID
+                        console.log('âœ… Pusher Beams successfully registered and subscribed to UID:', user.uid);
                     } catch (error) {
-                        console.error('❌ Pusher Beams registration failed:', error);
+                        console.error('âŒ Pusher Beams registration failed:', error);
                     }
                 }
                 // ==========================================
@@ -1499,7 +1558,7 @@
     }
 
     function startLiveCounters(uid) {
-        // 🚀 ADDED: Flag to prevent special effects from triggering on initial page load
+        // ðŸš€ ADDED: Flag to prevent special effects from triggering on initial page load
         let isInitialLoad = true; 
         
         db.collection("chats")
@@ -1533,7 +1592,7 @@
                     }
                 }
 
-                // --- 🚀 UPGRADED: GREETING DETECTION LOGIC ---
+                // --- ðŸš€ UPGRADED: GREETING DETECTION LOGIC ---
                 if (latest && latestDoc && latest.lastSender !== uid) {
                     let txt = latest.lastMessage || latest.text || latest.message || "";
                     let tsMillis = 0;
@@ -1572,7 +1631,7 @@
                 }
                 saveHomeState();
                 
-                // 🚀 Set false so subsequent snapshot updates trigger the greeting 
+                // ðŸš€ Set false so subsequent snapshot updates trigger the greeting 
                 isInitialLoad = false; 
             });
 
@@ -1602,7 +1661,7 @@
             });
     }
 
-    // 🚀 ADDED: PWA Install Prompt Listener
+    // ðŸš€ ADDED: PWA Install Prompt Listener
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent default mini-infobar
