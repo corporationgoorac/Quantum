@@ -62,6 +62,19 @@ auth.onAuthStateChanged((user) => {
                     }
                 }
 
+                // --- 1.5. SERVER ERROR CHECK ---
+                if (data.serverError === true) {
+                    renderServerErrorScreen();
+                    statusRef.set(offlineState);
+                    return; 
+                } else {
+                    const existingCrash = document.getElementById('quantum-server-crash');
+                    if (existingCrash) {
+                        existingCrash.remove();
+                        document.body.style.overflow = 'auto';
+                    }
+                }
+
                 // --- 2. INITIALIZE PREFERENCE ---
                 if (data.showActivityStatus === undefined) {
                     userDocRef.update({ showActivityStatus: true });
@@ -145,6 +158,75 @@ function renderLockoutScreen() {
             <div class="nexus-support">
                 To appeal this decision, please contact our support team.<br>
                 <a href="mailto:support@goorac.biz">support@goorac.biz</a>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+}
+
+function renderServerErrorScreen() {
+    if (document.getElementById('quantum-server-crash')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'quantum-server-crash';
+    overlay.innerHTML = `
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            #quantum-server-crash {
+                position: fixed; inset: 0;
+                background: rgba(0, 0, 0, 0.98);
+                z-index: 9999999; display: flex; align-items: center; justify-content: center;
+                font-family: 'Inter', sans-serif; backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px); animation: pulse-bg 2s infinite alternate;
+            }
+            .server-crash-card {
+                background: #0a0a0a; border: 1px solid #2a0808;
+                padding: 50px 40px; border-radius: 20px; text-align: center;
+                max-width: 460px; width: 90%; 
+                box-shadow: 0 0 50px rgba(255, 51, 51, 0.1), inset 0 0 0 1px rgba(255, 51, 51, 0.2);
+                position: relative; overflow: hidden;
+            }
+            .server-crash-card::before {
+                content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+                background: linear-gradient(90deg, transparent, #ff3333, transparent);
+            }
+            .crash-icon-wrapper {
+                width: 72px; height: 72px; margin: 0 auto 24px auto;
+                background: rgba(255, 51, 51, 0.1); border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                border: 1px solid rgba(255, 51, 51, 0.2);
+                animation: glitch-bounce 1.5s infinite;
+            }
+            .crash-icon { width: 36px; height: 36px; color: #ff4444; }
+            .crash-title { color: #ffffff; font-size: 26px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+            .crash-subtitle { color: #ff4444; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 24px; }
+            .crash-message { color: #888888; font-size: 15px; line-height: 1.6; margin-bottom: 32px; }
+            .crash-details {
+                background: #050505; padding: 16px; border-radius: 12px;
+                color: #555555; font-size: 12px; font-family: monospace; text-align: left;
+                border: 1px solid #111111;
+            }
+            .blink-cursor { animation: blink 1s step-end infinite; }
+            @keyframes pulse-bg { from { background: rgba(5, 0, 0, 0.96); } to { background: rgba(15, 0, 0, 0.98); } }
+            @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+            @keyframes glitch-bounce { 
+                0%, 100% { transform: translateY(0); } 
+                50% { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(255,51,51,0.2); } 
+            }
+        </style>
+        <div class="server-crash-card">
+            <div class="crash-icon-wrapper">
+                <svg class="crash-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                </svg>
+            </div>
+            <h1 class="crash-title">503 Service Unavailable</h1>
+            <div class="crash-subtitle">Quantum Core Overload</div>
+            <p class="crash-message">The Quantum servers are currently experiencing an unprecedented volume of users. We have temporarily restricted access to stabilize the network infrastructure.</p>
+            <div class="crash-details">
+                > STATUS: CRITICAL<br>
+                > LOAD: 99.8% CAPACITY<br>
+                > ACTION: QUEUING CONNECTIONS<span class="blink-cursor">_</span>
             </div>
         </div>
     `;
