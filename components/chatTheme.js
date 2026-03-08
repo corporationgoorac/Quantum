@@ -2,40 +2,40 @@
 (function() {
     window.chatTheme = {
         // App Core Backgrounds
-        bg: "#050709", // The absolute base background color of the entire app behind everything.
-        bgGradient: "radial-gradient(circle at 50% 30%, #0B1014 0%, #050709 70%)", // The immersive gradient overlay for depth.
+        bg: "#040605", // The absolute base background color of the entire app behind everything.
+        bgGradient: "radial-gradient(circle at 50% 30%, #0C120E 0%, #040605 70%)", // The immersive gradient overlay for depth.
         
         // Header
-        headerBg: "#0B1014", // Background color of the top sticky navigation bar.
+        headerBg: "#080B09", // Background color of the top sticky navigation bar.
         headerBlur: "blur(25px)", // The intensity of the glassmorphism blur effect on the header.
         
         // Primary Brand Colors (Buttons, Highlights, Icons)
-        accent: "#2A3F4C", // Primary brand color. Controls send button, mic button, active states, and highlights.
-        accentDark: "#1D2C36", // Darker variant of the accent color, used for gradients or pressed states.
-        accentDim: "rgba(42, 63, 76, 0.2)", // Transparent variant of the accent color. Used for glows, reply previews, and soft backgrounds.
+        accent: "#445D36", // Primary brand color. Controls send button, mic button, active states, and highlights.
+        accentDark: "#28381F", // Darker variant of the accent color, used for gradients or pressed states.
+        accentDim: "rgba(68, 93, 54, 0.2)", // Transparent variant of the accent color. Used for glows, reply previews, and soft backgrounds.
         
         // Borders and Dividers
         glassBorder: "rgba(255, 255, 255, 0.05)", // Extremely subtle transparent white. Used for the edges of the input capsule, popups, and bubbles to give a glass look.
-        border: "#151D24", // Solid border color used for distinct separation lines (like in menus or dividers).
+        border: "#151B17", // Solid border color used for distinct separation lines (like in menus or dividers).
         borderLight: "rgba(255, 255, 255, 0.06)", // Slightly brighter solid border for inner elements.
         
         // Outgoing (Sent) Message Bubbles
-        sentBg: "linear-gradient(135deg, #1D2C36 0%, #2A3F4C 100%)", // The background gradient of the messages you send.
-        sentText: "#F0F4F8", // The text color of the messages you send.
+        sentBg: "linear-gradient(135deg, #28381F 0%, #445D36 100%)", // The background gradient of the messages you send.
+        sentText: "#FFFFFF", // The text color of the messages you send.
         sentShadow: "0 4px 15px rgba(0, 0, 0, 0.4)", // The drop shadow beneath your sent bubbles.
         
         // Incoming (Received) Message Bubbles & Media Pills
-        receivedBg: "#121A21", // The background color of messages others send you, as well as audio and file pills.
-        receivedText: "#E2E8F0", // The text color of incoming messages.
+        receivedBg: "#111612", // The background color of messages others send you, as well as audio and file pills.
+        receivedText: "#F0F4F8", // The text color of incoming messages.
         receivedShadow: "0 2px 5px rgba(0,0,0,0.5)", // The drop shadow beneath incoming bubbles.
         
         // Typography / Text Variables
-        text: "#F0F4F8", // Primary global text color (Usernames, main text input, menu options).
-        textSecondary: "#94A3B8", // Secondary text color used for timestamps, 'Active now' status, and subtle info.
-        textMuted: "#475569", // Highly muted text color used for placeholders (e.g., "Message...").
+        text: "#FFFFFF", // Primary global text color (Usernames, main text input, menu options).
+        textSecondary: "#9AA69A", // Secondary text color used for timestamps, 'Active now' status, and subtle info.
+        textMuted: "#5A665A", // Highly muted text color used for placeholders (e.g., "Message...").
         
         // Modals & Bottom Areas
-        mobileToolbarBg: "#0B1014", // The background color of the input text capsule, the attachment menu, emoji tray, and long-press popups.
+        mobileToolbarBg: "#080B09", // The background color of the input text capsule, the attachment menu, emoji tray, and long-press popups.
         
         // Text Capsule Aura Glow (Dynamically linked to your accent color)
         capsuleGlowUnfocused: "0 -2px 18px color-mix(in srgb, var(--accent) 25%, transparent), 0 8px 25px rgba(0,0,0,0.4)", // Brightened from 15% to 25%
@@ -43,7 +43,7 @@
         
         // System UI
         // SOLID HEX for Android Status Bar to remove the top border line
-        statusBarColor: "#0B1014" // Changes the color of the physical phone's top notification bar (battery, wifi, time).
+        statusBarColor: "#080B09" // Changes the color of the physical phone's top notification bar (battery, wifi, time).
     };
 
     // Apply the theme directly to the root CSS variables
