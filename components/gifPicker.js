@@ -4,9 +4,8 @@ class GifPicker extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         
         // --- API CONFIGURATION ---
-        // Get a free key from Google Cloud Console (Tenor API)
-        this.apiKey = 'YOUR_TENOR_API_KEY'; 
-        this.clientKey = 'goorac_quantum_chat'; 
+        // Integrated with your new GIPHY SDK API Key
+        this.apiKey = 'RYDUFLrZbgYKk0iS3yUqo3SinXC8mIeH'; 
         
         // Load Recents (Limit to 6 to save space)
         let savedRecents = JSON.parse(localStorage.getItem('goorac_gif_recents')) || [];
@@ -139,22 +138,25 @@ class GifPicker extends HTMLElement {
         return query;
     }
 
-    // --- API FETCHING LOGIC ---
-    async fetchTenorGifs(endpoint, query = '', limit = 6) {
+    // --- API FETCHING LOGIC (GIPHY IMPLEMENTATION) ---
+    async fetchGiphyGifs(endpoint, query = '', limit = 6) {
         const cacheKey = `${endpoint}_${query}_${limit}`;
         if (this.apiCache[cacheKey]) return this.apiCache[cacheKey];
 
-        let url = `https://tenor.googleapis.com/v2/${endpoint}?key=${this.apiKey}&client_key=${this.clientKey}&limit=${limit}&media_filter=tinygif`;
+        let url = `https://api.giphy.com/v1/gifs/${endpoint}?api_key=${this.apiKey}&limit=${limit}&rating=pg-13`;
         if (query) url += `&q=${encodeURIComponent(query)}`;
 
         try {
             const response = await fetch(url);
             const data = await response.json();
-            const results = data.results.map(gif => ({
+            
+            // Format Giphy's data so your HTML grid still renders perfectly
+            const results = data.data.map(gif => ({
                 id: gif.id,
-                url: gif.media_formats.tinygif.url,
-                preview: gif.media_formats.tinygif.url // Tenor tinygif is small enough to act as its own preview
+                url: gif.images.fixed_width_small.url, // Optimized for mobile grids
+                preview: gif.images.fixed_width_small.url 
             }));
+            
             this.apiCache[cacheKey] = results;
             return results;
         } catch (error) {
@@ -273,7 +275,7 @@ class GifPicker extends HTMLElement {
         const chatMoodData = this.calculateChatMood();
         this.lastMoodName = chatMoodData ? chatMoodData.name : null;
         if (chatMoodData) {
-            const vibeGifs = await this.fetchTenorGifs('search', chatMoodData.query, 6);
+            const vibeGifs = await this.fetchGiphyGifs('search', chatMoodData.query, 6);
             if (vibeGifs.length > 0) {
                 this.renderSection(body, 'chatmood', `Chat Vibe: ${chatMoodData.name}`, vibeGifs);
             }
@@ -281,13 +283,13 @@ class GifPicker extends HTMLElement {
 
         // 3. Smart AI / Suggested (Time/Context -> API)
         const smartQuery = this.getSmartSuggestionQuery();
-        const smartGifs = await this.fetchTenorGifs('search', smartQuery, 6);
+        const smartGifs = await this.fetchGiphyGifs('search', smartQuery, 6);
         if (smartGifs.length > 0) {
             this.renderSection(body, 'suggested', 'Smart AI', smartGifs);
         }
 
-        // 4. Trending (Default API)
-        const trendingGifs = await this.fetchTenorGifs('featured', '', 12);
+        // 4. Trending (Default API) - Using Giphy's 'trending' endpoint
+        const trendingGifs = await this.fetchGiphyGifs('trending', '', 12);
         if (trendingGifs.length > 0) {
             this.renderSection(body, 'trending', 'Trending', trendingGifs);
         }
@@ -302,7 +304,7 @@ class GifPicker extends HTMLElement {
             return;
         }
 
-        const results = await this.fetchTenorGifs('search', query, 20);
+        const results = await this.fetchGiphyGifs('search', query, 20);
         body.innerHTML = '';
 
         if (results.length === 0) {
