@@ -454,7 +454,7 @@
         };
 
         function listenToGroup() {
-            db.collection('groups').doc(groupId).onSnapshot(doc => {
+            db.collection('chats').doc(groupId).onSnapshot(doc => {
                 if(!doc.exists) {
                     alert("Group not found in database.");
                     document.getElementById('loading-screen').style.display = 'none';
@@ -465,7 +465,7 @@
                 currentGroupData = data;
                 
                 // Security Check
-                const members = data.members || [];
+                const members = data.participants || [];
                 if(!members.includes(myUid)) {
                     document.getElementById('main-view').style.display = 'none';
                     document.getElementById('edit-trigger').style.display = 'none';
@@ -497,7 +497,7 @@
             const listContainer = document.getElementById('participants-list');
             listContainer.innerHTML = "";
 
-            const members = data.members || [];
+            const members = data.participants || [];
             
             // Fetch member details (using cache where possible)
             for(const uid of members) {
@@ -571,7 +571,7 @@
                 const name = document.getElementById('edit-name-input').value;
                 const desc = document.getElementById('edit-desc-input').value;
                 
-                await db.collection('groups').doc(groupId).update({
+                await db.collection('chats').doc(groupId).update({
                     name: name,
                     description: desc
                 });
@@ -605,7 +605,7 @@
                     admins.push(selectedMemberId);
                 }
                 
-                await db.collection('groups').doc(groupId).update({ admins });
+                await db.collection('chats').doc(groupId).update({ admins });
                 closeSheet();
             } catch(e) { alert("Admin Update Error: " + e.message); }
         }
@@ -614,13 +614,13 @@
             try {
                 if(!confirm("Remove this user from the group?")) return;
                 
-                let members = currentGroupData.members || [];
+                let members = currentGroupData.participants || [];
                 let admins = currentGroupData.admins || [];
                 
                 members = members.filter(m => m !== selectedMemberId);
                 admins = admins.filter(a => a !== selectedMemberId);
 
-                await db.collection('groups').doc(groupId).update({ members, admins });
+                await db.collection('chats').doc(groupId).update({ participants: members, admins });
                 closeSheet();
             } catch(e) { alert("Remove User Error: " + e.message); }
         }
@@ -633,7 +633,7 @@
                 if(q.length < 2) { resultsDiv.innerHTML = ""; return; }
 
                 const snap = await db.collection('users').limit(10).get();
-                const currentMembers = currentGroupData.members || [];
+                const currentMembers = currentGroupData.participants || [];
 
                 resultsDiv.innerHTML = snap.docs
                     .map(d => ({id: d.id, ...d.data()}))
@@ -658,10 +658,10 @@
 
         async function addMemberToGroup(uid) {
             try {
-                let members = currentGroupData.members || [];
+                let members = currentGroupData.participants || [];
                 if(!members.includes(uid)) {
                     members.push(uid);
-                    await db.collection('groups').doc(groupId).update({ members });
+                    await db.collection('chats').doc(groupId).update({ participants: members });
                     document.getElementById('user-search-input').value = "";
                     document.getElementById('search-results').innerHTML = "";
                 }
