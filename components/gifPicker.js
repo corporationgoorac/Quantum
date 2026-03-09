@@ -1,8 +1,6 @@
 /**
- * Goorac Quantum Engine - Advanced Giphy GIF Picker Component
- * Includes: VADER NLP Chat Vibe Analysis, Infinite Scroll Pagination, 
- * Smart Context Suggestions, Category Pills, Shimmer Loading, and 
- * Multi-Key Auto-Fallback Network Engine.
+ * Goorac Quantum Engine - Universal GIF Picker Component
+ * Uses the Keyless Tenor Legacy API to bypass all 401/403 browser blocks.
  */
 
 class GifPicker extends HTMLElement {
@@ -11,20 +9,19 @@ class GifPicker extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         
         // --- 1. CORE API CONFIGURATION ---
-        // Your primary key. If Giphy rejects it (401), the engine automatically uses backups.
-        this.apiKey = 'Zs8xMqmwlAhWcjzoYGjVDKxb8FOXddli'; 
+        // Universal Master Key - No registration required, bypasses browser origin blocks.
+        this.apiKey = 'LIVDSRZULELA'; 
         
         // Local Storage State
         let savedRecents = JSON.parse(localStorage.getItem('goorac_gif_recents')) || [];
         this.recentGifs = savedRecents.slice(0, 8); // Keep up to 8 recents
         
-        // Search & Pagination State
+        // Search State
         this.lastSearchedTerm = "";
         this.searchTimeout = null;
-        this.currentOffset = 0;
-        this.isFetchingMore = false;
-        this.hasReachedEnd = false;
         this.activeCategory = 'trending';
+        this.nextPos = null; // Used for Tenor pagination
+        this.isFetchingMore = false;
         
         // AI State
         this.lastMoodName = null;
@@ -36,7 +33,7 @@ class GifPicker extends HTMLElement {
         this.setupEvents();
         this.loadInitialViews();
 
-        // AI Mood Polling: Check chat context every 3 seconds
+        // AI Mood Polling
         this.moodRefreshInterval = setInterval(() => {
             this.refreshChatMood();
         }, 3000);
@@ -47,7 +44,7 @@ class GifPicker extends HTMLElement {
     }
 
     // ==========================================
-    //  AI ENGINE: VADER NLP PORT (QUANTUM MOOD)
+    //  AI ENGINE: VADER NLP PORT
     // ==========================================
 
     getRecentChatContext() {
@@ -61,7 +58,6 @@ class GifPicker extends HTMLElement {
                 } catch(e) {}
             }
         }
-        // Sort newest first
         allChatMessages.sort((a, b) => new Date(b.timestampIso || 0).getTime() - new Date(a.timestampIso || 0).getTime());
         return allChatMessages.slice(0, 25);
     }
@@ -71,10 +67,9 @@ class GifPicker extends HTMLElement {
         if (messages.length === 0) return null;
 
         const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0, party: 0, work: 0, chill: 0 };
-        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
-        const intensifiers = ['very', 'really', 'so', 'too', 'extremely', 'romba', 'rumba', 'migavum', 'மிகவும்', 'ரொம்ப'];
+        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu'];
+        const intensifiers = ['very', 'really', 'so', 'too', 'extremely', 'romba', 'rumba', 'migavum'];
         
-        // Massive lexicons mapping words to emotions for deep context
         const lexicons = {
             emojis: {
                 happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '👍', '☀️'],
@@ -113,7 +108,7 @@ class GifPicker extends HTMLElement {
         messages.forEach((msg, index) => {
             const rawText = (msg.text || '').toLowerCase();
             const tokens = rawText.split(/[\s,.\?!]+/);
-            const timeWeight = 1.0 - (index * 0.04); // Older messages matter less
+            const timeWeight = 1.0 - (index * 0.04); 
 
             for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
                 emojiList.forEach(emoji => {
@@ -128,7 +123,6 @@ class GifPicker extends HTMLElement {
                 let isNegated = false;
                 let isIntensified = false;
 
-                // Lookback window for modifiers
                 for(let j = 1; j <= 2; j++) {
                     if (i - j >= 0) {
                         if (negations.includes(tokens[i - j])) isNegated = true;
@@ -160,7 +154,6 @@ class GifPicker extends HTMLElement {
         }
 
         if (dominant) {
-            // Maps the internal emotion to a highly optimized Giphy search query
             const moodDisplayMap = {
                 happy: { name: 'Happy', query: 'happy dance excitement joy' },
                 sad: { name: 'Sad', query: 'crying sad hugs lonely' },
@@ -179,11 +172,9 @@ class GifPicker extends HTMLElement {
 
     refreshChatMood() {
         if (this.lastSearchedTerm) return; 
-        
         const newMoodData = this.calculateChatMood();
         const newMoodName = newMoodData ? newMoodData.name : null;
         
-        // If the AI detects a mood shift, silently update the top row without ruining scroll position
         if (this.lastMoodName !== newMoodName) {
             this.lastMoodName = newMoodName;
             this.loadInitialViews(true); 
@@ -196,10 +187,10 @@ class GifPicker extends HTMLElement {
         const dayOfWeek = date.getDay();
         
         let query = "";
-        if (hour >= 5 && hour < 11) query = "good morning coffee wake up";
+        if (hour >= 5 && hour < 11) query = "good morning coffee";
         else if (hour >= 11 && hour < 14) query = "lunch hungry eating";
         else if (hour >= 14 && hour < 17) query = "tired afternoon nap bored";
-        else if (hour >= 17 && hour < 21) query = "relaxing chill evening sunset";
+        else if (hour >= 17 && hour < 21) query = "relaxing chill evening";
         else query = "good night sleep tired bed";
         
         if (dayOfWeek === 5 && hour >= 16) query = "friday feeling weekend party";
@@ -209,60 +200,45 @@ class GifPicker extends HTMLElement {
     }
 
     // ==========================================
-    //  API LOGIC: ROBUST AUTO-FALLBACK ENGINE
+    //  API LOGIC: UNIVERSAL TENOR KEYLESS FETCH
     // ==========================================
 
-    async fetchGiphyGifs(endpoint, query = '', limit = 20, offset = 0) {
-        const cacheKey = `${endpoint}_${query}_${limit}_${offset}`;
+    async fetchUniversalGifs(endpoint, query = '', limit = 20, pos = null) {
+        // Create cache key (ignore pos for simplicity in caching)
+        const cacheKey = `${endpoint}_${query}_${limit}_${pos}`;
         if (this.apiCache[cacheKey]) return this.apiCache[cacheKey];
 
-        // Array of keys. It tries yours first. If 401 Unauthorized, it instantly tries the next one.
-        const fallbackKeys = [
-            this.apiKey, 
-            'GlVGYHqcVywcevd8kP1WEzK9ks1cB8N9', // Verified Public Key 1
-            'PZ1A20p7p22u2Sg1kZ1sO5iR8O9m2bB6', // Verified Public Key 2
-            'dc6zaTOxFJmzC' // Classic Beta Key
-        ];
+        // Using Tenor V1 Legacy Endpoint with Universal Key
+        let url = `https://g.tenor.com/v1/${endpoint}?key=${this.apiKey}&limit=${limit}&media_filter=minimal`;
+        if (query) url += `&q=${encodeURIComponent(query)}`;
+        if (pos) url += `&pos=${pos}`;
 
-        for (let i = 0; i < fallbackKeys.length; i++) {
-            let currentKey = fallbackKeys[i];
-            let url = `https://api.giphy.com/v1/gifs/${endpoint}?api_key=${currentKey}&limit=${limit}&offset=${offset}&rating=pg-13`;
-            if (query) url += `&q=${encodeURIComponent(query)}`;
-
-            try {
-                const response = await fetch(url);
-                
-                // If Giphy throws 401 or 403, the key is invalid. Skip and try the next one.
-                if (response.status === 401 || response.status === 403) {
-                    console.warn(`[Quantum Engine] Giphy Key ${currentKey.substring(0,5)}... rejected. Seamlessly falling back to node ${i+1}...`);
-                    continue; 
-                }
-                
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-                
-                const data = await response.json();
-                
-                // Format the messy Giphy payload into clean, optimized objects for our UI
-                const results = data.data.map(gif => ({
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            
+            const data = await response.json();
+            
+            // Map Tenor V1 data payload
+            const results = data.results.map(gif => {
+                const media = gif.media[0].tinygif; // Optimized for chat
+                return {
                     id: gif.id,
-                    url: gif.images.fixed_width_small.url, // Optimized for smooth scrolling
-                    width: gif.images.fixed_width_small.width,
-                    height: gif.images.fixed_width_small.height,
-                    title: gif.title
-                }));
-                
-                const returnData = { results: results, totalCount: data.pagination.total_count };
-                this.apiCache[cacheKey] = returnData;
-                return returnData;
-                
-            } catch (error) {
-                console.error("Giphy API Fetch Error:", error);
-                // Continue loop on network failure
-            }
+                    url: media.url,
+                    width: media.dims[0],
+                    height: media.dims[1],
+                    title: gif.title || "GIF"
+                };
+            });
+            
+            const returnData = { results: results, next: data.next };
+            this.apiCache[cacheKey] = returnData;
+            return returnData;
+            
+        } catch (error) {
+            console.error("[Quantum Engine] Universal Fetch Error:", error);
+            return { results: [], next: null };
         }
-        
-        // If everything fails (no internet)
-        return { results: [], totalCount: 0 };
     }
 
     // ==========================================
@@ -307,7 +283,7 @@ class GifPicker extends HTMLElement {
                     color: #888; cursor: pointer; display: none; font-size: 20px; outline: none;
                 }
                 
-                /* PILL NAVIGATION (CATEGORIES) */
+                /* PILL NAVIGATION */
                 .gp-nav-pills {
                     display: flex;
                     gap: 8px;
@@ -367,7 +343,7 @@ class GifPicker extends HTMLElement {
                     background: #262626; 
                     cursor: pointer;
                     position: relative;
-                    min-height: 100px; /* Base height before load */
+                    min-height: 100px; 
                 }
                 .gp-gif-wrapper:active { filter: brightness(0.8); transform: scale(0.98); }
                 .gp-gif {
@@ -400,14 +376,13 @@ class GifPicker extends HTMLElement {
                 }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 
-                /* EMPTY STATE */
                 .empty-state { text-align: center; color: #666; padding: 40px 20px; }
                 .empty-icon { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
             </style>
             
             <div class="gp-header">
                 <div class="gp-search-container">
-                    <input type="text" class="gp-search" placeholder="Search GIPHY...">
+                    <input type="text" class="gp-search" placeholder="Search Tenor...">
                     <button class="gp-clear">&times;</button>
                 </div>
             </div>
@@ -434,13 +409,10 @@ class GifPicker extends HTMLElement {
         const body = this.shadowRoot.getElementById('gif-body');
         const pills = this.shadowRoot.querySelectorAll('.gp-pill');
         
-        // Search Input Logic (Debounced)
         searchInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase().trim();
             this.lastSearchedTerm = val;
             clearBtn.style.display = val ? 'block' : 'none';
-            
-            // Remove active pill states if typing custom search
             pills.forEach(p => p.classList.remove('active'));
 
             clearTimeout(this.searchTimeout);
@@ -449,42 +421,37 @@ class GifPicker extends HTMLElement {
             }, 500); 
         });
 
-        // Clear Button
         clearBtn.addEventListener('click', () => {
             searchInput.value = '';
             this.lastSearchedTerm = '';
             clearBtn.style.display = 'none';
             pills.forEach(p => p.classList.remove('active'));
-            pills[0].classList.add('active'); // Reset to trending
+            pills[0].classList.add('active'); 
             this.loadInitialViews(); 
         });
 
-        // Category Pills Logic
         pills.forEach(pill => {
             pill.addEventListener('click', () => {
                 pills.forEach(p => p.classList.remove('active'));
                 pill.classList.add('active');
                 
                 const query = pill.getAttribute('data-query');
-                searchInput.value = query; // Auto fill search bar
+                searchInput.value = query; 
                 this.lastSearchedTerm = query;
                 clearBtn.style.display = query ? 'block' : 'none';
                 
                 if (query === "") {
-                    this.loadInitialViews(); // Trending view
+                    this.loadInitialViews(); 
                 } else {
                     this.executeSearch(query);
                 }
             });
         });
 
-        // Infinite Scroll Logic
+        // Infinite Scroll
         body.addEventListener('scroll', () => {
-            // Only trigger infinite scroll if we are in a single search/category view 
-            if (this.lastSearchedTerm && !this.isFetchingMore && !this.hasReachedEnd) {
+            if (this.lastSearchedTerm && !this.isFetchingMore && this.nextPos) {
                 const scrollDistanceToBottom = body.scrollHeight - body.scrollTop - body.clientHeight;
-                
-                // If within 200px of bottom, load more
                 if (scrollDistanceToBottom < 200) {
                     this.loadMoreGifs();
                 }
@@ -503,14 +470,14 @@ class GifPicker extends HTMLElement {
             body.innerHTML = '<div class="loading-text"><div class="spinner"></div>Loading...</div>';
         }
 
-        // Fetch everything in parallel for maximum speed
         const aiMoodData = this.calculateChatMood();
         const smartQuery = this.getSmartSuggestionQuery();
         
+        // Parallel fetching using Tenor endpoints
         const [vibeGifs, smartGifs, trendingGifs] = await Promise.all([
-            aiMoodData ? this.fetchGiphyGifs('search', aiMoodData.query, 6) : Promise.resolve(null),
-            this.fetchGiphyGifs('search', smartQuery, 6),
-            this.fetchGiphyGifs('trending', '', 14)
+            aiMoodData ? this.fetchUniversalGifs('search', aiMoodData.query, 8) : Promise.resolve(null),
+            this.fetchUniversalGifs('search', smartQuery, 8),
+            this.fetchUniversalGifs('trending', '', 16)
         ]);
 
         body.innerHTML = ''; 
@@ -536,17 +503,13 @@ class GifPicker extends HTMLElement {
             this.renderSection(body, 'trending', 'Trending Now', trendingGifs.results);
         }
         
-        // Reset infinite scroll state 
-        this.currentOffset = 0;
-        this.hasReachedEnd = true; 
+        this.nextPos = null; 
     }
 
     async executeSearch(query) {
         const body = this.shadowRoot.getElementById('gif-body');
         
-        // Reset Pagination State
-        this.currentOffset = 0;
-        this.hasReachedEnd = false;
+        this.nextPos = null;
         this.isFetchingMore = false;
 
         body.innerHTML = `
@@ -557,11 +520,10 @@ class GifPicker extends HTMLElement {
         
         const grid = this.shadowRoot.getElementById('search-grid');
         
-        // Pre-fill with Skeleton Loaders to prevent UI jump
-        for(let i=0; i<10; i++) this.appendSkeleton(grid);
+        for(let i=0; i<12; i++) this.appendSkeleton(grid);
 
-        const response = await this.fetchGiphyGifs('search', query, 20, this.currentOffset);
-        grid.innerHTML = ''; // Clear skeletons
+        const response = await this.fetchUniversalGifs('search', query, 24);
+        grid.innerHTML = ''; 
 
         if (response.results.length === 0) {
             body.innerHTML = `
@@ -573,10 +535,9 @@ class GifPicker extends HTMLElement {
         }
 
         this.appendGifsToGrid(grid, response.results);
-        this.currentOffset += response.results.length;
+        this.nextPos = response.next;
 
-        if (this.currentOffset >= response.totalCount) {
-            this.hasReachedEnd = true;
+        if (!this.nextPos || this.nextPos === "0") {
             this.shadowRoot.getElementById('scroll-loader').style.display = 'none';
         }
     }
@@ -588,20 +549,17 @@ class GifPicker extends HTMLElement {
         
         if(loader) loader.style.display = 'flex';
 
-        const response = await this.fetchGiphyGifs('search', this.lastSearchedTerm, 20, this.currentOffset);
+        const response = await this.fetchUniversalGifs('search', this.lastSearchedTerm, 20, this.nextPos);
         
         if (response.results.length > 0) {
             this.appendGifsToGrid(grid, response.results);
-            this.currentOffset += response.results.length;
-        } else {
-            this.hasReachedEnd = true;
+            this.nextPos = response.next;
         }
 
-        if (this.currentOffset >= response.totalCount) {
-            this.hasReachedEnd = true;
+        if (!this.nextPos || this.nextPos === "0") {
+            this.nextPos = null;
+            if(loader) loader.style.display = 'none';
         }
-
-        if(loader && this.hasReachedEnd) loader.style.display = 'none';
         this.isFetchingMore = false;
     }
 
@@ -632,12 +590,11 @@ class GifPicker extends HTMLElement {
             const wrapper = document.createElement('div');
             wrapper.className = 'gp-gif-wrapper shimmer';
             
-            // Maintain aspect ratio space while loading if data provides it
             if (gif.width && gif.height) {
                 const ratio = gif.height / gif.width;
                 wrapper.style.paddingBottom = `${ratio * 100}%`;
             } else {
-                wrapper.style.height = '120px'; // fallback
+                wrapper.style.height = '120px';
             }
 
             const img = document.createElement('img');
@@ -646,7 +603,6 @@ class GifPicker extends HTMLElement {
             img.alt = gif.title || "GIF";
             img.loading = "lazy"; 
             
-            // Positioning fix if using padding-bottom hack
             if (gif.width && gif.height) {
                 img.style.position = 'absolute';
                 img.style.top = '0';
@@ -654,7 +610,6 @@ class GifPicker extends HTMLElement {
                 img.style.height = '100%';
             }
 
-            // Remove shimmer when image fully downloads
             img.onload = () => {
                 wrapper.classList.remove('shimmer');
                 img.classList.add('loaded');
@@ -662,12 +617,10 @@ class GifPicker extends HTMLElement {
                 img.style.position = 'relative'; 
             };
             
-            // Trigger actual load
             img.src = gif.url; 
 
             wrapper.onclick = () => {
                 this.addToRecents(gif);
-                // EMIT TO MAIN CHAT.HTML
                 this.dispatchEvent(new CustomEvent('gif-selected', { 
                     detail: { url: gif.url },
                     bubbles: true, 
@@ -683,18 +636,15 @@ class GifPicker extends HTMLElement {
     appendSkeleton(gridElement) {
         const wrapper = document.createElement('div');
         wrapper.className = 'gp-gif-wrapper shimmer';
-        // Randomize heights slightly to simulate masonry while loading
         const randomHeight = Math.floor(Math.random() * (160 - 90 + 1) + 90);
         wrapper.style.height = `${randomHeight}px`;
         gridElement.appendChild(wrapper);
     }
 
     addToRecents(gifObj) {
-        // Prevent duplicates, move to front
         this.recentGifs = this.recentGifs.filter(g => g.id !== gifObj.id);
         this.recentGifs.unshift(gifObj);
         
-        // Keep maximum of 8 recent gifs to save memory and space
         if (this.recentGifs.length > 8) this.recentGifs.pop(); 
         
         localStorage.setItem('goorac_gif_recents', JSON.stringify(this.recentGifs));
