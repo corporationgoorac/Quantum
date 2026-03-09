@@ -43,7 +43,6 @@
             --header-bg: rgba(10, 10, 10, 0.90);
             --header-blur: blur(25px);
 
-            /* Brand Colors - THEME: PROFESSIONAL DARK ORANGE GRADE */
             --accent: #FF6D00; 
             --accent-dark: #E65100;
             --accent-dim: rgba(255, 109, 0, 0.2);
@@ -123,20 +122,14 @@
            3. ANIMATION KEYFRAMES
            ========================================= */
         @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-        
-        @keyframes flashMessage { 
-            0% { background-color: rgba(255, 152, 0, 0.6) !important; transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 152, 0, 0.5) !important; } 
-            100% { background-color: transparent; transform: scale(1); box-shadow: none; } 
-        }
+        @keyframes flashMessage { 0% { background-color: rgba(255, 152, 0, 0.6) !important; transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 152, 0, 0.5) !important; } 100% { background-color: transparent; transform: scale(1); box-shadow: none; } }
         .flash-active { animation: flashMessage 1.5s ease-out !important; }
-        
         @keyframes fadeStatus { 0% { opacity: 0; transform: translateY(3px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); } 20%, 40%, 60%, 80% { transform: translateX(3px); } }
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(0, 230, 118, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); } }
         @keyframes imgFadeIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: scale(1); } }
         @keyframes slideUp { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-
         @keyframes popOut { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 70% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes badgeUpdate { 0% { transform: scale(1); } 40% { transform: scale(1.35); background: #444; } 70% { transform: scale(0.95); } 100% { transform: scale(1); background: #2a2a2a; } }
         @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 10% { transform: translateY(-20px) scale(1.2); opacity: 1; } 50% { transform: translateY(-80px) scale(1.1); opacity: 1; } 100% { transform: translateY(-160px) scale(0.9); opacity: 0; } }
@@ -200,9 +193,7 @@
         .header-icon:active { opacity: 0.6; transform: scale(0.92); background: rgba(255,255,255,0.1); }
         .header-icon span { font-size: 24px; } 
 
-        #persistent-mood-icon {
-            font-size: 22px; cursor: default; transition: all 0.3s ease;
-        }
+        #persistent-mood-icon { font-size: 22px; cursor: default; transition: all 0.3s ease; }
 
         /* =========================================
            6. CHAT AREA
@@ -225,23 +216,15 @@
            7. TYPING INDICATOR
            ========================================= */
         .typing-row { display: none; align-items: flex-end; margin-bottom: 12px; padding-left: 12px; width: 100%; }
-        .typing-bubble { 
-            background: var(--received-bg); padding: 12px 16px; border-radius: 18px; border-bottom-left-radius: 4px; 
-            display: flex; gap: 4px; align-items: center; width: fit-content; height: 38px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);
-        }
+        .typing-avatar { width: 28px; height: 28px; border-radius: 50%; margin-right: 8px; object-fit: cover; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); }
+        .typing-bubble { background: var(--received-bg); padding: 12px 16px; border-radius: 18px; border-bottom-left-radius: 4px; display: flex; gap: 4px; align-items: center; width: fit-content; height: 38px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); }
         .typing-dot { width: 6px; height: 6px; background: #888; border-radius: 50%; animation: typingWave 1.4s ease-in-out infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typingWave { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-4px); opacity: 1; } }
-
         #scroll-trigger { position: absolute; top: 0; left: 0; width: 100%; height: 10px; pointer-events: none; visibility: hidden; z-index: -1; }
         
-        .date-divider { 
-            text-align: center; margin: 24px 0 16px 0; font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.8px; align-self: center; width: fit-content; position: sticky; top: 10px; z-index: 5; background: rgba(20, 20, 20, 0.7); 
-            padding: 4px 12px; border-radius: 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05);
-        }
+        .date-divider { text-align: center; margin: 24px 0 16px 0; font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; align-self: center; width: fit-content; position: sticky; top: 10px; z-index: 5; background: rgba(20, 20, 20, 0.7); padding: 4px 12px; border-radius: 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
         .time-divider { text-align: center; margin: 20px 0 12px 0; font-size: 0.65rem; color: #777; font-weight: 500; align-self: center; width: 100%; }
 
         /* =========================================
@@ -285,7 +268,7 @@
         .received .msg-timestamp-footer { text-align: left; left: 4px; }
         .sent .msg-timestamp-footer { text-align: right; right: 4px; }
 
-        /* GROUP SEEN AVATARS */
+        /* GROUP SEEN AVATARS - INSTAGRAM STYLE */
         .group-seen-avatars { display: flex; justify-content: flex-end; align-items: center; margin-top: 4px; padding-right: 4px; position: relative; z-index: 1; }
         .group-seen-avatars img { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--bg); margin-left: -6px; object-fit: cover; z-index: 2; }
         .group-seen-avatars img:first-child { margin-left: 0; z-index: 3; }
@@ -529,6 +512,7 @@
         <div id="messages-container"></div>
         
         <div class="typing-row" id="typing-row">
+             <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="typing-avatar" id="typing-pfp">
              <div class="typing-bubble" id="typing-bubble-content"></div>
         </div>
     </div>
@@ -599,14 +583,14 @@
                 <textarea id="m-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
             </div>
             
-            <div id="gif-toggle-right" class="emoji-toggle-btn" onclick="toggleGifKeyboard()">
-                <span class="material-icons-round">gif_box</span>
-            </div>
-
             <div id="emoji-toggle-right" class="emoji-toggle-btn" onclick="toggleEmojiKeyboard()">
                 <span class="material-icons-round">emoji_emotions</span>
             </div>
             
+            <div id="gif-toggle-right" class="emoji-toggle-btn" onclick="toggleGifKeyboard()">
+                <span class="material-icons-round">gif_box</span>
+            </div>
+
             <button id="send-btn" class="send-btn">
                 <span class="material-icons-round">send</span>
             </button>
@@ -630,7 +614,7 @@
 
 <script>
     // =========================================
-    //  EMOJI KEYBOARD TOGGLE SYSTEM
+    //  EMOJI / GIF KEYBOARD TOGGLE SYSTEM
     // =========================================
     window.isEmojiTrayOpen = false;
     window.toggleEmojiKeyboard = function() {
@@ -642,42 +626,31 @@
             window.isEmojiTrayOpen = false;
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
-            
             inputArea.classList.add('force-expand');
             mInput.focus(); 
-            
             setTimeout(() => {
                 emojiTray.style.display = 'none';
                 if(history.state && history.state.modal === 'emoji') history.back();
                 window.scrollToBottom();
             }, 150); 
-            
         } else {
             const wasFocused = document.activeElement === mInput;
             window.isEmojiTrayOpen = true;
-            
             if (window.isGifTrayOpen) {
                 window.isGifTrayOpen = false;
                 gifTray.style.display = 'none';
                 document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
             }
-            
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
-            
             inputArea.classList.add('force-expand');
             emojiTray.style.display = 'block';
-            
             if (wasFocused) mInput.blur(); 
-            
             window.scrollToBottom();
             pushModalState('emoji');
         }
     };
 
-    // =========================================
-    //  GIF KEYBOARD TOGGLE SYSTEM
-    // =========================================
     window.isGifTrayOpen = false;
     window.toggleGifKeyboard = function() {
         const gifTray = document.getElementById('gif-tray');
@@ -687,34 +660,26 @@
         if (window.isGifTrayOpen) {
             window.isGifTrayOpen = false;
             document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
-            
             inputArea.classList.add('force-expand');
             mInput.focus(); 
-            
             setTimeout(() => {
                 gifTray.style.display = 'none';
                 if(history.state && history.state.modal === 'gif') history.back();
                 window.scrollToBottom();
             }, 150); 
-            
         } else {
             const wasFocused = document.activeElement === mInput;
             window.isGifTrayOpen = true;
-            
             if (window.isEmojiTrayOpen) {
                 window.isEmojiTrayOpen = false;
                 emojiTray.style.display = 'none';
                 document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
                 document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             }
-
             document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
-            
             inputArea.classList.add('force-expand');
             gifTray.style.display = 'block';
-            
             if (wasFocused) mInput.blur(); 
-            
             window.scrollToBottom();
             pushModalState('gif');
         }
@@ -731,7 +696,6 @@
         function applyBg(source) {
             document.body.style.backgroundImage = `url('${source}'), ${fallbackGradient}`;
         }
-
         if (cachedBg) applyBg(cachedBg);
         else document.body.style.backgroundImage = fallbackGradient;
 
@@ -798,11 +762,9 @@
     // =========================================
     let fbConfig = (typeof window.firebaseConfig !== 'undefined') ? window.firebaseConfig : {};
     if (!firebase.apps.length && fbConfig.apiKey) { firebase.initializeApp(fbConfig); }
-    
     const db = firebase.firestore();
     const rdb = firebase.database();
     const auth = firebase.auth();
-    
     db.enablePersistence().catch(err => { console.log("Persistence disabled:", err.code); });
 
     // =========================================
@@ -819,8 +781,6 @@
     let groupData = null; 
     let myUserData = null;
     let isFirstLoad = true;
-    
-    // Member Caching for rapid UI Rendering
     let groupMembersCache = {}; 
     let groupStatusInterval = null;
 
@@ -871,10 +831,8 @@
                         m.timestamp = { toDate: () => new Date(m.timestampIso || m.timestamp) };
                         messagesMap.set(m.id || m.timestampIso, m);
                     });
-                    
                     document.body.classList.add('instant-load');
                     renderAll();
-                    
                     chatFlow.style.opacity = '1';
                     chatFlow.scrollTop = chatFlow.scrollHeight;
                     isFirstLoad = false;
@@ -919,10 +877,8 @@
             const path = e.composedPath ? e.composedPath() : [];
             const isEmojiPicker = path.some(el => el.tagName === 'EMOJI-PICKER') || e.target.closest('emoji-picker');
             const isGifPicker = path.some(el => el.tagName === 'GIF-PICKER') || e.target.closest('gif-picker');
-
             if(e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('#emoji-tray') && !isEmojiPicker && !e.target.closest('#gif-tray') && !isGifPicker) {
-                e.preventDefault(); 
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
             }
         }, { passive: false });
     }
@@ -930,15 +886,12 @@
     window.smartBack = function() {
         if (window !== window.parent && typeof window.parent.closeChatModal === 'function') {
             window.parent.closeChatModal();
-        } else {
-            history.back();
-        }
+        } else { history.back(); }
     };
 
     document.addEventListener('dblclick', (e) => {
         if (e.target.id === 'chat-flow' || e.target.id === 'messages-container') {
-            window.scrollToBottom(true); 
-            vibrate(30);
+            window.scrollToBottom(true); vibrate(30);
         }
     });
     
@@ -947,15 +900,11 @@
             if (attachmentMenu.style.display === 'flex') closeAttachmentMenu();
         }
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('emoji-picker') || e.target.closest('gif-picker') || e.target.closest('.mic-btn')) return;
-        
         const circle = document.createElement('div');
-        const diameter = 30;
-        const radius = diameter / 2;
+        const diameter = 30; const radius = diameter / 2;
         circle.style.width = circle.style.height = `${diameter}px`;
-        circle.style.left = `${e.clientX - radius}px`;
-        circle.style.top = `${e.clientY - radius}px`;
-        circle.classList.add('ripple');
-        document.body.appendChild(circle);
+        circle.style.left = `${e.clientX - radius}px`; circle.style.top = `${e.clientY - radius}px`;
+        circle.classList.add('ripple'); document.body.appendChild(circle);
         setTimeout(() => circle.remove(), 600);
     });
     
@@ -964,50 +913,37 @@
     sendBtnUI.addEventListener('touchstart', handleSendClick);
 
     mInput.addEventListener('input', function() {
-        this.style.height = 'auto'; 
-        this.style.height = (this.scrollHeight) + 'px';
+        this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
         if(this.value === '') this.style.height = 'auto';
         
         if(this.value.trim().length > 0) {
-            sendBtnUI.classList.add('active');
-            micWrapper.style.display = 'none';
+            sendBtnUI.classList.add('active'); micWrapper.style.display = 'none';
             document.querySelector('.plus-btn').style.display = 'none';
             document.getElementById('emoji-toggle-left').style.display = 'flex';
             document.getElementById('emoji-toggle-right').style.display = 'none';
             document.getElementById('gif-toggle-right').style.display = 'none';
             if(groupId && myUid) rdb.ref(`typing/${groupId}/${myUid}`).set(true);
         } else {
-            sendBtnUI.classList.remove('active');
-            micWrapper.style.display = 'flex';
+            sendBtnUI.classList.remove('active'); micWrapper.style.display = 'flex';
             document.querySelector('.plus-btn').style.display = 'flex';
             document.getElementById('emoji-toggle-left').style.display = 'none';
             document.getElementById('emoji-toggle-right').style.display = 'flex';
             document.getElementById('gif-toggle-right').style.display = 'flex';
             if(groupId && myUid) rdb.ref(`typing/${groupId}/${myUid}`).set(false);
         }
-        
-        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 120) {
-             window.scrollToBottom();
-        }
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 120) window.scrollToBottom();
     });
 
     chatFlow.addEventListener('scroll', () => {
         const diff = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
-        if (diff > 300) {
-            scrollBtn.style.display = 'flex';
-        } else {
-            scrollBtn.style.display = 'none';
-            scrollBtn.classList.remove('new-msg');
-        }
-        if (chatFlow.scrollTop <= 200 && !isLoadingMore && messagesMap.size > 0) {
-            loadMoreMessages();
-        }
+        if (diff > 300) scrollBtn.style.display = 'flex';
+        else { scrollBtn.style.display = 'none'; scrollBtn.classList.remove('new-msg'); }
+        if (chatFlow.scrollTop <= 200 && !isLoadingMore && messagesMap.size > 0) loadMoreMessages();
     });
 
     window.oncontextmenu = (e) => { 
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
-        e.preventDefault(); 
-        return false; 
+        e.preventDefault(); return false; 
     };
     
     // =========================================
@@ -1018,142 +954,65 @@
     const imagePickerComponent = document.getElementById('img-picker');
     const filePickerComponent = document.getElementById('file-picker');
 
-    if(mainPicker) {
-        mainPicker.addEventListener('emoji-click', event => {
-            const emoji = event.detail.emoji || event.detail.unicode; 
-            mInput.value += emoji;
-            mInput.dispatchEvent(new Event('input'));
-        });
-    }
-
-    if (mainGifPicker) {
-        mainGifPicker.addEventListener('gif-selected', (e) => {
-            const url = e.detail.url;
-            if (url) { sendGifMessage(url); if (window.isGifTrayOpen) toggleGifKeyboard(); }
-        });
-    }
-
-    if (imagePickerComponent) {
-        imagePickerComponent.addEventListener('image-uploaded', (e) => {
-            const url = e.detail.url;
-            if (url) sendImageMessage(url);
-        });
-    }
-
-    if (filePickerComponent) {
-        filePickerComponent.addEventListener('file-uploaded', (e) => {
-            const { url, metadata } = e.detail;
-            if (url) sendFileMessage(url, metadata);
-        });
-    }
+    if(mainPicker) { mainPicker.addEventListener('emoji-click', event => { const emoji = event.detail.emoji || event.detail.unicode; mInput.value += emoji; mInput.dispatchEvent(new Event('input')); }); }
+    if (mainGifPicker) { mainGifPicker.addEventListener('gif-selected', (e) => { const url = e.detail.url; if (url) { sendGifMessage(url); if (window.isGifTrayOpen) toggleGifKeyboard(); } }); }
+    if (imagePickerComponent) { imagePickerComponent.addEventListener('image-uploaded', (e) => { const url = e.detail.url; if (url) sendImageMessage(url); }); }
+    if (filePickerComponent) { filePickerComponent.addEventListener('file-uploaded', (e) => { const { url, metadata } = e.detail; if (url) sendFileMessage(url, metadata); }); }
 
     function toggleAttachmentMenu() {
-        if (attachmentMenu.style.display === 'flex') {
-            closeAttachmentMenu();
-        } else {
-            emojiTray.style.display = 'none'; 
-            document.getElementById('gif-tray').style.display = 'none';
-            attachmentMenu.style.display = 'flex';
-            pushModalState('attachment');
-        }
+        if (attachmentMenu.style.display === 'flex') closeAttachmentMenu();
+        else { emojiTray.style.display = 'none'; document.getElementById('gif-tray').style.display = 'none'; attachmentMenu.style.display = 'flex'; pushModalState('attachment'); }
     }
     
     function closeAttachmentMenu() {
-        if(attachmentMenu.style.display === 'flex') {
-            attachmentMenu.style.display = 'none';
-            if(history.state && history.state.modal === 'attachment') history.back();
-        }
+        if(attachmentMenu.style.display === 'flex') { attachmentMenu.style.display = 'none'; if(history.state && history.state.modal === 'attachment') history.back(); }
     }
 
     function openCameraPicker() { closeAttachmentMenu(); if (imagePickerComponent) imagePickerComponent.openPicker(); }
     function openFilePicker() { closeAttachmentMenu(); if (filePickerComponent) filePickerComponent.openPicker(); }
 
     function toggleEmojiTray() {
-        attachmentMenu.style.display = 'none'; 
-        document.getElementById('gif-tray').style.display = 'none';
-        if (emojiTray.style.display === 'block') {
-            emojiTray.style.display = 'none';
-            if(history.state && history.state.modal === 'emoji') history.back();
-        } else {
-            emojiTray.style.display = 'block';
-            window.scrollToBottom();
-            pushModalState('emoji');
-        }
+        attachmentMenu.style.display = 'none'; document.getElementById('gif-tray').style.display = 'none';
+        if (emojiTray.style.display === 'block') { emojiTray.style.display = 'none'; if(history.state && history.state.modal === 'emoji') history.back(); } 
+        else { emojiTray.style.display = 'block'; window.scrollToBottom(); pushModalState('emoji'); }
     }
     
     function expandEmojiMenu() {
-        vibrate(30);
-        const overlay = document.getElementById('menu-overlay');
-        if(overlay.style.display === 'flex') {
-            overlay.style.display = 'none';
-            history.replaceState({modal: 'reactionPicker'}, null, "");
-        } else { pushModalState('reactionPicker'); }
-        
-        const reactionModal = document.getElementById('reaction-picker-modal');
-        const container = document.getElementById('reaction-picker-container');
-        container.innerHTML = ''; 
-        
-        const reactionPicker = document.createElement('emoji-picker');
-        reactionPicker.style.width = "100%"; reactionPicker.style.height = "100%";
-        reactionPicker.addEventListener('emoji-click', event => {
-             const emoji = event.detail.emoji || event.detail.unicode;
-             applyReaction(emoji);
-             closeReactionPicker(); 
-        });
-        container.appendChild(reactionPicker);
-        reactionModal.style.display = 'flex';
+        vibrate(30); const overlay = document.getElementById('menu-overlay');
+        if(overlay.style.display === 'flex') { overlay.style.display = 'none'; history.replaceState({modal: 'reactionPicker'}, null, ""); } 
+        else { pushModalState('reactionPicker'); }
+        const reactionModal = document.getElementById('reaction-picker-modal'); const container = document.getElementById('reaction-picker-container'); container.innerHTML = ''; 
+        const reactionPicker = document.createElement('emoji-picker'); reactionPicker.style.width = "100%"; reactionPicker.style.height = "100%";
+        reactionPicker.addEventListener('emoji-click', event => { const emoji = event.detail.emoji || event.detail.unicode; applyReaction(emoji); closeReactionPicker(); });
+        container.appendChild(reactionPicker); reactionModal.style.display = 'flex';
     }
 
-    function closeReactionPicker() {
-        const modal = document.getElementById('reaction-picker-modal');
-        if (modal.style.display === 'flex') {
-            modal.style.display = 'none';
-            if(history.state && history.state.modal === 'reactionPicker') history.back();
-        }
-    }
-
+    function closeReactionPicker() { const modal = document.getElementById('reaction-picker-modal'); if (modal.style.display === 'flex') { modal.style.display = 'none'; if(history.state && history.state.modal === 'reactionPicker') history.back(); } }
     function vibrate(pattern = 50) { if (navigator.vibrate) navigator.vibrate(pattern); }
-    
-    window.goToGroupAbout = function() {
-        if (groupId) window.location.href = `aboutGroup.html?id=${groupId}`;
-    }
+    window.goToGroupAbout = function() { if (groupId) window.location.href = `aboutGroup.html?id=${groupId}`; }
     
     mInput.addEventListener("focus", () => { 
         document.querySelector('.input-area').classList.add('force-expand'); 
-        if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); 
-        if(window.isGifTrayOpen) toggleGifKeyboard();
-        if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
-        lockViewportAndHeader();
-        setTimeout(lockViewportAndHeader, 50);
-        setTimeout(lockViewportAndHeader, 300); 
+        if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); if(window.isGifTrayOpen) toggleGifKeyboard(); if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
+        lockViewportAndHeader(); setTimeout(lockViewportAndHeader, 50); setTimeout(lockViewportAndHeader, 300); 
     });
     
     mInput.addEventListener("blur", () => {
-        if (!window.isEmojiTrayOpen && !window.isGifTrayOpen) {
-            document.querySelector('.input-area').classList.remove('force-expand'); 
-        }
+        if (!window.isEmojiTrayOpen && !window.isGifTrayOpen) document.querySelector('.input-area').classList.remove('force-expand'); 
         setTimeout(lockViewportAndHeader, 100);
     });
 
-    function closeEmojiTray() {
-        emojiTray.style.display = 'none';
-        if(history.state && history.state.modal === 'emoji') history.back();
-    }
+    function closeEmojiTray() { emojiTray.style.display = 'none'; if(history.state && history.state.modal === 'emoji') history.back(); }
 
     // =========================================
     //  AUTH & INIT
     // =========================================
     auth.onAuthStateChanged(user => {
         if (user) { 
-            myUid = user.uid; 
-            localStorage.setItem('my_uid_cache', myUid);
-            
-            db.collection('users').doc(myUid).get().then(doc => {
-                 if (doc.exists) myUserData = doc.data();
-            });
+            myUid = user.uid; localStorage.setItem('my_uid_cache', myUid);
+            db.collection('users').doc(myUid).get().then(doc => { if (doc.exists) myUserData = doc.data(); });
             initChat(); 
-        }
-        else { window.location.href = 'login.html'; }
+        } else { window.location.href = 'login.html'; }
     });
 
     async function initChat() {
@@ -1163,7 +1022,6 @@
         const doc = await db.collection("chats").doc(groupId).get();
         if (!doc.exists) return;
         groupData = doc.data();
-        
         localStorage.setItem(`chat_group_${groupId}`, JSON.stringify(groupData));
 
         if(groupData.participants && groupData.participants.length > 0) {
@@ -1183,11 +1041,11 @@
         const pfp = document.getElementById('h-pfp');
         pfp.classList.remove('loading-shimmer');
         pfp.src = groupData.groupPhoto || DEFAULT_GROUP_IMAGE;
-
         document.getElementById('h-display-name').innerText = groupData.groupName || 'Group Chat';
         
         monitorGroupStatus();
 
+        // FIX: ZERO OUT MY UNREAD COUNT IN FIRESTORE ON LOAD
         db.collection("chats").doc(groupId).update({ 
             [`unreadCount.${myUid}`]: 0
         }).catch(e => {});
@@ -1196,15 +1054,28 @@
             const val = s.val() || {};
             let typingUsers = [];
             let recordingUsers = [];
-            
+            let typingPfpSrc = '';
+
             Object.keys(val).forEach(uid => {
                 if(uid !== myUid) {
-                    if(val[uid] === 'recording') recordingUsers.push(uid);
-                    else if(val[uid] === true) typingUsers.push(uid);
+                    if(val[uid] === 'recording') {
+                        recordingUsers.push(uid);
+                        typingPfpSrc = groupMembersCache[uid] ? groupMembersCache[uid].photoURL : 'https://via.placeholder.com/30';
+                    }
+                    else if(val[uid] === true) {
+                        typingUsers.push(uid);
+                        typingPfpSrc = groupMembersCache[uid] ? groupMembersCache[uid].photoURL : 'https://via.placeholder.com/30';
+                    }
                 }
             });
 
             const bubble = document.getElementById('typing-bubble-content');
+            const avatarImg = document.getElementById('typing-pfp');
+
+            if (recordingUsers.length > 0 || typingUsers.length > 0) {
+                avatarImg.src = typingPfpSrc;
+            }
+
             if (recordingUsers.length > 0) {
                 typingRow.style.display = 'flex';
                 bubble.className = "rec-ind-bubble";
@@ -1249,11 +1120,8 @@
                     if(snap && snap.val() && snap.val().state === 'online') count++;
                 });
                 document.getElementById('h-username-label').innerText = count > 0 ? `${count} active` : `${groupData.participants.length} members`;
-                if(count > 0) {
-                    document.getElementById('h-username-label').style.color = "#10b981";
-                } else {
-                    document.getElementById('h-username-label').style.color = "var(--text-secondary)";
-                }
+                if(count > 0) document.getElementById('h-username-label').style.color = "#10b981";
+                else document.getElementById('h-username-label').style.color = "var(--text-secondary)";
             });
         }
         recalcActiveCount();
@@ -1307,30 +1175,21 @@
                     else if (change.type === "modified") {
                         const oldData = messagesMap.get(msgId);
                         detectNewReactions(oldData, msgData, msgId);
-                        
                         const oldReactionsStr = JSON.stringify(oldData ? oldData.reactions : {});
                         const newReactionsStr = JSON.stringify(msgData.reactions || {});
-                        
                         if(oldData && oldData.text === msgData.text && oldReactionsStr !== newReactionsStr) {
-                            messagesMap.set(msgId, msgData);
-                            updateReactionDOM(msgId, msgData.reactions);
+                            messagesMap.set(msgId, msgData); updateReactionDOM(msgId, msgData.reactions);
                         } else {
-                            messagesMap.set(msgId, msgData);
-                            hasVisualChanges = true;
+                            messagesMap.set(msgId, msgData); hasVisualChanges = true;
                         }
                     } 
                     else if (change.type === "removed") {
                         db.collection("chats").doc(groupId).collection("messages").doc(msgId).get().then(docSnap => {
-                            if (!docSnap.exists) {
-                                messagesMap.delete(msgId);
-                                const el = document.getElementById(msgId);
-                                if(el) el.remove();
-                                renderAll();
-                            }
+                            if (!docSnap.exists) { messagesMap.delete(msgId); const el = document.getElementById(msgId); if(el) el.remove(); renderAll(); }
                         });
                     }
                     
-                    // Mark read logic with seenBy array
+                    // Mark read logic with seenBy array (Instagram Group Style)
                     if(msgData.sender !== myUid) {
                         let seenBy = msgData.seenBy || [];
                         if(!seenBy.includes(myUid)) {
@@ -1339,6 +1198,9 @@
                             });
                             msgData.seenBy = [...seenBy, myUid];
                             messagesMap.set(msgId, msgData);
+                            
+                            // ZERO OUT MY UNREAD COUNT IF OPEN
+                            db.collection("chats").doc(groupId).update({ [`unreadCount.${myUid}`]: 0 }).catch(e=>{});
                             
                             let displayTxt2 = msgData.text || "Message";
                             if(msgData.isGif) displayTxt2 = "🎞️ GIF";
@@ -1351,24 +1213,18 @@
 
                 if(isNewIncoming) { 
                     vibrate([50, 50, 50]); 
-                    if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight > 250) {
-                        scrollBtn.classList.add('new-msg');
-                    }
+                    if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight > 250) scrollBtn.classList.add('new-msg');
                 }
 
                 if (hasVisualChanges || isFirstLoad) {
                     if (isFirstLoad) {
-                        renderAll();
-                        chatFlow.scrollTop = chatFlow.scrollHeight;
+                        renderAll(); chatFlow.scrollTop = chatFlow.scrollHeight;
                         setTimeout(() => { chatFlow.style.opacity = '1'; isFirstLoad = false; }, 50);
                     } else {
                         const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150; 
                         renderAll();
                         if (isNearBottom) requestAnimationFrame(() => window.scrollToBottom(true));
-                        else {
-                            chatFlow.style.overflowAnchor = 'auto'; 
-                            if (isNewIncoming) { scrollBtn.classList.add('new-msg'); scrollBtn.style.display = 'flex'; }
-                        }
+                        else { chatFlow.style.overflowAnchor = 'auto'; if (isNewIncoming) { scrollBtn.classList.add('new-msg'); scrollBtn.style.display = 'flex'; } }
                     }
                 }
                 saveMessagesToCache();
@@ -1380,33 +1236,21 @@
         let reactionsList = [];
         if (reactions) reactionsList = Object.values(reactions);
         const reactionDisplay = reactionsList.map(r => r.emoji).join(' ');
-        
         badgeElements.forEach(el => {
             if (el.innerText !== reactionDisplay) {
-                el.innerText = reactionDisplay;
-                el.style.display = reactionDisplay ? 'block' : 'none';
-                if (reactionDisplay) {
-                    el.classList.remove('updated');
-                    void el.offsetWidth; 
-                    el.classList.add('updated');
-                }
+                el.innerText = reactionDisplay; el.style.display = reactionDisplay ? 'block' : 'none';
+                if (reactionDisplay) { el.classList.remove('updated'); void el.offsetWidth; el.classList.add('updated'); }
             }
         });
     }
 
     function detectNewReactions(oldData, newData, msgId) {
         if (!oldData || !newData) return;
-        const oldReactions = oldData.reactions || {};
-        const newReactions = newData.reactions || {};
-        
+        const oldReactions = oldData.reactions || {}; const newReactions = newData.reactions || {};
         Object.keys(newReactions).forEach(uid => {
-            const oldReaction = oldReactions[uid];
-            const newReaction = newReactions[uid];
+            const oldReaction = oldReactions[uid]; const newReaction = newReactions[uid];
             if (!oldReaction || oldReaction.emoji !== newReaction.emoji) {
-                if (uid !== myUid) {
-                    triggerReactionPop(msgId, newReaction.emoji);
-                    if(newReaction.emoji === '❤️') triggerHeartAnimation(); 
-                }
+                if (uid !== myUid) { triggerReactionPop(msgId, newReaction.emoji); if(newReaction.emoji === '❤️') triggerHeartAnimation(); }
             }
         });
     }
@@ -1415,17 +1259,9 @@
         const bubble = document.getElementById(`bubble-${msgId}`) || document.getElementById(msgId)?.querySelector('.msg-media-wrapper') || document.getElementById(msgId)?.querySelector('.msg-video-container');
         if (!bubble) return;
         const rect = bubble.getBoundingClientRect();
-        const startX = rect.left + (rect.width / 2) - 20; 
-        const startY = rect.top + (rect.height / 2);
-
-        const floatEl = document.createElement('div');
-        floatEl.className = 'floating-emoji';
-        floatEl.innerText = emoji;
-        floatEl.style.left = `${startX}px`;
-        floatEl.style.top = `${startY}px`;
-        document.body.appendChild(floatEl);
-        likeSound.play().catch(()=>{});
-        setTimeout(() => floatEl.remove(), 1500);
+        const startX = rect.left + (rect.width / 2) - 20; const startY = rect.top + (rect.height / 2);
+        const floatEl = document.createElement('div'); floatEl.className = 'floating-emoji'; floatEl.innerText = emoji; floatEl.style.left = `${startX}px`; floatEl.style.top = `${startY}px`; document.body.appendChild(floatEl);
+        likeSound.play().catch(()=>{}); setTimeout(() => floatEl.remove(), 1500);
     }
 
     function saveMessagesToCache() {
@@ -1435,13 +1271,11 @@
                 let savedM = { ...m };
                 if (m.timestamp && typeof m.timestamp.toDate === 'function') savedM.timestampIso = m.timestamp.toDate().toISOString();
                 if (m.seenAt && typeof m.seenAt.toDate === 'function') savedM.seenAtIso = m.seenAt.toDate().toISOString();
-                delete savedM.timestamp; 
-                delete savedM.seenAt;
+                delete savedM.timestamp; delete savedM.seenAt;
                 return savedM;
             });
             msgsToSave.sort((a, b) => new Date(a.timestampIso) - new Date(b.timestampIso));
-            const limitMsgs = msgsToSave;
-            try { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(limitMsgs)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(msgsToSave.slice(-300))); }
+            try { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(msgsToSave)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(msgsToSave.slice(-300))); }
         } catch (e) { console.error("Cache Save Error", e); }
     }
 
@@ -1464,29 +1298,17 @@
         sorted.forEach(([id, data], index) => {
             const msgDate = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestampIso);
             const msgTime = msgDate.getTime();
-
             const dateLabel = getDateDivider(msgDate);
+            
             if (dateLabel !== lastDateLabel) {
-                const div = document.createElement('div');
-                div.className = "date-divider";
-                div.innerText = dateLabel;
-                container.appendChild(div);
-                lastDateLabel = dateLabel;
-                lastMsgTime = msgTime;
+                const div = document.createElement('div'); div.className = "date-divider"; div.innerText = dateLabel; container.appendChild(div); lastDateLabel = dateLabel; lastMsgTime = msgTime;
             } else {
-                if (lastMsgTime > 0 && (msgTime - lastMsgTime) > 3600000) {
-                    const tDiv = document.createElement('div');
-                    tDiv.className = "time-divider";
-                    tDiv.innerText = formatTime12(msgDate);
-                    container.appendChild(tDiv);
-                }
+                if (lastMsgTime > 0 && (msgTime - lastMsgTime) > 3600000) { const tDiv = document.createElement('div'); tDiv.className = "time-divider"; tDiv.innerText = formatTime12(msgDate); container.appendChild(tDiv); }
             }
 
             lastMsgTime = msgTime;
-
             const prevMsg = index > 0 ? sorted[index - 1][1] : null;
             const nextMsg = index + 1 < sorted.length ? sorted[index + 1][1] : null;
-
             const isFirstInGroup = !prevMsg || prevMsg.sender !== data.sender || (msgDate - (prevMsg.timestamp.toDate ? prevMsg.timestamp.toDate() : new Date(prevMsg.timestampIso))) > 300000;
             const isLastInGroup = !nextMsg || nextMsg.sender !== data.sender || ((nextMsg.timestamp.toDate ? nextMsg.timestamp.toDate() : new Date(nextMsg.timestampIso)) - msgDate) > 300000;
 
@@ -1494,69 +1316,46 @@
         });
 
         container = originalContainer;
-
-        if (container.children.length === 0) {
-            while (tempContainer.firstChild) container.appendChild(tempContainer.firstChild);
-        } else {
-            let newChildren = Array.from(tempContainer.children);
-            let oldChildren = Array.from(container.children);
-
+        if (container.children.length === 0) { while (tempContainer.firstChild) container.appendChild(tempContainer.firstChild); } 
+        else {
+            let newChildren = Array.from(tempContainer.children); let oldChildren = Array.from(container.children);
             for (let i = 0; i < newChildren.length; i++) {
-                let newChild = newChildren[i];
-                let oldChild = oldChildren[i];
-
-                if (!oldChild) {
-                    container.appendChild(newChild);
-                } else if (newChild.id && oldChild.id === newChild.id) {
+                let newChild = newChildren[i]; let oldChild = oldChildren[i];
+                if (!oldChild) { container.appendChild(newChild); } 
+                else if (newChild.id && oldChild.id === newChild.id) {
                     if (oldChild.innerHTML !== newChild.innerHTML || oldChild.className !== newChild.className) {
                         let audio = oldChild.querySelector('audio');
                         if (audio && !audio.paused) { } else {
-                            oldChild.innerHTML = newChild.innerHTML;
-                            oldChild.className = newChild.className;
+                            oldChild.innerHTML = newChild.innerHTML; oldChild.className = newChild.className;
                             let msgData = messagesMap.get(newChild.id);
-                            let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`);
-                            if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
-                            let mediaEl = oldChild.querySelector('.msg-media-wrapper') || oldChild.querySelector('.msg-video-container');
-                            if(mediaEl) attachMessageListeners(mediaEl, newChild.id, msgData);
-                            let pill = oldChild.querySelector('.msg-audio-pill') || oldChild.querySelector('.msg-file-pill');
-                            if(pill) attachMessageListeners(pill, newChild.id, msgData);
+                            let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`); if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
+                            let mediaEl = oldChild.querySelector('.msg-media-wrapper') || oldChild.querySelector('.msg-video-container'); if(mediaEl) attachMessageListeners(mediaEl, newChild.id, msgData);
+                            let pill = oldChild.querySelector('.msg-audio-pill') || oldChild.querySelector('.msg-file-pill'); if(pill) attachMessageListeners(pill, newChild.id, msgData);
                         }
                     }
-                } else {
-                    container.replaceChild(newChild, oldChild);
-                }
+                } else { container.replaceChild(newChild, oldChild); }
             }
-            while (container.children.length > newChildren.length) {
-                container.removeChild(container.lastChild);
-            }
+            while (container.children.length > newChildren.length) { container.removeChild(container.lastChild); }
         }
     }
 
     function renderMessage(m, id, isFirstInGroup, isLastInGroup) {
         const side = m.sender === myUid ? 'sent' : 'received';
         const date = m.timestamp.toDate ? m.timestamp.toDate() : new Date(m.timestampIso);
-
-        const rowDiv = document.createElement('div');
-        rowDiv.id = id;
-        
+        const rowDiv = document.createElement('div'); rowDiv.id = id;
         let rowClass = `msg-row ${side}`;
         if(isLastInGroup) rowClass += ' group-bottom';
         if(isFirstInGroup && isLastInGroup) rowClass += ' single';
         rowDiv.className = rowClass;
         
-        let reactionsList = [];
-        let myReaction = null;
-        if (m.reactions) {
-            reactionsList = Object.values(m.reactions);
-            if (m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
-        }
+        let reactionsList = []; let myReaction = null;
+        if (m.reactions) { reactionsList = Object.values(m.reactions); if (m.reactions[myUid]) myReaction = m.reactions[myUid].emoji; }
         const reactionDisplay = reactionsList.map(r => r.emoji).join(' ');
 
-        // GROUP SEEN LOGIC - INSTAGRAM STYLE
+        // GROUP SEEN LOGIC - INSTAGRAM STYLE AVATARS
         let seenHtml = "";
-        if (side === 'sent' && m.seenBy && m.seenBy.length > 0) {
-            let avatars = '';
-            let seenCount = 0;
+        if (side === 'sent' && m.seenBy && m.seenBy.length > 1) { 
+            let avatars = ''; let seenCount = 0;
             m.seenBy.forEach(uid => {
                 if(uid !== myUid) {
                     seenCount++;
@@ -1566,91 +1365,39 @@
                     }
                 }
             });
-            if(seenCount > 0) {
-                seenHtml = `<div class="group-seen-avatars">${avatars}${seenCount > 5 ? `<span class="seen-more">+${seenCount - 5}</span>` : ''}</div>`;
-            }
+            if(seenCount > 0) seenHtml = `<div class="group-seen-avatars">${avatars}${seenCount > 5 ? `<span class="seen-more">+${seenCount - 5}</span>` : ''}</div>`;
         }
         
         const boxStyle = reactionDisplay ? 'style="margin-bottom: 16px"' : '';
         const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo}')">${m.replyTo}</div>` : '';
-
         const noteMeta = m.noteMetadata || {};
-        const noteReplyHtml = m.replyToNote ? `
-            <div class="note-reply-wrapper">
-                <div class="note-reply-pill ${noteMeta.isGlass ? 'glass' : ''}" style="background: ${noteMeta.bgTexture ? `url(${noteMeta.bgTexture})` : (noteMeta.bgColor || '#262626')}; background-size: cover; color: ${noteMeta.textColor || '#fff'}; font-family: ${noteMeta.font || 'system-ui'};">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px; width:100%; justify-content:center; opacity:0.9;">
-                        <span style="font-size:0.75rem;font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,0.5);">${noteMeta.username || 'User'}</span>
-                    </div>
-                    ${noteMeta.songName ? `<div class="note-music-pill"><span class="material-icons-round" style="font-size:10px;">music_note</span><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${noteMeta.songName}</span></div>` : ''}
-                    <div style="font-size:1rem;font-weight:700;line-height:1.3; text-shadow:0 1px 5px rgba(0,0,0,0.4); padding: 0 5px;">${m.replyToNote}</div>
-                </div>
-                <div class="note-connector"></div>
-            </div>` : '';
+        const noteReplyHtml = m.replyToNote ? `<div class="note-reply-wrapper"><div class="note-reply-pill ${noteMeta.isGlass ? 'glass' : ''}" style="background: ${noteMeta.bgTexture ? `url(${noteMeta.bgTexture})` : (noteMeta.bgColor || '#262626')}; background-size: cover; color: ${noteMeta.textColor || '#fff'}; font-family: ${noteMeta.font || 'system-ui'};"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px; width:100%; justify-content:center; opacity:0.9;"><span style="font-size:0.75rem;font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,0.5);">${noteMeta.username || 'User'}</span></div>${noteMeta.songName ? `<div class="note-music-pill"><span class="material-icons-round" style="font-size:10px;">music_note</span><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${noteMeta.songName}</span></div>` : ''}<div style="font-size:1rem;font-weight:700;line-height:1.3; text-shadow:0 1px 5px rgba(0,0,0,0.4); padding: 0 5px;">${m.replyToNote}</div></div><div class="note-connector"></div></div>` : '';
         
         let groupClass = '';
-        if (isFirstInGroup && isLastInGroup) groupClass = 'single';
-        else if (isFirstInGroup) groupClass = 'group-top';
-        else if (isLastInGroup) groupClass = 'group-bottom';
-        else groupClass = 'group-mid';
+        if (isFirstInGroup && isLastInGroup) groupClass = 'single'; else if (isFirstInGroup) groupClass = 'group-top'; else if (isLastInGroup) groupClass = 'group-bottom'; else groupClass = 'group-mid';
 
-        let renderImageUrl = (typeof m.imageUrl === 'string' && m.imageUrl !== 'true') ? m.imageUrl : null;
-        let renderFileUrl = (typeof m.fileUrl === 'string' && m.fileUrl !== 'true') ? m.fileUrl : null;
-        let renderFileMeta = m.fileMeta;
-        let renderText = m.text || "";
+        let renderImageUrl = (typeof m.imageUrl === 'string' && m.imageUrl !== 'true') ? m.imageUrl : null; let renderFileUrl = (typeof m.fileUrl === 'string' && m.fileUrl !== 'true') ? m.fileUrl : null; let renderFileMeta = m.fileMeta; let renderText = m.text || "";
 
         if (!renderImageUrl && !renderFileUrl && renderText) {
             const urlMatch = renderText.match(/(https?:\/\/[^\s]+)/);
             if (urlMatch) {
-                const url = urlMatch[0];
-                const urlPath = url.split('?')[0].toLowerCase();
-                let matchedMedia = false;
-                if (urlPath.match(/\.(jpeg|jpg|gif|png|webp)$/i)) { renderImageUrl = url; matchedMedia = true; } 
-                else if (urlPath.match(/\.(mp4|webm|mov)$/i)) { renderFileUrl = url; renderFileMeta = { type: 'video/mp4', name: 'Video Link', size: 0 }; matchedMedia = true; } 
-                else if (urlPath.match(/\.(mp3|wav|ogg|m4a)$/i)) { renderFileUrl = url; renderFileMeta = { type: 'audio/mp3', name: 'Audio Link', size: 0 }; matchedMedia = true; }
+                const url = urlMatch[0]; const urlPath = url.split('?')[0].toLowerCase(); let matchedMedia = false;
+                if (urlPath.match(/\.(jpeg|jpg|gif|png|webp)$/i)) { renderImageUrl = url; matchedMedia = true; } else if (urlPath.match(/\.(mp4|webm|mov)$/i)) { renderFileUrl = url; renderFileMeta = { type: 'video/mp4', name: 'Video Link', size: 0 }; matchedMedia = true; } else if (urlPath.match(/\.(mp3|wav|ogg|m4a)$/i)) { renderFileUrl = url; renderFileMeta = { type: 'audio/mp3', name: 'Audio Link', size: 0 }; matchedMedia = true; }
                 if (matchedMedia && renderText.trim() === url) renderText = ""; 
             }
         }
 
-        let mediaHtml = '';
-        let bubbleClass = `bubble ${groupClass}`;
-        let bubbleStyle = '';
+        let mediaHtml = ''; let bubbleClass = `bubble ${groupClass}`; let bubbleStyle = '';
 
-        if (renderImageUrl) {
-            mediaHtml = `<div class="msg-media-wrapper ${groupClass}" onclick="document.getElementById('media-viewer').open('${renderImageUrl}')"><img src="${renderImageUrl}" class="chat-media-img" onload="var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 50) window.scrollToBottom(true)"><div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div></div>`;
-            bubbleClass = `bubble has-media ${groupClass}`;
-            if(!renderText) bubbleStyle = "display:none;";
-        } else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('video')) {
-            mediaHtml = `<div class="msg-video-container" onclick="document.getElementById('media-viewer').open('${renderFileUrl}', 'video')"><video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:220px; background:#000;" preload="metadata" onloadeddata="var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 50) window.scrollToBottom(true)"></video><div class="play-overlay"><span class="material-icons-round" style="font-size:32px; color:white;">play_arrow</span></div><div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div></div>`;
-            bubbleClass = `bubble has-media ${groupClass}`;
-            if(!renderText) bubbleStyle = "display:none;";
-        } else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('audio')) {
-            const safeId = 'audio-' + id;
-            mediaHtml = `<div class="msg-audio-pill" id="pill-${safeId}"><div class="audio-control-btn" onclick="event.stopPropagation(); window.toggleAudio('${safeId}');"><svg id="icon-${safeId}" viewBox="0 0 24 24" style="pointer-events: none;"><path d="M8 5v14l11-7z"/></svg></div><div class="audio-wave-container" id="wave-${safeId}"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div><div class="audio-speed-btn" id="speed-${safeId}" onclick="event.stopPropagation(); changePlaybackRate('${safeId}')">1x</div><audio id="${safeId}" src="${renderFileUrl}" ontimeupdate="updateAudioUI('${safeId}')" onended="resetAudioUI('${safeId}')"></audio><div id="react-${id}" class="reaction-badge" style="position:absolute; bottom:-8px; right:10px; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div></div>`;
-            bubbleClass = `bubble has-media ${groupClass}`; 
-            if(!renderText) bubbleStyle = "display:none;";
-        } else if (renderFileUrl) {
-            mediaHtml = `<div class="msg-file-pill" onclick="window.open('${renderFileUrl}', '_blank')"><div class="file-icon">📄</div><div class="file-details"><div class="file-name">${renderFileMeta.name || "File"}</div><div class="file-meta">${(renderFileMeta.size / (1024*1024)).toFixed(2)} MB • ${renderFileMeta.type.toUpperCase()}</div></div><div id="react-${id}" class="reaction-badge" style="right:0; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div></div>`;
-            bubbleClass = `bubble has-media ${groupClass}`;
-            if(!renderText) bubbleStyle = "display:none;";
-        }
+        if (renderImageUrl) { mediaHtml = `<div class="msg-media-wrapper ${groupClass}" onclick="document.getElementById('media-viewer').open('${renderImageUrl}')"><img src="${renderImageUrl}" class="chat-media-img" onload="var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 50) window.scrollToBottom(true)"><div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div></div>`; bubbleClass = `bubble has-media ${groupClass}`; if(!renderText) bubbleStyle = "display:none;"; } 
+        else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('video')) { mediaHtml = `<div class="msg-video-container" onclick="document.getElementById('media-viewer').open('${renderFileUrl}', 'video')"><video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:220px; background:#000;" preload="metadata" onloadeddata="var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 50) window.scrollToBottom(true)"></video><div class="play-overlay"><span class="material-icons-round" style="font-size:32px; color:white;">play_arrow</span></div><div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div></div>`; bubbleClass = `bubble has-media ${groupClass}`; if(!renderText) bubbleStyle = "display:none;"; } 
+        else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('audio')) { const safeId = 'audio-' + id; mediaHtml = `<div class="msg-audio-pill" id="pill-${safeId}"><div class="audio-control-btn" onclick="event.stopPropagation(); window.toggleAudio('${safeId}');"><svg id="icon-${safeId}" viewBox="0 0 24 24" style="pointer-events: none;"><path d="M8 5v14l11-7z"/></svg></div><div class="audio-wave-container" id="wave-${safeId}"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div><div class="audio-speed-btn" id="speed-${safeId}" onclick="event.stopPropagation(); changePlaybackRate('${safeId}')">1x</div><audio id="${safeId}" src="${renderFileUrl}" ontimeupdate="updateAudioUI('${safeId}')" onended="resetAudioUI('${safeId}')"></audio><div id="react-${id}" class="reaction-badge" style="position:absolute; bottom:-8px; right:10px; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div></div>`; bubbleClass = `bubble has-media ${groupClass}`; if(!renderText) bubbleStyle = "display:none;"; } 
+        else if (renderFileUrl) { mediaHtml = `<div class="msg-file-pill" onclick="window.open('${renderFileUrl}', '_blank')"><div class="file-icon">📄</div><div class="file-details"><div class="file-name">${renderFileMeta.name || "File"}</div><div class="file-meta">${(renderFileMeta.size / (1024*1024)).toFixed(2)} MB • ${renderFileMeta.type.toUpperCase()}</div></div><div id="react-${id}" class="reaction-badge" style="right:0; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div></div>`; bubbleClass = `bubble has-media ${groupClass}`; if(!renderText) bubbleStyle = "display:none;"; }
 
-        const safeText = linkify(renderText);
-        const textNoSpaces = (renderText || "").replace(/\s/g, '');
-        const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
-        const isOnlyEmoji = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 5 && emojiRegex.test(textNoSpaces);
+        const safeText = linkify(renderText); const textNoSpaces = (renderText || "").replace(/\s/g, ''); const emojiRegex = /^[\p{Extended_Pictographic}]+$/u; const isOnlyEmoji = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 5 && emojiRegex.test(textNoSpaces);
         if (isOnlyEmoji && !renderImageUrl && !renderFileUrl && !m.replyTo) bubbleClass += ' jumbo-emoji';
         
-        let contentHTML = `
-            <div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
-            ${noteReplyHtml}
-            ${replyHtml}
-            ${mediaHtml}
-            <div class="${bubbleClass}" id="bubble-${id}" style="${bubbleStyle}">
-                <span id="text-${id}">${safeText} ${m.edited ? '<small style="opacity:0.6;font-size:0.65rem; margin-left:4px;">(edited)</small>' : ''}</span>
-                ${(!renderImageUrl && !renderFileUrl && !renderFileMeta?.type?.includes('audio')) ? `<div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>` : ''}
-            </div>
-            <div class="msg-timestamp-footer">${formatTime12(date)}</div>
-        `;
+        let contentHTML = `<div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>${noteReplyHtml}${replyHtml}${mediaHtml}<div class="${bubbleClass}" id="bubble-${id}" style="${bubbleStyle}"><span id="text-${id}">${safeText} ${m.edited ? '<small style="opacity:0.6;font-size:0.65rem; margin-left:4px;">(edited)</small>' : ''}</span>${(!renderImageUrl && !renderFileUrl && !renderFileMeta?.type?.includes('audio')) ? `<div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>` : ''}</div><div class="msg-timestamp-footer">${formatTime12(date)}</div>`;
 
         if (side === 'received') {
             const senderUser = groupMembersCache[m.sender] || {};
@@ -1658,213 +1405,63 @@
             const username = senderUser.username || m.sender;
             const senderName = senderUser.name || username;
             const pfpClass = isLastInGroup ? 'msg-avatar visible' : 'msg-avatar';
-            
             const nameLabel = isFirstInGroup ? `<div class="sender-name-label">${senderName}</div>` : '';
 
-            rowDiv.innerHTML = `
-                <div class="received-inner-row">
-                    <img src="${pfpUrl}" class="${pfpClass}" onclick="window.location.href='userProfile.html?user=${username}'" style="cursor:pointer; pointer-events:auto;">
-                    <div class="msg-bubble-box" ${boxStyle}>
-                        ${nameLabel}
-                        ${contentHTML}
-                    </div>
-                </div>
-                ${seenHtml}
-            `;
+            rowDiv.innerHTML = `<div class="received-inner-row"><img src="${pfpUrl}" class="${pfpClass}" onclick="window.location.href='userProfile.html?user=${username}'" style="cursor:pointer; pointer-events:auto;"><div class="msg-bubble-box" ${boxStyle}>${nameLabel}${contentHTML}</div></div>${seenHtml}`;
         } else {
-            rowDiv.innerHTML = `
-                <div class="msg-bubble-box" ${boxStyle}>
-                    ${contentHTML}
-                </div>
-                ${seenHtml}
-            `;
+            rowDiv.innerHTML = `<div class="msg-bubble-box" ${boxStyle}>${contentHTML}</div>${seenHtml}`;
         }
         
         container.appendChild(rowDiv);
-        
-        const bubbleEl = rowDiv.querySelector(`#bubble-${id}`);
-        if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, id, m);
-        const mediaEl = rowDiv.querySelector('.msg-media-wrapper') || rowDiv.querySelector('.msg-video-container');
-        if(mediaEl) attachMessageListeners(mediaEl, id, m);
-        const pill = rowDiv.querySelector('.msg-audio-pill') || rowDiv.querySelector('.msg-file-pill');
-        if(pill) attachMessageListeners(pill, id, m);
+        const bubbleEl = rowDiv.querySelector(`#bubble-${id}`); if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, id, m);
+        const mediaEl = rowDiv.querySelector('.msg-media-wrapper') || rowDiv.querySelector('.msg-video-container'); if(mediaEl) attachMessageListeners(mediaEl, id, m);
+        const pill = rowDiv.querySelector('.msg-audio-pill') || rowDiv.querySelector('.msg-file-pill'); if(pill) attachMessageListeners(pill, id, m);
     }
     
     function setupGlobalTimestamps() {
-        const bg = document.getElementById('chat-flow');
-        let pressTimer;
+        const bg = document.getElementById('chat-flow'); let pressTimer;
         bg.addEventListener('touchstart', (e) => {
             const isInteractive = e.target.closest('.msg-bubble-box') || e.target.closest('.input-area-container') || e.target.closest('#chat-header');
-            if(!isInteractive) {
-                pressTimer = setTimeout(() => {
-                    const containerObj = document.getElementById('messages-container');
-                    const scrollBottomOffset = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
-                    containerObj.classList.add('show-timestamps');
-                    if(scrollBottomOffset < 50) chatFlow.scrollTop = chatFlow.scrollHeight;
-                    vibrate([50, 50]); 
-                }, 500);
-            }
+            if(!isInteractive) { pressTimer = setTimeout(() => { const containerObj = document.getElementById('messages-container'); const scrollBottomOffset = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight; containerObj.classList.add('show-timestamps'); if(scrollBottomOffset < 50) chatFlow.scrollTop = chatFlow.scrollHeight; vibrate([50, 50]); }, 500); }
         }, {passive: true});
         bg.addEventListener('touchend', () => { clearTimeout(pressTimer); document.getElementById('messages-container').classList.remove('show-timestamps'); });
         bg.addEventListener('touchmove', () => { clearTimeout(pressTimer); }, {passive: true});
     }
     
     function attachMessageListeners(element, id, m) {
-            let reactionsList = [];
-            let myReaction = null;
-            if (m.reactions && m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
-
+            let reactionsList = []; let myReaction = null; if (m.reactions && m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
             let lastTap = 0;
             element.addEventListener('touchend', (e) => {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTap;
-                if (tapLength < 300 && tapLength > 0) {
-                    e.preventDefault(); 
-                    if (document.activeElement === mInput || mInput.matches(':focus')) setTimeout(() => mInput.focus(), 10);
-                    if (m.sender === myUid) { vibrate(40); activeMenuId = id; initEdit(); } 
-                    else { vibrate(50); triggerHeartAnimation(); applyReactionToId(id, myReaction === '❤️' ? '' : '❤️'); }
-                }
-                lastTap = currentTime;
+                const currentTime = new Date().getTime(); const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) { e.preventDefault(); if (document.activeElement === mInput || mInput.matches(':focus')) setTimeout(() => mInput.focus(), 10); if (m.sender === myUid) { vibrate(40); activeMenuId = id; initEdit(); } else { vibrate(50); triggerHeartAnimation(); applyReactionToId(id, myReaction === '❤️' ? '' : '❤️'); } } lastTap = currentTime;
             }, { passive: false });
-
-            let startX = 0, currentX = 0, menuTimer = null, isScrolling = false;
-            let swipeBubbleBox = element.closest('.msg-bubble-box'); 
-            let swipeIcon = swipeBubbleBox.querySelector('.swipe-reply-icon');
-            let side = m.sender === myUid ? 'sent' : 'received';
-
-            element.addEventListener('touchstart', (e) => {
-                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return;
-                startX = e.touches[0].clientX; currentX = startX; isScrolling = false; 
-                menuTimer = setTimeout(() => { if (!isScrolling && Math.abs(currentX - startX) < 10) { vibrate(70); openMenu(id, m.sender, m.text); } }, 500);
-            }, {passive: true});
-
-            element.addEventListener('touchmove', (e) => {
-                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
-                currentX = e.touches[0].clientX;
-                let diff = currentX - startX;
-                if (Math.abs(diff) > 10) { clearTimeout(menuTimer); isScrolling = true; }
-                if (side === 'received' && diff > 0 && diff < 150) {
-                    swipeBubbleBox.style.transform = `translateX(${diff}px)`;
-                    if(swipeIcon) { let scale = Math.min(1, diff / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; }
-                } else if (side === 'sent' && diff < 0 && diff > -150) {
-                    swipeBubbleBox.style.transform = `translateX(${diff}px)`;
-                    if(swipeIcon) { let scale = Math.min(1, Math.abs(diff) / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; }
-                }
-            }, {passive: true});
-
-            element.addEventListener('touchend', (e) => {
-                clearTimeout(menuTimer);
-                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
-                let diff = currentX - startX; let threshold = 60; let triggered = false;
-                if (side === 'received' && diff > threshold) triggered = true;
-                if (side === 'sent' && diff < -threshold) triggered = true;
-                if (triggered && isScrolling) {
-                    vibrate(40);
-                    let replyText = m.text;
-                    if(!replyText) {
-                        if(m.isGif) replyText = "🎞️ GIF"; else if(m.imageUrl) replyText = "📷 Photo"; else if(m.fileMeta && m.fileMeta.type.includes('audio')) replyText = "🎵 Audio"; else replyText = "Attachment";
-                    }
-                    mInput.focus({preventScroll: true}); setTimeout(() => { mInput.click(); }, 10);
-                    triggerReply(replyText);
-                }
-                swipeBubbleBox.style.transition = "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-                swipeBubbleBox.style.transform = `translateX(0px)`;
-                if(swipeIcon) { swipeIcon.style.transition = "transform 0.2s"; swipeIcon.style.transform = `translateY(-50%) scale(0)`; }
-                setTimeout(() => { swipeBubbleBox.style.transition = ""; if(swipeIcon) swipeIcon.style.transition = ""; }, 200);
-                startX = 0; currentX = 0; isScrolling = false;
-            });
+            let startX = 0, currentX = 0, menuTimer = null, isScrolling = false; let swipeBubbleBox = element.closest('.msg-bubble-box'); let swipeIcon = swipeBubbleBox.querySelector('.swipe-reply-icon'); let side = m.sender === myUid ? 'sent' : 'received';
+            element.addEventListener('touchstart', (e) => { if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return; startX = e.touches[0].clientX; currentX = startX; isScrolling = false; menuTimer = setTimeout(() => { if (!isScrolling && Math.abs(currentX - startX) < 10) { vibrate(70); openMenu(id, m.sender, m.text); } }, 500); }, {passive: true});
+            element.addEventListener('touchmove', (e) => { if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return; currentX = e.touches[0].clientX; let diff = currentX - startX; if (Math.abs(diff) > 10) { clearTimeout(menuTimer); isScrolling = true; } if (side === 'received' && diff > 0 && diff < 150) { swipeBubbleBox.style.transform = `translateX(${diff}px)`; if(swipeIcon) { let scale = Math.min(1, diff / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; } } else if (side === 'sent' && diff < 0 && diff > -150) { swipeBubbleBox.style.transform = `translateX(${diff}px)`; if(swipeIcon) { let scale = Math.min(1, Math.abs(diff) / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; } } }, {passive: true});
+            element.addEventListener('touchend', (e) => { clearTimeout(menuTimer); if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return; let diff = currentX - startX; let threshold = 60; let triggered = false; if (side === 'received' && diff > threshold) triggered = true; if (side === 'sent' && diff < -threshold) triggered = true; if (triggered && isScrolling) { vibrate(40); let replyText = m.text; if(!replyText) { if(m.isGif) replyText = "🎞️ GIF"; else if(m.imageUrl) replyText = "📷 Photo"; else if(m.fileMeta && m.fileMeta.type.includes('audio')) replyText = "🎵 Audio"; else replyText = "Attachment"; } mInput.focus({preventScroll: true}); setTimeout(() => { mInput.click(); }, 10); triggerReply(replyText); } swipeBubbleBox.style.transition = "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"; swipeBubbleBox.style.transform = `translateX(0px)`; if(swipeIcon) { swipeIcon.style.transition = "transform 0.2s"; swipeIcon.style.transform = `translateY(-50%) scale(0)`; } setTimeout(() => { swipeBubbleBox.style.transition = ""; if(swipeIcon) swipeIcon.style.transition = ""; }, 200); startX = 0; currentX = 0; isScrolling = false; });
     }
 
-    window.toggleAudio = function(id) {
-        const audio = document.getElementById(id); const icon = document.getElementById('icon-' + id); const wave = document.getElementById('wave-' + id);
-        if (!audio) return;
-        const currentSrc = audio.getAttribute('src');
-        if (!currentSrc || currentSrc === 'true' || currentSrc.trim() === '') { alert("This voice message is unavailable or corrupted."); return; }
-        document.querySelectorAll('audio').forEach(a => { if(a.id !== id && !a.paused) { a.pause(); window.resetAudioUI(a.id); } });
-        if (audio.paused) {
-            audio.dataset.loading = 'true'; audio.crossOrigin = "anonymous";
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(_ => { audio.dataset.loading = 'false'; icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if(wave) wave.classList.add('audio-playing'); }).catch(error => { audio.dataset.loading = 'false'; alert("Cannot play audio."); });
-            }
-        } else { audio.pause(); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; if(wave) wave.classList.remove('audio-playing'); }
-    };
-    
-    window.changePlaybackRate = function(id) {
-        const audio = document.getElementById(id); const btn = document.getElementById('speed-' + id);
-        if(!audio) return;
-        let current = audio.playbackRate; let next = 1.0;
-        if(current === 1.0) next = 1.5; else if(current === 1.5) next = 2.0; else next = 1.0;
-        audio.playbackRate = next; btn.innerText = next + "x";
-    }
+    window.toggleAudio = function(id) { const audio = document.getElementById(id); const icon = document.getElementById('icon-' + id); const wave = document.getElementById('wave-' + id); if (!audio) return; const currentSrc = audio.getAttribute('src'); if (!currentSrc || currentSrc === 'true' || currentSrc.trim() === '') { alert("This voice message is unavailable or corrupted."); return; } document.querySelectorAll('audio').forEach(a => { if(a.id !== id && !a.paused) { a.pause(); window.resetAudioUI(a.id); } }); if (audio.paused) { audio.dataset.loading = 'true'; audio.crossOrigin = "anonymous"; var playPromise = audio.play(); if (playPromise !== undefined) { playPromise.then(_ => { audio.dataset.loading = 'false'; icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; if(wave) wave.classList.add('audio-playing'); }).catch(error => { audio.dataset.loading = 'false'; alert("Cannot play audio."); }); } } else { audio.pause(); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; if(wave) wave.classList.remove('audio-playing'); } };
+    window.changePlaybackRate = function(id) { const audio = document.getElementById(id); const btn = document.getElementById('speed-' + id); if(!audio) return; let current = audio.playbackRate; let next = 1.0; if(current === 1.0) next = 1.5; else if(current === 1.5) next = 2.0; else next = 1.0; audio.playbackRate = next; btn.innerText = next + "x"; }
+    window.updateAudioUI = function(id) {}; window.resetAudioUI = function(id) { const icon = document.getElementById('icon-' + id); const wave = document.getElementById('wave-' + id); const audio = document.getElementById(id); const speedBtn = document.getElementById('speed-' + id); if(icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; if(wave) wave.classList.remove('audio-playing'); if(audio) { audio.playbackRate = 1.0; if(speedBtn) speedBtn.innerText = "1x"; } };
 
-    window.updateAudioUI = function(id) {}; 
-    window.resetAudioUI = function(id) {
-        const icon = document.getElementById('icon-' + id); const wave = document.getElementById('wave-' + id); const audio = document.getElementById(id); const speedBtn = document.getElementById('speed-' + id);
-        if(icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-        if(wave) wave.classList.remove('audio-playing');
-        if(audio) { audio.playbackRate = 1.0; if(speedBtn) speedBtn.innerText = "1x"; }
-    };
-
-    function timeAgo(date) {
-        const seconds = Math.floor((new Date() - date) / 1000);
-        let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + "y";
-        interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + "mo";
-        interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + "d";
-        interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + "h";
-        interval = seconds / 60; if (interval > 1) return Math.floor(interval) + "m";
-        return "Now";
-    }
-
-    function formatTime12(date) {
-        if(!date || isNaN(date.getTime())) return "";
-        let hours = date.getHours(); let minutes = date.getMinutes();
-        let ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12; hours = hours ? hours : 12; minutes = minutes < 10 ? '0'+minutes : minutes;
-        return `${hours}:${minutes} ${ampm}`;
-    }
-
-    function getDateDivider(date) {
-        const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-        if (date.toDateString() === today.toDateString()) return "Today";
-        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    }
-
-    function triggerHeartAnimation() {
-        const h = document.getElementById('heart-overlay');
-        h.style.animation = 'none'; h.offsetHeight; h.style.animation = 'heartPop 0.8s ease-out';
-        likeSound.play().catch(e => {}); 
-    }
+    function timeAgo(date) { const seconds = Math.floor((new Date() - date) / 1000); let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + "y"; interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + "mo"; interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + "d"; interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + "h"; interval = seconds / 60; if (interval > 1) return Math.floor(interval) + "m"; return "Now"; }
+    function formatTime12(date) { if(!date || isNaN(date.getTime())) return ""; let hours = date.getHours(); let minutes = date.getMinutes(); let ampm = hours >= 12 ? 'PM' : 'AM'; hours = hours % 12; hours = hours ? hours : 12; minutes = minutes < 10 ? '0'+minutes : minutes; return `${hours}:${minutes} ${ampm}`; }
+    function getDateDivider(date) { const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1); if (date.toDateString() === today.toDateString()) return "Today"; if (date.toDateString() === yesterday.toDateString()) return "Yesterday"; return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
+    function triggerHeartAnimation() { const h = document.getElementById('heart-overlay'); h.style.animation = 'none'; h.offsetHeight; h.style.animation = 'heartPop 0.8s ease-out'; likeSound.play().catch(e => {}); }
 
     function fireEffect(type) {
-        const canvas = document.getElementById('effect-canvas'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        let particles = [];
-        let particleCount = 150;
-        if(type === 'hearts') particleCount = 60; if(type === 'balloons') particleCount = 25; if(type === 'snow') particleCount = 100;
-        if(type === 'rain') particleCount = 200; if(type === 'thumbsup') particleCount = 30; if(type === 'fireworks') particleCount = 100;
-        if(type === 'money') particleCount = 50; if(type === 'bubbles') particleCount = 60; if(type === 'leaves') particleCount = 80;
-
-        const colors = ['#FFD700', '#FF4500', '#00BFFF', '#32CD32', '#FF69B4', '#9400D3'];
-        const heartColors = ['#FF0000', '#FF1493', '#FF69B4', '#FFB6C1', '#FFFFFF'];
-        const emojiMap = { money: '💵', thumbsup: '👍', bubbles: '🫧', skulls: '💀', clovers: '🍀', clapping: '👏', poop: '💩', alien: '👽', ghost: '👻', leaves: '🍂', stars: '⭐', balloons: '🎈' };
-
+        const canvas = document.getElementById('effect-canvas'); const ctx = canvas.getContext('2d'); canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let particles = []; let particleCount = 150; if(type === 'hearts') particleCount = 60; if(type === 'balloons') particleCount = 25; if(type === 'snow') particleCount = 100; if(type === 'rain') particleCount = 200; if(type === 'thumbsup') particleCount = 30; if(type === 'fireworks') particleCount = 100; if(type === 'money') particleCount = 50; if(type === 'bubbles') particleCount = 60; if(type === 'leaves') particleCount = 80;
+        const colors = ['#FFD700', '#FF4500', '#00BFFF', '#32CD32', '#FF69B4', '#9400D3']; const heartColors = ['#FF0000', '#FF1493', '#FF69B4', '#FFB6C1', '#FFFFFF']; const emojiMap = { money: '💵', thumbsup: '👍', bubbles: '🫧', skulls: '💀', clovers: '🍀', clapping: '👏', poop: '💩', alien: '👽', ghost: '👻', leaves: '🍂', stars: '⭐', balloons: '🎈' };
         for(let i=0; i < particleCount; i++) {
             let p = { x: Math.random() * canvas.width, y: -Math.random() * 200, size: Math.random() * 8 + 5, speedY: Math.random() * 5 + 3, speedX: Math.random() * 2 - 1, rotation: Math.random() * 360, rotationSpeed: Math.random() * 10 - 5, color: colors[Math.floor(Math.random() * colors.length)], opacity: 1, wobble: Math.random() * 10, wobbleIncrement: Math.random() * 0.03 + 0.01, tilt: 0, tiltAngle: Math.random() * Math.PI, tiltAngleIncrement: Math.random() * 0.05 + 0.02 };
-            if (type === 'hearts' || type === 'balloons' || type === 'thumbsup' || type === 'bubbles' || type === 'ghost' || type === 'alien') {
-                p.y = canvas.height + Math.random() * 200; p.speedY = -(Math.random() * 4 + 3);
-                if(type === 'hearts') p.color = heartColors[Math.floor(Math.random() * heartColors.length)];
-                if(emojiMap[type]) { p.size = Math.random() * 15 + 10; }
-            }
+            if (type === 'hearts' || type === 'balloons' || type === 'thumbsup' || type === 'bubbles' || type === 'ghost' || type === 'alien') { p.y = canvas.height + Math.random() * 200; p.speedY = -(Math.random() * 4 + 3); if(type === 'hearts') p.color = heartColors[Math.floor(Math.random() * heartColors.length)]; if(emojiMap[type]) { p.size = Math.random() * 15 + 10; } }
             if (type === 'snow') { p.color = '#FFFFFF'; p.speedY = Math.random() * 2 + 1; p.size = Math.random() * 4 + 2; }
             if (type === 'rain') { p.color = '#a0c4ff'; p.speedY = Math.random() * 10 + 15; p.speedX = Math.random() * 1 + 1; p.size = Math.random() * 15 + 10; }
-            if (type === 'fireworks') {
-                p.x = canvas.width / 2; p.y = canvas.height / 2; let angle = Math.random() * Math.PI * 2; let velocity = Math.random() * 10 + 2; p.speedX = Math.cos(angle) * velocity; p.speedY = Math.sin(angle) * velocity;
-            }
+            if (type === 'fireworks') { p.x = canvas.width / 2; p.y = canvas.height / 2; let angle = Math.random() * Math.PI * 2; let velocity = Math.random() * 10 + 2; p.speedX = Math.cos(angle) * velocity; p.speedY = Math.sin(angle) * velocity; }
             particles.push(p);
         }
-        
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height); let active = false;
             particles.forEach((p) => {
@@ -1882,40 +1479,14 @@
     }
     
     function checkKeywords(text) {
-        const lower = text.toLowerCase();
-        const hasMatch = (trigger) => { if (/[a-z0-9]/i.test(trigger)) { return new RegExp(`\\b${trigger}\\b`, 'i').test(lower); } return lower.includes(trigger); };
-        if (window.effectKeywords) { for (const [effect, words] of Object.entries(window.effectKeywords)) { if (words.some(w => hasMatch(w))) { fireEffect(effect); break; } } } else {
-            if (hasMatch('love') || hasMatch('❤️')) fireEffect('hearts'); else if (hasMatch('congratulations') || hasMatch('🎉')) fireEffect('confetti');
-        }
+        const lower = text.toLowerCase(); const hasMatch = (trigger) => { if (/[a-z0-9]/i.test(trigger)) { return new RegExp(`\\b${trigger}\\b`, 'i').test(lower); } return lower.includes(trigger); };
+        if (window.effectKeywords) { for (const [effect, words] of Object.entries(window.effectKeywords)) { if (words.some(w => hasMatch(w))) { fireEffect(effect); break; } } } else { if (hasMatch('love') || hasMatch('❤️')) fireEffect('hearts'); else if (hasMatch('congratulations') || hasMatch('🎉')) fireEffect('confetti'); }
     }
 
-    function linkify(text) {
-        if (!text) return ""; const urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.replace(urlRegex, function(url) { return `<a onclick="event.stopPropagation(); window.open('${url}', '_blank')">${url}</a>`; });
-    }
-
-    function scrollToAndFlash(textSnippet) {
-        const bubbles = document.querySelectorAll('.bubble span'); let targetId = null;
-        for(let span of bubbles) { if(span.innerText.includes(textSnippet)) { targetId = span.id.replace('text-', ''); break; } }
-        if(targetId) {
-            const el = document.getElementById(targetId);
-            if(el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                const bubble = el.querySelector('.bubble') || el.closest('.bubble');
-                if(bubble) { bubble.classList.remove('flash-active'); void bubble.offsetWidth; bubble.classList.add('flash-active'); }
-            }
-        }
-    }
-
-    function triggerReply(text) {
-        replyingTo = text; document.getElementById('reply-text').innerText = "Replying to: " + (text.length > 50 ? text.substring(0,50)+"..." : text);
-        document.getElementById('reply-dock').style.display = 'flex'; mInput.focus(); 
-    }
-
-    function cancelInteraction() { 
-        if (editModeId) { mInput.value = ""; mInput.style.height = 'auto'; }
-        replyingTo = null; editModeId = null; document.getElementById('reply-dock').style.display = 'none'; 
-    }
+    function linkify(text) { if (!text) return ""; const urlRegex = /(https?:\/\/[^\s]+)/g; return text.replace(urlRegex, function(url) { return `<a onclick="event.stopPropagation(); window.open('${url}', '_blank')">${url}</a>`; }); }
+    function scrollToAndFlash(textSnippet) { const bubbles = document.querySelectorAll('.bubble span'); let targetId = null; for(let span of bubbles) { if(span.innerText.includes(textSnippet)) { targetId = span.id.replace('text-', ''); break; } } if(targetId) { const el = document.getElementById(targetId); if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); const bubble = el.querySelector('.bubble') || el.closest('.bubble'); if(bubble) { bubble.classList.remove('flash-active'); void bubble.offsetWidth; bubble.classList.add('flash-active'); } } } }
+    function triggerReply(text) { replyingTo = text; document.getElementById('reply-text').innerText = "Replying to: " + (text.length > 50 ? text.substring(0,50)+"..." : text); document.getElementById('reply-dock').style.display = 'flex'; mInput.focus(); }
+    function cancelInteraction() { if (editModeId) { mInput.value = ""; mInput.style.height = 'auto'; } replyingTo = null; editModeId = null; document.getElementById('reply-dock').style.display = 'none'; }
 
     // =========================================
     //  MESSAGING CORE ACTIONS
@@ -1930,42 +1501,21 @@
         groupData.participants.forEach(uid => {
             if(uid === myUid) return;
             try {
-                const backendUrl = "https://pish-uigm.onrender.com/send-push";
-                fetch(backendUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                fetch("https://pish-uigm.onrender.com/send-push", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ targetUid: uid, title: `${senderName} in ${groupName}`, body: messageText, icon: senderPhoto, click_action: deepLink })
                 }).catch(err => {});
             } catch (error) {}
         });
     };
     
-    async function sendImageMessage(imageUrl) {
-        popSound.play().catch(e => {}); window.scrollToBottom(true);
-        let msgData = { text: "", sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, imageUrl: imageUrl };
-        cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData);
-        updateLastMsg("📷 Image"); updateInboxCacheLocal(groupId, "📷 Image", myUid, false); sendPushNotification("📷 Sent you an image"); window.scrollToBottom(true);
-    }
-    
-    async function sendGifMessage(gifUrl) {
-        popSound.play().catch(e => {}); window.scrollToBottom(true);
-        let msgData = { text: "", sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, imageUrl: gifUrl, isGif: true };
-        cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData);
-        updateLastMsg("🎞️ GIF"); updateInboxCacheLocal(groupId, "🎞️ GIF", myUid, false); sendPushNotification("🎞️ Sent you a GIF"); window.scrollToBottom(true);
-    }
-
-    async function sendFileMessage(fileUrl, metadata) {
-        popSound.play().catch(e => {}); window.scrollToBottom(true); const caption = metadata.caption || "";
-        let msgData = { text: caption, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, fileUrl: fileUrl, fileMeta: metadata };
-        cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData);
-        let label = "📄 File"; if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video Message"; else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎤 Voice Message";
-        updateLastMsg(caption ? label + " " + caption : label); updateInboxCacheLocal(groupId, caption ? label + " " + caption : label, myUid, false); sendPushNotification(caption ? label + " " + caption : label); window.scrollToBottom(true);
-    }
+    async function sendImageMessage(imageUrl) { popSound.play().catch(e => {}); window.scrollToBottom(true); let msgData = { text: "", sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, imageUrl: imageUrl }; cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData); updateLastMsg("📷 Image"); updateInboxCacheLocal(groupId, "📷 Image", myUid, false); sendPushNotification("📷 Sent you an image"); window.scrollToBottom(true); }
+    async function sendGifMessage(gifUrl) { popSound.play().catch(e => {}); window.scrollToBottom(true); let msgData = { text: "", sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, imageUrl: gifUrl, isGif: true }; cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData); updateLastMsg("🎞️ GIF"); updateInboxCacheLocal(groupId, "🎞️ GIF", myUid, false); sendPushNotification("🎞️ Sent you a GIF"); window.scrollToBottom(true); }
+    async function sendFileMessage(fileUrl, metadata) { popSound.play().catch(e => {}); window.scrollToBottom(true); const caption = metadata.caption || ""; let msgData = { text: caption, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(), replyTo: replyingTo, seenBy: [myUid], reactions: {}, fileUrl: fileUrl, fileMeta: metadata }; cancelInteraction(); await db.collection("chats").doc(groupId).collection("messages").add(msgData); let label = "📄 File"; if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video Message"; else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎤 Voice Message"; updateLastMsg(caption ? label + " " + caption : label); updateInboxCacheLocal(groupId, caption ? label + " " + caption : label, myUid, false); sendPushNotification(caption ? label + " " + caption : label); window.scrollToBottom(true); }
 
     async function sendMsg() {
         const text = mInput.value.trim();
         if (!text) { inputBox.classList.add('shake-anim'); setTimeout(() => inputBox.classList.remove('shake-anim'), 400); return; }
-
         popSound.play().catch(e => {}); vibrate(50); checkKeywords(text);
         
         mInput.value = ""; mInput.style.height = 'auto'; sendBtnUI.classList.remove('active'); 
@@ -1986,39 +1536,26 @@
         window.scrollToBottom(true);
     }
 
+    // FIX: INBOX UNREAD BUG - ONLY INCREMENT FOR OTHERS
     async function updateLastMsg(msgText) {
-        await db.collection("chats").doc(groupId).set({
-            lastMessage: msgText, lastSender: myUid, lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(), seen: false
-        }, { merge: true });
-        groupData.participants.forEach(uid => {
-            if(uid !== myUid) db.collection("chats").doc(groupId).update({ [`unreadCount.${uid}`]: firebase.firestore.FieldValue.increment(1) });
-        });
+        let updates = {
+            lastMessage: msgText, 
+            lastSender: myUid, 
+            lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+            seen: false
+        };
+        if(groupData && groupData.participants) {
+            groupData.participants.forEach(uid => {
+                if(uid !== myUid) updates[`unreadCount.${uid}`] = firebase.firestore.FieldValue.increment(1);
+            });
+        }
+        await db.collection("chats").doc(groupId).set(updates, { merge: true });
         updateInboxCacheLocal(groupId, msgText, myUid, false);
     }
 
-    function openMenu(id, sender, text) {
-        activeMenuId = id; vibrate(30); const isMine = sender === myUid;
-        document.getElementById('edit-btn').style.display = (isMine && text) ? 'block' : 'none'; 
-        document.getElementById('unsend-btn').style.display = isMine ? 'block' : 'none';
-        document.getElementById('menu-emoji-grid').style.display = 'none';
-        document.getElementById('menu-overlay').style.display = 'flex';
-        pushModalState('menu');
-    }
-
-    async function copyMessageText() {
-        if (!activeMenuId) return; const el = document.getElementById('text-' + activeMenuId); if(!el) { closeMenu(); return; } 
-        const msgText = el.innerText.split('(edited)')[0].trim();
-        try { await navigator.clipboard.writeText(msgText); closeMenu(); } catch (err) {}
-    }
-
-    function initEdit() {
-        const el = document.getElementById('text-'+activeMenuId); if(!el) return;
-        const textToEdit = el.innerText.split('(edited)')[0].trim();
-        mInput.value = textToEdit; mInput.style.height = 'auto'; mInput.style.height = mInput.scrollHeight + 'px';
-        editModeId = activeMenuId; closeMenu(); 
-        document.getElementById('reply-text').innerHTML = "<strong style='color:#FF9800'>Editing Message:</strong><br> " + textToEdit; document.getElementById('reply-dock').style.display = 'flex'; mInput.focus();
-    }
-
+    function openMenu(id, sender, text) { activeMenuId = id; vibrate(30); const isMine = sender === myUid; document.getElementById('edit-btn').style.display = (isMine && text) ? 'block' : 'none'; document.getElementById('unsend-btn').style.display = isMine ? 'block' : 'none'; document.getElementById('menu-emoji-grid').style.display = 'none'; document.getElementById('menu-overlay').style.display = 'flex'; pushModalState('menu'); }
+    async function copyMessageText() { if (!activeMenuId) return; const el = document.getElementById('text-' + activeMenuId); if(!el) { closeMenu(); return; } const msgText = el.innerText.split('(edited)')[0].trim(); try { await navigator.clipboard.writeText(msgText); closeMenu(); } catch (err) {} }
+    function initEdit() { const el = document.getElementById('text-'+activeMenuId); if(!el) return; const textToEdit = el.innerText.split('(edited)')[0].trim(); mInput.value = textToEdit; mInput.style.height = 'auto'; mInput.style.height = mInput.scrollHeight + 'px'; editModeId = activeMenuId; closeMenu(); document.getElementById('reply-text').innerHTML = "<strong style='color:#FF9800'>Editing Message:</strong><br> " + textToEdit; document.getElementById('reply-dock').style.display = 'flex'; mInput.focus(); }
     async function unsendMsg() { 
         const idToDelete = activeMenuId; closeMenu();
         if (messagesMap.has(idToDelete)) { messagesMap.delete(idToDelete); const el = document.getElementById(idToDelete); if(el) el.remove(); renderAll(); }
@@ -2056,17 +1593,10 @@
         } catch (e) { console.error("Pagination Error:", e); isLoadingMore = false; window.isLoadingMore = false; }
     }
 
-    function setupObserver() {
-        const observer = new IntersectionObserver((entries) => { if (entries[0].isIntersecting && !isLoadingMore && messagesMap.size > 0) { loadMoreMessages(); } }, { root: chatFlow, rootMargin: "300px", threshold: 0 }); 
-        observer.observe(document.getElementById('scroll-trigger'));
-    }
-
+    function setupObserver() { const observer = new IntersectionObserver((entries) => { if (entries[0].isIntersecting && !isLoadingMore && messagesMap.size > 0) { loadMoreMessages(); } }, { root: chatFlow, rootMargin: "300px", threshold: 0 }); observer.observe(document.getElementById('scroll-trigger')); }
     window.scrollToBottom = function(smooth = false) { chatFlow.scrollTo({ top: chatFlow.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
 
-    async function applyReaction(emoji) {
-        if (!activeMenuId) return; const msgId = activeMenuId; closeMenu(); vibrate(30); await applyReactionToId(msgId, emoji);
-    }
-
+    async function applyReaction(emoji) { if (!activeMenuId) return; const msgId = activeMenuId; closeMenu(); vibrate(30); await applyReactionToId(msgId, emoji); }
     async function applyReactionToId(id, emoji) {
         triggerReactionPop(id, emoji); vibrate(30); 
         if(messagesMap.has(id)) {
@@ -2093,13 +1623,7 @@
     }
 
     function closeReactionDetails() { const overlay = document.getElementById('reaction-details-overlay'); if (overlay.style.display === 'flex') { overlay.style.display = 'none'; if(history.state && history.state.modal === 'reactions') history.back(); } }
-    
-    function initReplyFromActive() {
-        const el = document.getElementById('text-'+activeMenuId); let text = el ? el.innerText.split('(edited)')[0].trim() : "Attachment";
-        if (!text || text === "Attachment") { const msgData = messagesMap.get(activeMenuId); if (msgData) { if (msgData.isGif) text = "🎞️ GIF"; else if (msgData.imageUrl) text = "📷 Photo"; else if (msgData.fileMeta && msgData.fileMeta.type.includes('audio')) text = "🎵 Audio"; else if (msgData.fileUrl) text = "📄 File"; } }
-        triggerReply(text); closeMenu();
-    }
-    
+    function initReplyFromActive() { const el = document.getElementById('text-'+activeMenuId); let text = el ? el.innerText.split('(edited)')[0].trim() : "Attachment"; if (!text || text === "Attachment") { const msgData = messagesMap.get(activeMenuId); if (msgData) { if (msgData.isGif) text = "🎞️ GIF"; else if (msgData.imageUrl) text = "📷 Photo"; else if (msgData.fileMeta && msgData.fileMeta.type.includes('audio')) text = "🎵 Audio"; else if (msgData.fileUrl) text = "📄 File"; } } triggerReply(text); closeMenu(); }
     function closeMenu() { const overlay = document.getElementById('menu-overlay'); if(overlay.style.display === 'flex') { overlay.style.display = 'none'; if(history.state && history.state.modal === 'menu') history.back(); } }
 
     // =========================================
