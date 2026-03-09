@@ -583,7 +583,7 @@
     let mutualFriends = [];
     let selectedGroupMembers = [];
     let friendsLoadedCount = 0;
-    const friendsPerPage = 20;
+    const friendsPerPage = 10; // FIXED TO PREVENT FIRESTORE CRASH (MAX 10 FOR 'IN' QUERIES)
     let observer;
     let groupBase64Image = null;
 
@@ -882,19 +882,22 @@
         if(nav) nav.classList.add('hide-nav');
     }
 
-    // UPDATED ONPOPSTATE TO HANDLE BOTH MODALS AND GROUP MODALS
+    // UPDATED ONPOPSTATE TO HANDLE BOTH MODALS AND GROUP MODALS INDEPENDENTLY
     window.onpopstate = (e) => { 
-        if(document.getElementById('delete-menu').classList.contains('active')) {
-            closeDeleteMenu(false); 
+        const hash = window.location.hash;
+        
+        if(document.getElementById('members-modal').classList.contains('active') && hash !== '#members') {
+            closeMembersModal(false);
         }
-        if(document.getElementById('msg-intro-overlay').style.display === 'block') {
-            closeIntroModal(false);
-        }
-        if(document.getElementById('group-modal').classList.contains('active')) {
+        else if(document.getElementById('group-modal').classList.contains('active') && hash !== '#group' && hash !== '#members') {
             closeGroupModal(false);
         }
-        if(document.getElementById('members-modal').classList.contains('active')) {
-            closeMembersModal(false);
+        
+        if(document.getElementById('delete-menu').classList.contains('active') && hash !== '#menu') {
+            closeDeleteMenu(false); 
+        }
+        if(document.getElementById('msg-intro-overlay').style.display === 'block' && hash !== '#intro') {
+            closeIntroModal(false);
         }
     };
 
@@ -965,13 +968,34 @@
         if(val.length < 1) { results.style.display = 'none'; content.style.display = 'block'; return; }
         results.style.display = 'block'; content.style.display = 'none';
         const q = val.toLowerCase();
-        const allContacts = [...new Set([...myFollowingList, ...myFollowersList].map(f => typeof f === 'string' ? f : f.uid))];
-        if(allContacts.length === 0) { results.innerHTML = "<p style='text-align:center; padding:50px; color:#444;'>No contacts found.</p>"; return; }
+        
+        // Search Groups Locally First
+        const groupResultsHtml = currentChatData.filter(c => c.isGroup && (c.chat.groupName || "").toLowerCase().includes(q))
+        .map(c => {
+            return `<div class="chat-item" onclick="window.location.href='groupChat.html?id=${c.id}'">
+                <div class="pfp-container" style="margin-right: 15px;">
+                    <img src="${c.chat.groupPhoto||'https://via.placeholder.com/150/000000/FFFFFF?text=G'}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
+                </div>
+                <div class="chat-info">
+                    <div class="u-name">${c.chat.groupName}</div>
+                    <div style="font-size:0.8rem; color:#444;">Group</div>
+                </div>
+            </div>`;
+        }).join('');
 
-        db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', allContacts.slice(0, 10))
+        const allContacts = [...new Set([...myFollowingList, ...myFollowersList].map(f => typeof f === 'string' ? f : f.uid))];
+        
+        if(allContacts.length === 0) { 
+            results.innerHTML = groupResultsHtml || "<p style='text-align:center; padding:50px; color:#444;'>No contacts or groups found.</p>"; 
+            return; 
+        }
+
+        // Chunk contacts to max 10 to prevent Firestore error, or just take first 10 for search preview
+        const searchSlice = allContacts.slice(0, 10);
+
+        db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', searchSlice)
         .get().then(snap => {
-            // --- SEARCH RESULTS LAYOUT FIX ---
-            results.innerHTML = snap.docs.filter(d => {
+            const usersHtml = snap.docs.filter(d => {
                 const u = d.data();
                 return (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
             }).map(d => {
@@ -986,6 +1010,11 @@
                     </div>
                 </div>`;
             }).join('');
+            
+            results.innerHTML = groupResultsHtml + usersHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
+        }).catch(e => {
+            // In case of error, at least show groups
+            results.innerHTML = groupResultsHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
         });
     }
 
