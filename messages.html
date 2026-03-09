@@ -8,7 +8,6 @@
     <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -16,13 +15,14 @@
 
     <script type="module" src="components/presence.js"></script>
     <script src="components/chatLoader.js" defer></script>
-    <chat-loader></chat-loader>
-    
     <script src="components/imagePicker.js" defer></script>
+    
     <script src="components/navbar.js" defer></script>
 
     <style>
-        /* GLOBAL RESET FOR HORIZONTAL SCROLL FIX */
+        /* ==========================================
+           GLOBAL RESET & THEME
+           ========================================== */
         * { box-sizing: border-box !important; }
 
         :root {
@@ -46,7 +46,9 @@
             width: 100% !important; max-width: 100vw !important; /* LOCKED HORIZONTAL */
         }
 
-        /* HEADER */
+        /* ==========================================
+           HEADER
+           ========================================== */
         header {
             position: sticky; top: 0; background: rgba(0,0,0,0.9);
             padding: 15px 20px; display: flex; justify-content: space-between;
@@ -57,12 +59,13 @@
         }
         .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
-        /* NEW HEADER ICON STYLES */
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-icon { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.08); display: block; }
-        .header-title { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.3px; color: var(--text-main); }
+        .header-title { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.3px; color: var(--text-main); cursor: pointer; }
 
-        /* SEARCH */
+        /* ==========================================
+           SEARCH & FILTERS
+           ========================================== */
         .search-wrap { padding: 12px 20px; padding-bottom: 0; width: 100%; }
         .search-input {
             width: 100%; background: #111; border: 1px solid var(--border);
@@ -71,7 +74,6 @@
         }
         .search-input:focus { border-color: var(--accent); background: #161616; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
 
-        /* FILTER CHIPS */
         .filter-scroll {
             display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto;
             scrollbar-width: none; -ms-overflow-style: none; width: 100%;
@@ -89,7 +91,9 @@
             border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
         }
 
-        /* CHAT LIST ITEM - LAYOUT LOCKED */
+        /* ==========================================
+           CHAT LIST ITEM
+           ========================================== */
         .chat-item { 
             display: flex; align-items: center; padding: 15px 20px; 
             cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -99,23 +103,22 @@
         }
         .chat-item:active { background: var(--glass); transform: scale(0.98); }
 
-        /* PFP Container for Online Dot */
         .pfp-container { position: relative; margin-right: 15px; flex-shrink: 0; }
         .chat-pfp { width: 58px; height: 58px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); pointer-events: none; display: block; }
         
-        /* The Real-Time Green Dot */
         .online-indicator {
             position: absolute; bottom: 2px; right: 2px;
             width: 12px; height: 12px; background: var(--online);
             border-radius: 50%; border: 2px solid #000;
             box-shadow: 0 0 8px var(--online);
-            display: none; /* Hidden by default */
+            display: none; 
             z-index: 2;
         }
         .online-indicator.active { display: block; }
 
-        .chat-info { flex: 1; min-width: 0; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; } 
+        .chat-info { flex: 1; min-width: 0; width: calc(100% - 73px) !important; pointer-events: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; } 
         .chat-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; width: 100%; }
+        .chat-top-row .unread-badge { display: none !important; }
         
         .u-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .v-badge { height: 14px; width: 14px; flex-shrink: 0; }
@@ -134,11 +137,10 @@
         .follow-btn { 
             background: rgba(0, 210, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 210, 255, 0.3); 
             padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;
-            pointer-events: auto; /* MUST BE AUTO TO CLICK */
+            pointer-events: auto; 
             flex-shrink: 0;
         }
 
-        /* UNREAD BADGE - ALIGNMENT FIXED */
         .unread-badge { 
             width: 14px !important; height: 14px !important; 
             min-width: 14px !important; min-height: 14px !important;
@@ -155,18 +157,21 @@
             z-index: 10;
             margin: 0 !important;
             padding: 0 !important;
-            animation: popBadge 0s forwards; 
+            right: 4px !important;
             position: relative;
         }
-        @keyframes popBadge { from { transform: scale(1); } to { transform: scale(1); } }
 
-        /* SKELETON */
+        /* ==========================================
+           SKELETON LOADERS
+           ========================================== */
         .skeleton-item { display: flex; align-items: center; padding: 15px 20px; opacity: 0.5; animation: quantumPulse 1.5s infinite ease-in-out; width: 100%; }
         .skeleton-circle { width: 55px; height: 55px; border-radius: 50%; background: #222; margin-right: 15px; flex-shrink: 0; }
         .skeleton-line { height: 12px; background: #222; border-radius: 4px; margin-bottom: 8px; }
         @keyframes quantumPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
-        /* MODAL */
+        /* ==========================================
+           ACTION MENUS & MODALS
+           ========================================== */
         #delete-menu {
             position: fixed; bottom: -100%; left: 0; width: 100%;
             background: var(--sheet-bg); border-top: 1px solid var(--border);
@@ -183,7 +188,6 @@
             #delete-menu.active { bottom: 50%; transform: translate(-50%, 50%); }
         }
 
-        /* CONTEXT UI */
         .sheet-context { display: flex; flex-direction: column; align-items: center; padding-bottom: 25px; margin-bottom: 10px; width: 100%; }
         .context-pfp { width: 70px; height: 70px; border-radius: 25px; border: 2px solid var(--accent); margin-bottom: 12px; object-fit: cover; }
         .context-name { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
@@ -198,7 +202,9 @@
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; width: 100%; }
 
-        /* NETWORK TOAST */
+        /* ==========================================
+           TOASTS & ALERTS
+           ========================================== */
         #offline-toast {
             display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
             background: #ff4444; color: #fff; padding: 6px 16px; border-radius: 20px;
@@ -207,14 +213,9 @@
         }
         @keyframes slideDownToast { from { top: 40px; opacity: 0; } to { top: 70px; opacity: 1; } }
 
-        /* FIX: Ensure duplicate unread badges don't show in the top row above the timestamp */
-        .chat-top-row .unread-badge { display: none !important; }
-        
-        /* FIX: Stop chat-info from pushing badges and timestamps off the right edge */
-        .chat-info { width: calc(100% - 73px) !important; }
-        .unread-badge { right: 4px !important; } /* Tiny nudge to ensure full glow is visible */
-
-        /* --- NEW: INTRO BOTTOM MODAL --- */
+        /* ==========================================
+           INTRO BOTTOM MODAL
+           ========================================== */
         .modal-overlay-intro { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200000; display: none; opacity: 0; transition: opacity 0.3s ease; }
         .bottom-modal-intro { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-radius: 32px 32px 0 0; z-index: 200001; padding: 24px 24px calc(40px + env(safe-area-inset-bottom)); transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid var(--border); box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.8); }
         .modal-handle-intro { width: 48px; height: 5px; background: #333333; border-radius: 10px; margin: 0 auto 24px; cursor: pointer; }
@@ -226,10 +227,14 @@
         .modal-btn-intro { width: 100%; background: var(--text-main); color: #000000; border: none; padding: 18px; border-radius: 16px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
         .modal-btn-intro:active { transform: scale(0.97); opacity: 0.9; }
         
-        /* PERFECT AI FAB DOT ANIMATION */
+        /* ==========================================
+           AI FAB
+           ========================================== */
         @keyframes pulseOnlineFAB { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(0, 255, 65, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); } }
         
-        /* --- NEW GROUP MODAL STYLES (PURE BLACK/SLEEK) --- */
+        /* ==========================================
+           GROUP CREATION & MEMBERS MODALS
+           ========================================== */
         .side-modal {
             position: fixed; top: 0; right: -100%; width: 100%; height: 100%;
             background: #000000; z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -255,7 +260,6 @@
         .create-group-submit { background: white; color: black; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; margin-top: auto; margin-bottom: 20px; }
         .create-group-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* MEMBERS MODAL LIST */
         .member-list-container { flex: 1; overflow-y: auto; padding-bottom: 100px; }
         .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
         .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; }
@@ -319,7 +323,6 @@
         const cached = localStorage.getItem('goorac_app_icon_cache_b64');
         if (cached && el) el.src = cached;
         
-        // Background fetch to ensure icon is up-to-date
         fetch('images/icon.png?t=' + new Date().getTime())
             .then(r => r.blob())
             .then(b => {
@@ -413,7 +416,7 @@
         <input type="text" id="member-search-input" class="group-input" placeholder="Search mutual friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
     </div>
     <div class="member-list-container" id="mutual-friends-list">
-        </div>
+    </div>
     <div id="scroll-trigger" class="infinite-scroll-trigger">Loading...</div>
     <button class="done-members-btn" onclick="closeMembersModal(true)">Done</button>
 </div>
@@ -472,21 +475,18 @@
         
         fab.style.display = 'block';
         
-        // Load immediately from cache to ensure 0ms render
         if (cached && cached !== defaultUrl) {
             fabImg.src = cached;
         } else {
             fabImg.src = defaultUrl;
         }
 
-        // Background Check: See if a new version of the image exists on the server
         fetch(defaultUrl + '?t=' + new Date().getTime(), { cache: 'no-store' })
             .then(r => r.blob())
             .then(blob => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     const latestBase64 = reader.result;
-                    // If the server image is different from cache, update it live!
                     if (cached !== latestBase64) {
                         localStorage.setItem('quantum_ai_pfp_cache', latestBase64);
                         fabImg.src = latestBase64;
@@ -521,7 +521,6 @@
                 const nav = document.querySelector('main-navbar');
                 if(nav) nav.style.display = 'none';
                 
-                // History state for back button support
                 history.pushState({ modal: 'intro' }, "", "#intro");
 
                 setTimeout(() => {
@@ -552,15 +551,11 @@
     };
 
     // --- FIREBASE INIT ---
-    // 1. Check for shared init function (from config.js)
     if (typeof window.initFirebaseCore === 'function') {
         window.initFirebaseCore();
-    } 
-    // 2. Strict Check: If config.js didn't load, look for window.firebaseConfig
-    else if (!firebase.apps.length && window.firebaseConfig) {
+    } else if (!firebase.apps.length && window.firebaseConfig) {
         firebase.initializeApp(window.firebaseConfig);
     }
-    // 3. No fallback hardcoded keys anymore.
 
     const db = firebase.firestore();
     const rdb = firebase.database();
@@ -573,9 +568,8 @@
     let myPinnedChats = [];
     let myBlockedList = []; 
     let myShowActivityStatus = true;
-    let offlineTimers = {}; // TRACKS OFFLINE DELAY FOR EACH USER
+    let offlineTimers = {}; 
     
-    // Interaction Variables
     let longPressTimer;
     let isLongPress = false;
     let activeChatId = null;
@@ -583,22 +577,24 @@
     let userCache = JSON.parse(localStorage.getItem('goorac_u_cache')) || {};
     let inboxListener = null;
     
-    // Filter Variable
     let currentFilter = 'all'; 
     let currentChatData = []; 
 
-    // Neon Palette for Badges
     const badgeColors = ['#ff00ff', '#00ff41', '#00d2ff', '#ffff00', '#ff4444', '#aa00ff', '#ff9900'];
 
-    // --- NEW GROUP VARIABLES ---
+    // --- GROUP VARIABLES ---
     let mutualFriends = [];
     let selectedGroupMembers = [];
     let friendsLoadedCount = 0;
-    const friendsPerPage = 10; // FIXED TO PREVENT FIRESTORE CRASH (MAX 10 FOR 'IN' QUERIES)
+    const friendsPerPage = 10; 
     let observer;
     let groupBase64Image = null;
-    let isFetchingFriends = false; // LOCK TO FIX DUPLICATE FETCHING
-    let currentFriendSearch = ""; // TRACKS MODAL SEARCH STATE
+    
+    // Locks to prevent duplication glitches in Modal Search
+    let isFetchingFriends = false; 
+    let currentFriendSearch = ""; 
+    let memberSearchTimeout = null;
+    let currentSearchSessionId = 0; 
 
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -624,7 +620,6 @@
         }
     });
 
-    // --- REALTIME PRESENCE HEARTBEAT (USER'S OWN STATUS) ---
     function setupPresence() {
         const userStatusDatabaseRef = rdb.ref('/status/' + myUid);
         const isOfflineForDatabase = { state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP };
@@ -633,7 +628,6 @@
         rdb.ref('.info/connected').on('value', (snapshot) => {
             if (snapshot.val() === false) return;
             userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(() => {
-                // INSTANT ONLINE
                 userStatusDatabaseRef.set(isOnlineForDatabase);
             });
         });
@@ -673,9 +667,8 @@
             const chatPromises = snap.docs.map(async d => {
                 const chat = d.data();
                 const otherUid = chat.participants.find(id => id !== myUid);
-                const isGroup = chat.isGroup === true; // GROUP FLAG
+                const isGroup = chat.isGroup === true; 
                 
-                // Fetch other user's block list for reciprocal block check (Skip if group)
                 let theirBlockedList = [];
                 let userData = null;
                 
@@ -685,7 +678,7 @@
                     theirBlockedList = (otherData?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
 
                     if(myBlockedList.includes(otherUid) || theirBlockedList.includes(myUid)) {
-                        return null; // FILTER BLOCKED PERSON CHAT
+                        return null; 
                     }
 
                     userData = otherData || userCache[otherUid];
@@ -707,14 +700,13 @@
                 
                 const isPinned = myPinnedChats.includes(d.id);
                 
-                // --- PRE-CALCULATE UNREAD STATUS ---
                 let isUnread = false;
                 let count = 0;
                 if (chat.unreadCount && chat.unreadCount[myUid] !== undefined) count = Number(chat.unreadCount[myUid]);
                 if (count > 0) isUnread = true;
                 else if (chat.lastSender && chat.lastSender !== myUid) isUnread = (chat.seen !== true);
 
-                return { id: d.id, chat, u: userData, otherUid, isPinned, isUnread, isGroup }; // INJECTED ISGROUP
+                return { id: d.id, chat, u: userData, otherUid, isPinned, isUnread, isGroup }; 
             });
 
             const results = await Promise.all(chatPromises);
@@ -724,14 +716,12 @@
                 if (a.isPinned && !b.isPinned) return -1;
                 if (!a.isPinned && b.isPinned) return 1;
 
-                // --- UNREAD SORTING FIX ---
                 if (a.isUnread && !b.isUnread) return -1;
                 if (!a.isUnread && b.isUnread) return 1;
 
                 return (b.chat.lastTimestamp?.seconds || 0) - (a.chat.lastTimestamp?.seconds || 0);
             });
 
-            // NEW FEATURE: Update Tab Title with total unread count
             const totalUnread = currentChatData.filter(c => c.isUnread).length;
             document.title = totalUnread > 0 ? `(${totalUnread}) Goorac | Quantum Inbox` : `Goorac | Quantum Inbox`;
 
@@ -752,7 +742,6 @@
         const list = document.getElementById('chats-list');
         list.innerHTML = "";
 
-        // --- FILTERING FIX ---
         const filteredData = currentChatData.filter((item) => {
             if (currentFilter === 'all') return true;
             if (currentFilter === 'unread') return item.isUnread;
@@ -766,7 +755,7 @@
         }
 
         filteredData.forEach(({id, chat, u, otherUid, isPinned, isUnread, isGroup}) => {
-            if(!u && !isGroup) return; // SAFEGUARD
+            if(!u && !isGroup) return; 
             
             const randomColor = badgeColors[Math.floor(Math.random() * badgeColors.length)];
             const amIFollowing = isGroup ? false : myFollowingList.some(item => (typeof item === 'string' ? item : item.uid) === otherUid);
@@ -779,7 +768,6 @@
             
             const safeUserStr = encodeURIComponent(JSON.stringify({ name: finalName, username: chatLinkUser, photoURL: finalPfp, verified: isVerified, isGroup: isGroup }));
 
-            // SAFER TIMESTAMP FORMATTING FOR JSON PARSED CACHE 
             let dateObj = null;
             if (chat.lastTimestamp) {
                 if (typeof chat.lastTimestamp.toDate === 'function') dateObj = chat.lastTimestamp.toDate();
@@ -795,7 +783,6 @@
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
             item.setAttribute("onclick", `enterChat(event, '${chatLinkUser}', ${isGroup})`); 
 
-            // Absolute physics constraint applied here
             item.innerHTML = `
                 <div class="pfp-container">
                     <img src="${finalPfp}" class="chat-pfp">
@@ -830,7 +817,6 @@
                 else { msgEl.innerHTML = lastMsg; }
             });
 
-            // --- INSTANT ONLINE / 20S OFFLINE DELAY LOGIC ---
             if (myShowActivityStatus && !isGroup) {
                 rdb.ref(`/status/${otherUid}/state`).on('value', snap => {
                     const dot = document.getElementById(`online-${otherUid}`);
@@ -838,11 +824,9 @@
 
                     const state = snap.val();
                     if (state === 'online') {
-                        // CANCEL ANY PENDING OFFLINE HIDE
                         clearTimeout(offlineTimers[otherUid]);
-                        dot.classList.add('active'); // SHOW INSTANTLY
+                        dot.classList.add('active'); 
                     } else {
-                        // DELAY REMOVAL BY 20 SECONDS
                         clearTimeout(offlineTimers[otherUid]);
                         offlineTimers[otherUid] = setTimeout(() => {
                             dot.classList.remove('active');
@@ -860,7 +844,6 @@
     }
 
     // --- GLOBAL HANDLERS ---
-    
     window.startLongPress = function(el, chatId, isPinned, userStr) {
         isLongPress = false;
         const u = JSON.parse(decodeURIComponent(userStr));
@@ -879,7 +862,6 @@
     window.enterChat = function(e, usernameOrGroupId, isGroup) {
         if(isLongPress || e.target.closest('button')) return;
         if(isGroup) {
-            // CHANGED TARGET REDIRECT AS REQUESTED
             window.location.href = `groupChat.html?id=${usernameOrGroupId}`; 
         } else {
             window.location.href = `chat.html?user=${usernameOrGroupId}`;
@@ -908,7 +890,6 @@
         if(nav) nav.classList.add('hide-nav');
     }
 
-    // UPDATED ONPOPSTATE TO HANDLE BOTH MODALS AND GROUP MODALS INDEPENDENTLY
     window.onpopstate = (e) => { 
         const hash = window.location.hash;
         
@@ -950,7 +931,6 @@
         closeDeleteMenu(true);
         
         if(confirm("Are you sure? This action is irreversible.")) {
-            // === 1. LOCAL STORAGE & CACHE CLEANUP ===
             localStorage.removeItem('goorac_inbox_html'); 
             localStorage.removeItem('goorac_inbox_data');
             localStorage.removeItem('chat_msgs_' + cid); 
@@ -962,14 +942,10 @@
                     });
                     db.collection("users").doc(myUid).update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(cid) }).catch(e=>{});
                 } else {
-                    // === 2. CRITICAL: DELETE CHAT DOCUMENT FIRST ===
                     await db.collection("chats").doc(cid).delete();
-
-                    // === 3. SUB-RESOURCE CLEANUP ===
                     db.collection("users").doc(myUid).update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(cid) }).catch(e=>{});
                     rdb.ref(`typing/${cid}`).remove();
                     
-                    // === 4. BATCH MESSAGE DELETION (WITH SAFETY LIMIT) ===
                     const msgs = await db.collection("chats").doc(cid).collection("messages").get();
                     if (!msgs.empty) {
                         const batch = db.batch();
@@ -996,7 +972,6 @@
         results.style.display = 'block'; content.style.display = 'none';
         const q = val.toLowerCase();
         
-        // Search Groups Locally First
         const groupResultsHtml = currentChatData.filter(c => c.isGroup && (c.chat.groupName || "").toLowerCase().includes(q))
         .map(c => {
             return `<div class="chat-item" onclick="window.location.href='groupChat.html?id=${c.id}'">
@@ -1017,7 +992,6 @@
             return; 
         }
 
-        // Chunk contacts to max 10 to prevent Firestore error, or just take first 10 for search preview
         const searchSlice = allContacts.slice(0, 10);
 
         db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', searchSlice)
@@ -1040,7 +1014,6 @@
             
             results.innerHTML = groupResultsHtml + usersHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
         }).catch(e => {
-            // In case of error, at least show groups
             results.innerHTML = groupResultsHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
         });
     }
@@ -1063,7 +1036,6 @@
         const nav = document.querySelector('main-navbar');
         if(nav) nav.classList.add('hide-nav');
         
-        // Reset state
         selectedGroupMembers = [];
         groupBase64Image = null;
         document.getElementById('group-name-input').value = "";
@@ -1105,18 +1077,21 @@
         }
     };
 
-    // MEMBERS SELECTION LOGIC WITH SEARCH & DUPLICATE FIX
+    // ==========================================
+    //  MEMBERS SELECTION WITH DEBOUNCE FIX
+    // ==========================================
     window.openMembersModal = function() {
         document.getElementById('members-modal').classList.add('active');
         history.pushState({ modal: 'members' }, "", "#members");
         
-        // Calculate Mutuals & DEDUP THEM to prevent duplicate elements
+        // Calculate Mutuals & Dedup
         const followingIds = myFollowingList.map(f => typeof f === 'string' ? f : f.uid);
         const followersIds = myFollowersList.map(f => typeof f === 'string' ? f : f.uid);
         mutualFriends = [...new Set(followingIds.filter(id => followersIds.includes(id)))];
         
         friendsLoadedCount = 0;
         currentFriendSearch = "";
+        currentSearchSessionId++; 
         
         const searchInput = document.getElementById('member-search-input');
         if(searchInput) searchInput.value = "";
@@ -1126,18 +1101,22 @@
         setupInfiniteScroll();
     };
 
+    // DEBOUNCED SEARCH FUNCTION TO PREVENT MULTIPLE FAST REQUESTS OVERLAPPING
     window.handleMemberSearch = function(val) {
-        currentFriendSearch = val.toLowerCase().trim();
-        friendsLoadedCount = 0;
-        document.getElementById('mutual-friends-list').innerHTML = "";
-        
-        isFetchingFriends = false;
-        setupInfiniteScroll(); // Restart scrolling search
+        clearTimeout(memberSearchTimeout);
+        memberSearchTimeout = setTimeout(() => {
+            currentFriendSearch = val.toLowerCase().trim();
+            friendsLoadedCount = 0;
+            document.getElementById('mutual-friends-list').innerHTML = "";
+            currentSearchSessionId++; // Invalidate previous delayed callbacks
+            isFetchingFriends = false;
+            setupInfiniteScroll(); 
+        }, 250); 
     };
 
     window.closeMembersModal = function(shouldGoBack) {
         document.getElementById('members-modal').classList.remove('active');
-        if(shouldGoBack && window.location.hash === "#members") history.back(); // Returns to #group
+        if(shouldGoBack && window.location.hash === "#members") history.back(); 
     };
 
     function setupInfiniteScroll() {
@@ -1152,14 +1131,21 @@
             }
         });
         observer.observe(trigger);
-        loadMoreFriends(); // Initial load
+        loadMoreFriends(); 
     }
 
     function loadMoreFriends() {
         if (isFetchingFriends) return;
-        isFetchingFriends = true; // LOCK TO FIX DUPLICATE FETCHES
+        isFetchingFriends = true; 
+
+        const mySearchId = currentSearchSessionId;
 
         const fetchNextChunk = () => {
+            if (mySearchId !== currentSearchSessionId) {
+                isFetchingFriends = false;
+                return;
+            }
+
             const slice = mutualFriends.slice(friendsLoadedCount, friendsLoadedCount + friendsPerPage);
             if(slice.length === 0) {
                 document.getElementById('scroll-trigger').style.display = "none";
@@ -1170,6 +1156,11 @@
 
             db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', slice).get()
             .then(snap => {
+                if (mySearchId !== currentSearchSessionId) {
+                    isFetchingFriends = false;
+                    return; 
+                }
+
                 const listEl = document.getElementById('mutual-friends-list');
                 let renderedAny = false;
                 
@@ -1182,11 +1173,15 @@
                                           (u.name || "").toLowerCase().includes(searchStr) || 
                                           (u.username || "").toLowerCase().includes(searchStr);
                     
-                    if (matchesSearch) {
+                    // EXTRA DUPLICATE PREVENTION LOCK VIA DOM ID CHECK
+                    const existingEl = document.getElementById('sel-member-' + uid);
+
+                    if (matchesSearch && !existingEl) {
                         const isSelected = selectedGroupMembers.includes(uid);
                         const verifiedIcon = u.verified ? `<img src="${V_URL}" class="v-badge" style="margin-left:6px;width:14px;height:14px;">` : '';
                         
                         const div = document.createElement('div');
+                        div.id = 'sel-member-' + uid;
                         div.className = 'selectable-member';
                         div.onclick = () => toggleMemberSelection(uid, div.querySelector('.sel-checkbox'));
                         div.innerHTML = `
@@ -1204,7 +1199,6 @@
                 
                 friendsLoadedCount += slice.length;
                 
-                // If we are searching and found nothing this round, automatically fetch the next block
                 if (currentFriendSearch !== "" && !renderedAny && friendsLoadedCount < mutualFriends.length) {
                     fetchNextChunk();
                 } else {
@@ -1214,11 +1208,11 @@
                         document.getElementById('scroll-trigger').style.display = "flex";
                         document.getElementById('scroll-trigger').innerText = "Loading...";
                     }
-                    isFetchingFriends = false; // UNLOCK
+                    isFetchingFriends = false; 
                 }
             }).catch(e => {
                 console.error(e);
-                isFetchingFriends = false; // UNLOCK
+                isFetchingFriends = false; 
             });
         };
 
@@ -1257,18 +1251,17 @@
         const desc = document.getElementById('group-desc-input').value.trim();
         const finalParticipants = [myUid, ...selectedGroupMembers];
         
-        // UNIQUE ID GENERATION
         const newGroupRef = db.collection("chats").doc(); 
 
         const groupData = {
             isGroup: true,
-            groupId: newGroupRef.id, // SAVED UNIQUE ID
+            groupId: newGroupRef.id, 
             groupName: name,
             groupDescription: desc,
             groupPhoto: groupBase64Image || 'https://via.placeholder.com/150/000000/FFFFFF?text=' + name.charAt(0).toUpperCase(),
             participants: finalParticipants,
-            admin: myUid, // Fallback
-            admins: [myUid], // NEW ADMINS ARRAY (CREATOR INCLUDED)
+            admin: myUid, 
+            admins: [myUid], 
             lastMessage: "Group created",
             lastSender: myUid,
             lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1279,7 +1272,6 @@
         try {
             await newGroupRef.set(groupData);
             closeGroupModal(true);
-            // REDIRECT TARGET UPDATED
             window.location.href = `groupChat.html?id=${newGroupRef.id}`;
         } catch(e) {
             console.error("Group creation failed", e);
