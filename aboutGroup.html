@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Group Info | Quantum</title>
+    
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --accent: #00d2ff;
+            --text: #ffffff;
+            --text-dim: #888;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.05);
+            --gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .edit-icon {
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            display: none; /* Shown only for admins */
+        }
+
+        /* CONTENT */
+        .main-content {
+            margin-top: 60px;
+            padding-bottom: 50px;
+        }
+
+        .group-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            background: linear-gradient(to bottom, #111, #000);
+        }
+
+        .group-pfp {
+            width: 120px;
+            height: 120px;
+            border-radius: 40px;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+
+        .group-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .group-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+
+        /* PARTICIPANTS LIST */
+        .section-label {
+            padding: 20px 20px 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .participant-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .participant-item:active {
+            background: var(--glass);
+        }
+
+        .p-pfp {
+            width: 45px;
+            height: 45px;
+            border-radius: 15px;
+            margin-right: 15px;
+        }
+
+        .p-info {
+            flex: 1;
+        }
+
+        .p-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .p-username {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .admin-badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 20px;
+            margin-left: auto;
+            font-weight: 700;
+        }
+
+        .v-badge {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* SIDE MODAL (EDIT) */
+        .side-modal {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 200;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-modal.open {
+            right: 0;
+        }
+
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            margin-left: 5px;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .save-btn {
+            background: var(--gradient);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            border-radius: 15px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* BOTTOM MODAL */
+        .bottom-sheet-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+            z-index: 300;
+        }
+
+        .bottom-sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background: #111;
+            border-radius: 25px 25px 0 0;
+            padding: 20px;
+            z-index: 301;
+            transition: 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        .bottom-sheet.active {
+            bottom: 0;
+        }
+
+        .sheet-option {
+            padding: 18px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sheet-option.danger {
+            color: #ff4444;
+        }
+
+        /* NOT PARTICIPANT VIEW */
+        #restricted-view {
+            display: none;
+            height: 80vh;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        #restricted-view i {
+            font-size: 50px;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen" class="loader">
+        <div style="color: var(--accent); font-weight: 700;">QUANTUM</div>
+    </div>
+
+    <div class="header">
+        <div class="header-left">
+            <div class="back-btn" onclick="history.back()">&#x2190;</div>
+            <div class="header-title" id="head-group-name">Group Info</div>
+        </div>
+        <div class="edit-icon" id="edit-trigger" onclick="toggleEditModal(true)">&#x270E;</div>
+    </div>
+
+    <div class="main-content" id="main-view">
+        <div class="group-hero">
+            <img src="https://via.placeholder.com/150" id="group-display-pfp" class="group-pfp">
+            <div class="group-name" id="group-display-name">Loading...</div>
+            <div class="group-desc" id="group-display-desc">...</div>
+        </div>
+
+        <div class="section-label">Participants</div>
+        <div id="participants-list">
+            </div>
+    </div>
+
+    <div id="restricted-view">
+        <div style="font-size: 40px;">&#x1F6AB;</div>
+        <h2>Access Denied</h2>
+        <p>You're not a participant of this group.</p>
+        <button class="save-btn" onclick="history.back()">Go Back</button>
+    </div>
+
+    <div class="side-modal" id="edit-modal">
+        <div class="header">
+            <div class="header-left">
+                <div class="back-btn" onclick="toggleEditModal(false)">&#x2190;</div>
+                <div class="header-title">Edit Group</div>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <label>Group Name</label>
+                <input type="text" id="edit-name-input" placeholder="Enter group name">
+            </div>
+            <div class="input-group">
+                <label>Description</label>
+                <textarea id="edit-desc-input" rows="3" placeholder="Enter description"></textarea>
+            </div>
+            <button class="save-btn" onclick="saveGroupDetails()">Save Changes</button>
+
+            <div class="section-label" style="padding-left:0">Add Participants</div>
+            <div class="input-group">
+                <input type="text" id="user-search-input" placeholder="Search username..." oninput="searchUsersToAdd(this.value)">
+            </div>
+            <div id="search-results"></div>
+        </div>
+    </div>
+
+    <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="member-sheet">
+        <div class="sheet-option" id="admin-toggle-btn" onclick="toggleAdminRole()">Make as Admin</div>
+        <div class="sheet-option danger" onclick="removeFromGroup()">Remove from Group</div>
+        <div class="sheet-option" onclick="closeSheet()" style="border-bottom: none; color: var(--text-dim);">Cancel</div>
+    </div>
+
+    <script>
+        const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg"; // Fallback V URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+        
+        let db, auth;
+        let currentGroupData = null;
+        let myUid = null;
+        let selectedMemberId = null;
+
+        // --- CACHE ENGINE ---
+        const cacheKey = `group_cache_${groupId}`;
+        const loadCachedData = () => {
+            const cached = localStorage.getItem(cacheKey);
+            if(cached) {
+                const data = JSON.parse(cached);
+                renderGroupUI(data);
+                document.getElementById('loading-screen').style.display = 'none';
+            }
+        };
+
+        const saveToCache = (data) => {
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+        };
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            if(!groupId) {
+                alert("No Group ID provided");
+                return;
+            }
+
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+
+            loadCachedData();
+
+            auth.onAuthStateChanged(user => {
+                if(user) {
+                    myUid = user.uid;
+                    listenToGroup();
+                } else {
+                    window.location.href = "login.html";
+                }
+            });
+        };
+
+        function listenToGroup() {
+            db.collection('groups').doc(groupId).onSnapshot(doc => {
+                if(!doc.exists) return;
+                
+                const data = doc.data();
+                currentGroupData = data;
+                
+                // Security Check
+                const members = data.members || [];
+                if(!members.includes(myUid)) {
+                    document.getElementById('main-view').style.display = 'none';
+                    document.getElementById('edit-trigger').style.display = 'none';
+                    document.getElementById('restricted-view').style.display = 'flex';
+                    document.getElementById('loading-screen').style.display = 'none';
+                    return;
+                }
+
+                saveToCache(data);
+                renderGroupUI(data);
+                document.getElementById('loading-screen').style.display = 'none';
+            });
+        }
+
+        async function renderGroupUI(data) {
+            document.getElementById('head-group-name').innerText = data.name || "Group Info";
+            document.getElementById('group-display-name').innerText = data.name || "Unnamed Group";
+            document.getElementById('group-display-desc').innerText = data.description || "No description provided.";
+            document.getElementById('group-display-pfp').src = data.photoURL || 'https://via.placeholder.com/150';
+
+            // Admin UI Check
+            const admins = data.admins || [];
+            const isAdmin = admins.includes(myUid);
+            document.getElementById('edit-trigger').style.display = isAdmin ? 'block' : 'none';
+
+            // Render Participants
+            const listContainer = document.getElementById('participants-list');
+            listContainer.innerHTML = "";
+
+            const members = data.members || [];
+            
+            // Fetch member details (using cache where possible)
+            for(const uid of members) {
+                const userData = await getUserDetails(uid);
+                const isMemberAdmin = admins.includes(uid);
+                
+                const div = document.createElement('div');
+                div.className = "participant-item";
+                div.innerHTML = `
+                    <img src="${userData.photoURL || 'https://via.placeholder.com/150'}" class="p-pfp">
+                    <div class="p-info">
+                        <div class="p-name">
+                            ${userData.name || 'User'} 
+                            ${userData.verified ? `<img src="${V_URL}" class="v-badge">` : ''}
+                        </div>
+                        <div class="p-username">@${userData.username || 'unknown'}</div>
+                    </div>
+                    ${isMemberAdmin ? `<div class="admin-badge">Admin</div>` : ''}
+                `;
+
+                // Long Press Logic
+                let timer;
+                div.addEventListener('touchstart', () => {
+                    timer = setTimeout(() => openMemberActions(uid, isMemberAdmin), 600);
+                });
+                div.addEventListener('touchend', () => clearTimeout(timer));
+                div.addEventListener('mousedown', () => {
+                    timer = setTimeout(() => openMemberActions(uid, isMemberAdmin), 600);
+                });
+                div.addEventListener('mouseup', () => clearTimeout(timer));
+
+                listContainer.appendChild(div);
+            }
+        }
+
+        async function getUserDetails(uid) {
+            let cache = JSON.parse(localStorage.getItem('goorac_u_cache')) || {};
+            if(cache[uid]) return cache[uid];
+
+            const d = await db.collection('users').doc(uid).get();
+            if(d.exists) {
+                cache[uid] = d.data();
+                localStorage.setItem('goorac_u_cache', JSON.stringify(cache));
+                return d.data();
+            }
+            return {};
+        }
+
+        // --- EDIT MODAL LOGIC ---
+        function toggleEditModal(show) {
+            const modal = document.getElementById('edit-modal');
+            if(show) {
+                document.getElementById('edit-name-input').value = currentGroupData.name || "";
+                document.getElementById('edit-desc-input').value = currentGroupData.description || "";
+                modal.classList.add('open');
+                window.history.pushState({ modalOpen: true }, "");
+            } else {
+                modal.classList.remove('open');
+            }
+        }
+
+        window.onpopstate = (e) => {
+            document.getElementById('edit-modal').classList.remove('open');
+            closeSheet();
+        };
+
+        async function saveGroupDetails() {
+            const name = document.getElementById('edit-name-input').value;
+            const desc = document.getElementById('edit-desc-input').value;
+            
+            await db.collection('groups').doc(groupId).update({
+                name: name,
+                description: desc
+            });
+            toggleEditModal(false);
+        }
+
+        // --- MEMBER ACTIONS (BOTTOM SHEET) ---
+        function openMemberActions(uid, isTargetAdmin) {
+            const amIAdmin = (currentGroupData.admins || []).includes(myUid);
+            if(!amIAdmin) return; // Only admins see actions
+
+            selectedMemberId = uid;
+            document.getElementById('admin-toggle-btn').innerText = isTargetAdmin ? "Remove as Admin" : "Make as Admin";
+            
+            document.getElementById('sheet-overlay').classList.add('active');
+            document.getElementById('member-sheet').classList.add('active');
+        }
+
+        function closeSheet() {
+            document.getElementById('sheet-overlay').classList.remove('active');
+            document.getElementById('member-sheet').classList.remove('active');
+        }
+
+        async function toggleAdminRole() {
+            let admins = currentGroupData.admins || [];
+            if(admins.includes(selectedMemberId)) {
+                admins = admins.filter(a => a !== selectedMemberId);
+            } else {
+                admins.push(selectedMemberId);
+            }
+            
+            await db.collection('groups').doc(groupId).update({ admins });
+            closeSheet();
+        }
+
+        async function removeFromGroup() {
+            if(!confirm("Remove this user from the group?")) return;
+            
+            let members = currentGroupData.members || [];
+            let admins = currentGroupData.admins || [];
+            
+            members = members.filter(m => m !== selectedMemberId);
+            admins = admins.filter(a => a !== selectedMemberId);
+
+            await db.collection('groups').doc(groupId).update({ members, admins });
+            closeSheet();
+        }
+
+        // --- ADD PARTICIPANTS SEARCH ---
+        async function searchUsersToAdd(query) {
+            const q = query.toLowerCase();
+            const resultsDiv = document.getElementById('search-results');
+            if(q.length < 2) { resultsDiv.innerHTML = ""; return; }
+
+            const snap = await db.collection('users').limit(10).get();
+            const currentMembers = currentGroupData.members || [];
+
+            resultsDiv.innerHTML = snap.docs
+                .map(d => ({id: d.id, ...d.data()}))
+                .filter(u => {
+                    const match = (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
+                    return match && !currentMembers.includes(u.id); // No duplicates
+                })
+                .map(u => `
+                    <div class="participant-item" onclick="addMemberToGroup('${u.id}')">
+                        <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="p-pfp">
+                        <div class="p-info">
+                            <div class="p-name">
+                                ${u.name} ${u.verified ? `<img src="${V_URL}" class="v-badge">` : ''}
+                            </div>
+                            <div class="p-username">@${u.username}</div>
+                        </div>
+                        <div style="color:var(--accent); font-weight:700;">+ Add</div>
+                    </div>
+                `).join('');
+        }
+
+        async function addMemberToGroup(uid) {
+            let members = currentGroupData.members || [];
+            if(!members.includes(uid)) {
+                members.push(uid);
+                await db.collection('groups').doc(groupId).update({ members });
+                document.getElementById('user-search-input').value = "";
+                document.getElementById('search-results').innerHTML = "";
+            }
+        }
+
+    </script>
+</body>
+</html>
