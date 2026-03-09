@@ -19,6 +19,7 @@
     <chat-loader></chat-loader>
     
     <script src="components/imagePicker.js" defer></script>
+    <script src="components/navbar.js" defer></script>
 
     <style>
         /* GLOBAL RESET FOR HORIZONTAL SCROLL FIX */
@@ -259,7 +260,7 @@
         .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
         .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; }
         .sel-info { flex: 1; }
-        .sel-name { font-weight: 700; color: #fff; font-size: 1rem; }
+        .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; }
         .sel-handle { color: #888; font-size: 0.85rem; }
         .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
@@ -408,6 +409,9 @@
         </button>
         <div class="modal-title-main">Add Members</div>
     </div>
+    <div style="padding: 10px 20px; background: #000; border-bottom: 1px solid var(--border);">
+        <input type="text" id="member-search-input" class="group-input" placeholder="Search mutual friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
+    </div>
     <div class="member-list-container" id="mutual-friends-list">
         </div>
     <div id="scroll-trigger" class="infinite-scroll-trigger">Loading...</div>
@@ -419,7 +423,6 @@
     <div style="position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background: #00ff41; border-radius: 50%; border: 2px solid #111; z-index: 2; animation: pulseOnlineFAB 2s infinite;"></div>
 </div>
 
-<script src="components/navbar.js" defer></script>
 <main-navbar></main-navbar>
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
@@ -443,12 +446,20 @@
     window.addEventListener('offline', () => document.getElementById('offline-toast').style.display = 'block');
     window.addEventListener('online', () => document.getElementById('offline-toast').style.display = 'none');
 
-    // --- 1. IMMEDIATE CACHE LOAD (Zero-Gap) ---
+    // --- 1. IMMEDIATE CACHE LOAD (Zero-Gap) WITH GROUP GLITCH FIX ---
     (function loadInboxCache() {
         const cachedHTML = localStorage.getItem('goorac_inbox_html');
         if (cachedHTML && cachedHTML.trim() !== "") {
             document.getElementById('chats-list').innerHTML = cachedHTML;
-            console.log("⚡ Loaded inbox from cache");
+            console.log("⚡ Loaded inbox HTML from cache");
+        }
+        
+        // NEW FIX: Restore the data array to instantly identify groups on first load without glitching to user layout
+        const cachedData = localStorage.getItem('goorac_inbox_data');
+        if (cachedData) {
+            try {
+                currentChatData = JSON.parse(cachedData);
+            } catch(e) {}
         }
     })();
 
@@ -586,6 +597,8 @@
     const friendsPerPage = 10; // FIXED TO PREVENT FIRESTORE CRASH (MAX 10 FOR 'IN' QUERIES)
     let observer;
     let groupBase64Image = null;
+    let isFetchingFriends = false; // LOCK TO FIX DUPLICATE FETCHING
+    let currentFriendSearch = ""; // TRACKS MODAL SEARCH STATE
 
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -766,6 +779,15 @@
             
             const safeUserStr = encodeURIComponent(JSON.stringify({ name: finalName, username: chatLinkUser, photoURL: finalPfp, verified: isVerified, isGroup: isGroup }));
 
+            // SAFER TIMESTAMP FORMATTING FOR JSON PARSED CACHE 
+            let dateObj = null;
+            if (chat.lastTimestamp) {
+                if (typeof chat.lastTimestamp.toDate === 'function') dateObj = chat.lastTimestamp.toDate();
+                else if (chat.lastTimestamp.seconds) dateObj = new Date(chat.lastTimestamp.seconds * 1000);
+                else dateObj = new Date(chat.lastTimestamp);
+            }
+            const timeStr = dateObj ? formatTime(dateObj) : '';
+
             const item = document.createElement('div');
             item.className = 'chat-item';
             item.setAttribute("ontouchstart", `startLongPress(this, '${id}', ${isPinned}, '${safeUserStr}')`);
@@ -786,7 +808,7 @@
                             ${isVerified ? `<img src="${V_URL}" class="v-badge">` : ''}
                             ${isPinned ? `<span class="pin-indicator"></span>` : ''}
                         </span>
-                        <span style="font-size:0.7rem; color:#444; flex-shrink: 0;">${chat.lastTimestamp ? formatTime(chat.lastTimestamp.toDate()) : ''}</span>
+                        <span style="font-size:0.7rem; color:#444; flex-shrink: 0;">${timeStr}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; width:100%; min-width:0;">
                         <div class="last-msg" id="last-msg-${id}" style="${isUnread ? 'color:#fff; font-weight:700;' : ''}">
@@ -830,7 +852,11 @@
             }
         });
 
-        if(currentFilter === 'all') localStorage.setItem('goorac_inbox_html', list.innerHTML);
+        // UPDATE BOTH CACHES TO ENSURE NO GLITCHING ON NEXT LOAD
+        if(currentFilter === 'all') {
+            localStorage.setItem('goorac_inbox_html', list.innerHTML);
+            localStorage.setItem('goorac_inbox_data', JSON.stringify(currentChatData));
+        }
     }
 
     // --- GLOBAL HANDLERS ---
@@ -926,6 +952,7 @@
         if(confirm("Are you sure? This action is irreversible.")) {
             // === 1. LOCAL STORAGE & CACHE CLEANUP ===
             localStorage.removeItem('goorac_inbox_html'); 
+            localStorage.removeItem('goorac_inbox_data');
             localStorage.removeItem('chat_msgs_' + cid); 
             
             try {
@@ -1078,19 +1105,34 @@
         }
     };
 
-    // MEMBERS SELECTION LOGIC
+    // MEMBERS SELECTION LOGIC WITH SEARCH & DUPLICATE FIX
     window.openMembersModal = function() {
         document.getElementById('members-modal').classList.add('active');
         history.pushState({ modal: 'members' }, "", "#members");
         
-        // Calculate Mutuals
+        // Calculate Mutuals & DEDUP THEM to prevent duplicate elements
         const followingIds = myFollowingList.map(f => typeof f === 'string' ? f : f.uid);
         const followersIds = myFollowersList.map(f => typeof f === 'string' ? f : f.uid);
-        mutualFriends = followingIds.filter(id => followersIds.includes(id));
+        mutualFriends = [...new Set(followingIds.filter(id => followersIds.includes(id)))];
         
         friendsLoadedCount = 0;
+        currentFriendSearch = "";
+        
+        const searchInput = document.getElementById('member-search-input');
+        if(searchInput) searchInput.value = "";
         document.getElementById('mutual-friends-list').innerHTML = "";
+        
+        isFetchingFriends = false;
         setupInfiniteScroll();
+    };
+
+    window.handleMemberSearch = function(val) {
+        currentFriendSearch = val.toLowerCase().trim();
+        friendsLoadedCount = 0;
+        document.getElementById('mutual-friends-list').innerHTML = "";
+        
+        isFetchingFriends = false;
+        setupInfiniteScroll(); // Restart scrolling search
     };
 
     window.closeMembersModal = function(shouldGoBack) {
@@ -1102,6 +1144,7 @@
         if(observer) observer.disconnect();
         const trigger = document.getElementById('scroll-trigger');
         trigger.style.display = "flex";
+        trigger.innerText = "Loading...";
         
         observer = new IntersectionObserver((entries) => {
             if(entries[0].isIntersecting) {
@@ -1113,39 +1156,73 @@
     }
 
     function loadMoreFriends() {
-        const slice = mutualFriends.slice(friendsLoadedCount, friendsLoadedCount + friendsPerPage);
-        if(slice.length === 0) {
-            document.getElementById('scroll-trigger').style.display = "none";
-            document.getElementById('scroll-trigger').innerText = "End of list";
-            return;
-        }
+        if (isFetchingFriends) return;
+        isFetchingFriends = true; // LOCK TO FIX DUPLICATE FETCHES
 
-        db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', slice).get()
-        .then(snap => {
-            const listEl = document.getElementById('mutual-friends-list');
-            snap.docs.forEach(doc => {
-                const u = doc.data();
-                const uid = doc.id;
-                const isSelected = selectedGroupMembers.includes(uid);
-                
-                const div = document.createElement('div');
-                div.className = 'selectable-member';
-                div.onclick = () => toggleMemberSelection(uid, div.querySelector('.sel-checkbox'));
-                div.innerHTML = `
-                    <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="sel-pfp">
-                    <div class="sel-info">
-                        <div class="sel-name">${u.name || u.username}</div>
-                        <div class="sel-handle">@${u.username}</div>
-                    </div>
-                    <div class="sel-checkbox ${isSelected ? 'checked' : ''}"></div>
-                `;
-                listEl.appendChild(div);
-            });
-            friendsLoadedCount += slice.length;
-            if(friendsLoadedCount >= mutualFriends.length) {
+        const fetchNextChunk = () => {
+            const slice = mutualFriends.slice(friendsLoadedCount, friendsLoadedCount + friendsPerPage);
+            if(slice.length === 0) {
                 document.getElementById('scroll-trigger').style.display = "none";
+                document.getElementById('scroll-trigger').innerText = "End of list";
+                isFetchingFriends = false;
+                return;
             }
-        });
+
+            db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', slice).get()
+            .then(snap => {
+                const listEl = document.getElementById('mutual-friends-list');
+                let renderedAny = false;
+                
+                snap.docs.forEach(doc => {
+                    const u = doc.data();
+                    const uid = doc.id;
+                    
+                    const searchStr = currentFriendSearch;
+                    const matchesSearch = searchStr === "" || 
+                                          (u.name || "").toLowerCase().includes(searchStr) || 
+                                          (u.username || "").toLowerCase().includes(searchStr);
+                    
+                    if (matchesSearch) {
+                        const isSelected = selectedGroupMembers.includes(uid);
+                        const verifiedIcon = u.verified ? `<img src="${V_URL}" class="v-badge" style="margin-left:6px;width:14px;height:14px;">` : '';
+                        
+                        const div = document.createElement('div');
+                        div.className = 'selectable-member';
+                        div.onclick = () => toggleMemberSelection(uid, div.querySelector('.sel-checkbox'));
+                        div.innerHTML = `
+                            <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="sel-pfp">
+                            <div class="sel-info">
+                                <div class="sel-name" style="display:flex;align-items:center;">${u.name || u.username} ${verifiedIcon}</div>
+                                <div class="sel-handle">@${u.username}</div>
+                            </div>
+                            <div class="sel-checkbox ${isSelected ? 'checked' : ''}"></div>
+                        `;
+                        listEl.appendChild(div);
+                        renderedAny = true;
+                    }
+                });
+                
+                friendsLoadedCount += slice.length;
+                
+                // If we are searching and found nothing this round, automatically fetch the next block
+                if (currentFriendSearch !== "" && !renderedAny && friendsLoadedCount < mutualFriends.length) {
+                    fetchNextChunk();
+                } else {
+                    if(friendsLoadedCount >= mutualFriends.length) {
+                        document.getElementById('scroll-trigger').style.display = "none";
+                    } else {
+                        document.getElementById('scroll-trigger').style.display = "flex";
+                        document.getElementById('scroll-trigger').innerText = "Loading...";
+                    }
+                    isFetchingFriends = false; // UNLOCK
+                }
+            }).catch(e => {
+                console.error(e);
+                isFetchingFriends = false; // UNLOCK
+            });
+        };
+
+        fetchNextChunk();
     }
 
     window.toggleMemberSelection = function(uid, checkboxEl) {
@@ -1185,31 +1262,4 @@
 
         const groupData = {
             isGroup: true,
-            groupId: newGroupRef.id, // SAVED UNIQUE ID
-            groupName: name,
-            groupDescription: desc,
-            groupPhoto: groupBase64Image || 'https://via.placeholder.com/150/000000/FFFFFF?text=' + name.charAt(0).toUpperCase(),
-            participants: finalParticipants,
-            admin: myUid, // Fallback
-            admins: [myUid], // NEW ADMINS ARRAY (CREATOR INCLUDED)
-            lastMessage: "Group created",
-            lastSender: myUid,
-            lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            seen: true,
-            unreadCount: {}
-        };
-
-        try {
-            await newGroupRef.set(groupData);
-            closeGroupModal(true);
-            // REDIRECT TARGET UPDATED
-            window.location.href = `groupChat.html?id=${newGroupRef.id}`;
-        } catch(e) {
-            console.error("Group creation failed", e);
-            btn.disabled = false;
-            btn.innerText = "Create Group";
-        }
-    };
-</script>
-</body>
-</html>
+            groupId:
