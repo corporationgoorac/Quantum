@@ -8,6 +8,7 @@
     <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -15,14 +16,13 @@
 
     <script type="module" src="components/presence.js"></script>
     <script src="components/chatLoader.js" defer></script>
-    <script src="components/imagePicker.js" defer></script>
+    <chat-loader></chat-loader>
     
+    <script src="components/imagePicker.js" defer></script>
     <script src="components/navbar.js" defer></script>
 
     <style>
-        /* ==========================================
-           GLOBAL RESET & THEME
-           ========================================== */
+        /* GLOBAL RESET FOR HORIZONTAL SCROLL FIX */
         * { box-sizing: border-box !important; }
 
         :root {
@@ -46,9 +46,7 @@
             width: 100% !important; max-width: 100vw !important; /* LOCKED HORIZONTAL */
         }
 
-        /* ==========================================
-           HEADER
-           ========================================== */
+        /* HEADER */
         header {
             position: sticky; top: 0; background: rgba(0,0,0,0.9);
             padding: 15px 20px; display: flex; justify-content: space-between;
@@ -59,13 +57,12 @@
         }
         .header-logo { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
+        /* NEW HEADER ICON STYLES */
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-icon { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.08); display: block; }
         .header-title { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.3px; color: var(--text-main); cursor: pointer; }
 
-        /* ==========================================
-           SEARCH & FILTERS
-           ========================================== */
+        /* SEARCH */
         .search-wrap { padding: 12px 20px; padding-bottom: 0; width: 100%; }
         .search-input {
             width: 100%; background: #111; border: 1px solid var(--border);
@@ -74,6 +71,7 @@
         }
         .search-input:focus { border-color: var(--accent); background: #161616; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
 
+        /* FILTER CHIPS */
         .filter-scroll {
             display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto;
             scrollbar-width: none; -ms-overflow-style: none; width: 100%;
@@ -91,9 +89,7 @@
             border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
         }
 
-        /* ==========================================
-           CHAT LIST ITEM
-           ========================================== */
+        /* CHAT LIST ITEM - LAYOUT LOCKED */
         .chat-item { 
             display: flex; align-items: center; padding: 15px 20px; 
             cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -103,22 +99,23 @@
         }
         .chat-item:active { background: var(--glass); transform: scale(0.98); }
 
+        /* PFP Container for Online Dot */
         .pfp-container { position: relative; margin-right: 15px; flex-shrink: 0; }
         .chat-pfp { width: 58px; height: 58px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); pointer-events: none; display: block; }
         
+        /* The Real-Time Green Dot */
         .online-indicator {
             position: absolute; bottom: 2px; right: 2px;
             width: 12px; height: 12px; background: var(--online);
             border-radius: 50%; border: 2px solid #000;
             box-shadow: 0 0 8px var(--online);
-            display: none; 
+            display: none; /* Hidden by default */
             z-index: 2;
         }
         .online-indicator.active { display: block; }
 
         .chat-info { flex: 1; min-width: 0; width: calc(100% - 73px) !important; pointer-events: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; } 
         .chat-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; width: 100%; }
-        .chat-top-row .unread-badge { display: none !important; }
         
         .u-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .v-badge { height: 14px; width: 14px; flex-shrink: 0; }
@@ -137,10 +134,11 @@
         .follow-btn { 
             background: rgba(0, 210, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 210, 255, 0.3); 
             padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer;
-            pointer-events: auto; 
+            pointer-events: auto; /* MUST BE AUTO TO CLICK */
             flex-shrink: 0;
         }
 
+        /* UNREAD BADGE - ALIGNMENT FIXED */
         .unread-badge { 
             width: 14px !important; height: 14px !important; 
             min-width: 14px !important; min-height: 14px !important;
@@ -157,21 +155,19 @@
             z-index: 10;
             margin: 0 !important;
             padding: 0 !important;
-            right: 4px !important;
+            animation: popBadge 0s forwards; 
             position: relative;
+            right: 4px !important; /* Tiny nudge to ensure full glow is visible */
         }
+        @keyframes popBadge { from { transform: scale(1); } to { transform: scale(1); } }
 
-        /* ==========================================
-           SKELETON LOADERS
-           ========================================== */
+        /* SKELETON */
         .skeleton-item { display: flex; align-items: center; padding: 15px 20px; opacity: 0.5; animation: quantumPulse 1.5s infinite ease-in-out; width: 100%; }
         .skeleton-circle { width: 55px; height: 55px; border-radius: 50%; background: #222; margin-right: 15px; flex-shrink: 0; }
         .skeleton-line { height: 12px; background: #222; border-radius: 4px; margin-bottom: 8px; }
         @keyframes quantumPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
-        /* ==========================================
-           ACTION MENUS & MODALS
-           ========================================== */
+        /* MODAL */
         #delete-menu {
             position: fixed; bottom: -100%; left: 0; width: 100%;
             background: var(--sheet-bg); border-top: 1px solid var(--border);
@@ -188,6 +184,7 @@
             #delete-menu.active { bottom: 50%; transform: translate(-50%, 50%); }
         }
 
+        /* CONTEXT UI */
         .sheet-context { display: flex; flex-direction: column; align-items: center; padding-bottom: 25px; margin-bottom: 10px; width: 100%; }
         .context-pfp { width: 70px; height: 70px; border-radius: 25px; border: 2px solid var(--accent); margin-bottom: 12px; object-fit: cover; }
         .context-name { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
@@ -202,9 +199,7 @@
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; width: 100%; }
 
-        /* ==========================================
-           TOASTS & ALERTS
-           ========================================== */
+        /* NETWORK TOAST */
         #offline-toast {
             display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
             background: #ff4444; color: #fff; padding: 6px 16px; border-radius: 20px;
@@ -213,9 +208,10 @@
         }
         @keyframes slideDownToast { from { top: 40px; opacity: 0; } to { top: 70px; opacity: 1; } }
 
-        /* ==========================================
-           INTRO BOTTOM MODAL
-           ========================================== */
+        /* FIX: Ensure duplicate unread badges don't show in the top row above the timestamp */
+        .chat-top-row .unread-badge { display: none !important; }
+        
+        /* --- NEW: INTRO BOTTOM MODAL --- */
         .modal-overlay-intro { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200000; display: none; opacity: 0; transition: opacity 0.3s ease; }
         .bottom-modal-intro { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-radius: 32px 32px 0 0; z-index: 200001; padding: 24px 24px calc(40px + env(safe-area-inset-bottom)); transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid var(--border); box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.8); }
         .modal-handle-intro { width: 48px; height: 5px; background: #333333; border-radius: 10px; margin: 0 auto 24px; cursor: pointer; }
@@ -227,14 +223,10 @@
         .modal-btn-intro { width: 100%; background: var(--text-main); color: #000000; border: none; padding: 18px; border-radius: 16px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
         .modal-btn-intro:active { transform: scale(0.97); opacity: 0.9; }
         
-        /* ==========================================
-           AI FAB
-           ========================================== */
+        /* PERFECT AI FAB DOT ANIMATION */
         @keyframes pulseOnlineFAB { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(0, 255, 65, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); } }
         
-        /* ==========================================
-           GROUP CREATION & MEMBERS MODALS
-           ========================================== */
+        /* --- NEW GROUP MODAL STYLES (PURE BLACK/SLEEK) --- */
         .side-modal {
             position: fixed; top: 0; right: -100%; width: 100%; height: 100%;
             background: #000000; z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -260,6 +252,7 @@
         .create-group-submit { background: white; color: black; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; margin-top: auto; margin-bottom: 20px; }
         .create-group-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* MEMBERS MODAL LIST */
         .member-list-container { flex: 1; overflow-y: auto; padding-bottom: 100px; }
         .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
         .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; }
@@ -561,6 +554,7 @@
     const rdb = firebase.database();
     const auth = firebase.auth();
     const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
+    const DEFAULT_GROUP_IMAGE = "https://fabulouspic.com/wp-content/uploads/2024/08/a-black-and-white-photo-of-a-persons-face.jpg";
 
     let myUid = "";
     let myFollowingList = [];
@@ -702,7 +696,9 @@
                 
                 let isUnread = false;
                 let count = 0;
-                if (chat.unreadCount && chat.unreadCount[myUid] !== undefined) count = Number(chat.unreadCount[myUid]);
+                if (chat.unreadCount && chat.unreadCount[myUid] !== undefined) {
+                    count = Number(chat.unreadCount[myUid]) || 0;
+                }
                 if (count > 0) isUnread = true;
                 else if (chat.lastSender && chat.lastSender !== myUid) isUnread = (chat.seen !== true);
 
@@ -761,7 +757,7 @@
             const amIFollowing = isGroup ? false : myFollowingList.some(item => (typeof item === 'string' ? item : item.uid) === otherUid);
 
             const finalName = isGroup ? chat.groupName : (u.name || u.displayName || u.username || "Unknown");
-            const finalPfp = isGroup ? (chat.groupPhoto || 'https://via.placeholder.com/150/000000/FFFFFF?text=G') : (u.photoURL || 'https://via.placeholder.com/150');
+            const finalPfp = isGroup ? (chat.groupPhoto || DEFAULT_GROUP_IMAGE) : (u.photoURL || 'https://via.placeholder.com/150');
             const lastMsg = chat.lastMessage ? chat.lastMessage : `<span style="font-style:italic; opacity:0.6;">Frequency cleared</span>`;
             const isVerified = isGroup ? false : u.verified;
             const chatLinkUser = isGroup ? id : u.username;
@@ -976,7 +972,7 @@
         .map(c => {
             return `<div class="chat-item" onclick="window.location.href='groupChat.html?id=${c.id}'">
                 <div class="pfp-container" style="margin-right: 15px;">
-                    <img src="${c.chat.groupPhoto||'https://via.placeholder.com/150/000000/FFFFFF?text=G'}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
+                    <img src="${c.chat.groupPhoto||DEFAULT_GROUP_IMAGE}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
                 </div>
                 <div class="chat-info">
                     <div class="u-name">${c.chat.groupName}</div>
@@ -992,30 +988,36 @@
             return; 
         }
 
-        const searchSlice = allContacts.slice(0, 10);
+        // Slice safely to prevent Firebase 'in' query bounds error
+        let searchSlice = allContacts;
+        if(searchSlice.length > 10) { searchSlice = searchSlice.slice(0, 10); }
 
-        db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', searchSlice)
-        .get().then(snap => {
-            const usersHtml = snap.docs.filter(d => {
-                const u = d.data();
-                return (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
-            }).map(d => {
-                const u = d.data();
-                return `<div class="chat-item" onclick="window.location.href='chat.html?user=${u.username}'">
-                    <div class="pfp-container" style="margin-right: 15px;">
-                        <img src="${u.photoURL||'https://via.placeholder.com/150'}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
-                    </div>
-                    <div class="chat-info">
-                        <div class="u-name">${u.name} ${u.verified?`<img src="${V_URL}" class="v-badge">`:''}</div>
-                        <div style="font-size:0.8rem; color:#444;">@${u.username}</div>
-                    </div>
-                </div>`;
-            }).join('');
-            
-            results.innerHTML = groupResultsHtml + usersHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
-        }).catch(e => {
+        if(searchSlice.length > 0) {
+            db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', searchSlice)
+            .get().then(snap => {
+                const usersHtml = snap.docs.filter(d => {
+                    const u = d.data();
+                    return (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
+                }).map(d => {
+                    const u = d.data();
+                    return `<div class="chat-item" onclick="window.location.href='chat.html?user=${u.username}'">
+                        <div class="pfp-container" style="margin-right: 15px;">
+                            <img src="${u.photoURL||'https://via.placeholder.com/150'}" class="chat-pfp" style="width:40px; height:40px; border-radius: 12px;">
+                        </div>
+                        <div class="chat-info">
+                            <div class="u-name">${u.name} ${u.verified?`<img src="${V_URL}" class="v-badge">`:''}</div>
+                            <div style="font-size:0.8rem; color:#444;">@${u.username}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                
+                results.innerHTML = groupResultsHtml + usersHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
+            }).catch(e => {
+                results.innerHTML = groupResultsHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
+            });
+        } else {
             results.innerHTML = groupResultsHtml || "<p style='text-align:center; padding:50px; color:#444;'>No matches found.</p>";
-        });
+        }
     }
 
     function formatTime(date) {
@@ -1023,9 +1025,9 @@
         const diff = now - date;
         const sec = Math.floor(diff / 1000), min = Math.floor(sec / 60), hour = Math.floor(min / 60), day = Math.floor(hour / 24);
         if(sec < 60) return "Just now";
-        if(min < 60) return `${min}m ago`;
-        if(hour < 24) return `${hour}h ago`;
-        if(day < 7) return `${day}d ago`;
+        if(min < 60) return min + "m ago";
+        if(hour < 24) return hour + "h ago";
+        if(day < 7) return day + "d ago";
         return date.toLocaleDateString();
     }
 
@@ -1258,7 +1260,7 @@
             groupId: newGroupRef.id, 
             groupName: name,
             groupDescription: desc,
-            groupPhoto: groupBase64Image || 'https://via.placeholder.com/150/000000/FFFFFF?text=' + name.charAt(0).toUpperCase(),
+            groupPhoto: groupBase64Image || DEFAULT_GROUP_IMAGE,
             participants: finalParticipants,
             admin: myUid, 
             admins: [myUid], 
