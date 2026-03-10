@@ -676,6 +676,40 @@
         /* -------------------------------------------------------------------------- */
         /* CALL HANDLING LOGIC                                                        */
         /* -------------------------------------------------------------------------- */
+
+        const sendCallPushNotification = async (targetId, callerName, callerPhoto) => {
+            if (!targetId) return;
+
+            // This deep link opens Quantum directly to the call and triggers the auto-answer logic
+            const deepLink = `https://www.goorac.biz/calls.html?targetUid=${myUid}&autoAnswer=true`;
+
+            try {
+                fetch("https://pish-uigm.onrender.com/send-push", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        targetUid: targetId,
+                        senderUid: myUid,
+                        title: `Call from ${callerName}`,
+                        body: "Tap to attend",
+                        icon: callerPhoto || "https://www.goorac.biz/icon.png",
+                        click_action: deepLink,
+                        type: "call"
+                    })
+                }).then(res => {
+                    if (!res.ok) console.error("Call push failed with status:", res.status);
+                    else console.log("✅ Call push successfully triggered via Render!");
+                }).catch(err => {
+                    console.error("❌ Error sending call push:", err);
+                });
+                
+            } catch (error) {
+                console.error("❌ Error configuring call push:", error);
+            }
+        };
+
         async function startCall(targetUid, name, pfp, isVerified) {
             if (currentCall) return;
             isCaller = true;
@@ -698,6 +732,9 @@
                     callerId: myUid,
                     timestamp: Date.now()
                 });
+
+                // Trigger the background push notification via Render
+                sendCallPushNotification(targetUid, myData.name || "User", myData.photoURL);
 
                 let attempts = 0;
                 const connect = () => {
@@ -833,11 +870,15 @@
             activeTab = tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
+            showSkeleton();
             loadData();
         }
 
         async function loadData() {
-            showSkeleton();
+            // Only show skeleton if the container doesn't already have cached items
+            if (!document.getElementById('list-container').innerHTML.includes('call-item')) {
+                showSkeleton();
+            }
             if (activeTab === 'recent') await loadRecent(); else await loadContacts();
         }
 
