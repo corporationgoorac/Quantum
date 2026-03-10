@@ -370,36 +370,52 @@
         }
 
         // ==========================================
-        // ⚡ WEBCODECS HARDWARE COMPRESSION
+        // ⚡ FFMPEG.WASM COMPRESSION (PRODUCTION READY)
         // ==========================================
         async compressVideo(file) {
-            // Feature Detection: Return null if WebCodecs isn't supported (e.g., iOS < 16.4)
-            if (!window.VideoEncoder) {
-                return null;
-            }
-
             try {
-                // Dynamically import the VideoConverter library
-                const { VideoConverter } = await import('https://cdn.jsdelivr.net/npm/video-converter-js@1.0.3/+esm');
-                const converter = new VideoConverter();
+                // Use the official FFmpeg CDN imports
+                const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/+esm');
+                const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
                 
-                // Aggressive settings to force down to ~2MB
-                const options = {
-                    width: 640,          
-                    height: 360,         
-                    fps: 24,             
-                    videoBitrate: 250000, 
-                    audioBitrate: 32000,  
-                    keepAudio: true      
-                };
+                const ffmpeg = new FFmpeg();
+                
+                // Hook progress directly into the UI text
+                ffmpeg.on('progress', ({ progress }) => {
+                    const pct = Math.round(progress * 100);
+                    const loadingText = this.querySelector('#fp-loading-text');
+                    if(loadingText && pct > 0 && pct <= 100) {
+                        loadingText.innerText = `Compressing Video... ${pct}%`;
+                    }
+                });
 
-                const compressedBlob = await converter.convert(file, options);
-                const newName = file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4";
-                return new File([compressedBlob], newName, { type: 'video/mp4' });
+                await ffmpeg.load({
+                    coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
+                    wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm'
+                });
+
+                const inputName = 'input.mp4';
+                const outputName = 'output.mp4';
+
+                await ffmpeg.writeFile(inputName, await fetchFile(file));
+
+                // Aggressive settings to hit ~2MB (360p, 24fps, low bitrate)
+                await ffmpeg.exec([
+                    '-i', inputName,
+                    '-vf', 'scale=-2:360',
+                    '-r', '24',
+                    '-b:v', '250k',
+                    '-b:a', '32k',
+                    outputName
+                ]);
+
+                const data = await ffmpeg.readFile(outputName);
+                const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
 
             } catch (error) {
-                console.error("Hardware compression failed:", error);
-                throw error; 
+                console.error("Compression failed:", error);
+                throw error; // Let the handleFileSelect catch block manage the failure
             }
         }
 
@@ -416,7 +432,7 @@
             this.querySelector('#fp-video-el').src = '';
             this.querySelector('#fp-progress-container').style.display = 'none';
 
-            // Open UI and Push History FIRST so loading screen can be visible if needed
+            // Open UI and Push History FIRST so loading screen can be visible
             this.isOpen = true;
             overlay.classList.add('open');
             window.history.pushState({ filePickerOpen: true }, "");
@@ -442,25 +458,25 @@
                     const sendBtn = this.querySelector('#fp-send');
                     
                     sendBtn.disabled = true;
-                    loadingText.innerText = "GPU Optimizing Video...";
+                    loadingText.innerText = "Initializing Compression...";
                     loadingScreen.style.display = "flex";
                     
                     try {
                         const compressedFile = await this.compressVideo(file);
                         
                         if (!compressedFile) {
-                            this.showToast("Your browser doesn't support video compression. Please select a smaller file (Under 3MB).");
+                            alert("Your browser doesn't fully support video compression. Please select a video under 3MB.");
                             loadingScreen.style.display = "none";
-                            this.hideUI();
-                            return; // Stop processing completely
+                            history.back(); // Cleanly closes the UI
+                            return; 
                         }
                         
                         finalFile = compressedFile;
                     } catch (e) {
-                        this.showToast("Compression failed. Please try a different video.");
+                        alert("An error occurred during compression. Please select a video under 3MB.");
                         loadingScreen.style.display = "none";
-                        this.hideUI();
-                        return; // Stop processing completely
+                        history.back(); // Cleanly closes the UI
+                        return; 
                     }
                     
                     loadingScreen.style.display = "none";
@@ -541,7 +557,6 @@
             progressContainer.style.display = "block";
             bar.style.width = "5%"; 
 
-            // It's already compressed (or safely under 3MB), just grab it.
             const fileToUpload = this.selectedFile;
 
             loadingText.innerText = "Uploading to Cloud...";
@@ -551,8 +566,6 @@
             const fileName = `${Date.now()}_${cleanName}`;
 
             try {
-                // Supabase doesn't natively support XHR upload progress events yet 
-                // for standard uploads, so we simulate the bar filling up smoothly.
                 let simulatedProgress = 40;
                 const progressInterval = setInterval(() => {
                     if (simulatedProgress < 90) {
