@@ -130,7 +130,7 @@
                 /* --- Top Navigation --- */
                 .fp-nav {
                     display: flex; justify-content: space-between; align-items: center;
-                    padding: 40px 20px 15px 20px; z-index: 100;
+                    padding: max(40px, env(safe-area-inset-top)) 20px 15px 20px; z-index: 100;
                     background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
                     position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box;
                     pointer-events: none; /* Let clicks pass through empty space */
@@ -161,9 +161,10 @@
                     position: absolute; top: 80px; bottom: 230px; left: 0; right: 0;
                     display: flex; align-items: center; justify-content: center;
                     background: var(--fp-bg); z-index: 10; padding: 0 10px;
+                    transition: bottom 0.3s var(--fp-ease);
                 }
                 .fp-preview-container {
-                    position: relative; max-width: 100%; max-height: 100%;
+                    position: relative; width: 100%; height: 100%; max-width: 100%; max-height: 100%;
                     border-radius: 16px; overflow: hidden;
                     box-shadow: 0 10px 40px rgba(0,0,0,0.8);
                     display: flex; align-items: center; justify-content: center;
@@ -205,6 +206,23 @@
                     box-shadow: 0 4px 20px rgba(0,0,0,0.6); text-shadow: none;
                 }
                 .fp-text-element:active { cursor: grabbing; border: 1.5px dashed rgba(255,255,255,0.8); }
+
+                /* Generic File UI Layer */
+                #fp-generic-file-preview {
+                    display: none; flex-direction: column; align-items: center; justify-content: center; 
+                    width: 100%; height: 100%; padding: 30px; box-sizing: border-box; text-align: center; 
+                    background: #0a0a0a; border-radius: 16px;
+                }
+                #fp-file-icon {
+                    font-size: 5rem; margin-bottom: 20px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+                }
+                #fp-file-name {
+                    color: white; font-size: 18px; font-weight: 600; word-break: break-word; line-height: 1.4; 
+                    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%;
+                }
+                #fp-file-size {
+                    color: #8e8e93; font-size: 14px; margin-top: 12px; font-weight: 500;
+                }
 
                 /* --- Bottom Toolbar (Absolute Positioned for safety) --- */
                 .fp-toolbar {
@@ -368,6 +386,12 @@
                             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         </div>
                         <div id="fp-text-layer"></div>
+                        
+                        <div id="fp-generic-file-preview">
+                            <div id="fp-file-icon">📄</div>
+                            <div id="fp-file-name"></div>
+                            <div id="fp-file-size"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -883,6 +907,14 @@
 
             if (mime.startsWith('video/')) {
                 this.fileType = 'video';
+                
+                // Show video UI, hide generic UI safely
+                this.querySelector('#fp-generic-file-preview').style.display = 'none';
+                this.querySelector('#fp-video-preview').style.display = 'block';
+                this.querySelector('#fp-play-btn').style.display = 'flex';
+                this.querySelector('#fp-text-layer').style.display = 'block';
+                this.querySelector('#fp-workspace').style.bottom = '230px'; // Maintain space for toolbar
+
                 const url = URL.createObjectURL(file);
                 
                 const video = this.querySelector('#fp-video-preview');
@@ -895,8 +927,30 @@
                 this.querySelector('.fp-tool-btn[data-panel="panel-trim"]').click();
             } else {
                 this.fileType = 'file';
-                this.querySelector('#fp-workspace').innerHTML = `<div style="color:white; font-size:5rem; margin-bottom:20px;">📄</div><div style="color:white; font-weight:600;">${file.name}</div>`;
+                
+                // Hide video UI, show generic beautifully centered UI
+                this.querySelector('#fp-video-preview').style.display = 'none';
+                this.querySelector('#fp-play-btn').style.display = 'none';
+                this.querySelector('#fp-text-layer').style.display = 'none';
                 this.querySelector('#fp-toolbar').style.display = 'none';
+                
+                // Expand workspace to full screen to center perfectly
+                this.querySelector('#fp-workspace').style.bottom = '0px';
+                
+                const genericPreview = this.querySelector('#fp-generic-file-preview');
+                genericPreview.style.display = 'flex';
+                
+                // Dynamic File Type Icon
+                let icon = '📄';
+                if(mime.startsWith('image/')) icon = '🖼️';
+                else if(mime.startsWith('audio/')) icon = '🎵';
+                else if(mime === 'application/pdf') icon = '📕';
+                else if(mime.startsWith('text/')) icon = '📝';
+                else if(mime.includes('zip') || mime.includes('rar') || mime.includes('tar')) icon = '🗜️';
+                
+                this.querySelector('#fp-file-icon').innerText = icon;
+                this.querySelector('#fp-file-name').innerText = file.name;
+                this.querySelector('#fp-file-size').innerText = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
             }
         }
 
@@ -1222,6 +1276,14 @@
             this.querySelector('#fp-adj-saturation').value = 100;
             
             this.querySelector('.fp-nav-send').style.display = 'flex';
+            this.querySelector('#fp-workspace').style.display = 'flex';
+            
+            // Reset Views fully
+            this.querySelector('#fp-workspace').style.bottom = '230px';
+            this.querySelector('#fp-generic-file-preview').style.display = 'none';
+            this.querySelector('#fp-video-preview').style.display = 'block';
+            this.querySelector('#fp-play-btn').style.display = 'flex';
+            this.querySelector('#fp-text-layer').style.display = 'block';
         }
     }
 
