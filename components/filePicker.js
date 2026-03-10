@@ -206,7 +206,7 @@
                     animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite; margin-bottom: 20px;
                 }
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                .fp-loading-text { font-weight: 600; font-size: 1rem; letter-spacing: 1px; color: #ddd; text-align: center; padding: 0 20px;}
+                .fp-loading-text { font-weight: 600; font-size: 1rem; letter-spacing: 1px; color: #ddd; text-align: center; padding: 0 20px; white-space: pre-wrap;}
 
                 /* --- Toast Notification --- */
                 .fp-toast {
@@ -297,7 +297,6 @@
                 });
             }
 
-            // --- HISTORY HANDLING FIX ---
             const triggerBack = () => {
                 if (this.isOpen) {
                     history.back(); 
@@ -370,57 +369,97 @@
         }
 
         // ==========================================
-        // ⚡ SINGLE-THREADED FFMPEG.WASM (GitHub Pages Safe)
+        // 📉 THE FREE "SILENT CANVAS" COMPRESSION
         // ==========================================
-        async compressVideo(file) {
-            try {
-                // Dynamically import the pure ESM version of FFmpeg
-                const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/+esm');
-                const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+        async compressVideo(file, loadingTextEl) {
+            return new Promise((resolve) => {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.crossOrigin = "anonymous";
+                video.playsInline = true; 
                 
-                const ffmpeg = new FFmpeg();
-                
-                // Keep the user updated on the UI so they know it hasn't crashed
-                ffmpeg.on('progress', ({ progress }) => {
-                    const pct = Math.round(progress * 100);
-                    const loadingText = this.querySelector('#fp-loading-text');
-                    if(loadingText && pct > 0 && pct <= 100) {
-                        loadingText.innerText = `Compressing Video... ${pct}%`;
-                    }
-                });
+                video.onloadedmetadata = () => {
+                    // Start the Web Audio Context to silently route audio
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioCtx.createMediaElementSource(video);
+                    const dest = audioCtx.createMediaStreamDestination();
+                    
+                    // Connect the video's audio to our destination, but NOT to the device speakers
+                    source.connect(dest);
 
-                // Crucial: We use the SINGLE-THREADED core to avoid Cross-Origin header crashes
-                await ffmpeg.load({
-                    coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
-                    wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm'
-                });
+                    video.play().then(() => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Crush resolution to 360p max for extreme size savings
+                        const MAX_HEIGHT = 360;
+                        let w = video.videoWidth;
+                        let h = video.videoHeight;
+                        if (h > MAX_HEIGHT) {
+                            w = Math.floor(w * (MAX_HEIGHT / h));
+                            h = MAX_HEIGHT;
+                        }
+                        canvas.width = w; 
+                        canvas.height = h;
 
-                const inputName = 'input.mp4';
-                const outputName = 'output.mp4';
+                        // Capture 24 frames per second
+                        const videoStream = canvas.captureStream(24);
+                        const audioStream = dest.stream;
+                        
+                        // Merge the Canvas Video and Web Audio tracks together
+                        const combinedStream = new MediaStream([
+                            ...videoStream.getVideoTracks(),
+                            ...audioStream.getAudioTracks()
+                        ]);
 
-                // Load the 60MB file into memory
-                await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-                // The Magic Command: ultrafast preset makes single-threaded run smoothly
-                // We drop resolution to 360p and cap bitrates to force a ~2MB output
-                await ffmpeg.exec([
-                    '-i', inputName,
-                    '-vf', 'scale=-2:360',
-                    '-r', '24',
-                    '-b:v', '250k',
-                    '-b:a', '32k',
-                    '-preset', 'ultrafast',
-                    outputName
-                ]);
-
-                const data = await ffmpeg.readFile(outputName);
-                const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
-                return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
-
-            } catch (error) {
-                console.error("FFmpeg compression failed:", error);
-                throw error; 
-            }
+                        // Record at 250kbps to guarantee hitting ~2MB
+                        const recorder = new MediaRecorder(combinedStream, { 
+                            videoBitsPerSecond: 250000,
+                            audioBitsPerSecond: 32000
+                        });
+                        
+                        const chunks = [];
+                        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                        
+                        recorder.onstop = () => {
+                            // By leaving the Blob type blank, we let the browser package it natively
+                            const blob = new Blob(chunks);
+                            // It's technically a webm or mp4 depending on the browser, standardizing to .mp4 extension
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: blob.type || 'video/mp4' });
+                            
+                            audioCtx.close();
+                            resolve(compressedFile);
+                        };
+                        
+                        recorder.start();
+                        
+                        // Continuously draw the hidden video to the hidden canvas
+                        const drawFrame = () => {
+                            if (video.paused || video.ended) {
+                                if(recorder.state === "recording") recorder.stop();
+                                return;
+                            }
+                            ctx.drawImage(video, 0, 0, w, h);
+                            
+                            // Update UI text with real-time countdown
+                            if (loadingTextEl) {
+                                const remaining = Math.max(0, Math.ceil(video.duration - video.currentTime));
+                                loadingTextEl.innerText = `Compressing Video...\n(This will take ${remaining} seconds)`;
+                            }
+                            
+                            requestAnimationFrame(drawFrame);
+                        };
+                        drawFrame();
+                        
+                        video.onended = () => {
+                            if(recorder.state === "recording") recorder.stop();
+                        };
+                    }).catch((e) => {
+                        console.error("Autoplay/Audio block prevented compression", e);
+                        resolve(file); // Failsafe fallback
+                    });
+                };
+            });
         }
 
         async handleFileSelect(file) {
@@ -436,7 +475,6 @@
             this.querySelector('#fp-video-el').src = '';
             this.querySelector('#fp-progress-container').style.display = 'none';
 
-            // Open UI and Push History FIRST so loading screen can be visible
             this.isOpen = true;
             overlay.classList.add('open');
             window.history.pushState({ filePickerOpen: true }, "");
@@ -455,23 +493,21 @@
                 let finalFile = file;
                 const sizeInMB = file.size / (1024 * 1024);
                 
-                // Compress IMMEDIATELY on selection if >= 3MB
+                // Trigger the silent Canvas compression if >= 3MB
                 if (sizeInMB >= 3) {
                     const loadingScreen = this.querySelector('#fp-loading');
                     const loadingText = this.querySelector('#fp-loading-text');
                     const sendBtn = this.querySelector('#fp-send');
                     
                     sendBtn.disabled = true;
-                    loadingText.innerText = "Initializing Engine...";
+                    loadingText.innerText = "Starting Compression...\n(Please don't close the app)";
                     loadingScreen.style.display = "flex";
                     
                     try {
-                        finalFile = await this.compressVideo(file);
+                        finalFile = await this.compressVideo(file, loadingText);
                     } catch (e) {
-                        alert("The file was too large for the browser to process. Please select a smaller video.");
-                        loadingScreen.style.display = "none";
-                        history.back(); // Cleanly closes the UI
-                        return; 
+                        console.warn("Compression failed natively, using original", e);
+                        finalFile = file; // Graceful fallback
                     }
                     
                     loadingScreen.style.display = "none";
@@ -480,7 +516,7 @@
 
                 this.selectedFile = finalFile;
                 
-                // Show the UI elements with the final (compressed) file
+                // Render the UI
                 const vidWrap = this.querySelector('#fp-vid-wrap');
                 const video = this.querySelector('#fp-video-el');
                 const trimmer = this.querySelector('#fp-trimmer');
@@ -552,6 +588,7 @@
             progressContainer.style.display = "block";
             bar.style.width = "5%"; 
 
+            // Grab the file (it was already compressed during the handleFileSelect phase)
             const fileToUpload = this.selectedFile;
 
             loadingText.innerText = "Uploading to Cloud...";
