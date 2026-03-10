@@ -104,7 +104,7 @@
         render() {
             this.innerHTML = `
             <style>
-                :host { 
+                file-picker { 
                     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
                     display: block; 
                     --fp-bg: #000000;
