@@ -881,7 +881,7 @@ box-shadow: var(--received-shadow);
             font-size: 40px;
             pointer-events: none;
             z-index: 3001;
-            animation: floatUp 1.2s var(--ease-spring) forwards; /* Improved physics */
+            animation: floatUp 1.2s var(--ease-spring forwards; /* Improved physics */
             will-change: transform, opacity;
         }
 
@@ -4664,6 +4664,114 @@ box-shadow: var(--received-shadow);
         // Start the continuous cycle
         runMoodCycle();
     })();
+
+    // =======================================================================
+    // NEW FIX: ADVANCED MEDIA SCROLL ANCHORING & CACHING LOGIC
+    // =======================================================================
+    (function initScrollAnchoring() {
+        let prevScrollHeight = 0;
+        let prevScrollTop = 0;
+        let isAnchoring = false;
+
+        function safeHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash).toString();
+        }
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            const cf = document.getElementById('chat-flow');
+            if (!cf || isAnchoring || window.isLoadingMore) return;
+            
+            const currentScrollHeight = cf.scrollHeight;
+            const currentScrollTop = cf.scrollTop;
+            const clientHeight = cf.clientHeight;
+            
+            const heightDiff = currentScrollHeight - prevScrollHeight;
+            
+            // If user is scrolled up by more than 150px (middle of the chat)
+            const isScrolledUp = (prevScrollHeight - prevScrollTop - clientHeight) > 150;
+            
+            // If content expanded (images/gifs loaded) AND user is reading old messages
+            if (heightDiff > 0 && isScrolledUp) {
+                isAnchoring = true;
+                
+                // Freeze visual position by absorbing the expansion
+                cf.scrollTop = prevScrollTop + heightDiff;
+                
+                // Pre-cache media heights for future loads
+                document.querySelectorAll('.chat-media-img').forEach(el => {
+                    try {
+                        let url = el.src || el.currentSrc;
+                        if(url && url !== '' && url !== 'true') {
+                            if (el.tagName === 'IMG' && el.complete && el.naturalHeight) {
+                                localStorage.setItem('media_h_' + safeHash(url), el.naturalHeight);
+                            } else if (el.tagName === 'VIDEO' && el.videoHeight) {
+                                localStorage.setItem('media_h_' + safeHash(url), el.videoHeight);
+                            }
+                        }
+                    } catch(e) {}
+                });
+
+                requestAnimationFrame(() => {
+                    prevScrollHeight = cf.scrollHeight;
+                    prevScrollTop = cf.scrollTop;
+                    isAnchoring = false;
+                });
+                return;
+            }
+            prevScrollHeight = currentScrollHeight;
+        });
+
+        const chatFlow = document.getElementById('chat-flow');
+        if (chatFlow) {
+            chatFlow.addEventListener('scroll', () => {
+                if (!isAnchoring) {
+                    prevScrollHeight = chatFlow.scrollHeight;
+                    prevScrollTop = chatFlow.scrollTop;
+                }
+            }, { passive: true });
+        }
+
+        // Apply cached min-heights dynamically before images even load to prevent layout shifts
+        const domObserver = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                        let mediaElements = node.querySelectorAll ? node.querySelectorAll('.chat-media-img') : [];
+                        if (node.classList && node.classList.contains('chat-media-img')) mediaElements = [node];
+                        
+                        mediaElements.forEach(el => {
+                            try {
+                                let url = el.src || el.currentSrc || el.getAttribute('src');
+                                if(url) {
+                                    let cachedH = localStorage.getItem('media_h_' + safeHash(url));
+                                    if (cachedH && !el.style.minHeight) {
+                                        let scaledH = Math.min(parseInt(cachedH), 380); // 380 is max-height in css
+                                        el.style.minHeight = scaledH + 'px';
+                                        el.style.height = scaledH + 'px'; // Enforce initial space reservation
+                                    }
+                                }
+                            } catch(e) {}
+                        });
+                    }
+                });
+            });
+        });
+
+        let checkInterval = setInterval(() => {
+            const mc = document.getElementById('messages-container');
+            if (mc) {
+                resizeObserver.observe(mc);
+                domObserver.observe(mc, { childList: true, subtree: true });
+                clearInterval(checkInterval);
+            }
+        }, 100);
+    })();
+    // =======================================================================
 
 </script>
 
