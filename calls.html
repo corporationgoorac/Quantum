@@ -129,7 +129,7 @@
             justify-content: center;
             width: 15px; height: 15px;
             background-color: var(--ig-blue);
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58.8-3.04 2.12-4.03l-1.1-2.48-2.74.05a4.95 4.95 0 0 1-4.04-2.12L14.24 3l-2.47 1.1-1.1-2.48-2.5.78L7.1 5.14a4.95 4.95 0 0 1-4.04 2.12l-2.74-.05-1.1 2.48 2.12 4.03-2.12 4.03 1.1 2.48 2.74-.05a4.95 4.95 0 0 1 4.04 2.12L9.76 21l2.47-1.1 1.1 2.48 2.5-.78.78-2.73a4.95 4.95 0 0 1 4.04-2.12l2.74.05 1.1-2.48-2.12-4.03Z"/></svg>');
+            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58.8-3.04 2.12-4.03l-1.1-2.48-2.74.05a4.95 4.95 0 0 1-4.04-2.12L14.24 3l-2.47 1.1-1.1-2.48-2.5.78L7.1 5.14a4.95 4.95 0 0 1-4.04 2.12l-2.74-.05-1.1 2.48 2.5-.78.78-2.73a4.95 4.95 0 0 1 4.04-2.12l2.74.05 1.1-2.48-2.12-4.03Z"/></svg>');
             mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58.8-3.04 2.12-4.03l-1.1-2.48-2.74.05a4.95 4.95 0 0 1-4.04-2.12L14.24 3l-2.47 1.1-1.1-2.48-2.5.78L7.1 5.14a4.95 4.95 0 0 1-4.04 2.12l-2.74-.05-1.1 2.48 2.12 4.03-2.12 4.03 1.1 2.48 2.74-.05a4.95 4.95 0 0 1 4.04 2.12L9.76 21l2.47-1.1 1.1 2.48 2.5-.78.78-2.73a4.95 4.95 0 0 1 4.04-2.12l2.74.05 1.1-2.48-2.12-4.03Z"/></svg>');
             -webkit-mask-size: contain; mask-size: contain;
             -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
@@ -624,20 +624,32 @@
             const targetUid = params.get('targetUid');
 
             if (autoAnswer === 'true' && targetUid) {
-                pendingAutoAnswer = true;
-                document.getElementById('ringtone').pause();
-                showCallUI("Connecting...", null, "ESTABLISHING CONNECTION...", false);
-                
-                db.collection("users").doc(targetUid).get().then(doc => {
-                    const d = doc.exists ? doc.data() : {};
-                    currentActiveTarget = { uid: targetUid, name: d.name || "User", pfp: d.photoURL };
-                    updateCallScreenInfo(d.name || "User", d.photoURL, d.verified);
+                // Instant Database Check to verify if the call is still ringing
+                rdb.ref(`calls_status/${targetUid}`).once('value', snapshot => {
+                    const callData = snapshot.val();
+                    const isRecent = callData && callData.timestamp && (Date.now() - callData.timestamp < 60000);
+
+                    if (callData && callData.status === 'ringing' && isRecent) {
+                        pendingAutoAnswer = true;
+                        document.getElementById('ringtone').pause();
+                        showCallUI("Connecting...", null, "ESTABLISHING CONNECTION...", false);
+                        
+                        db.collection("users").doc(targetUid).get().then(doc => {
+                            const d = doc.exists ? doc.data() : {};
+                            currentActiveTarget = { uid: targetUid, name: d.name || "User", pfp: d.photoURL };
+                            updateCallScreenInfo(d.name || "User", d.photoURL, d.verified);
+                        });
+
+                        const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                        window.history.replaceState({path:newurl},'',newurl);
+
+                        if(incomingCallRef) triggerAnswer();
+                    } else {
+                        // The call has ended or expired
+                        alert("Missed call. The caller has already hung up.");
+                        window.location.href = "calls.html"; 
+                    }
                 });
-
-                const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({path:newurl},'',newurl);
-
-                if(incomingCallRef) triggerAnswer();
             }
         }
 
