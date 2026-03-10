@@ -8,6 +8,8 @@
     >
     <title>GQuantum Home | From Goorac</title>
     
+    <link rel="preload" href="components/navbar.js" as="script">
+    
     <script src="config.js"></script>
     <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
     <link rel="manifest" href="manifest.json">
@@ -953,6 +955,22 @@
     if (cachedNavbarHtmlData) {
         // [GLITCH FIX]: Disabled forcing raw HTML into the element, allowing the component to load its own 0ms SVGs cleanly
         // document.getElementById('main-nav').innerHTML = cachedNavbarHtmlData;
+
+        // 🚀 NEW 0ms FLICKER FIX: Inject a detached visual clone *behind* the real navbar (z-index: 999) to completely eliminate flicker without breaking component logic
+        document.write('<div id="nav-0ms-clone" style="position:fixed; bottom:0; left:0; width:100%; height:calc(65px + env(safe-area-inset-bottom)); background:var(--bg); z-index:999; display:flex; justify-content:space-around; align-items:center; pointer-events:none; transition:opacity 0.4s ease;">' + cachedNavbarHtmlData + '</div>');
+        
+        // Smoothly fade out the clone once the true component mounts and natively paints its SVGs over it
+        customElements.whenDefined('main-navbar').then(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const clone = document.getElementById('nav-0ms-clone');
+                    if (clone) {
+                        clone.style.opacity = '0';
+                        setTimeout(() => clone.remove(), 400);
+                    }
+                }, 150); // Small buffer to ensure native SVGs finish loading
+            });
+        });
     }
 </script>
 
