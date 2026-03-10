@@ -370,17 +370,17 @@
         }
 
         // ==========================================
-        // ⚡ FFMPEG.WASM COMPRESSION (PRODUCTION READY)
+        // ⚡ SINGLE-THREADED FFMPEG.WASM (GitHub Pages Safe)
         // ==========================================
         async compressVideo(file) {
             try {
-                // Use the official FFmpeg CDN imports
+                // Dynamically import the pure ESM version of FFmpeg
                 const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/+esm');
                 const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
                 
                 const ffmpeg = new FFmpeg();
                 
-                // Hook progress directly into the UI text
+                // Keep the user updated on the UI so they know it hasn't crashed
                 ffmpeg.on('progress', ({ progress }) => {
                     const pct = Math.round(progress * 100);
                     const loadingText = this.querySelector('#fp-loading-text');
@@ -389,6 +389,7 @@
                     }
                 });
 
+                // Crucial: We use the SINGLE-THREADED core to avoid Cross-Origin header crashes
                 await ffmpeg.load({
                     coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
                     wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm'
@@ -397,15 +398,18 @@
                 const inputName = 'input.mp4';
                 const outputName = 'output.mp4';
 
+                // Load the 60MB file into memory
                 await ffmpeg.writeFile(inputName, await fetchFile(file));
 
-                // Aggressive settings to hit ~2MB (360p, 24fps, low bitrate)
+                // The Magic Command: ultrafast preset makes single-threaded run smoothly
+                // We drop resolution to 360p and cap bitrates to force a ~2MB output
                 await ffmpeg.exec([
                     '-i', inputName,
                     '-vf', 'scale=-2:360',
                     '-r', '24',
                     '-b:v', '250k',
                     '-b:a', '32k',
+                    '-preset', 'ultrafast',
                     outputName
                 ]);
 
@@ -414,8 +418,8 @@
                 return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
 
             } catch (error) {
-                console.error("Compression failed:", error);
-                throw error; // Let the handleFileSelect catch block manage the failure
+                console.error("FFmpeg compression failed:", error);
+                throw error; 
             }
         }
 
@@ -458,22 +462,13 @@
                     const sendBtn = this.querySelector('#fp-send');
                     
                     sendBtn.disabled = true;
-                    loadingText.innerText = "Initializing Compression...";
+                    loadingText.innerText = "Initializing Engine...";
                     loadingScreen.style.display = "flex";
                     
                     try {
-                        const compressedFile = await this.compressVideo(file);
-                        
-                        if (!compressedFile) {
-                            alert("Your browser doesn't fully support video compression. Please select a video under 3MB.");
-                            loadingScreen.style.display = "none";
-                            history.back(); // Cleanly closes the UI
-                            return; 
-                        }
-                        
-                        finalFile = compressedFile;
+                        finalFile = await this.compressVideo(file);
                     } catch (e) {
-                        alert("An error occurred during compression. Please select a video under 3MB.");
+                        alert("The file was too large for the browser to process. Please select a smaller video.");
                         loadingScreen.style.display = "none";
                         history.back(); // Cleanly closes the UI
                         return; 
@@ -485,14 +480,14 @@
 
                 this.selectedFile = finalFile;
                 
-                // Show the UI elements with the compressed file
+                // Show the UI elements with the final (compressed) file
                 const vidWrap = this.querySelector('#fp-vid-wrap');
                 const video = this.querySelector('#fp-video-el');
                 const trimmer = this.querySelector('#fp-trimmer');
                 vidWrap.style.display = 'block';
                 trimmer.style.display = 'block';
                 video.src = URL.createObjectURL(finalFile);
-                setMeta(finalFile, 'Video'); // This will now display the small compressed size
+                setMeta(finalFile, 'Video');
                 
             } else if (mime === 'application/pdf') {
                 this.fileType = 'pdf';
