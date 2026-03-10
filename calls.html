@@ -895,9 +895,11 @@
                 document.getElementById('list-container').innerHTML = tabCache;
             } else {
                 // Only show skeleton if the container doesn't already have cached items
-                if (!document.getElementById('list-container').innerHTML.includes('call-item')) {
-                    showSkeleton();
-                }
+                // COMMENTED OUT OLD LOGIC TO FIX GLITCH: if (!document.getElementById('list-container').innerHTML.includes('call-item')) {
+                // NEW LOGIC: Always clear and show skeleton if there is no cache for the specific tab
+                document.getElementById('list-container').innerHTML = ''; 
+                showSkeleton();
+                // }
             }
             if (activeTab === 'recent') await loadRecent(); else await loadContacts();
         }
@@ -932,10 +934,10 @@
                     <div class="call-item">
                         <img src="${pfp || 'https://via.placeholder.com/150'}" class="call-pfp">
                         <div class="call-info">
-                            <div class="u-name">${name}</div>
+                            <div class="u-name">${name} ${otherData.verified ? '<span class="material-icons-round" style="color:var(--ig-blue); font-size:16px; margin-left:4px; vertical-align:middle;">verified</span>' : ''}</div>
                             <div class="call-meta ${statusClass}">${isOutgoing ? 'Outgoing' : 'Incoming'} • ${call.duration || '0s'} • ${time}</div>
                         </div>
-                        <button class="btn-call" onclick="startCall('${otherUid}', '${name}', '${pfp}', false)">📞</button>
+                        <button class="btn-call" onclick="startCall('${otherUid}', '${name}', '${pfp}', ${otherData.verified || false})">📞</button>
                     </div>`;
             });
 
