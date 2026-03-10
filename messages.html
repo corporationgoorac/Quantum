@@ -198,6 +198,9 @@
         #search-results { display: none; background: #000; min-height: 100vh; width: 100%; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px); }
         main-navbar { transition: all 0.4s ease; width: 100%; }
+        
+        /* ANTI-FLICKER FIX: Hides the custom navbar component until the JS file fully registers it */
+        main-navbar:not(:defined) { opacity: 0 !important; visibility: hidden !important; pointer-events: none; }
 
         /* NETWORK TOAST */
         #offline-toast {
