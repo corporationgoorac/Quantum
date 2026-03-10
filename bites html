@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>Goorac | Bites</title>
+    
+    <script src="config.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script type="module" src="components/presence.js"></script>
+    <script src="components/navbar.js" defer></script>
+    
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <style>
+        /* ==========================================================================
+           GLOBAL RESET & THEME
+           ========================================================================== */
+        * { box-sizing: border-box !important; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --bg: #000;
+            --accent: #00d2ff;
+            --border: rgba(255, 255, 255, 0.1);
+            --text-dim: #888;
+            --danger: #ff4444;
+            --glass: rgba(0, 0, 0, 0.4);
+            --text-main: #ffffff;
+        }
+
+        body {
+            background: var(--bg); color: white; margin: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+            overflow: hidden; /* STRICT LOCK FOR REELS FEED */
+            width: 100vw; height: 100vh;
+        }
+
+        /* ==========================================================================
+           HEADER (TRANSPARENT FLOATING)
+           ========================================================================== */
+        header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 15px 20px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 1000;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+            pointer-events: none; /* Let clicks pass through except on icons */
+        }
+        .header-title { font-weight: 800; font-size: 1.4rem; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); pointer-events: auto; }
+        .header-right { pointer-events: auto; }
+        
+        .search-btn {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+            transition: 0.2s;
+        }
+        .search-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+
+        /* ==========================================================================
+           THE VIRTUAL SWIPER ENGINE (CSS SNAP)
+           ========================================================================== */
+        #bites-viewport {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            overflow-y: scroll; scroll-snap-type: y mandatory;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            z-index: 10; padding-bottom: calc(65px + env(safe-area-inset-bottom));
+        }
+        #bites-viewport::-webkit-scrollbar { display: none; }
+
+        .bite-slide {
+            width: 100vw; height: calc(100vh - 65px - env(safe-area-inset-bottom));
+            scroll-snap-align: start; scroll-snap-stop: always;
+            position: relative;
+        }
+
+        /* THE HARDWARE PLAYERS (FIXED BEHIND SCROLL) */
+        .yt-player-container {
+            position: fixed; top: 0; left: 0; width: 100vw; 
+            height: calc(100vh - 65px - env(safe-area-inset-bottom));
+            z-index: 1; opacity: 0; pointer-events: none; background: #000;
+            transform: scale(1.05); /* Slight scale to hide YouTube borders */
+        }
+        .yt-player-container.active { opacity: 1; z-index: 2; }
+        .yt-iframe { width: 100%; height: 100%; pointer-events: none; }
+
+        /* ==========================================================================
+           BITES UI OVERLAY (Tiktok Style)
+           ========================================================================== */
+        .bite-ui-layer {
+            position: absolute; inset: 0; z-index: 20;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 20px; padding-bottom: 40px; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%);
+        }
+
+        .side-actions {
+            position: absolute; right: 15px; bottom: 40px;
+            display: flex; flex-direction: column; gap: 25px; align-items: center;
+        }
+
+        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #fff; cursor: pointer; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); transition: 0.2s;}
+        .action-btn:active { transform: scale(0.85); }
+        .action-btn .material-icons-round { font-size: 34px; }
+        .action-btn span.count { font-size: 0.75rem; font-weight: 700; }
+        
+        .action-btn.liked .material-icons-round { color: var(--danger); }
+        .action-btn.liked { animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+
+        .creator-pfp-wrap { position: relative; width: 45px; height: 45px; margin-bottom: 10px; }
+        .creator-pfp { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; background: #222; }
+        .follow-badge {
+            position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: #000; width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900;
+            border: 2px solid #000;
+        }
+
+        .bottom-info { max-width: 80%; }
+        .bite-author { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 1px 5px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 6px; }
+        .bite-desc { font-size: 0.9rem; color: #eee; line-height: 1.4; text-shadow: 0 1px 5px rgba(0,0,0,0.8); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .bite-category { display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* ==========================================================================
+           SEARCH DISCOVER MODAL (Instagram Style)
+           ========================================================================== */
+        #discover-modal {
+            position: fixed; top: 0; right: -100%; width: 100vw; height: 100vh;
+            background: #000; z-index: 2000; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column;
+        }
+        #discover-modal.active { right: 0; }
+
+        .modal-header {
+            padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top));
+            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: #000;
+        }
+        .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; }
+        .search-input-box {
+            flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px 16px;
+            border-radius: 14px; color: #fff; font-size: 16px; outline: none; transition: 0.2s;
+        }
+        .search-input-box:focus { border-color: var(--accent); background: #222; }
+
+        .grid-results {
+            flex: 1; overflow-y: auto; padding: 2px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+            align-content: start;
+        }
+
+        .grid-item {
+            aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden;
+        }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .grid-item:active img { transform: scale(1.05); }
+        .grid-item .views-overlay {
+            position: absolute; bottom: 5px; left: 5px; font-size: 0.7rem; font-weight: 700; color: #fff;
+            display: flex; align-items: center; gap: 3px; text-shadow: 0 1px 3px #000;
+        }
+
+        .skel-grid-item { aspect-ratio: 9 / 16; background: #1a1a1a; animation: skelPulse 1.5s infinite; }
+        @keyframes skelPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* PLAY/PAUSE OVERLAY INDICATOR */
+        .play-indicator {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 70px; height: 70px; background: rgba(0,0,0,0.5); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #fff;
+            opacity: 0; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 30; pointer-events: none;
+        }
+        .play-indicator .material-icons-round { font-size: 40px; }
+        .play-indicator.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        /* TAP TO START SCREEN */
+        #start-screen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; backdrop-filter: blur(10px); transition: opacity 0.3s;
+        }
+        .start-btn-pulse { width: 80px; height: 80px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px var(--accent); animation: startPulse 2s infinite; margin-bottom: 20px; color: #000; }
+        @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
+
+        /* 🚀 MAIN NAVBAR */
+        main-navbar { 
+            display: block; position: fixed; bottom: 0; left: 0; width: 100%;
+            height: calc(65px + env(safe-area-inset-bottom)); background-color: var(--bg); z-index: 1000; 
+        }
+    </style>
+</head>
+<body>
+
+<div id="start-screen" onclick="initExperience()">
+    <div class="start-btn-pulse"><span class="material-icons-round" style="font-size:40px;">play_arrow</span></div>
+    <h2 style="margin:0; font-weight:800; font-size:1.5rem;">Tap to enter Bites</h2>
+    <p style="color:#aaa; font-size:0.9rem; margin-top:10px;">Turn your volume up</p>
+</div>
+
+<header>
+    <div class="header-title">Bites</div>
+    <div class="header-right">
+        <div class="search-btn" onclick="openDiscoverModal()">
+            <span class="material-icons-round">search</span>
+        </div>
+    </div>
+</header>
+
+<div id="player-container-a" class="yt-player-container active"><div id="yt-player-a" class="yt-iframe"></div></div>
+<div id="player-container-b" class="yt-player-container"><div id="yt-player-b" class="yt-iframe"></div></div>
+
+<div class="play-indicator" id="play-pause-icon"><span class="material-icons-round" id="pp-icon-inner">pause</span></div>
+
+<div id="bites-viewport" onscroll="handleScroll()">
+    </div>
+
+<div id="discover-modal">
+    <div class="modal-header">
+        <button class="back-btn" onclick="closeDiscoverModal(true)"><span class="material-icons-round">west</span></button>
+        <input type="text" id="search-input" class="search-input-box" placeholder="Search trending topics..." autocomplete="off">
+    </div>
+    <div class="grid-results" id="search-grid">
+        <div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">
+            <span class="material-icons-round" style="font-size: 50px; opacity:0.5; margin-bottom: 10px;">explore</span>
+            <p style="font-weight:600; font-size:1.1rem;">Discover New Bites</p>
+            <p style="font-size:0.85rem; margin-top:5px;">Search for gaming, comedy, tech, and more.</p>
+        </div>
+    </div>
+</div>
+
+<main-navbar></main-navbar>
+
+<script>
+    // ==========================================================================
+    // SYSTEM & FIREBASE INIT
+    // ==========================================================================
+    if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
+    else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
+
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let myUid = null;
+
+    auth.onAuthStateChanged(user => {
+        if (user) { myUid = user.uid; } 
+        else { window.location.href = 'login.html'; }
+    });
+
+    // ==========================================================================
+    // THE BITES ENGINE (STATE & CACHE)
+    // ==========================================================================
+    let bitesQueue = [];
+    let currentIndex = 0;
+    let isFetching = false;
+    let hasStarted = false;
+    let viewedVideoIds = new Set(); // To ensure no repeats in session
+
+    // The Dual Players
+    let playerA, playerB;
+    let activePlayer = 'A'; // 'A' or 'B'
+    let playersReady = 0;
+
+    // Load from Cache immediately
+    (function loadCache() {
+        const cached = localStorage.getItem('goorac_bites_queue');
+        if (cached) {
+            try { 
+                const parsed = JSON.parse(cached);
+                if (parsed.length > 0) bitesQueue = parsed; 
+            } catch(e) {}
+        }
+    })();
+
+    // ==========================================================================
+    // YOUTUBE IFRAME API SETUP
+    // ==========================================================================
+    function onYouTubeIframeAPIReady() {
+        const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 0 };
+        
+        playerA = new YT.Player('yt-player-a', {
+            playerVars: playerVars,
+            events: { 'onReady': () => checkPlayersReady(), 'onStateChange': onPlayerStateChange }
+        });
+        
+        playerB = new YT.Player('yt-player-b', {
+            playerVars: playerVars,
+            events: { 'onReady': () => checkPlayersReady(), 'onStateChange': onPlayerStateChange }
+        });
+    }
+
+    function checkPlayersReady() {
+        playersReady++;
+        if (playersReady === 2 && bitesQueue.length > 0) {
+            // Pre-load the first video silently in the background
+            playerA.cueVideoById(bitesQueue[0].videoId);
+            if(bitesQueue.length > 1) playerB.cueVideoById(bitesQueue[1].videoId);
+            renderDOMSlides();
+        } else if (playersReady === 2 && bitesQueue.length === 0) {
+            fetchMoreBites("trending"); // Initial fetch if empty
+        }
+    }
+
+    // Handle Tap to Start (Unlocks Autoplay)
+    window.initExperience = function() {
+        document.getElementById('start-screen').style.opacity = '0';
+        setTimeout(() => document.getElementById('start-screen').style.display = 'none', 300);
+        hasStarted = true;
+        
+        if (playersReady === 2 && bitesQueue.length > 0) {
+            playActivePlayer();
+        }
+    }
+
+    // ==========================================================================
+    // DOM SLIDE RENDERER & OBSERVER
+    // ==========================================================================
+    function renderDOMSlides() {
+        const viewport = document.getElementById('bites-viewport');
+        
+        // Append missing slides to match queue length
+        while (viewport.children.length < bitesQueue.length) {
+            const index = viewport.children.length;
+            const bite = bitesQueue[index];
+            
+            const slide = document.createElement('div');
+            slide.className = 'bite-slide';
+            slide.dataset.index = index;
+            slide.onclick = () => togglePlayPause(); // Click anywhere to pause/play
+
+            // The UI Overlay HTML
+            slide.innerHTML = `
+                <div class="bite-ui-layer">
+                    <div class="side-actions">
+                        <div class="creator-pfp-wrap" onclick="event.stopPropagation()">
+                            <img src="${bite.imgUrl}" class="creator-pfp">
+                            <div class="follow-badge">+</div>
+                        </div>
+                        <div class="action-btn" id="like-btn-${index}" onclick="handleLike(event, ${index})">
+                            <span class="material-icons-round">favorite</span>
+                            <span class="count">${formatNumber(bite.likes)}</span>
+                        </div>
+                        <div class="action-btn" onclick="event.stopPropagation()">
+                            <span class="material-icons-round">chat_bubble</span>
+                            <span class="count">${formatNumber(Math.floor(bite.likes * 0.1))}</span>
+                        </div>
+                        <div class="action-btn" onclick="shareBite(event, ${index})">
+                            <span class="material-icons-round">reply</span>
+                            <span class="count">Share</span>
+                        </div>
+                    </div>
+                    <div class="bottom-info" onclick="event.stopPropagation()">
+                        <div class="bite-author">${bite.author} <span class="material-icons-round" style="color:var(--accent); font-size:16px;">verified</span></div>
+                        <div class="bite-desc">${bite.title}</div>
+                        <div class="bite-category">#${bite.category.replace(/\s+/g, '')}</div>
+                    </div>
+                </div>
+            `;
+            viewport.appendChild(slide);
+        }
+    }
+
+    // Scroll Logic - The Leapfrog Engine
+    function handleScroll() {
+        if (!hasStarted) return;
+
+        const viewport = document.getElementById('bites-viewport');
+        const slideHeight = viewport.clientHeight;
+        const scrollPosition = viewport.scrollTop;
+        
+        // Calculate which index is currently most visible
+        const newIndex = Math.round(scrollPosition / slideHeight);
+
+        if (newIndex !== currentIndex && newIndex >= 0 && newIndex < bitesQueue.length) {
+            
+            // 1. Send algorithmic watch data for the video we just swiped past
+            trackInterest(bitesQueue[currentIndex].category, 'watched');
+
+            currentIndex = newIndex;
+            
+            // 2. Remove old videos from the top to save RAM, but keep the immediate previous one for back-scrolling
+            cleanUpQueueAndCache();
+
+            // 3. Swap the active player hardware
+            swapPlayers();
+
+            // 4. Fetch more if we are nearing the bottom
+            if (currentIndex >= bitesQueue.length - 4 && !isFetching) {
+                fetchMoreBites(bitesQueue[currentIndex].category);
+            }
+        }
+    }
+
+    function swapPlayers() {
+        const pA = document.getElementById('player-container-a');
+        const pB = document.getElementById('player-container-b');
+
+        // Pause both temporarily
+        playerA.pauseVideo();
+        playerB.pauseVideo();
+
+        if (activePlayer === 'A') {
+            activePlayer = 'B';
+            pA.classList.remove('active');
+            pB.classList.add('active');
+            
+            // B takes the stage and plays
+            if(bitesQueue[currentIndex]) {
+                playerB.loadVideoById(bitesQueue[currentIndex].videoId);
+                playerB.playVideo();
+            }
+            
+            // A goes to the background and pre-loads the NEXT video
+            if (bitesQueue[currentIndex + 1]) {
+                playerA.cueVideoById(bitesQueue[currentIndex + 1].videoId);
+            }
+        } else {
+            activePlayer = 'A';
+            pB.classList.remove('active');
+            pA.classList.add('active');
+            
+            // A takes the stage and plays
+            if(bitesQueue[currentIndex]) {
+                playerA.loadVideoById(bitesQueue[currentIndex].videoId);
+                playerA.playVideo();
+            }
+            
+            // B goes to the background and pre-loads the NEXT video
+            if (bitesQueue[currentIndex + 1]) {
+                playerB.cueVideoById(bitesQueue[currentIndex + 1].videoId);
+            }
+        }
+    }
+
+    function playActivePlayer() {
+        const p = activePlayer === 'A' ? playerA : playerB;
+        if (bitesQueue[currentIndex]) {
+            p.loadVideoById(bitesQueue[currentIndex].videoId);
+            p.playVideo();
+        }
+    }
+
+    // Video Play/Pause Touch Control
+    function togglePlayPause() {
+        const p = activePlayer === 'A' ? playerA : playerB;
+        const state = p.getPlayerState();
+        const icon = document.getElementById('play-pause-icon');
+        const inner = document.getElementById('pp-icon-inner');
+
+        if (state === 1) { // Playing
+            p.pauseVideo();
+            inner.innerText = 'pause';
+            icon.classList.add('show');
+        } else {
+            p.playVideo();
+            inner.innerText = 'play_arrow';
+            icon.classList.add('show');
+            setTimeout(() => icon.classList.remove('show'), 800);
+        }
+    }
+
+    // Loop videos organically
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            event.target.playVideo(); // Auto-loop
+        }
+    }
+
+    // ==========================================================================
+    // CACHE & NETWORK LOGIC
+    // ==========================================================================
+    async function fetchMoreBites(topic) {
+        if (isFetching) return;
+        isFetching = true;
+
+        try {
+            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(topic)}`);
+            const data = await res.json();
+            
+            if (data.success && data.bites.length > 0) {
+                // Filter out videos we've already seen in this session
+                const newBites = data.bites.filter(b => !viewedVideoIds.has(b.videoId));
+                
+                newBites.forEach(b => {
+                    viewedVideoIds.add(b.videoId);
+                    bitesQueue.push(b);
+                });
+
+                renderDOMSlides();
+                
+                // If this was the initial load, prep the players
+                if (currentIndex === 0 && !hasStarted && playersReady === 2) {
+                    playerA.cueVideoById(bitesQueue[0].videoId);
+                    if(bitesQueue.length > 1) playerB.cueVideoById(bitesQueue[1].videoId);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch bites", error);
+        }
+        
+        isFetching = false;
+    }
+
+    function cleanUpQueueAndCache() {
+        // Update LocalStorage to only store upcoming videos (instant load next time)
+        const cacheSlice = bitesQueue.slice(currentIndex);
+        localStorage.setItem('goorac_bites_queue', JSON.stringify(cacheSlice.slice(0, 10))); // Max 10 in cache
+    }
+
+    // ==========================================================================
+    // ALGORITHM & INTERACTIONS (Firebase)
+    // ==========================================================================
+    window.handleLike = function(event, index) {
+        event.stopPropagation(); // Prevent pausing video
+        const btn = document.getElementById(`like-btn-${index}`);
+        const bite = bitesQueue[index];
+        
+        if (!btn.classList.contains('liked')) {
+            btn.classList.add('liked');
+            let cSpan = btn.querySelector('.count');
+            cSpan.innerText = formatNumber(bite.likes + 1);
+            
+            // 🚀 Algorithm Write
+            trackInterest(bite.category, 'liked');
+            
+            // Vibrate hardware
+            if(navigator.vibrate) navigator.vibrate(50);
+        }
+    }
+
+    function trackInterest(category, action) {
+        if (!myUid || !category) return;
+        
+        let scoreChange = action === 'liked' ? 10 : 2; // Liked = +10, Swiped past = +2
+        
+        // Write directly to user document securely
+        db.collection("users").doc(myUid).update({
+            [`interests.${category}`]: firebase.firestore.FieldValue.increment(scoreChange)
+        }).catch(e => console.error("Algo update fail", e));
+    }
+
+    window.shareBite = function(event, index) {
+        event.stopPropagation();
+        const bite = bitesQueue[index];
+        if (navigator.share) {
+            navigator.share({
+                title: bite.title,
+                text: `Check out this Bite on Goorac!`,
+                url: `https://youtube.com/watch?v=${bite.videoId}`
+            }).catch(e => {});
+        }
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num;
+    }
+
+    // ==========================================================================
+    // INSTAGRAM-STYLE DISCOVER MODAL
+    // ==========================================================================
+    window.openDiscoverModal = function() {
+        document.getElementById('discover-modal').classList.add('active');
+        history.pushState({ modal: 'discover' }, "", "#discover");
+        
+        // Auto-load trending grid if empty
+        const grid = document.getElementById('search-grid');
+        if(grid.children.length <= 1) executeSearch("trending");
+    }
+
+    window.closeDiscoverModal = function(shouldGoBack) {
+        document.getElementById('discover-modal').classList.remove('active');
+        if(shouldGoBack && window.location.hash === "#discover") history.back();
+    }
+
+    window.onpopstate = (e) => { 
+        if(document.getElementById('discover-modal').classList.contains('active') && window.location.hash !== '#discover') {
+            closeDiscoverModal(false);
+        }
+    };
+
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const val = e.target.value.trim();
+        searchTimeout = setTimeout(() => {
+            if(val.length > 1) executeSearch(val);
+        }, 600);
+    });
+
+    async function executeSearch(query) {
+        const grid = document.getElementById('search-grid');
+        
+        // Inject Skeleton Loaders (Instagram style 3-col grid)
+        let skelHtml = '';
+        for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item"></div>`; }
+        grid.innerHTML = skelHtml;
+
+        try {
+            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            
+            if (data.success && data.bites.length > 0) {
+                grid.innerHTML = '';
+                data.bites.forEach(bite => {
+                    const el = document.createElement('div');
+                    el.className = 'grid-item';
+                    el.onclick = () => launchSearchResultFeed(bite, data.bites);
+                    el.innerHTML = `
+                        <img src="${bite.imgUrl}">
+                        <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
+                    `;
+                    grid.appendChild(el);
+                });
+            } else {
+                grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
+            }
+        } catch (error) {
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
+        }
+    }
+
+    // When user clicks a search result, it overwrites the main feed and plays instantly
+    function launchSearchResultFeed(clickedBite, allResults) {
+        closeDiscoverModal(true);
+        
+        // Re-arrange the queue: Put clicked item first, then the rest
+        const otherResults = allResults.filter(b => b.videoId !== clickedBite.videoId);
+        bitesQueue = [clickedBite, ...otherResults];
+        
+        // Reset viewport
+        const viewport = document.getElementById('bites-viewport');
+        viewport.innerHTML = '';
+        currentIndex = 0;
+        viewport.scrollTop = 0;
+        viewedVideoIds.clear();
+
+        renderDOMSlides();
+        
+        // Force the hardware players to update immediately
+        if (activePlayer === 'A') {
+            playerA.loadVideoById(bitesQueue[0].videoId);
+            playerA.playVideo();
+            if(bitesQueue[1]) playerB.cueVideoById(bitesQueue[1].videoId);
+        } else {
+            playerB.loadVideoById(bitesQueue[0].videoId);
+            playerB.playVideo();
+            if(bitesQueue[1]) playerA.cueVideoById(bitesQueue[1].videoId);
+        }
+
+        cleanUpQueueAndCache();
+    }
+
+</script>
+</body>
+</html>
