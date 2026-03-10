@@ -290,7 +290,6 @@
             try {
                 groupData = JSON.parse(cacheStr);
                 renderGroupHero();
-                // Render participants from local userCache if available
                 renderParticipantsList(true); 
             } catch(e) {}
         }
@@ -324,7 +323,7 @@
                     return;
                 }
 
-                // Update Cache
+                // Update Cache immediately so next load is perfect
                 localStorage.setItem(`chat_group_${groupId}`, JSON.stringify(groupData));
 
                 // Identify Admin Status
@@ -581,6 +580,12 @@
 
         if(Object.keys(updates).length > 0) {
             try {
+                // Update local storage instantly before DB fires snapshot for 0 gap visual update
+                let updatedData = { ...groupData, ...updates };
+                localStorage.setItem(`chat_group_${groupId}`, JSON.stringify(updatedData));
+                groupData = updatedData;
+                renderGroupHero();
+
                 await db.collection("chats").doc(groupId).update(updates);
                 closeEditModal(true);
             } catch(e) { alert("Failed to save changes."); }
