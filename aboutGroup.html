@@ -1,673 +1,792 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0A0A0A">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Group Info | Quantum</title>
     
+    <title>Goorac | About Group</title>
+
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="components/imagePicker.js" defer></script>
 
     <style>
+        /* =========================================
+           CORE VARIABLES & THEME
+           ========================================= */
+        * { box-sizing: border-box !important; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
         :root {
             --bg: #000000;
-            --surface: #0a0a0a;
-            --accent: #00d2ff;
-            --text: #ffffff;
-            --text-dim: #888;
-            --border: rgba(255, 255, 255, 0.1);
-            --glass: rgba(255, 255, 255, 0.05);
-            --gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --bg-gradient: radial-gradient(circle at 50% 30%, #111111 0%, #000000 70%);
+            --header-bg: rgba(10, 10, 10, 0.90);
+            --header-blur: blur(25px);
+            --accent: #FF6D00; 
+            --accent-dim: rgba(255, 109, 0, 0.15);
+            --border: #1c1c1c; 
+            --border-light: rgba(255,255,255,0.1);
+            --text: #ffffff; 
+            --text-secondary: #a1a1a1;
+            --danger: #ff453a;
+            --danger-dim: rgba(255, 69, 58, 0.1);
+            --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+            background-color: var(--bg); background-image: var(--bg-gradient); background-size: cover;
+            background-position: center top; background-attachment: fixed;
+            color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden; min-height: 100vh; padding-bottom: 50px;
         }
 
-        /* HEADER */
-        .header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(20px);
-            display: flex;
-            align-items: center;
-            padding: 0 15px;
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
-            justify-content: space-between;
+        /* =========================================
+           HEADER
+           ========================================= */
+        header { 
+            position: sticky; top: 0; padding: 0 16px; padding-top: calc(env(safe-area-inset-top) + 8px);
+            height: calc(60px + env(safe-area-inset-top)); background: var(--header-bg); 
+            border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between;
+            z-index: 1000; backdrop-filter: var(--header-blur); -webkit-backdrop-filter: var(--header-blur);
         }
+        .back-btn { font-size: 24px; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 44px; width: 44px; border-radius: 50%; transition: background 0.2s; margin-left: -8px; }
+        .back-btn:active { background: rgba(255,255,255,0.1); }
+        .back-btn span { font-size: 32px; font-weight: 500; }
+        .header-title { font-weight: 800; font-size: 1.2rem; flex: 1; text-align: center; }
+        .edit-btn { color: var(--accent); font-weight: 700; font-size: 1rem; cursor: pointer; padding: 8px; display: none; }
+        .edit-btn:active { opacity: 0.7; }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+        /* =========================================
+           GROUP HERO INFO
+           ========================================= */
+        .group-hero { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; border-bottom: 1px solid var(--border); text-align: center; }
+        .group-pfp-wrapper { position: relative; margin-bottom: 16px; }
+        .group-pfp { width: 120px; height: 120px; border-radius: 40px; object-fit: cover; border: 2px solid var(--border-light); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #111; }
+        .group-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; color: #fff; letter-spacing: -0.5px; }
+        .group-desc { font-size: 0.95rem; color: var(--text-secondary); max-width: 90%; line-height: 1.5; }
+        
+        /* =========================================
+           PARTICIPANTS LIST
+           ========================================= */
+        .section-header { padding: 20px 20px 10px 20px; font-size: 0.85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .participant-count { color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; background: #1a1a1a; padding: 2px 8px; border-radius: 10px; }
+        
+        .participant-list { display: flex; flex-direction: column; }
+        .participant-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; transition: background 0.2s; position: relative; }
+        .participant-item:active { background: rgba(255,255,255,0.05); }
+        .p-pfp { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; background: #222; margin-right: 15px; border: 1px solid var(--border-light); pointer-events: none; }
+        .p-info { flex: 1; min-width: 0; pointer-events: none; }
+        .p-name { font-weight: 700; font-size: 1.05rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+        .p-username { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .v-badge { width: 14px; height: 14px; flex-shrink: 0; }
+        .admin-badge { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(255, 109, 0, 0.3); font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .back-btn {
-            font-size: 24px;
-            cursor: pointer;
-        }
+        /* =========================================
+           BOTTOM ACTION MODAL (LONG PRESS)
+           ========================================= */
+        #action-menu { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-top: 1px solid var(--border); z-index: 100000; border-radius: 30px 30px 0 0; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
+        #action-menu.active { bottom: 0; }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99999; display: none; backdrop-filter: blur(8px); }
+        
+        .sheet-context { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; margin-bottom: 10px; width: 100%; }
+        .context-pfp { width: 64px; height: 64px; border-radius: 22px; border: 2px solid var(--accent); margin-bottom: 10px; object-fit: cover; }
+        .context-name { font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 6px; }
+        .context-username { color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; margin-top: 2px; }
+        
+        .action-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .btn-action { width: 100%; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; transition: transform 0.1s; }
+        .btn-action:active { transform: scale(0.98); }
+        .primary-btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); }
+        .danger-btn { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255, 69, 58, 0.2); }
+        .cancel-btn { background: transparent; color: #888; margin-top: 5px; }
 
-        .header-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        /* =========================================
+           SIDE MODALS (EDIT & ADD MEMBERS)
+           ========================================= */
+        .side-modal { position: fixed; top: 0; right: -100%; width: 100%; height: 100%; background: #000000; z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; overflow: hidden; }
+        .side-modal.active { right: 0; }
+        .modal-header-top { display: flex; align-items: center; padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); border-bottom: 1px solid var(--border); background: var(--header-bg); backdrop-filter: var(--header-blur); }
+        .modal-back-btn { background: none; border: none; color: white; padding: 5px; cursor: pointer; margin-right: 15px; display: flex; align-items: center; }
+        .modal-title-main { font-weight: 800; font-size: 1.2rem; flex: 1; color: #fff; }
+        .save-btn { color: var(--accent); font-weight: 700; font-size: 1rem; background: none; border: none; cursor: pointer; }
+        
+        .form-container { padding: 25px 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex: 1; }
+        .group-pic-upload { width: 100px; height: 100px; border-radius: 30px; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; overflow: hidden; position: relative; margin: 0 auto 10px; }
+        .group-pic-preview { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: block; }
+        
+        .custom-input { width: 100%; background: #111; border: 1px solid #222; padding: 16px; border-radius: 16px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
+        .custom-input:focus { border-color: var(--accent); background: #161616; }
+        textarea.custom-input { resize: none; min-height: 100px; }
+        
+        .add-members-trigger { background: #1a1a1a; border: 1px solid var(--border); padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: white; font-weight: 600; margin-top: 10px;}
+        
+        /* ADD MEMBERS LIST */
+        .member-list-container { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
+        .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; border: 1px solid #222;}
+        .sel-info { flex: 1; }
+        .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+        .sel-handle { color: #888; font-size: 0.85rem; }
+        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+        .sel-checkbox.checked::after { content: "✓"; color: #000; font-weight: 900; }
+        
+        .done-members-btn { position: absolute; bottom: 30px; left: 20px; right: 20px; background: #fff; color: #000; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
+        .infinite-scroll-trigger { height: 40px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.9rem; }
 
-        .edit-icon {
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-            display: none; /* Shown only for admins */
-        }
+        /* =========================================
+           SECURITY BLOCK
+           ========================================= */
+        #security-block { position: fixed; inset: 0; background: #000; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; display: none; }
+        #security-block svg { width: 80px; height: 80px; color: var(--danger); margin-bottom: 20px; }
+        #security-block h2 { font-size: 1.5rem; margin-bottom: 10px; }
+        #security-block p { color: #888; font-size: 0.95rem; margin-bottom: 30px; }
+        #security-block button { background: var(--accent); color: #fff; border: none; padding: 14px 30px; border-radius: 20px; font-weight: 700; font-size: 1rem; cursor: pointer; }
 
-        /* CONTENT */
-        .main-content {
-            margin-top: 60px;
-            padding-bottom: 50px;
-        }
-
-        .group-hero {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 30px 20px;
-            background: linear-gradient(to bottom, #111, #000);
-        }
-
-        .group-pfp {
-            width: 120px;
-            height: 120px;
-            border-radius: 40px;
-            object-fit: cover;
-            border: 2px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 15px;
-        }
-
-        .group-name {
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-
-        .group-desc {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            text-align: center;
-            max-width: 80%;
-            line-height: 1.4;
-        }
-
-        /* PARTICIPANTS LIST */
-        .section-label {
-            padding: 20px 20px 10px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent);
-            font-weight: 700;
-        }
-
-        .participant-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.2s;
-            user-select: none;
-        }
-
-        .participant-item:active {
-            background: var(--glass);
-        }
-
-        .p-pfp {
-            width: 45px;
-            height: 45px;
-            border-radius: 15px;
-            margin-right: 15px;
-        }
-
-        .p-info {
-            flex: 1;
-        }
-
-        .p-name {
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .p-username {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-        }
-
-        .admin-badge {
-            font-size: 0.65rem;
-            padding: 2px 8px;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            border-radius: 20px;
-            margin-left: auto;
-            font-weight: 700;
-        }
-
-        .v-badge {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* SIDE MODAL (EDIT) */
-        .side-modal {
-            position: fixed;
-            top: 0;
-            right: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--bg);
-            z-index: 200;
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .side-modal.open {
-            right: 0;
-        }
-
-        .modal-body {
-            padding: 20px;
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-bottom: 8px;
-            margin-left: 5px;
-        }
-
-        .input-group input, .input-group textarea {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 15px;
-            border-radius: 15px;
-            outline: none;
-            font-size: 1rem;
-        }
-
-        .save-btn {
-            background: var(--gradient);
-            color: #fff;
-            border: none;
-            padding: 15px;
-            border-radius: 15px;
-            font-weight: 700;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        /* BOTTOM MODAL */
-        .bottom-sheet-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.3s;
-            z-index: 300;
-        }
-
-        .bottom-sheet-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .bottom-sheet {
-            position: fixed;
-            bottom: -100%;
-            left: 0;
-            width: 100%;
-            background: #111;
-            border-radius: 25px 25px 0 0;
-            padding: 20px;
-            z-index: 301;
-            transition: 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-
-        .bottom-sheet.active {
-            bottom: 0;
-        }
-
-        .sheet-option {
-            padding: 18px;
-            text-align: center;
-            font-weight: 600;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sheet-option.danger {
-            color: #ff4444;
-        }
-
-        /* NOT PARTICIPANT VIEW */
-        #restricted-view {
-            display: none;
-            height: 80vh;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px;
-        }
-
-        #restricted-view i {
-            font-size: 50px;
-            color: var(--accent);
-            margin-bottom: 20px;
-        }
-
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
+        /* Skeleton Loading for Hero */
+        .shimmer { background: linear-gradient(90deg, #111 0%, #222 50%, #111 100%); background-size: 400% 100%; animation: shimmerAnim 1.5s infinite linear; }
+        @keyframes shimmerAnim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen" class="loader">
-        <div style="color: var(--accent); font-weight: 700;">QUANTUM</div>
+<image-picker id="group-image-picker" style="position: relative; z-index: 999999; display: block;"></image-picker>
+
+<div id="security-block">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    <h2>Access Denied</h2>
+    <p>You are not a participant of this group.</p>
+    <button onclick="window.location.href='chat.html'">Return to Inbox</button>
+</div>
+
+<header>
+    <div class="back-btn" onclick="history.back()">
+        <span class="material-icons-round">chevron_left</span>
+    </div>
+    <div class="header-title">Group Info</div>
+    <div class="edit-btn" id="edit-group-trigger" onclick="openEditModal()">Edit</div>
+</header>
+
+<div class="group-hero">
+    <div class="group-pfp-wrapper">
+        <img id="ui-group-pfp" class="group-pfp shimmer" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+    </div>
+    <div class="group-name" id="ui-group-name"><span class="shimmer" style="color:transparent; border-radius:4px;">Loading Group Name</span></div>
+    <div class="group-desc" id="ui-group-desc"></div>
+</div>
+
+<div class="section-header">
+    Participants
+    <span class="participant-count" id="ui-participant-count">0</span>
+</div>
+<div class="participant-list" id="participants-container">
     </div>
 
-    <div class="header">
-        <div class="header-left">
-            <div class="back-btn" onclick="history.back()">&#x2190;</div>
-            <div class="header-title" id="head-group-name">Group Info</div>
+<div class="menu-overlay" id="overlay" onclick="closeActionMenu()"></div>
+<div id="action-menu">
+    <div class="sheet-context">
+        <img src="" class="context-pfp" id="action-pfp">
+        <div class="context-name" id="action-name">User</div>
+        <div class="context-username" id="action-username">@user</div>
+    </div>
+    <div class="action-list" id="action-buttons-container">
         </div>
-        <div class="edit-icon" id="edit-trigger" onclick="toggleEditModal(true)">&#x270E;</div>
-    </div>
+</div>
 
-    <div class="main-content" id="main-view">
-        <div class="group-hero">
-            <img src="https://via.placeholder.com/150" id="group-display-pfp" class="group-pfp">
-            <div class="group-name" id="group-display-name">Loading...</div>
-            <div class="group-desc" id="group-display-desc">...</div>
+<div id="edit-modal" class="side-modal">
+    <div class="modal-header-top">
+        <button class="modal-back-btn" onclick="closeEditModal()">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <div class="modal-title-main">Edit Group</div>
+        <button class="save-btn" id="save-group-btn" onclick="saveGroupEdits()">Save</button>
+    </div>
+    <div class="form-container">
+        <div class="group-pic-upload" onclick="document.getElementById('group-image-picker').openPicker()">
+            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="1.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <img id="edit-pic-preview" class="group-pic-preview" src="">
         </div>
-
-        <div class="section-label">Participants</div>
-        <div id="participants-list">
-            </div>
-    </div>
-
-    <div id="restricted-view">
-        <div style="font-size: 40px;">&#x1F6AB;</div>
-        <h2>Access Denied</h2>
-        <p>You're not a participant of this group.</p>
-        <button class="save-btn" onclick="history.back()">Go Back</button>
-    </div>
-
-    <div class="side-modal" id="edit-modal">
-        <div class="header">
-            <div class="header-left">
-                <div class="back-btn" onclick="toggleEditModal(false)">&#x2190;</div>
-                <div class="header-title">Edit Group</div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div class="input-group">
-                <label>Group Name</label>
-                <input type="text" id="edit-name-input" placeholder="Enter group name">
-            </div>
-            <div class="input-group">
-                <label>Description</label>
-                <textarea id="edit-desc-input" rows="3" placeholder="Enter description"></textarea>
-            </div>
-            <button class="save-btn" onclick="saveGroupDetails()">Save Changes</button>
-
-            <div class="section-label" style="padding-left:0">Add Participants</div>
-            <div class="input-group">
-                <input type="text" id="user-search-input" placeholder="Search username..." oninput="searchUsersToAdd(this.value)">
-            </div>
-            <div id="search-results"></div>
-        </div>
-    </div>
-
-    <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
-    <div class="bottom-sheet" id="member-sheet">
-        <div class="sheet-option" id="admin-toggle-btn" onclick="toggleAdminRole()">Make as Admin</div>
-        <div class="sheet-option danger" onclick="removeFromGroup()">Remove from Group</div>
-        <div class="sheet-option" onclick="closeSheet()" style="border-bottom: none; color: var(--text-dim);">Cancel</div>
-    </div>
-
-    <script>
-        // --- GLOBAL ERROR POPUP ---
-        window.onerror = function(message, source, lineno, colno, error) {
-            alert("⚠️ Quantum Error: " + message + "\nLine: " + lineno);
-            document.getElementById('loading-screen').style.display = 'none';
-            return false;
-        };
-
-        const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg"; // Fallback V URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const groupId = urlParams.get('id');
+        <input type="text" id="edit-name-input" class="custom-input" placeholder="Group Name" autocomplete="off">
+        <textarea id="edit-desc-input" class="custom-input" placeholder="Group Description (Optional)"></textarea>
         
-        let db, auth;
-        let currentGroupData = null;
-        let myUid = null;
-        let selectedMemberId = null;
+        <div class="add-members-trigger" onclick="openAddMembersModal()">
+            <span>Add Participants</span>
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </div>
+    </div>
+</div>
 
-        // --- CACHE ENGINE ---
-        const cacheKey = `group_cache_${groupId}`;
-        const loadCachedData = () => {
-            const cached = localStorage.getItem(cacheKey);
-            if(cached) {
-                try {
-                    const data = JSON.parse(cached);
-                    renderGroupUI(data);
-                    document.getElementById('loading-screen').style.display = 'none';
-                } catch(e) { console.error("Cache parse error", e); }
-            }
-        };
+<div id="add-members-modal" class="side-modal">
+    <div class="modal-header-top">
+        <button class="modal-back-btn" onclick="closeAddMembersModal()">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <div class="modal-title-main">Add Members</div>
+    </div>
+    <div style="padding: 10px 20px; background: #000; border-bottom: 1px solid var(--border);">
+        <input type="text" id="member-search-input" class="custom-input" placeholder="Search mutual friends..." style="padding: 12px; border-radius: 12px;" oninput="handleMemberSearch(this.value)">
+    </div>
+    <div class="member-list-container" id="add-members-list">
+        </div>
+    <div id="scroll-trigger" class="infinite-scroll-trigger">Loading...</div>
+    <button class="done-members-btn" id="confirm-add-btn" onclick="confirmAddMembers()">Add Selected</button>
+</div>
 
-        const saveToCache = (data) => {
-            localStorage.setItem(cacheKey, JSON.stringify(data));
-        };
+<script>
+    // =========================================
+    //  INITIALIZATION & FIREBASE
+    // =========================================
+    if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
+    else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
 
-        // --- INITIALIZATION ---
-        window.onload = () => {
-            // Safety timeout: hide loader if stuck for more than 5 seconds
-            setTimeout(() => {
-                const loader = document.getElementById('loading-screen');
-                if (loader && loader.style.display !== 'none') {
-                    loader.style.display = 'none';
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    
+    const params = new URLSearchParams(window.location.search);
+    const groupId = params.get('id');
+    const DEFAULT_GROUP_IMAGE = "https://fabulouspic.com/wp-content/uploads/2024/08/a-black-and-white-photo-of-a-persons-face.jpg";
+    const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
+
+    let myUid = null;
+    let groupData = null;
+    let userCache = JSON.parse(localStorage.getItem('goorac_u_cache')) || {};
+    let isMyAdmin = false;
+    let myFollowingList = [];
+    let myFollowersList = [];
+    
+    // Add Members State
+    let mutualFriends = [];
+    let selectedNewMembers = [];
+    let friendsLoadedCount = 0;
+    const friendsPerPage = 10;
+    let observer = null;
+    let isFetchingFriends = false;
+    let currentFriendSearch = "";
+    let memberSearchTimeout = null;
+    let currentSearchSessionId = 0;
+
+    // Edit State
+    let newGroupBase64Image = null;
+
+    // Action State
+    let actionTargetUid = null;
+    let actionTargetUser = null;
+    let longPressTimer = null;
+    let isLongPress = false;
+
+    // =========================================
+    //  INSTANT CACHE LOAD (0ms rendering)
+    // =========================================
+    (function loadFromCache() {
+        if(!groupId) return;
+        const cacheStr = localStorage.getItem(`chat_group_${groupId}`);
+        if(cacheStr) {
+            try {
+                groupData = JSON.parse(cacheStr);
+                renderGroupHero();
+                // Render participants from local userCache if available
+                renderParticipantsList(true); 
+            } catch(e) {}
+        }
+    })();
+
+    // =========================================
+    //  AUTH & LIVE FETCH
+    // =========================================
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            myUid = user.uid;
+            
+            // Fetch my social arrays for Adding Members later
+            db.collection("users").doc(myUid).get().then(d => {
+                if(d.exists) {
+                    myFollowingList = d.data().following || [];
+                    myFollowersList = d.data().followers || [];
                 }
-            }, 5000);
+            });
 
-            if(!groupId) {
-                alert("Error: No Group ID found in URL (?id=...)");
-                document.getElementById('loading-screen').style.display = 'none';
+            // Live Group Listener
+            db.collection("chats").doc(groupId).onSnapshot(doc => {
+                if (!doc.exists) {
+                    window.location.href = 'chat.html'; return;
+                }
+                groupData = doc.data();
+                
+                // Security Check
+                if (!groupData.participants || !groupData.participants.includes(myUid)) {
+                    document.getElementById('security-block').style.display = 'flex';
+                    return;
+                }
+
+                // Update Cache
+                localStorage.setItem(`chat_group_${groupId}`, JSON.stringify(groupData));
+
+                // Identify Admin Status
+                isMyAdmin = groupData.admins && groupData.admins.includes(myUid);
+                document.getElementById('edit-group-trigger').style.display = isMyAdmin ? 'block' : 'none';
+
+                renderGroupHero();
+                fetchAndRenderParticipants();
+            });
+        } else {
+            window.location.href = 'login.html';
+        }
+    });
+
+    // =========================================
+    //  RENDER LOGIC
+    // =========================================
+    function renderGroupHero() {
+        if(!groupData) return;
+        const pfpEl = document.getElementById('ui-group-pfp');
+        pfpEl.src = groupData.groupPhoto || DEFAULT_GROUP_IMAGE;
+        pfpEl.classList.remove('shimmer');
+
+        const nameEl = document.getElementById('ui-group-name');
+        nameEl.innerText = groupData.groupName || 'Group Chat';
+        
+        const descEl = document.getElementById('ui-group-desc');
+        descEl.innerText = groupData.groupDescription || '';
+        
+        document.getElementById('ui-participant-count').innerText = groupData.participants ? groupData.participants.length : 0;
+    }
+
+    async function fetchAndRenderParticipants() {
+        if(!groupData || !groupData.participants) return;
+        
+        let missingUids = groupData.participants.filter(uid => !userCache[uid]);
+        
+        if (missingUids.length > 0) {
+            // Chunk requests in 10s to prevent Firebase limits
+            for (let i = 0; i < missingUids.length; i += 10) {
+                const chunk = missingUids.slice(i, i + 10);
+                try {
+                    const snap = await db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', chunk).get();
+                    snap.docs.forEach(doc => {
+                        userCache[doc.id] = doc.data();
+                    });
+                } catch(e) { console.error(e); }
+            }
+            localStorage.setItem('goorac_u_cache', JSON.stringify(userCache));
+        }
+        
+        renderParticipantsList();
+    }
+
+    function renderParticipantsList(fromCacheOnly = false) {
+        if(!groupData || !groupData.participants) return;
+        
+        const container = document.getElementById('participants-container');
+        container.innerHTML = '';
+
+        // Sort: Admins First, then Alphabetical
+        let sortedUids = [...groupData.participants].sort((a, b) => {
+            const aAdmin = groupData.admins && groupData.admins.includes(a);
+            const bAdmin = groupData.admins && groupData.admins.includes(b);
+            if(aAdmin && !bAdmin) return -1;
+            if(!aAdmin && bAdmin) return 1;
+            
+            const nameA = userCache[a] ? (userCache[a].name || userCache[a].username || "") : "";
+            const nameB = userCache[b] ? (userCache[b].name || userCache[b].username || "") : "";
+            return nameA.localeCompare(nameB);
+        });
+
+        sortedUids.forEach(uid => {
+            const user = userCache[uid] || { name: 'Loading...', username: uid, photoURL: 'https://via.placeholder.com/150' };
+            const isAdmin = groupData.admins && groupData.admins.includes(uid);
+            const isMe = uid === myUid;
+            
+            const nameDisplay = isMe ? `${user.name} (You)` : (user.name || user.username);
+            const verifiedIcon = user.verified ? `<img src="${V_URL}" class="v-badge">` : '';
+            const adminBadgeHtml = isAdmin ? `<div class="admin-badge">Admin</div>` : '';
+
+            // Serialize user data for long press
+            const safeUserStr = encodeURIComponent(JSON.stringify(user));
+
+            const div = document.createElement('div');
+            div.className = 'participant-item';
+            div.setAttribute('ontouchstart', `startLongPress(this, '${uid}', '${safeUserStr}')`);
+            div.setAttribute('ontouchend', `endLongPress(this, '${uid}')`);
+            div.setAttribute('ontouchmove', `cancelLongPress(this)`);
+            div.onclick = (e) => { if(!isLongPress && !isMe) window.location.href = `userProfile.html?user=${user.username}`; };
+
+            div.innerHTML = `
+                <img src="${user.photoURL || 'https://via.placeholder.com/150'}" class="p-pfp">
+                <div class="p-info">
+                    <div class="p-name">${nameDisplay} ${verifiedIcon}</div>
+                    <div class="p-username">@${user.username}</div>
+                </div>
+                ${adminBadgeHtml}
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // =========================================
+    //  LONG PRESS ACTION MODAL
+    // =========================================
+    window.startLongPress = function(el, uid, userStr) {
+        isLongPress = false;
+        actionTargetUid = uid;
+        actionTargetUser = JSON.parse(decodeURIComponent(userStr));
+        
+        longPressTimer = setTimeout(() => {
+            isLongPress = true; 
+            if(navigator.vibrate) navigator.vibrate(40);
+            el.style.background = "rgba(255,255,255,0.1)";
+            setTimeout(() => el.style.background = "", 200);
+            openActionMenu();
+        }, 500);
+    };
+
+    window.cancelLongPress = function(el) { clearTimeout(longPressTimer); el.style.background = ""; };
+    window.endLongPress = function(el, uid) { clearTimeout(longPressTimer); el.style.background = ""; };
+
+    function openActionMenu() {
+        const isTargetAdmin = groupData.admins && groupData.admins.includes(actionTargetUid);
+        const isMe = actionTargetUid === myUid;
+
+        document.getElementById('action-pfp').src = actionTargetUser.photoURL || 'https://via.placeholder.com/150';
+        document.getElementById('action-name').innerHTML = `${actionTargetUser.name} ${actionTargetUser.verified ? `<img src="${V_URL}" class="v-badge">` : ''}`;
+        document.getElementById('action-username').innerText = `@${actionTargetUser.username}`;
+
+        const btnContainer = document.getElementById('action-buttons-container');
+        btnContainer.innerHTML = ''; // Clear old buttons
+
+        // Option 1: View Profile (Everyone gets this except for Self)
+        if (!isMe) {
+            btnContainer.innerHTML += `<button class="btn-action primary-btn" onclick="window.location.href='userProfile.html?user=${actionTargetUser.username}'">View Profile</button>`;
+        }
+
+        // Option 2: Admin Controls (Only visible if I am admin)
+        if (isMyAdmin) {
+            if (!isMe) {
+                // Promote/Demote
+                if (isTargetAdmin) {
+                    btnContainer.innerHTML += `<button class="btn-action danger-btn" style="background:#1a1a1a; color:#fff;" onclick="modifyAdminStatus(false)">Remove as Admin</button>`;
+                } else {
+                    btnContainer.innerHTML += `<button class="btn-action primary-btn" style="border-color:var(--accent); color:var(--accent);" onclick="modifyAdminStatus(true)">Make Admin</button>`;
+                }
+                // Remove Participant
+                btnContainer.innerHTML += `<button class="btn-action danger-btn" onclick="removeParticipant()">Remove from Group</button>`;
+            }
+        }
+
+        // Option 3: Leave Group (For self)
+        if (isMe) {
+            btnContainer.innerHTML += `<button class="btn-action danger-btn" onclick="leaveGroup()">Leave Group</button>`;
+        }
+
+        btnContainer.innerHTML += `<button class="btn-action cancel-btn" onclick="closeActionMenu(true)">Cancel</button>`;
+
+        document.getElementById('action-menu').classList.add('active');
+        document.getElementById('overlay').style.display = 'block';
+        history.pushState({ modal: 'action' }, "", "#action");
+    }
+
+    window.closeActionMenu = function(shouldGoBack) {
+        document.getElementById('action-menu').classList.remove('active');
+        document.getElementById('overlay').style.display = 'none';
+        if(shouldGoBack && window.location.hash === "#action") history.back();
+    }
+
+    window.modifyAdminStatus = async function(makeAdmin) {
+        if(!isMyAdmin || !actionTargetUid) return;
+        closeActionMenu(true);
+        const ref = db.collection('chats').doc(groupId);
+        try {
+            if(makeAdmin) await ref.update({ admins: firebase.firestore.FieldValue.arrayUnion(actionTargetUid) });
+            else await ref.update({ admins: firebase.firestore.FieldValue.arrayRemove(actionTargetUid) });
+        } catch(e) { alert("Action failed."); }
+    };
+
+    window.removeParticipant = async function() {
+        if(!isMyAdmin || !actionTargetUid) return;
+        closeActionMenu(true);
+        if(confirm(`Remove ${actionTargetUser.name} from the group?`)) {
+            const ref = db.collection('chats').doc(groupId);
+            try {
+                await ref.update({ 
+                    participants: firebase.firestore.FieldValue.arrayRemove(actionTargetUid),
+                    admins: firebase.firestore.FieldValue.arrayRemove(actionTargetUid)
+                });
+                db.collection("users").doc(actionTargetUid).update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(groupId) }).catch(e=>{});
+            } catch(e) { alert("Failed to remove user."); }
+        }
+    };
+
+    window.leaveGroup = async function() {
+        closeActionMenu(true);
+        if(confirm("Are you sure you want to leave this group?")) {
+            try {
+                await db.collection('chats').doc(groupId).update({ 
+                    participants: firebase.firestore.FieldValue.arrayRemove(myUid),
+                    admins: firebase.firestore.FieldValue.arrayRemove(myUid)
+                });
+                db.collection("users").doc(myUid).update({ pinnedChats: firebase.firestore.FieldValue.arrayRemove(groupId) }).catch(e=>{});
+                window.location.href = "chat.html"; // Go to inbox
+            } catch(e) { alert("Failed to leave group."); }
+        }
+    };
+
+
+    // =========================================
+    //  EDIT GROUP MODAL
+    // =========================================
+    window.openEditModal = function() {
+        if(!isMyAdmin) return;
+        document.getElementById('edit-modal').classList.add('active');
+        history.pushState({ modal: 'edit' }, "", "#edit");
+        
+        // Populate inputs
+        document.getElementById('edit-name-input').value = groupData.groupName || "";
+        document.getElementById('edit-desc-input').value = groupData.groupDescription || "";
+        document.getElementById('edit-pic-preview').src = groupData.groupPhoto || DEFAULT_GROUP_IMAGE;
+        newGroupBase64Image = null;
+    };
+
+    window.closeEditModal = function(shouldGoBack = false) {
+        document.getElementById('edit-modal').classList.remove('active');
+        if(shouldGoBack && window.location.hash === "#edit") history.back();
+    };
+
+    // Listen for image picker changes
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('group-image-picker');
+        if (picker) {
+            picker.addEventListener('image-uploaded', (e) => {
+                newGroupBase64Image = e.detail.url; // ImgBB URL
+                document.getElementById('edit-pic-preview').src = newGroupBase64Image;
+            });
+        }
+    });
+
+    window.saveGroupEdits = async function() {
+        const btn = document.getElementById('save-group-btn');
+        btn.innerText = "Saving..."; btn.disabled = true;
+
+        const newName = document.getElementById('edit-name-input').value.trim();
+        const newDesc = document.getElementById('edit-desc-input').value.trim();
+        
+        let updates = {};
+        if(newName && newName !== groupData.groupName) updates.groupName = newName;
+        if(newDesc !== groupData.groupDescription) updates.groupDescription = newDesc;
+        if(newGroupBase64Image) updates.groupPhoto = newGroupBase64Image;
+
+        if(Object.keys(updates).length > 0) {
+            try {
+                await db.collection("chats").doc(groupId).update(updates);
+                closeEditModal(true);
+            } catch(e) { alert("Failed to save changes."); }
+        } else {
+            closeEditModal(true);
+        }
+        btn.innerText = "Save"; btn.disabled = false;
+    };
+
+
+    // =========================================
+    //  ADD MEMBERS MODAL
+    // =========================================
+    window.openAddMembersModal = function() {
+        document.getElementById('add-members-modal').classList.add('active');
+        history.pushState({ modal: 'addMembers' }, "", "#addMembers");
+        
+        // Calculate Mutuals & Filter existing
+        const followingIds = myFollowingList.map(f => typeof f === 'string' ? f : f.uid);
+        const followersIds = myFollowersList.map(f => typeof f === 'string' ? f : f.uid);
+        let mutuals = [...new Set(followingIds.filter(id => followersIds.includes(id)))];
+        
+        // Remove people already in group
+        mutualFriends = mutuals.filter(uid => !groupData.participants.includes(uid));
+        
+        friendsLoadedCount = 0;
+        currentFriendSearch = "";
+        currentSearchSessionId++; 
+        selectedNewMembers = [];
+        updateAddBtn();
+        
+        document.getElementById('member-search-input').value = "";
+        document.getElementById('add-members-list').innerHTML = "";
+        
+        isFetchingFriends = false;
+        setupInfiniteScroll();
+    };
+
+    window.closeAddMembersModal = function(shouldGoBack = false) {
+        document.getElementById('add-members-modal').classList.remove('active');
+        if(shouldGoBack && window.location.hash === "#addMembers") history.back(); 
+    };
+
+    window.handleMemberSearch = function(val) {
+        clearTimeout(memberSearchTimeout);
+        memberSearchTimeout = setTimeout(() => {
+            currentFriendSearch = val.toLowerCase().trim();
+            friendsLoadedCount = 0;
+            document.getElementById('add-members-list').innerHTML = "";
+            currentSearchSessionId++; 
+            isFetchingFriends = false;
+            setupInfiniteScroll(); 
+        }, 250); 
+    };
+
+    function setupInfiniteScroll() {
+        if(observer) observer.disconnect();
+        const trigger = document.getElementById('scroll-trigger');
+        trigger.style.display = "flex";
+        trigger.innerText = "Loading...";
+        
+        observer = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) {
+                loadMoreFriends();
+            }
+        });
+        observer.observe(trigger);
+        loadMoreFriends(); 
+    }
+
+    function loadMoreFriends() {
+        if (isFetchingFriends) return;
+        isFetchingFriends = true; 
+
+        const mySearchId = currentSearchSessionId;
+
+        const fetchNextChunk = () => {
+            if (mySearchId !== currentSearchSessionId) {
+                isFetchingFriends = false; return;
+            }
+
+            const slice = mutualFriends.slice(friendsLoadedCount, friendsLoadedCount + friendsPerPage);
+            if(slice.length === 0) {
+                document.getElementById('scroll-trigger').style.display = "none";
+                document.getElementById('scroll-trigger').innerText = "End of list";
+                isFetchingFriends = false;
                 return;
             }
 
-            try {
-                if (typeof firebaseConfig === 'undefined') {
-                    throw new Error("firebaseConfig is not defined. Check your config.js file.");
-                }
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                auth = firebase.auth();
+            db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', slice).get()
+            .then(snap => {
+                if (mySearchId !== currentSearchSessionId) { isFetchingFriends = false; return; }
 
-                loadCachedData();
+                const listEl = document.getElementById('add-members-list');
+                let renderedAny = false;
+                
+                snap.docs.forEach(doc => {
+                    const u = doc.data();
+                    const uid = doc.id;
+                    
+                    const searchStr = currentFriendSearch;
+                    const matchesSearch = searchStr === "" || 
+                                          (u.name || "").toLowerCase().includes(searchStr) || 
+                                          (u.username || "").toLowerCase().includes(searchStr);
+                    
+                    const existingEl = document.getElementById('add-member-' + uid);
 
-                auth.onAuthStateChanged(user => {
-                    if(user) {
-                        myUid = user.uid;
-                        listenToGroup();
-                    } else {
-                        window.location.href = "login.html";
+                    if (matchesSearch && !existingEl) {
+                        const isSelected = selectedNewMembers.includes(uid);
+                        const verifiedIcon = u.verified ? `<img src="${V_URL}" class="v-badge" style="margin-left:6px;">` : '';
+                        
+                        const div = document.createElement('div');
+                        div.id = 'add-member-' + uid;
+                        div.className = 'selectable-member';
+                        div.onclick = () => toggleNewMemberSelection(uid, div.querySelector('.sel-checkbox'));
+                        div.innerHTML = `
+                            <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="sel-pfp">
+                            <div class="sel-info">
+                                <div class="sel-name">${u.name || u.username} ${verifiedIcon}</div>
+                                <div class="sel-handle">@${u.username}</div>
+                            </div>
+                            <div class="sel-checkbox ${isSelected ? 'checked' : ''}"></div>
+                        `;
+                        listEl.appendChild(div);
+                        renderedAny = true;
                     }
                 });
-            } catch(err) {
-                alert("Firebase Init Error: " + err.message);
-            }
-        };
-
-        function listenToGroup() {
-            db.collection('chats').doc(groupId).onSnapshot(doc => {
-                if(!doc.exists) {
-                    alert("Group not found in database.");
-                    document.getElementById('loading-screen').style.display = 'none';
-                    return;
-                }
                 
-                const data = doc.data();
-                currentGroupData = data;
+                friendsLoadedCount += slice.length;
                 
-                // Security Check
-                const members = data.participants || [];
-                if(!members.includes(myUid)) {
-                    document.getElementById('main-view').style.display = 'none';
-                    document.getElementById('edit-trigger').style.display = 'none';
-                    document.getElementById('restricted-view').style.display = 'flex';
-                    document.getElementById('loading-screen').style.display = 'none';
-                    return;
-                }
-
-                saveToCache(data);
-                renderGroupUI(data).catch(e => alert("UI Render Error: " + e.message));
-                document.getElementById('loading-screen').style.display = 'none';
-            }, err => {
-                alert("Firestore Listener Error: " + err.message);
-            });
-        }
-
-        async function renderGroupUI(data) {
-            document.getElementById('head-group-name').innerText = data.name || "Group Info";
-            document.getElementById('group-display-name').innerText = data.name || "Unnamed Group";
-            document.getElementById('group-display-desc').innerText = data.description || "No description provided.";
-            document.getElementById('group-display-pfp').src = data.photoURL || 'https://via.placeholder.com/150';
-
-            // Admin UI Check
-            const admins = data.admins || [];
-            const isAdmin = admins.includes(myUid);
-            document.getElementById('edit-trigger').style.display = isAdmin ? 'block' : 'none';
-
-            // Render Participants
-            const listContainer = document.getElementById('participants-list');
-            listContainer.innerHTML = "";
-
-            const members = data.participants || [];
-            
-            // Fetch member details (using cache where possible)
-            for(const uid of members) {
-                try {
-                    const userData = await getUserDetails(uid);
-                    const isMemberAdmin = admins.includes(uid);
-                    
-                    const div = document.createElement('div');
-                    div.className = "participant-item";
-                    div.innerHTML = `
-                        <img src="${userData.photoURL || 'https://via.placeholder.com/150'}" class="p-pfp">
-                        <div class="p-info">
-                            <div class="p-name">
-                                ${userData.name || 'User'} 
-                                ${userData.verified ? `<img src="${V_URL}" class="v-badge">` : ''}
-                            </div>
-                            <div class="p-username">@${userData.username || 'unknown'}</div>
-                        </div>
-                        ${isMemberAdmin ? `<div class="admin-badge">Admin</div>` : ''}
-                    `;
-
-                    // Long Press Logic
-                    let timer;
-                    div.addEventListener('touchstart', () => {
-                        timer = setTimeout(() => openMemberActions(uid, isMemberAdmin), 600);
-                    });
-                    div.addEventListener('touchend', () => clearTimeout(timer));
-                    div.addEventListener('mousedown', () => {
-                        timer = setTimeout(() => openMemberActions(uid, isMemberAdmin), 600);
-                    });
-                    div.addEventListener('mouseup', () => clearTimeout(timer));
-
-                    listContainer.appendChild(div);
-                } catch(e) { console.warn("Could not load user data for " + uid); }
-            }
-        }
-
-        async function getUserDetails(uid) {
-            let cache = JSON.parse(localStorage.getItem('goorac_u_cache')) || {};
-            if(cache[uid]) return cache[uid];
-
-            const d = await db.collection('users').doc(uid).get();
-            if(d.exists) {
-                cache[uid] = d.data();
-                localStorage.setItem('goorac_u_cache', JSON.stringify(cache));
-                return d.data();
-            }
-            return {};
-        }
-
-        // --- EDIT MODAL LOGIC ---
-        function toggleEditModal(show) {
-            const modal = document.getElementById('edit-modal');
-            if(show) {
-                document.getElementById('edit-name-input').value = currentGroupData.name || "";
-                document.getElementById('edit-desc-input').value = currentGroupData.description || "";
-                modal.classList.add('open');
-                window.history.pushState({ modalOpen: true }, "");
-            } else {
-                modal.classList.remove('open');
-            }
-        }
-
-        window.onpopstate = (e) => {
-            document.getElementById('edit-modal').classList.remove('open');
-            closeSheet();
-        };
-
-        async function saveGroupDetails() {
-            try {
-                const name = document.getElementById('edit-name-input').value;
-                const desc = document.getElementById('edit-desc-input').value;
-                
-                await db.collection('chats').doc(groupId).update({
-                    name: name,
-                    description: desc
-                });
-                toggleEditModal(false);
-            } catch(e) { alert("Save Error: " + e.message); }
-        }
-
-        // --- MEMBER ACTIONS (BOTTOM SHEET) ---
-        function openMemberActions(uid, isTargetAdmin) {
-            const amIAdmin = (currentGroupData.admins || []).includes(myUid);
-            if(!amIAdmin) return; // Only admins see actions
-
-            selectedMemberId = uid;
-            document.getElementById('admin-toggle-btn').innerText = isTargetAdmin ? "Remove as Admin" : "Make as Admin";
-            
-            document.getElementById('sheet-overlay').classList.add('active');
-            document.getElementById('member-sheet').classList.add('active');
-        }
-
-        function closeSheet() {
-            document.getElementById('sheet-overlay').classList.remove('active');
-            document.getElementById('member-sheet').classList.remove('active');
-        }
-
-        async function toggleAdminRole() {
-            try {
-                let admins = currentGroupData.admins || [];
-                if(admins.includes(selectedMemberId)) {
-                    admins = admins.filter(a => a !== selectedMemberId);
+                if (currentFriendSearch !== "" && !renderedAny && friendsLoadedCount < mutualFriends.length) {
+                    fetchNextChunk();
                 } else {
-                    admins.push(selectedMemberId);
+                    if(friendsLoadedCount >= mutualFriends.length) {
+                        document.getElementById('scroll-trigger').style.display = "none";
+                    } else {
+                        document.getElementById('scroll-trigger').style.display = "flex";
+                        document.getElementById('scroll-trigger').innerText = "Loading...";
+                    }
+                    isFetchingFriends = false; 
                 }
-                
-                await db.collection('chats').doc(groupId).update({ admins });
-                closeSheet();
-            } catch(e) { alert("Admin Update Error: " + e.message); }
+            }).catch(e => {
+                console.error(e);
+                isFetchingFriends = false; 
+            });
+        };
+        fetchNextChunk();
+    }
+
+    window.toggleNewMemberSelection = function(uid, checkboxEl) {
+        const index = selectedNewMembers.indexOf(uid);
+        if(index > -1) {
+            selectedNewMembers.splice(index, 1);
+            checkboxEl.classList.remove('checked');
+        } else {
+            selectedNewMembers.push(uid);
+            checkboxEl.classList.add('checked');
         }
+        updateAddBtn();
+    };
 
-        async function removeFromGroup() {
-            try {
-                if(!confirm("Remove this user from the group?")) return;
-                
-                let members = currentGroupData.participants || [];
-                let admins = currentGroupData.admins || [];
-                
-                members = members.filter(m => m !== selectedMemberId);
-                admins = admins.filter(a => a !== selectedMemberId);
-
-                await db.collection('chats').doc(groupId).update({ participants: members, admins });
-                closeSheet();
-            } catch(e) { alert("Remove User Error: " + e.message); }
+    function updateAddBtn() {
+        const btn = document.getElementById('confirm-add-btn');
+        if(selectedNewMembers.length > 0) {
+            btn.innerText = `Add ${selectedNewMembers.length} Participant${selectedNewMembers.length > 1 ? 's' : ''}`;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        } else {
+            btn.innerText = "Select Participants";
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
         }
+    }
 
-        // --- ADD PARTICIPANTS SEARCH ---
-        async function searchUsersToAdd(query) {
-            try {
-                const q = query.toLowerCase();
-                const resultsDiv = document.getElementById('search-results');
-                if(q.length < 2) { resultsDiv.innerHTML = ""; return; }
+    window.confirmAddMembers = async function() {
+        if(selectedNewMembers.length === 0) return;
+        const btn = document.getElementById('confirm-add-btn');
+        btn.innerText = "Adding..."; btn.disabled = true;
 
-                const snap = await db.collection('users').limit(10).get();
-                const currentMembers = currentGroupData.participants || [];
-
-                resultsDiv.innerHTML = snap.docs
-                    .map(d => ({id: d.id, ...d.data()}))
-                    .filter(u => {
-                        const match = (u.name||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q);
-                        return match && !currentMembers.includes(u.id); // No duplicates
-                    })
-                    .map(u => `
-                        <div class="participant-item" onclick="addMemberToGroup('${u.id}')">
-                            <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="p-pfp">
-                            <div class="p-info">
-                                <div class="p-name">
-                                    ${u.name} ${u.verified ? `<img src="${V_URL}" class="v-badge">` : ''}
-                                </div>
-                                <div class="p-username">@${u.username}</div>
-                            </div>
-                            <div style="color:var(--accent); font-weight:700;">+ Add</div>
-                        </div>
-                    `).join('');
-            } catch(e) { console.error("Search error", e); }
+        try {
+            await db.collection("chats").doc(groupId).update({
+                participants: firebase.firestore.FieldValue.arrayUnion(...selectedNewMembers)
+            });
+            closeAddMembersModal(true);
+        } catch(e) {
+            alert("Failed to add members.");
+            btn.innerText = "Add Selected"; btn.disabled = false;
         }
+    };
 
-        async function addMemberToGroup(uid) {
-            try {
-                let members = currentGroupData.participants || [];
-                if(!members.includes(uid)) {
-                    members.push(uid);
-                    await db.collection('chats').doc(groupId).update({ participants: members });
-                    document.getElementById('user-search-input').value = "";
-                    document.getElementById('search-results').innerHTML = "";
-                }
-            } catch(e) { alert("Add Participant Error: " + e.message); }
+    // =========================================
+    //  HISTORY POPSTATE LISTENER
+    // =========================================
+    window.onpopstate = (e) => { 
+        const hash = window.location.hash;
+        if(document.getElementById('add-members-modal').classList.contains('active') && hash !== '#addMembers') {
+            closeAddMembersModal(false);
         }
+        else if(document.getElementById('edit-modal').classList.contains('active') && hash !== '#edit' && hash !== '#addMembers') {
+            closeEditModal(false);
+        }
+        else if(document.getElementById('action-menu').classList.contains('active') && hash !== '#action') {
+            closeActionMenu(false); 
+        }
+    };
 
-    </script>
+</script>
 </body>
 </html>
