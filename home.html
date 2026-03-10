@@ -8,12 +8,11 @@
     >
     <title>GQuantum Home | From Goorac</title>
     
-    <link rel="preload" href="components/navbar.js" as="script">
-    
     <script src="config.js"></script>
     <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
     <link rel="manifest" href="manifest.json">
 
+    <link rel="preload" as="script" href="components/navbar.js">
     <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons-Round">
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -520,6 +519,7 @@
             height: calc(65px + env(safe-area-inset-bottom));
             background-color: var(--bg);
             z-index: 1000;
+            contain: layout size style; /* FIX ADDED: physically locks dimensions so it cannot flicker or shift the DOM */
         }
 
         /* Toggled by JS Observer on component */
@@ -955,22 +955,9 @@
     if (cachedNavbarHtmlData) {
         // [GLITCH FIX]: Disabled forcing raw HTML into the element, allowing the component to load its own 0ms SVGs cleanly
         // document.getElementById('main-nav').innerHTML = cachedNavbarHtmlData;
-
-        // 🚀 NEW 0ms FLICKER FIX: Inject a detached visual clone *behind* the real navbar (z-index: 999) to completely eliminate flicker without breaking component logic
-        document.write('<div id="nav-0ms-clone" style="position:fixed; bottom:0; left:0; width:100%; height:calc(65px + env(safe-area-inset-bottom)); background:var(--bg); z-index:999; display:flex; justify-content:space-around; align-items:center; pointer-events:none; transition:opacity 0.4s ease;">' + cachedNavbarHtmlData + '</div>');
         
-        // Smoothly fade out the clone once the true component mounts and natively paints its SVGs over it
-        customElements.whenDefined('main-navbar').then(() => {
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    const clone = document.getElementById('nav-0ms-clone');
-                    if (clone) {
-                        clone.style.opacity = '0';
-                        setTimeout(() => clone.remove(), 400);
-                    }
-                }, 150); // Small buffer to ensure native SVGs finish loading
-            });
-        });
+        // [NEW FIX]: Re-enabled to achieve the requested 0ms load and stop the bottom flickering!
+        document.getElementById('main-nav').innerHTML = cachedNavbarHtmlData; 
     }
 </script>
 
@@ -1232,6 +1219,16 @@
             new MutationObserver(() => {
                 localStorage.setItem('goorac_moments_html_cache', momentsFeedEl.innerHTML);
             }).observe(momentsFeedEl, { childList: true, subtree: true, attributes: true, characterData: true });
+        }
+
+        // 🚀 NEW: LIVE CACHE SAVER FOR NAVBAR (0ms latency prep to permanently fix flickering)
+        const navBarEl = document.getElementById('main-nav');
+        if (navBarEl) {
+            new MutationObserver(() => {
+                if(navBarEl.innerHTML.trim().length > 0) {
+                    localStorage.setItem('goorac_navbar_html_cache', navBarEl.innerHTML);
+                }
+            }).observe(navBarEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
     });
 
