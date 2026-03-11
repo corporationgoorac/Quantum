@@ -325,6 +325,7 @@
     let isFetching = false;
     let hasStarted = false;
     let viewedVideoIds = new Set(); 
+    let consecutiveDuplicateFetches = 0; 
     
     let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
     let currentVideoStartTime = 0; 
@@ -370,7 +371,7 @@
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
         } else {
-            if (hasStarted) playActivePlayer();
+            if (hasStarted) applyPlayerState();
         }
     });
 
@@ -400,8 +401,8 @@
         playersReady++;
         if (playersReady === 2) {
             if (bitesQueue.length > 0) {
-                syncPlayersToScrollPosition(); 
                 renderDOMSlides();
+                applyPlayerState(); 
                 if (bitesQueue.length < 8) fetchMoreBites();
             } else {
                 fetchMoreBites();
@@ -415,7 +416,7 @@
         hasStarted = true;
         
         if (playersReady === 2 && bitesQueue.length > 0) {
-            playActivePlayer();
+            applyPlayerState();
             currentVideoStartTime = Date.now(); 
         }
     }
@@ -492,24 +493,60 @@
     }
 
     // ==========================================================================
-    // 🚀 SCROLL-SYNC ENGINE (Instantly recovers stuck state)
+    // 🚀 DETERMINISTIC PLAYER ENGINE (100% BLOCKS DUPLICATE BUGS)
     // ==========================================================================
-    function syncPlayersToScrollPosition() {
-        const viewport = document.getElementById('bites-viewport');
-        if (!viewport || playersReady < 2) return;
+    // This absolutely guarantees Player A is always Even indices and Player B is always Odd indices.
+    function applyPlayerState() {
+        if (!playerA || !playerB || !bitesQueue[currentIndex]) return;
         
-        const slideHeight = viewport.clientHeight || window.innerHeight;
-        const scrollPosition = viewport.scrollTop;
-        const actualIndex = Math.round(scrollPosition / slideHeight) || 0;
+        const currentVid = bitesQueue[currentIndex].videoId;
+        const nextVid = bitesQueue[currentIndex + 1]?.videoId;
+        
+        const isEven = (currentIndex % 2 === 0);
+        
+        const activePlayerObj = isEven ? playerA : playerB;
+        const inactivePlayerObj = isEven ? playerB : playerA;
+        const activeContainer = isEven ? 'player-container-a' : 'player-container-b';
+        const inactiveContainer = isEven ? 'player-container-b' : 'player-container-a';
 
-        if (actualIndex >= 0 && actualIndex < bitesQueue.length) {
-            if (actualIndex !== currentIndex) {
-                currentIndex = actualIndex;
-                swapPlayers();
-                if (hasStarted) currentVideoStartTime = Date.now();
+        // 1. Silence everything instantly
+        if (typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
+        if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
+
+        // 2. Visual Swap
+        document.getElementById(inactiveContainer).classList.remove('active');
+        document.getElementById(activeContainer).classList.add('active');
+        activePlayer = isEven ? 'A' : 'B';
+
+        // 3. Load & Play Active Video safely
+        if (isEven) {
+            if (currentLoadedA !== currentVid) {
+                activePlayerObj.loadVideoById(currentVid);
+                currentLoadedA = currentVid;
+            }
+        } else {
+            if (currentLoadedB !== currentVid) {
+                activePlayerObj.loadVideoById(currentVid);
+                currentLoadedB = currentVid;
+            }
+        }
+        
+        if (hasStarted && typeof activePlayerObj.playVideo === 'function') {
+            activePlayerObj.playVideo();
+        }
+
+        // 4. Pre-Load Next Video silently
+        if (nextVid) {
+            if (isEven) {
+                if (currentLoadedB !== nextVid) {
+                    inactivePlayerObj.loadVideoById(nextVid);
+                    currentLoadedB = nextVid;
+                }
             } else {
-                // If we are already on the index, ensure playback is primed
-                if (hasStarted) playActivePlayer();
+                if (currentLoadedA !== nextVid) {
+                    inactivePlayerObj.loadVideoById(nextVid);
+                    currentLoadedA = nextVid;
+                }
             }
         }
     }
@@ -523,14 +560,15 @@
         if (!hasStarted) return;
 
         const now = Date.now();
+        if (now - lastScrollProcessTime < 50) return; // 50ms throttle prevents erratic misfires
+        lastScrollProcessTime = now;
+
         const viewport = document.getElementById('bites-viewport');
         const slideHeight = viewport.clientHeight;
-        const scrollPosition = viewport.scrollTop;
-        
-        const newIndex = Math.round(scrollPosition / slideHeight);
+        const newIndex = Math.round(viewport.scrollTop / slideHeight);
 
         // 🚀 FATAL STUCK PREVENTER: Scrolled onto the Loader Slide
-        if (newIndex === bitesQueue.length) {
+        if (newIndex >= bitesQueue.length) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
             
@@ -543,9 +581,6 @@
         }
 
         if (newIndex !== currentIndex && newIndex >= 0 && newIndex < bitesQueue.length) {
-            if (now - lastScrollProcessTime < 100) return;
-            lastScrollProcessTime = now;
-            
             const timeSpentMs = now - currentVideoStartTime;
             const previousBite = bitesQueue[currentIndex];
             
@@ -556,13 +591,11 @@
             currentVideoStartTime = Date.now(); 
             
             cleanUpQueueAndCache();
-            swapPlayers();
+            applyPlayerState(); // Calls the infallible deterministic engine
 
-            // 🚀 SMART FETCH: Load aggressively early when 5 videos remain
-            if (currentIndex >= bitesQueue.length - 5 && !isFetching) {
-                if (!isSearchPlaying) {
-                    fetchMoreBites(); 
-                }
+            // 🚀 SMART FETCH: Load aggressively early when 4 videos remain
+            if (currentIndex >= bitesQueue.length - 4 && !isFetching && !isSearchPlaying) {
+                fetchMoreBites(); 
             }
         }
     }
@@ -641,77 +674,6 @@
         }
     }
 
-    // ==========================================================================
-    // 🚀 DETERMINISTIC PLAYER SWAPPER (DUPLICATE ANNIHILATOR)
-    // ==========================================================================
-    // Mathematically binds Player A to Even numbers, Player B to Odd numbers.
-    // This physically prevents race conditions where both load the same video.
-    function swapPlayers() {
-        if (!playerA || !playerB) return;
-        
-        const currentVid = bitesQueue[currentIndex]?.videoId;
-        const nextVid = bitesQueue[currentIndex + 1]?.videoId;
-        const isEven = currentIndex % 2 === 0;
-
-        if (typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
-        if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
-
-        if (isEven) {
-            activePlayer = 'A';
-            document.getElementById('player-container-b').classList.remove('active');
-            document.getElementById('player-container-a').classList.add('active');
-            
-            // Player A handles current
-            if (currentVid) {
-                if (currentLoadedA !== currentVid) {
-                    hasStarted ? playerA.loadVideoById(currentVid) : playerA.cueVideoById(currentVid);
-                    currentLoadedA = currentVid;
-                } else if (hasStarted) {
-                    playerA.playVideo();
-                }
-            }
-            // Player B safely cues next
-            if (nextVid && currentLoadedB !== nextVid) {
-                playerB.cueVideoById(nextVid);
-                currentLoadedB = nextVid;
-            }
-        } else {
-            activePlayer = 'B';
-            document.getElementById('player-container-a').classList.remove('active');
-            document.getElementById('player-container-b').classList.add('active');
-            
-            // Player B handles current
-            if (currentVid) {
-                if (currentLoadedB !== currentVid) {
-                    hasStarted ? playerB.loadVideoById(currentVid) : playerB.cueVideoById(currentVid);
-                    currentLoadedB = currentVid;
-                } else if (hasStarted) {
-                    playerB.playVideo();
-                }
-            }
-            // Player A safely cues next
-            if (nextVid && currentLoadedA !== nextVid) {
-                playerA.cueVideoById(nextVid);
-                currentLoadedA = nextVid;
-            }
-        }
-    }
-
-    function playActivePlayer() {
-        const p = activePlayer === 'A' ? playerA : playerB;
-        if (bitesQueue[currentIndex] && p && typeof p.playVideo === 'function') {
-            const currentVid = bitesQueue[currentIndex].videoId;
-            if(activePlayer === 'A' && currentLoadedA !== currentVid) {
-                p.loadVideoById(currentVid);
-                currentLoadedA = currentVid;
-            } else if(activePlayer === 'B' && currentLoadedB !== currentVid) {
-                p.loadVideoById(currentVid);
-                currentLoadedB = currentVid;
-            }
-            p.playVideo();
-        }
-    }
-
     function togglePlayPause() {
         const p = activePlayer === 'A' ? playerA : playerB;
         if (!p || typeof p.getPlayerState !== 'function') return;
@@ -759,7 +721,7 @@
         let success = false;
         let attempts = 0;
 
-        // Loop up to 3 times sequentially to prevent Promise/Timeout overlaps
+        // Loop up to 3 times sequentially to prevent Promise/Timeout deadlocks
         while (!success && attempts < 3) {
             attempts++;
             try {
@@ -769,7 +731,7 @@
 
                 let fetchUrl = `https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
                 if (attempts > 1) {
-                    const bustWords = ["viral", "hits", "trending", "wow"];
+                    const bustWords = ["viral", "hits", "trending", "wow", "latest"];
                     fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
                 }
 
@@ -789,7 +751,15 @@
                     if (uniqueNewBites.length > 0) {
                         uniqueNewBites.forEach(b => bitesQueue.push(b));
                         renderDOMSlides();
-                        syncPlayersToScrollPosition(); 
+                        
+                        // If we were stuck at the loader, INSTANTLY play the new video
+                        const viewport = document.getElementById('bites-viewport');
+                        const slideHeight = viewport.clientHeight;
+                        const actualIndex = Math.round(viewport.scrollTop / slideHeight);
+                        if (actualIndex === currentIndex && hasStarted) {
+                            applyPlayerState(); 
+                        }
+                        
                         success = true;
                     }
                 }
@@ -861,7 +831,7 @@
             viewport.scrollTop = currentIndex * viewport.clientHeight;
             currentVideoStartTime = Date.now(); 
             
-            syncPlayersToScrollPosition(); 
+            applyPlayerState(); 
             
             document.getElementById('discover-modal').classList.add('active');
             return;
@@ -937,7 +907,7 @@
         renderDOMSlides();
         currentVideoStartTime = Date.now(); 
         
-        syncPlayersToScrollPosition(); 
+        applyPlayerState(); 
     }
 
 </script>
