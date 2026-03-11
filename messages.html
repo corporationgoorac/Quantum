@@ -277,20 +277,50 @@
         .done-members-btn { position: absolute; bottom: 30px; left: 20px; right: 20px; background: white; color: black; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
         .infinite-scroll-trigger { height: 40px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.9rem; }
 
-        /* 🚀 NEW: NOTES & INBOX CONTROLS STYLES */
+        /* 🚀 NEW: NOTES & INBOX CONTROLS STYLES (TRUE 0MS NO-GLITCH) */
         #notes-wrapper {
-            background: #000;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            margin-top: -15px; /* Pulls it up tight under the blurry header */
+            background: #000; border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-top: -15px; min-height: 145px; overflow: hidden;
         }
+        #notes-container {
+            display: flex; overflow-x: auto; padding-top: 70px; padding-bottom: 10px;
+            padding-left: 15px; gap: 20px; scrollbar-width: none; align-items: flex-start;
+            min-height: 145px; 
+        }
+        #notes-container::-webkit-scrollbar { display: none; }
+        
+        .note-item { display: flex; flex-direction: column; align-items: center; position: relative; width: 75px; flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        
+        .note-bubble, #my-note-preview {
+            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            position: absolute; top: 0px; left: 50%; transform: translate(-50%, -100%); z-index: 10;
+            padding: 6px 12px; border-radius: 16px; font-size: 0.75rem; width: max-content; max-width: 90px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .note-bubble.cf-note { border: 2px solid #00ba7c; box-shadow: 0 0 8px rgba(0, 186, 124, 0.4); }
+        .note-bubble.visible, #my-note-preview.visible { display: flex !important; }
+        
+        .note-bubble::after, #my-note-preview::after {
+            content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px; background: inherit; border-radius: 50%; z-index: -1;
+        }
+        
+        .note-text-content { line-height: 1.25; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%; word-break: break-word; }
+        .note-pfp { width: 65px; height: 65px; border-radius: 50%; border: 2px solid #262626; object-fit: cover; background: #333; z-index: 2; }
+        .note-username { font-size: 0.75rem; margin-top: 6px; color: #a0a0a0; max-width: 75px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+        
+        /* THE PLUS BADGE FIX */
         .add-note-badge {
             position: absolute; bottom: 20px; right: 0px; background: #333; color: white;
             width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 14px; font-weight: 800; border: 2px solid #000; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
+        #my-note-btn.has-note .add-note-badge { display: none !important; }
+
+        /* FIXED NON-STICKY INBOX CONTROLS */
         .inbox-controls {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 20px 10px 20px; background: #000; position: sticky; top: 60px; z-index: 50;
+            padding: 20px 20px 10px 20px; background: #000; position: relative; z-index: 10;
         }
         .inbox-controls-title { font-weight: 800; font-size: 1.15rem; color: #fff; }
         .sort-icon-btn { cursor: pointer; color: var(--text-dim); display: flex; align-items: center; justify-content: center; padding: 5px; transition: color 0.2s; }
@@ -348,9 +378,9 @@
         <img src="images/icon.png" class="header-icon" id="header-app-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/000000/fff?text=G'">
         <div class="header-title" ondblclick="clearAllUnreadBages()">Messages</div>
     </div>
-    <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
-        <svg onclick="openSearchModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; cursor: pointer; opacity: 0.9;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <svg onclick="openGroupModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px; cursor: pointer; opacity: 0.9;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    <div class="header-right" style="display: flex; align-items: center; gap: 18px;">
+        <svg onclick="openSearchModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; cursor: pointer; opacity: 0.95;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <svg onclick="openGroupModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; cursor: pointer; opacity: 0.95;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
     </div>
 </header>
 
@@ -385,7 +415,70 @@
             <span class="note-username">Your Note</span>
             <div class="add-note-badge">+</div>
         </div>
-        </div>
+        <script>
+            (function loadNotesZeroMs() {
+                const uid = localStorage.getItem('goorac_last_uid');
+                if(!uid) return;
+                
+                const container = document.getElementById('notes-container');
+                const myBtn = document.getElementById('my-note-btn');
+                const preview = document.getElementById('my-note-preview');
+                const myPfp = document.getElementById('my-note-pfp');
+
+                const cachedUData = localStorage.getItem('goorac_u_cache');
+                if(cachedUData) {
+                    try {
+                        const parsed = JSON.parse(cachedUData);
+                        if(parsed[uid] && parsed[uid].photoURL) {
+                            myPfp.src = parsed[uid].photoURL;
+                        }
+                    } catch(e){}
+                }
+
+                try {
+                    const myNoteStr = localStorage.getItem('my_note_cache_' + uid);
+                    if(myNoteStr) {
+                        const data = JSON.parse(myNoteStr);
+                        if(new Date(data.expiresAt || new Date().getTime() + 86400000) > new Date()) {
+                            myBtn.classList.add('has-note'); // CSS will hide the + sign
+                            preview.classList.add('visible');
+                            preview.style.background = data.bgColor || '#262626';
+                            preview.style.color = data.textColor || '#fff';
+                            preview.style.display = 'flex';
+                            preview.innerHTML = data.text ? `<div class="note-text-content" style='text-align:${data.textAlign || 'center'}; font-family:${data.font || 'system-ui'}'>${data.text}</div>` : '';
+                        }
+                    }
+                }catch(e){}
+
+                try {
+                    const mutualStr = localStorage.getItem('mutual_notes_cache_' + uid);
+                    if(mutualStr) {
+                        const mutuals = JSON.parse(mutualStr);
+                        let html = "";
+                        for(const [fUid, noteData] of Object.entries(mutuals)) {
+                            if(new Date(noteData.expiresAt || new Date().getTime() + 86400000) > new Date()) {
+                                const isLiked = noteData.likes && noteData.likes.some(l => l.uid === uid);
+                                const isCF = noteData.audience === 'close_friends';
+                                const bgStyle = `background:${noteData.bgColor || '#262626'}; color:${noteData.textColor || '#fff'}`;
+                                const cfClass = isCF ? 'cf-note' : '';
+                                
+                                html += `
+                                <div id="note-${fUid}" class="note-item friend-note has-note">
+                                    <div class="note-bubble visible ${cfClass}" style="${bgStyle}">
+                                        <div class="note-text-content" style='text-align:${noteData.textAlign || 'center'}; font-family:${noteData.font || 'system-ui'}'>${noteData.text}</div>
+                                    </div>
+                                    <img src="${noteData.pfp || 'https://via.placeholder.com/65'}" class="note-pfp">
+                                    ${isLiked ? `<div class="note-like-indicator"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>` : ''}
+                                    <span class="note-username">${(noteData.username || 'User').split(' ')[0]}</span>
+                                </div>`;
+                            }
+                        }
+                        container.insertAdjacentHTML('beforeend', html);
+                    }
+                }catch(e){}
+            })();
+        </script>
+    </div>
 </div>
 
 <div class="inbox-controls">
@@ -724,6 +817,9 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             myUid = user.uid;
+            
+            // 🚀 SAVE UID FOR ZERO-MS NOTES TRAY CACHE RENDER ON NEXT LOAD
+            localStorage.setItem('goorac_last_uid', user.uid);
             
             // 🚀 POPULATE THE USER PFP FOR THE NOTES UI TRAY
             const myNotePfpEl = document.getElementById('my-note-pfp');
