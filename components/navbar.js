@@ -247,15 +247,15 @@ class MainNavbar extends HTMLElement {
                 <span class="material-icons-round">explore</span>
                 <span>Explore</span>
             </a>
+            <a href="bites.html" class="nav-item" aria-label="Bites">
+                <span class="material-icons-round">smart_display</span>
+                <span>Bites</span>
+            </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
                 <div class="vision-icon-container">
                     <span class="material-icons-round vision-graphic">live_tv</span>
                 </div>
                 <span>Vision</span>
-            </a>
-            <a href="calls.html" class="nav-item" aria-label="Calls">
-                <span class="material-icons-round">call</span>
-                <span>Calls</span>
             </a>
         </nav>
         `;
