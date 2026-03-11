@@ -14,19 +14,22 @@ class ViewDrops extends HTMLElement {
         
         this.timerAnimation = null;
         this.timerStartTime = 0;
-        this.timerDuration = 5000; // Default 5 seconds for images/text
+        this.timerDuration = 30000; // Default 30 seconds for images
         this.isPaused = false;
         this.pauseTimeRemaining = 0;
+        
+        this.viewTimer = null; // 2-second seen tracker
 
         this.ytPlayer = null;
         this.bgAudio = new Audio();
         this.bgAudio.loop = true;
 
-        // Swipe down to close physics
+        // Swipe down to close & Options Modal physics
         this.state = {
             isDragging: false,
             startY: 0,
-            currentY: 0
+            currentY: 0,
+            optionsOpen: false
         };
     }
 
@@ -79,15 +82,33 @@ class ViewDrops extends HTMLElement {
             }
 
             .vd-user-info { display: flex; align-items: center; justify-content: space-between; }
-            .vd-user-left { display: flex; align-items: center; gap: 10px; }
+            .vd-user-left { display: flex; align-items: center; gap: 10px; width: calc(100% - 40px); }
             .vd-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); object-fit: cover; }
             .vd-name-row { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #fff; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
             .vd-time { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); }
             
-            .vd-close-btn { 
+            .vd-options-btn { 
                 width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-                color: #fff; cursor: pointer; border-radius: 50%; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+                color: #fff; cursor: pointer; border-radius: 50%; background: transparent; transition: 0.2s;
             }
+            .vd-options-btn:active { background: rgba(255,255,255,0.2); }
+
+            /* --- MARQUEE MUSIC TAG --- */
+            .vd-music-wrap { 
+                max-width: 150px; overflow: hidden; display: flex; align-items: center; gap: 6px; 
+                background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); padding: 4px 10px; 
+                border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-top: 4px;
+            }
+            .vd-music-icon { font-size: 12px; color: #fff; flex-shrink: 0; }
+            .vd-music-text-container { 
+                width: 100%; overflow: hidden; white-space: nowrap; position: relative; 
+                display: flex; align-items: center; 
+            }
+            .vd-music-text { 
+                display: inline-block; padding-left: 100%; font-size: 11px; font-weight: 600; color: #fff;
+                animation: marquee 7s linear infinite; 
+            }
+            @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
             /* --- MEDIA CANVAS --- */
             .vd-media-container {
@@ -103,7 +124,15 @@ class ViewDrops extends HTMLElement {
                 background: #050505; border-radius: 24px; overflow: hidden;
                 box-shadow: 0 20px 50px rgba(0,0,0,0.8); display: none;
             }
-            .vd-yt-overlay { position: absolute; inset: 0; z-index: 5; } /* Blocks iframe clicks */
+            .vd-yt-overlay { position: absolute; inset: 0; z-index: 5; }
+            .vd-yt-fullscreen-btn {
+                position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10;
+                background: rgba(255,255,255,0.2); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+                border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 10px 20px; border-radius: 100px;
+                font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5); pointer-events: auto; transition: 0.2s;
+            }
+            .vd-yt-fullscreen-btn:active { transform: translateX(-50%) scale(0.95); background: rgba(255,255,255,0.3); }
 
             /* --- NAVIGATION TAP ZONES --- */
             .vd-tap-zones { position: absolute; inset: 0; z-index: 30; display: flex; }
@@ -144,13 +173,38 @@ class ViewDrops extends HTMLElement {
                 20% { transform: translate(-50%, -50%) scale(2); opacity: 1; }
                 100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
             }
-            
-            /* Hidden Music Player Indicator */
-            .vd-music-tag {
-                display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.5);
-                backdrop-filter: blur(10px); padding: 4px 10px; border-radius: 12px;
-                font-size: 11px; font-weight: 600; color: #fff; margin-top: 4px; border: 1px solid rgba(255,255,255,0.1);
+
+            /* --- OPTIONS MODAL (BOTTOM SHEET) --- */
+            .vd-opt-overlay {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 30000;
+                display: none; opacity: 0; transition: opacity 0.3s; pointer-events: none;
             }
+            .vd-opt-overlay.active { display: block; opacity: 1; pointer-events: auto; }
+            
+            .vd-opt-sheet {
+                position: absolute; bottom: 0; left: 0; width: 100%; background: #121212;
+                border-radius: 24px 24px 0 0; padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+                transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                display: flex; flex-direction: column; gap: 8px; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            }
+            .vd-opt-overlay.active .vd-opt-sheet { transform: translateY(0); }
+            
+            .vd-opt-drag-handle { width: 40px; height: 5px; background: #333; border-radius: 10px; margin: 0 auto 15px auto; }
+            
+            .vd-opt-btn {
+                background: #1a1a1a; color: #fff; border: 1px solid rgba(255,255,255,0.05); padding: 16px 20px;
+                border-radius: 16px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 15px;
+                cursor: pointer; transition: 0.2s; text-align: left; width: 100%;
+            }
+            .vd-opt-btn:active { background: #222; transform: scale(0.98); }
+            .vd-opt-btn.danger { color: #ff3b30; }
+            .vd-opt-btn.danger .material-icons-round { color: #ff3b30; }
+            .vd-opt-stats { display: flex; justify-content: space-around; background: #1a1a1a; border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+            .vd-stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+            .vd-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
+            .vd-stat-lbl { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+            .vd-opt-header-text { text-align: center; color: #888; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
         </style>
 
         <div class="vd-overlay" id="vd-overlay">
@@ -161,7 +215,7 @@ class ViewDrops extends HTMLElement {
                 <div class="vd-user-info">
                     <div class="vd-user-left">
                         <img id="vd-avatar" class="vd-avatar" src="">
-                        <div>
+                        <div style="width: calc(100% - 46px);">
                             <div class="vd-name-row">
                                 <span id="vd-name">User</span>
                                 <span class="material-icons-round" id="vd-verified" style="font-size: 14px; color: #00d2ff; display: none;">verified</span>
@@ -170,10 +224,16 @@ class ViewDrops extends HTMLElement {
                                 </div>
                             </div>
                             <div class="vd-time" id="vd-time">1h</div>
-                            <div id="vd-music-wrap" style="display:none;"></div>
+                            
+                            <div id="vd-music-wrap" style="display:none;" class="vd-music-wrap">
+                                <span class="material-icons-round vd-music-icon">music_note</span>
+                                <div class="vd-music-text-container">
+                                    <span class="vd-music-text" id="vd-music-text">Song Name</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="vd-close-btn" id="vd-close-btn"><span class="material-icons-round">close</span></div>
+                    <div class="vd-options-btn" id="vd-options-btn"><span class="material-icons-round">more_vert</span></div>
                 </div>
             </div>
 
@@ -185,6 +245,9 @@ class ViewDrops extends HTMLElement {
                 <div id="vd-yt-card" class="vd-yt-card">
                     <div id="vd-yt-player"></div>
                     <div class="vd-yt-overlay"></div>
+                    <div class="vd-yt-fullscreen-btn" id="vd-yt-fullscreen-btn" style="display:none;">
+                        <span class="material-icons-round" style="font-size: 18px;">fullscreen</span> View in full screen
+                    </div>
                 </div>
                 
                 <div class="vd-pop-animation" id="vd-pop-heart">
@@ -205,11 +268,22 @@ class ViewDrops extends HTMLElement {
             </div>
             
         </div>
+
+        <div class="vd-opt-overlay" id="vd-opt-overlay">
+            <div class="vd-opt-sheet" id="vd-opt-sheet">
+                <div class="vd-opt-drag-handle"></div>
+                <div class="vd-opt-header-text" id="vd-opt-expire-text">Expires in 24h</div>
+                <div id="vd-opt-dynamic-content"></div>
+            </div>
+        </div>
         `;
     }
 
     setupEventListeners() {
-        this.querySelector('#vd-close-btn').onclick = () => this.close();
+        this.querySelector('#vd-options-btn').onclick = () => this.openOptions();
+        this.querySelector('#vd-opt-overlay').onclick = (e) => {
+            if (e.target.id === 'vd-opt-overlay') this.closeOptions();
+        };
         
         // Tap Navigation
         this.querySelector('#vd-tap-right').onclick = () => this.nextDrop();
@@ -241,7 +315,9 @@ class ViewDrops extends HTMLElement {
         });
 
         window.addEventListener('popstate', (e) => {
-            if (this.querySelector('#vd-overlay').classList.contains('open')) {
+            if (this.state.optionsOpen) {
+                this.closeOptions(true);
+            } else if (this.querySelector('#vd-overlay').classList.contains('open')) {
                 this.close(true);
             }
         });
@@ -258,14 +334,14 @@ class ViewDrops extends HTMLElement {
         const overlay = this.querySelector('#vd-overlay');
         
         overlay.addEventListener('touchstart', (e) => {
-            if (e.target.tagName.toLowerCase() === 'input') return; // Don't block typing
+            if (e.target.tagName.toLowerCase() === 'input' || this.state.optionsOpen) return;
             this.state.isDragging = true;
             this.state.startY = e.touches[0].clientY;
             overlay.style.transition = 'none';
         }, {passive: true});
 
         overlay.addEventListener('touchmove', (e) => {
-            if (!this.state.isDragging) return;
+            if (!this.state.isDragging || this.state.optionsOpen) return;
             this.state.currentY = e.touches[0].clientY;
             const delta = this.state.currentY - this.state.startY;
             
@@ -277,7 +353,7 @@ class ViewDrops extends HTMLElement {
         }, {passive: false});
 
         overlay.addEventListener('touchend', () => {
-            if (!this.state.isDragging) return;
+            if (!this.state.isDragging || this.state.optionsOpen) return;
             this.state.isDragging = false;
             const delta = this.state.currentY - this.state.startY;
             
@@ -310,6 +386,7 @@ class ViewDrops extends HTMLElement {
 
     close(fromHistory = false) {
         this.clearTimer();
+        if (this.viewTimer) clearTimeout(this.viewTimer);
         this.bgAudio.pause();
         const vid = this.querySelector('#vd-video');
         vid.pause(); vid.src = '';
@@ -330,8 +407,6 @@ class ViewDrops extends HTMLElement {
     }
 
     renderProgressBars() {
-        // We render one segment per user. If a user had an array of drops, we would render multiple segments here.
-        // Since architecture is 1-doc-per-user overwrite, it's a 1:1 mapping.
         const container = this.querySelector('#vd-progress-container');
         container.innerHTML = '';
         
@@ -345,21 +420,33 @@ class ViewDrops extends HTMLElement {
 
     loadCurrentDrop() {
         this.clearTimer();
+        if (this.viewTimer) clearTimeout(this.viewTimer);
         this.bgAudio.pause();
         this.bgAudio.src = '';
 
         const drop = this.dropsList[this.currentIndex];
         if (!drop) { this.close(); return; }
 
-        // Mark as Watched in LocalStorage immediately
-        DropsManager.markAsWatched(drop.uid, drop.createdAt);
+        // STRICT 2-SECOND SEEN TRACKER LOGIC
+        this.viewTimer = setTimeout(() => {
+            DropsManager.markAsWatched(drop.uid, drop.createdAt);
+            if (drop.uid !== this.myUid && this.myUid) {
+                // Register the view for the creator's stats
+                const viewRef = this.db.collection('drops').doc(drop.uid).collection('views').doc(this.myUid);
+                viewRef.set({ 
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    viewerName: this.myUserData?.name || this.myUserData?.username || "Someone",
+                    viewerPfp: this.myUserData?.photoURL || 'https://via.placeholder.com/150'
+                }, { merge: true }).catch(e=>console.error(e));
+            }
+        }, 2000);
 
         // Fill previous progress bars, empty future ones
         this.dropsList.forEach((_, i) => {
             const fill = this.querySelector(`#vd-prog-${i}`);
             if (i < this.currentIndex) fill.style.width = '100%';
             else if (i > this.currentIndex) fill.style.width = '0%';
-            else fill.style.width = '0%'; // Reset current
+            else fill.style.width = '0%'; 
         });
 
         // Setup Header UI
@@ -372,11 +459,12 @@ class ViewDrops extends HTMLElement {
         const diffInMins = Math.floor((new Date() - date) / 60000);
         this.querySelector('#vd-time').innerText = diffInMins < 60 ? `${diffInMins}m` : `${Math.floor(diffInMins/60)}h`;
 
-        // Music Tag
+        // Marquee Music Tag
         const musicWrap = this.querySelector('#vd-music-wrap');
+        const musicText = this.querySelector('#vd-music-text');
         if (drop.songName) {
-            musicWrap.style.display = 'block';
-            musicWrap.innerHTML = `<div class="vd-music-tag"><span class="material-icons-round" style="font-size:12px;">music_note</span> ${drop.songName}</div>`;
+            musicWrap.style.display = 'flex';
+            musicText.innerText = drop.songName + (drop.songArtist ? ` • ${drop.songArtist}` : '');
             if (drop.songPreview) {
                 this.bgAudio.src = drop.songPreview;
                 this.bgAudio.play().catch(e => {});
@@ -385,10 +473,10 @@ class ViewDrops extends HTMLElement {
             musicWrap.style.display = 'none';
         }
 
-        // Setup Footer state (Own drop vs Friend drop)
+        // Setup Footer state
         const footer = this.querySelector('#vd-footer');
         if (drop.uid === this.myUid) {
-            footer.style.display = 'none'; // Can't reply/like own drop
+            footer.style.display = 'none'; 
         } else {
             footer.style.display = 'flex';
             this.checkLikeState(drop.uid);
@@ -398,50 +486,66 @@ class ViewDrops extends HTMLElement {
         const img = this.querySelector('#vd-image');
         const vid = this.querySelector('#vd-video');
         const ytCard = this.querySelector('#vd-yt-card');
+        const ytFsBtn = this.querySelector('#vd-yt-fullscreen-btn');
         const backdrop = this.querySelector('#vd-backdrop');
         
-        img.style.display = 'none'; vid.style.display = 'none'; ytCard.style.display = 'none';
+        img.style.display = 'none'; vid.style.display = 'none'; ytCard.style.display = 'none'; ytFsBtn.style.display = 'none';
         img.src = ''; vid.src = ''; backdrop.src = '';
         if (this.ytPlayer && typeof this.ytPlayer.pauseVideo === 'function') this.ytPlayer.pauseVideo();
 
-        // Load Media
+        // Load Media & Custom Durations
         if (drop.type === 'image') {
             img.src = drop.mediaUrl;
             backdrop.src = drop.mediaUrl;
             img.style.display = 'block';
-            this.startProgressTimer(5000); // 5 sec for images
+            this.startProgressTimer(30000); // Strict 30 sec for images
         } 
         else if (drop.type === 'video') {
             vid.src = drop.mediaUrl;
             backdrop.src = drop.mediaUrl;
             vid.style.display = 'block';
             vid.muted = !!drop.songPreview; // Mute if song is playing
-            vid.play().then(() => {
-                // If duration is valid, use it, else default to 15s max
-                const duration = (vid.duration && vid.duration !== Infinity) ? (vid.duration * 1000) : 15000;
-                this.startProgressTimer(Math.min(duration, 30000)); // Cap at 30s
-            }).catch(e => this.startProgressTimer(5000)); // Fallback
+            
+            vid.onloadedmetadata = () => {
+                const dur = (vid.duration && vid.duration !== Infinity) ? (vid.duration * 1000) : 30000;
+                this.startProgressTimer(dur);
+            };
+            vid.play().catch(e => this.startProgressTimer(30000)); 
         }
         else if (drop.type === 'youtube') {
             backdrop.src = `https://img.youtube.com/vi/${drop.youtubeId}/maxresdefault.jpg`;
             ytCard.style.display = 'block';
+            ytFsBtn.style.display = 'flex';
+            ytFsBtn.onclick = () => window.location.href = `bites.html?v=${drop.youtubeId}`;
             
             if (!this.ytPlayer && window.YT && window.YT.Player) {
                 this.ytPlayer = new YT.Player('vd-yt-player', {
                     videoId: drop.youtubeId,
                     playerVars: { 'autoplay': 1, 'controls': 0, 'playsinline': 1, 'mute': drop.songPreview ? 1 : 0 },
                     events: {
-                        'onReady': (e) => { e.target.playVideo(); this.startProgressTimer(15000); },
-                        'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) this.nextDrop(); }
+                        'onReady': (e) => { 
+                            e.target.playVideo(); 
+                            const dur = e.target.getDuration() * 1000 || 30000;
+                            this.startProgressTimer(dur);
+                        },
+                        'onStateChange': (e) => { 
+                            if(e.data === YT.PlayerState.ENDED) this.nextDrop(); 
+                            if(e.data === YT.PlayerState.PLAYING && this.timerDuration === 30000) {
+                                // Double check duration once playing
+                                const dur = e.target.getDuration() * 1000;
+                                if(dur > 0) this.startProgressTimer(dur);
+                            }
+                        }
                     }
                 });
             } else if (this.ytPlayer) {
                 this.ytPlayer.loadVideoById(drop.youtubeId);
                 this.ytPlayer.mute(); if(!drop.songPreview) this.ytPlayer.unMute();
                 this.ytPlayer.playVideo();
-                this.startProgressTimer(15000); // Give YT clips 15s fixed preview time
+                // Wait for state change to catch duration, default 30s
+                this.startProgressTimer(30000); 
             } else {
-                this.startProgressTimer(15000); // Fallback if API hasn't loaded
+                this.startProgressTimer(30000); 
             }
         }
     }
@@ -479,6 +583,7 @@ class ViewDrops extends HTMLElement {
     }
 
     pauseDrop() {
+        if (this.state.optionsOpen) return;
         this.isPaused = true;
         this.bgAudio.pause();
         const vid = this.querySelector('#vd-video');
@@ -487,6 +592,7 @@ class ViewDrops extends HTMLElement {
     }
 
     resumeDrop() {
+        if (this.state.optionsOpen) return;
         this.isPaused = false;
         if (this.bgAudio.src) this.bgAudio.play().catch(e=>{});
         const vid = this.querySelector('#vd-video');
@@ -508,9 +614,87 @@ class ViewDrops extends HTMLElement {
             this.currentIndex--;
             this.loadCurrentDrop();
         } else {
-            // Reset current if at beginning
             this.loadCurrentDrop();
         }
+    }
+
+    // --- OPTIONS MODAL LOGIC ---
+    async openOptions() {
+        if (navigator.vibrate) navigator.vibrate(10);
+        this.pauseDrop(); // Hard pause when options open
+        this.state.optionsOpen = true;
+        
+        const drop = this.dropsList[this.currentIndex];
+        const overlay = this.querySelector('#vd-opt-overlay');
+        const content = this.querySelector('#vd-opt-dynamic-content');
+        const expireText = this.querySelector('#vd-opt-expire-text');
+        
+        // Calculate Expiry
+        const expDate = drop.expiresAt ? (drop.expiresAt.toDate ? drop.expiresAt.toDate() : new Date(drop.expiresAt)) : new Date(Date.now() + 86400000);
+        const diffInHrs = Math.max(1, Math.floor((expDate - new Date()) / 3600000));
+        expireText.innerText = `Expires in ${diffInHrs}h`;
+
+        content.innerHTML = `<div style="text-align:center; padding: 20px;"><span class="material-icons-round" style="animation:spin 1s linear infinite;">refresh</span></div>`;
+        overlay.classList.add('active');
+        window.history.pushState({ optModalOpen: true }, "", "#drops-opt");
+
+        if (drop.uid === this.myUid) {
+            // Fetch live counts for MY drop
+            let viewsCount = 0; let likesCount = 0;
+            try {
+                const viewsSnap = await this.db.collection('drops').doc(this.myUid).collection('views').get();
+                viewsCount = viewsSnap.size;
+                const likesSnap = await this.db.collection('drops').doc(this.myUid).collection('likes').get();
+                likesCount = likesSnap.size;
+            } catch(e) {}
+
+            content.innerHTML = `
+                <div class="vd-opt-stats">
+                    <div class="vd-stat-item">
+                        <span class="vd-stat-val">${viewsCount}</span>
+                        <span class="vd-stat-lbl">Views</span>
+                    </div>
+                    <div class="vd-stat-item">
+                        <span class="vd-stat-val" style="color:#ff3b30;">${likesCount}</span>
+                        <span class="vd-stat-lbl">Likes</span>
+                    </div>
+                </div>
+                <button class="vd-opt-btn" onclick="window.location.href='drops.html'">
+                    <span class="material-icons-round">add_circle</span> New Drop
+                </button>
+                <button class="vd-opt-btn danger" onclick="document.querySelector('view-drops').deleteOwnDrop()">
+                    <span class="material-icons-round">delete</span> Delete Drop
+                </button>
+            `;
+        } else {
+            // Options for OTHER user drops
+            content.innerHTML = `
+                <button class="vd-opt-btn">
+                    <span class="material-icons-round">person_remove</span> Unfollow ${drop.displayName.split(' ')[0]}
+                </button>
+                <button class="vd-opt-btn danger">
+                    <span class="material-icons-round">block</span> Block User
+                </button>
+            `;
+        }
+    }
+
+    closeOptions(fromHistory = false) {
+        this.state.optionsOpen = false;
+        this.querySelector('#vd-opt-overlay').classList.remove('active');
+        if (!fromHistory && window.location.hash === '#drops-opt') window.history.back();
+        this.resumeDrop();
+    }
+
+    async deleteOwnDrop() {
+        if (!confirm("Delete your active Drop?")) return;
+        this.closeOptions();
+        
+        try {
+            await this.db.collection("drops").doc(this.myUid).delete();
+            this.close();
+            // The DropsManager listener will auto-remove it from the tray
+        } catch(e) { alert("Failed to delete drop."); }
     }
 
     // --- INTERACTIONS ---
@@ -555,10 +739,29 @@ class ViewDrops extends HTMLElement {
 
         try {
             const likeRef = this.db.collection('drops').doc(drop.uid).collection('likes').doc(this.myUid);
+            const msgText = `${this.myUserData?.name || 'Someone'} liked your Drop.`;
             
             if (!isCurrentlyLiked) {
                 await likeRef.set({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                this.firePushProxy(drop.uid, "New Like ❤️", `${this.myUserData?.name || 'Someone'} liked your Drop.`);
+                
+                // INTERNAL DB NOTIFICATION
+                await this.db.collection("notifications").add({
+                    ownerUid: drop.uid,
+                    senderUid: this.myUid,
+                    senderName: this.myUserData?.name || "User",
+                    senderPfp: this.myUserData?.photoURL || 'https://via.placeholder.com/150',
+                    type: "drop_like",
+                    text: msgText,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false,
+                    link: "home.html"
+                });
+                await this.db.collection("users").doc(drop.uid).update({
+                    unreadCount: firebase.firestore.FieldValue.increment(1)
+                });
+                
+                // EXTERNAL PUSH NOTIFICATION
+                this.firePushProxy(drop.uid, "New Like ❤️", msgText);
             } else {
                 await likeRef.delete();
             }
@@ -601,7 +804,6 @@ class ViewDrops extends HTMLElement {
 
             this.firePushProxy(drop.uid, `Reply from ${this.myUserData?.name || 'Someone'} 💬`, text);
             
-            // Visual feedback
             const input = this.querySelector('#vd-reply-input');
             const origPh = input.placeholder;
             input.placeholder = "Sent!";
@@ -626,7 +828,7 @@ class ViewDrops extends HTMLElement {
                 icon: senderPfp,
                 click_action: deepLink
             })
-        }).catch(e => {}); // Silent fire-and-forget
+        }).catch(e => {}); 
     }
 }
 
@@ -649,7 +851,6 @@ const DropsManager = {
                 if (user) {
                     this.myUid = user.uid;
                     
-                    // Pre-fetch my own close friends list to securely filter incoming Drops
                     const myDoc = await firebase.firestore().collection('users').doc(user.uid).get();
                     if (myDoc.exists) this.myCloseFriends = myDoc.data().closeFriends || [];
                     
@@ -688,7 +889,7 @@ const DropsManager = {
             /* Unwatched = Neon Gradient Ring */
             .dt-item.unwatched .dt-ring-wrap {
                 background: linear-gradient(45deg, #00d2ff, #3a7bd5);
-                padding: 2.5px; /* Creates the border thickness */
+                padding: 2.5px;
             }
             
             /* Watched = Grey/Faded Ring */
@@ -707,7 +908,7 @@ const DropsManager = {
 
             .dt-avatar {
                 width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
-                border: 2px solid #000; /* Inner gap between ring and image */
+                border: 2px solid #000;
                 background: #222;
             }
 
@@ -734,48 +935,28 @@ const DropsManager = {
     markAsWatched: function(targetUid, timestampObj) {
         if (!targetUid || !timestampObj) return;
         const cache = this.getWatchedCache();
-        // Convert Firestore Timestamp to string for reliable storage comparison
         const timeStr = timestampObj.toDate ? timestampObj.toDate().toISOString() : new Date(timestampObj).toISOString();
         cache[targetUid] = timeStr;
         localStorage.setItem(`drops_watched_${this.myUid}`, JSON.stringify(cache));
-        
-        // Re-render tray to instantly reflect the visual change (grey ring)
         this.renderTrayDOM(); 
     },
 
     listenToDrops: function() {
         const db = firebase.firestore();
         
-        // 1-Doc-Per-User Rule: We just listen for active documents
         db.collection("drops").where("isActive", "==", true).onSnapshot(async snapshot => {
-            let rawDrops = [];
             const now = new Date();
 
             for (let change of snapshot.docChanges()) {
                 const data = change.doc.data();
-                
-                // Expiry Check (Double verification)
                 const expiryTime = data.expiresAt ? (data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt)) : new Date();
+                
                 if (expiryTime < now) {
-                    db.collection("drops").doc(change.doc.id).delete(); // Auto-clean
+                    db.collection("drops").doc(change.doc.id).delete(); 
                     continue;
                 }
-
-                // Close Friends Security Check
-                if (data.audience === 'close_friends' && data.uid !== this.myUid) {
-                    try {
-                        const creatorDoc = await db.collection('users').doc(data.uid).get();
-                        const creatorCFList = creatorDoc.exists ? (creatorDoc.data().closeFriends || []) : [];
-                        if (!creatorCFList.includes(this.myUid)) continue; // Silent skip
-                    } catch (e) { continue; }
-                }
-
-                rawDrops.push(data);
             }
             
-            // If the snapshot logic yields results, save to cache and sort
-            // Note: Since snapshot returns entire state of query on initial load, we process all active drops.
-            // For updates, we merge with our internal memory.
             this._cachedLiveDrops = snapshot.docs
                 .map(d => d.data())
                 .filter(d => {
@@ -783,13 +964,14 @@ const DropsManager = {
                     return t > now;
                 });
             
-            // Re-run CF filter on full cache for safety
             const secureDrops = [];
             for (let d of this._cachedLiveDrops) {
                 if (d.audience === 'close_friends' && d.uid !== this.myUid) {
-                    // Fast path: if we already validated them in the change loop, keep them.
-                    // For a true prod app, cache the CF status of friends to avoid N+1 queries.
-                    secureDrops.push(d); 
+                    try {
+                        const creatorDoc = await db.collection('users').doc(d.uid).get();
+                        const creatorCFList = creatorDoc.exists ? (creatorDoc.data().closeFriends || []) : [];
+                        if (creatorCFList.includes(this.myUid)) secureDrops.push(d);
+                    } catch (e) { }
                 } else {
                     secureDrops.push(d);
                 }
@@ -812,7 +994,6 @@ const DropsManager = {
             if (drop.uid === this.myUid) {
                 myDrop = drop;
             } else {
-                // Determine if watched based on timestamp mismatch
                 const lastWatchedTime = watchedCache[drop.uid];
                 if (!lastWatchedTime || lastWatchedTime !== dropTimeStr) {
                     unwatchedDrops.push(drop);
@@ -822,7 +1003,6 @@ const DropsManager = {
             }
         });
 
-        // Sort by newest first within their respective buckets
         const sortByTime = (a, b) => {
             const tA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : 0;
             const tB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : 0;
@@ -832,14 +1012,11 @@ const DropsManager = {
         unwatchedDrops.sort(sortByTime);
         watchedDrops.sort(sortByTime);
 
-        // Build the final Master Array
         this.masterDropsList = [];
         if (myDrop) this.masterDropsList.push(myDrop);
         this.masterDropsList = this.masterDropsList.concat(unwatchedDrops, watchedDrops);
         
-        // Track the presence of my drop to render the correct "Me" UI
         this.hasActiveMyDrop = !!myDrop;
-
         this.renderTrayDOM();
     },
 
@@ -853,7 +1030,6 @@ const DropsManager = {
         // 1. Render "My Drop" Circle (First)
         const myItem = document.createElement('div');
         if (this.hasActiveMyDrop) {
-            // I have a drop! Determine if I've watched my own drop
             const myDropObj = this.masterDropsList[0];
             const dropTimeStr = myDropObj.createdAt ? (myDropObj.createdAt.toDate ? myDropObj.createdAt.toDate().toISOString() : new Date(myDropObj.createdAt).toISOString()) : "";
             const isWatched = watchedCache[this.myUid] === dropTimeStr;
@@ -870,7 +1046,6 @@ const DropsManager = {
                 if (viewer) viewer.open(this.masterDropsList, 0);
             };
         } else {
-            // Empty State (Redirects to creator)
             myItem.className = `dt-item me-empty`;
             const myPfp = (this.myUserData && this.myUserData.photoURL) ? this.myUserData.photoURL : 'https://via.placeholder.com/150';
             myItem.innerHTML = `
@@ -880,7 +1055,7 @@ const DropsManager = {
                 </div>
                 <span class="dt-name">Add Drop</span>
             `;
-            myItem.onclick = () => window.location.href = 'drops.html'; // Nav to your creation file
+            myItem.onclick = () => window.location.href = 'drops.html'; 
         }
         container.appendChild(myItem);
 
@@ -902,12 +1077,11 @@ const DropsManager = {
             `;
             item.onclick = () => {
                 const viewer = document.querySelector('view-drops');
-                if (viewer) viewer.open(this.masterDropsList, i); // Pass the exact index
+                if (viewer) viewer.open(this.masterDropsList, i); 
             };
             container.appendChild(item);
         }
     }
 };
 
-// Initialize the Tray Manager on load
 document.addEventListener('DOMContentLoaded', () => DropsManager.init());
