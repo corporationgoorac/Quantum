@@ -111,6 +111,18 @@ class ViewDrops extends HTMLElement {
             }
             @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
+            /* --- NEW: SHARED BITE WATERMARK --- */
+            .vd-bite-watermark {
+                position: absolute; top: calc(85px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+                background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);
+                backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+                display: none; align-items: center; gap: 6px; padding: 6px 14px;
+                border-radius: 100px; color: #fff; z-index: 40; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                pointer-events: none;
+            }
+            .vd-bite-watermark .material-icons-round { font-size: 16px; color: var(--accent); }
+            .vd-bite-watermark span:last-child { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+
             /* --- MEDIA CANVAS --- */
             .vd-media-container {
                 position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
@@ -121,18 +133,20 @@ class ViewDrops extends HTMLElement {
             
             /* YouTube Card specific - Fixed Alignment */
             .vd-yt-wrapper {
-                position: absolute; inset: 0; margin: auto; z-index: 3; display: none; 
-                width: 100vw; height: 100vh;
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: auto; z-index: 3; display: none; 
                 align-items: center; justify-content: center;
             }
             .vd-yt-card {
                 position: relative; width: 85vw; max-width: 360px; aspect-ratio: 9/16;
                 background: #050505; border-radius: 24px; overflow: hidden;
                 box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-                margin: auto;
+                margin: 0 auto; flex-shrink: 0;
             }
-            .vd-yt-card iframe {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; pointer-events: none !important;
+            /* STRICT IFRAME OVERRIDE FOR PERFECT CENTER */
+            #vd-yt-player-container {
+                position: absolute !important; top: 0 !important; left: 0 !important; 
+                width: 100% !important; height: 100% !important; border: none !important; 
+                pointer-events: none !important;
             }
             .vd-yt-overlay { position: absolute; inset: 0; z-index: 5; pointer-events: auto; } /* Blocks iframe clicks */
 
@@ -265,6 +279,11 @@ class ViewDrops extends HTMLElement {
                     </div>
                     <div class="vd-options-btn" id="vd-options-btn"><span class="material-icons-round">more_vert</span></div>
                 </div>
+            </div>
+
+            <div class="vd-bite-watermark" id="vd-bite-watermark">
+                <span class="material-icons-round">amp_stories</span>
+                <span>Shared a bite</span>
             </div>
 
             <div class="vd-media-container" id="vd-media-container">
@@ -463,8 +482,15 @@ class ViewDrops extends HTMLElement {
         this.clearTimer();
         if (this.viewTimer) clearTimeout(this.viewTimer);
         this.bgAudio.pause();
+        
+        // NUCLEAR OPTION TO KILL HTML5 VIDEO AUDIO BLEED
         const vid = this.querySelector('#vd-video');
-        vid.pause(); vid.src = '';
+        if (vid.style.display === 'block') {
+            vid.pause();
+            vid.currentTime = 0;
+            vid.removeAttribute('src'); 
+            vid.load();
+        }
         
         // STRICT YOUTUBE TEARDOWN TO PREVENT AUDIO BLEED
         if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
@@ -499,8 +525,25 @@ class ViewDrops extends HTMLElement {
     loadCurrentDrop() {
         this.clearTimer();
         if (this.viewTimer) clearTimeout(this.viewTimer);
+        
+        // PAUSE EVERYTHING BEFORE LOADING NEXT
         this.bgAudio.pause();
         this.bgAudio.src = '';
+        
+        const vid = this.querySelector('#vd-video');
+        if (vid.style.display === 'block') {
+            vid.pause();
+            vid.currentTime = 0;
+            vid.removeAttribute('src');
+            vid.load();
+        }
+
+        // STRICT YOUTUBE TEARDOWN BEFORE LOADING NEXT
+        if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
+            try { this.ytPlayer.stopVideo(); } catch(e) {}
+            this.ytPlayer.destroy();
+            this.ytPlayer = null;
+        }
 
         const drop = this.dropsList[this.currentIndex];
         if (!drop) { this.close(); return; }
@@ -571,19 +614,12 @@ class ViewDrops extends HTMLElement {
 
         // Clear Media Canvas
         const img = this.querySelector('#vd-image');
-        const vid = this.querySelector('#vd-video');
         const ytWrapper = this.querySelector('#vd-yt-wrapper');
         const backdrop = this.querySelector('#vd-backdrop');
+        const watermark = this.querySelector('#vd-bite-watermark');
         
-        img.style.display = 'none'; vid.style.display = 'none'; ytWrapper.style.display = 'none';
-        img.src = ''; vid.src = ''; backdrop.src = '';
-        
-        // STRICT YOUTUBE TEARDOWN BEFORE LOADING NEXT
-        if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
-            try { this.ytPlayer.stopVideo(); } catch(e) {}
-            this.ytPlayer.destroy();
-            this.ytPlayer = null;
-        }
+        img.style.display = 'none'; vid.style.display = 'none'; ytWrapper.style.display = 'none'; watermark.style.display = 'none';
+        img.src = ''; backdrop.src = '';
 
         // Load Media & Custom Durations
         if (drop.type === 'image') {
@@ -607,6 +643,7 @@ class ViewDrops extends HTMLElement {
         else if (drop.type === 'youtube') {
             backdrop.src = `https://img.youtube.com/vi/${drop.youtubeId}/maxresdefault.jpg`;
             ytWrapper.style.display = 'flex';
+            watermark.style.display = 'flex'; // Show Bites Watermark
             
             // Re-inject container div because destroy() removes it
             const card = this.querySelector('#vd-yt-card');
@@ -933,12 +970,39 @@ class ViewDrops extends HTMLElement {
         const drop = this.dropsList[this.currentIndex];
         const chatId = this.myUid < drop.uid ? `${this.myUid}_${drop.uid}` : `${drop.uid}_${this.myUid}`;
 
+        // PROFESSIONAL HTML FORMATTING FOR CHAT ENGINE
+        let iconName = 'image';
+        let typeStr = 'Drop';
+        if (drop.type === 'video') { iconName = 'videocam'; }
+        if (drop.type === 'youtube') { iconName = 'amp_stories'; typeStr = 'Bite Drop'; }
+
+        // Line folding every 6 words
+        const words = text.split(/\s+/);
+        let foldedText = '';
+        for(let i=0; i<words.length; i++) {
+            foldedText += words[i] + ' ';
+            if((i+1) % 6 === 0 && i !== words.length - 1) foldedText += '<br>';
+        }
+
+        const finalHtmlMessage = `
+            <div style="background: rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; margin-bottom: 5px; border-left: 3px solid #00d2ff;">
+                <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.8rem; color: #00d2ff; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span class="material-icons-round" style="font-size: 14px;">${iconName}</span> Replied to ${typeStr}
+                </div>
+                <div style="color: #fff; font-size: 0.95rem; line-height: 1.5; font-weight: 500;">
+                    ${foldedText.trim()}
+                </div>
+            </div>
+        `;
+
         try {
             const chatRef = this.db.collection("chats").doc(chatId);
             const messagesRef = chatRef.collection("messages");
 
+            // Save structured HTML directly to text so your chat engine renders it beautifully
             await messagesRef.add({
-                text: text,
+                text: finalHtmlMessage,
+                rawText: text, // Keep original just in case
                 sender: this.myUid,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 seen: false,
@@ -951,8 +1015,10 @@ class ViewDrops extends HTMLElement {
                 }
             });
 
+            // Chat Feed Preview Text
+            let iconEmoji = drop.type === 'image' ? '🖼️' : (drop.type === 'video' ? '🎥' : '🎬');
             await chatRef.set({
-                lastMessage: "Replied to your Drop", 
+                lastMessage: `${iconEmoji} Replied to Drop`, 
                 lastSender: this.myUid,
                 lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 participants: [this.myUid, drop.uid],
