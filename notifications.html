@@ -358,7 +358,7 @@
         const list = document.getElementById('notif-list');
         
         let filtered = rawNotifications;
-        if (currentTab === 'likes') filtered = rawNotifications.filter(n => n.type === 'like' || n.type === 'like_moment');
+        if (currentTab === 'likes') filtered = rawNotifications.filter(n => n.type === 'like' || n.type === 'like_moment' || n.type === 'drop_like');
         else if (currentTab === 'follows') filtered = rawNotifications.filter(n => n.type === 'follow');
         else if (currentTab === 'moments') filtered = rawNotifications.filter(n => n.type === 'like_moment' || n.type === 'comment_moment' || n.type === 'reply_moment');
 
@@ -399,7 +399,7 @@
             let contentHtml = '';
             let actionHtml = '';
 
-            // --- LIKE NOTIFICATION ---
+            // --- NOTE LIKE NOTIFICATION ---
             if (type === 'like') {
                 iconBadge = `<div class="type-badge icon-like">${ICONS.heart}</div>`;
                 
@@ -420,6 +420,23 @@
                     ` : ''}
                 `;
             } 
+            // --- DROP LIKE NOTIFICATION ---
+            else if (type === 'drop_like') {
+                iconBadge = `<div class="type-badge icon-like">${ICONS.heart}</div>`;
+                
+                contentHtml = `
+                    <div class="text-line">
+                        <span class="username-container">
+                            ${escapeHtml(displayName)} 
+                            ${isVerified ? `<img src="${ICONS.verified}" class="v-badge">` : ''}
+                        </span>
+                        <span style="color:var(--text-secondary);">liked your Drop.</span>
+                        <span class="time-ago">${timeAgo(n.timestamp)}</span>
+                    </div>
+                `;
+                
+                actionHtml = `<div class="action-col"><button class="view-btn">Profile</button></div>`;
+            }
             // --- FOLLOW NOTIFICATION ---
             else if (type === 'follow') {
                 iconBadge = `<div class="type-badge icon-follow">${ICONS.user}</div>`;
@@ -545,8 +562,8 @@
             ref.update(n._collection === 'root' ? {isSeen:true} : {isRead:true}).catch(()=>{});
         }
 
-        if (n.type === 'like_moment' || n.type === 'comment_moment' || n.type === 'reply_moment') {
-            window.location.href = `userProfile.html?user=${username}`; // Changed from 'moments.html' to open user profile
+        if (n.type === 'like_moment' || n.type === 'comment_moment' || n.type === 'reply_moment' || n.type === 'drop_like') {
+            window.location.href = `userProfile.html?user=${username}`; 
         } else if (username) {
             window.location.href = `userProfile.html?user=${username}`;
         } else {
