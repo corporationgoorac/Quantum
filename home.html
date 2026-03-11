@@ -24,8 +24,7 @@
     <script src="components/navbar.js"></script>
     
     <script src="components/call-notifier.js" defer></script>
-    <script src="components/viewNotes.js" defer></script>
-    <script src="components/viewMoments.js" defer></script> 
+    <script src="components/viewDrops.js" defer></script> <script src="components/viewMoments.js" defer></script> 
     <script type="module" src="components/presence.js"></script>
 
     <style>
@@ -104,7 +103,6 @@
             font-size: 1.2rem; 
             font-weight: 900; 
             letter-spacing: -0.5px;
-            /* Professional vibrant gradient matched perfectly to your uploaded icon */
             background: linear-gradient(45deg, #5100ff 0%, #ff007f 50%, #ff5e00 100%); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
@@ -117,10 +115,8 @@
             height: 100%; 
         }
 
-        /* --- NEW MESSAGES ICON STYLES --- */
-        #header-msg-btn {
-            display: none; /* Hidden by default if no messages */
-        }
+        /* --- MESSAGES ICON STYLES --- */
+        #header-msg-btn { display: none; }
         #header-msg-btn.show-msg-btn {
             display: flex;
             animation: popInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -131,47 +127,22 @@
         }
 
         .msg-btn {
-            position: relative; 
-            cursor: pointer;
-            width: 32px; 
-            height: 32px;
-            align-items: center; 
-            justify-content: center;
+            position: relative; cursor: pointer; width: 32px; height: 32px;
+            align-items: center; justify-content: center;
             transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-
-        .msg-btn:active { 
-            transform: scale(0.85); 
-        }
-
-        .msg-icon {
-            color: #fff;
-            font-size: 26px;
-        }
+        .msg-btn:active { transform: scale(0.85); }
+        .msg-icon { color: #fff; font-size: 26px; }
 
         .msg-badge {
-            position: absolute; 
-            top: -2px; 
-            right: -2px;
-            background: var(--accent);
-            color: var(--bg);
-            font-size: 10px; 
-            font-weight: 800;
-            min-width: 18px; 
-            height: 18px; 
-            padding: 0 4px;
-            border-radius: 10px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            opacity: 0; 
-            transform: scale(0);
+            position: absolute; top: -2px; right: -2px;
+            background: var(--accent); color: var(--bg);
+            font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; 
+            padding: 0 4px; border-radius: 10px; display: flex; align-items: center; 
+            justify-content: center; opacity: 0; transform: scale(0);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none; 
-            border: 2px solid var(--bg); 
-            z-index: 2;
-            box-shadow: 0 0 8px var(--accent);
-            animation: pulse-msg-badge 2s infinite;
+            pointer-events: none; border: 2px solid var(--bg); z-index: 2;
+            box-shadow: 0 0 8px var(--accent); animation: pulse-msg-badge 2s infinite;
         }
 
         @keyframes pulse-msg-badge {
@@ -180,496 +151,200 @@
             100% { box-shadow: 0 0 4px var(--accent); }
         }
 
-        .msg-badge.visible { 
-            opacity: 1; 
-            transform: scale(1); 
-        }
+        .msg-badge.visible { opacity: 1; transform: scale(1); }
         
         /* --- PULSE LOBBY ICON STYLES --- */
         .pulse-btn {
-            position: relative;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative; cursor: pointer; width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
             transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-
-        .pulse-btn:active {
-            transform: scale(0.85);
-        }
-
+        .pulse-btn:active { transform: scale(0.85); }
         .pulse-icon {
-            color: var(--accent) !important;
-            fill: var(--accent) !important;
-            width: 26px;
-            height: 26px;
-            font-size: 26px;
+            color: var(--accent) !important; fill: var(--accent) !important;
+            width: 26px; height: 26px; font-size: 26px;
             animation: pulse-skel 2.5s infinite ease-in-out;
             filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.4));
         }
 
         /* --- NOTIFICATION STYLES --- */
         .notif-btn {
-            position: relative; 
-            cursor: pointer;
-            width: 32px; 
-            height: 32px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
+            position: relative; cursor: pointer; width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
             transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-
-        .notif-btn:active { 
-            transform: scale(0.85); 
-        }
-
-        .notif-icon {
-            width: 26px; 
-            height: 26px; 
-            fill: none; 
-            stroke: #fff; 
-            stroke-width: 1.8; 
-            stroke-linecap: round; 
-            stroke-linejoin: round;
-        }
+        .notif-btn:active { transform: scale(0.85); }
+        .notif-icon { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
         .notif-badge {
-            position: absolute; 
-            top: -2px; 
-            right: -2px;
-            background: var(--danger); 
-            color: #fff;
-            font-size: 10px; 
-            font-weight: 800;
-            min-width: 18px; 
-            height: 18px; 
-            padding: 0 4px;
-            border-radius: 10px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            opacity: 0; 
-            transform: scale(0);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none; 
-            border: 2px solid var(--bg); 
-            z-index: 2;
+            position: absolute; top: -2px; right: -2px; background: var(--danger); color: #fff;
+            font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; padding: 0 4px;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: scale(0); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none; border: 2px solid var(--bg); z-index: 2;
         }
-
-        .notif-badge.visible { 
-            opacity: 1; 
-            transform: scale(1); 
-        }
+        .notif-badge.visible { opacity: 1; transform: scale(1); }
 
         .header-pfp { 
-            width: 38px; 
-            height: 38px; 
-            min-width: 38px; 
-            min-height: 38px;
-            border-radius: 12px; 
-            object-fit: cover; 
-            border: 1px solid var(--border);
-            cursor: pointer; 
-            background: #111; 
-            display: block;
+            width: 38px; height: 38px; min-width: 38px; min-height: 38px;
+            border-radius: 12px; object-fit: cover; border: 1px solid var(--border);
+            cursor: pointer; background: #111; display: block;
         }
 
-        /* --- NOTES --- */
-        #notes-container {
-            display: flex; gap: 15px; padding: 15px 20px;
-            overflow-x: auto; scrollbar-width: none;
-            border-bottom: 1px solid var(--border);
-            min-height: 95px; /* Pre-reserve space for notes */
+        /* ==========================================================================
+           DROPS TRAY BASE STYLES (PREVENTS FLICKER BEFORE JS LOADS)
+           ========================================================================== */
+        #drops-tray-container {
+            display: flex; overflow-x: auto; padding: 15px 15px 5px 15px; gap: 18px;
+            scrollbar-width: none; scroll-snap-type: x mandatory; align-items: flex-start;
+            min-height: 108px; border-bottom: 1px solid var(--border);
         }
-        #notes-container::-webkit-scrollbar { display: none; }
-        
-        .note-item { 
-            display: flex; flex-direction: column; align-items: center; 
-            min-width: 70px; cursor: pointer; position: relative;
-        }
-        
-        .note-pfp {
-            width: 65px; height: 65px; 
-            min-width: 65px; min-height: 65px;
-            border-radius: 24px; 
-            object-fit: cover; 
-            border: 2px solid var(--border);
-            padding: 2px; background: #000;
-            transition: transform 0.2s;
-        }
-        .note-item:active .note-pfp { transform: scale(0.95); border-color: var(--accent); }
-        
-        .note-username {
-            margin-top: 6px; font-size: 0.7rem; color: var(--text-dim);
-            max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .note-bubble {
-            position: absolute; top: 0; right: 0; background: var(--surface);
-            border: 1px solid var(--border); padding: 4px 8px; border-radius: 10px;
-            font-size: 0.7rem; max-width: 60px; white-space: nowrap; 
-            overflow: hidden; text-overflow: ellipsis; z-index: 2;
-        }
+        #drops-tray-container::-webkit-scrollbar { display: none; }
+        .dt-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 68px; flex-shrink: 0; scroll-snap-align: start; }
+        .dt-ring-wrap { position: relative; width: 68px; height: 68px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .dt-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #000; background: #222; }
+        .dt-name { font-size: 11px; font-weight: 500; color: #fff; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* ==========================================================================
            CONTENT DASHBOARD STYLES
            ========================================================================== */
-        .content { 
-            padding: 20px; 
-            animation: fadeIn 0.4s ease-out; 
-        }
-
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        .content { padding: 20px; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .section-label { 
-            font-size: 0.7rem; 
-            text-transform: uppercase; 
-            color: var(--text-dim); 
-            font-weight: 800; 
-            letter-spacing: 1.5px; 
-            margin-bottom: 15px; 
-            display: block;
+            font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); 
+            font-weight: 800; letter-spacing: 1.5px; margin-bottom: 15px; display: block;
         }
 
         .welcome-card { 
-            background: var(--surface); 
-            border: 1px solid var(--border); 
-            padding: 25px; 
-            border-radius: 24px; 
-            margin-bottom: 25px; 
-            position: relative; 
-            overflow: hidden;
-            display: flex; 
-            flex-direction: column;
+            background: var(--surface); border: 1px solid var(--border); padding: 25px; 
+            border-radius: 24px; margin-bottom: 25px; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        .quantum-info { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 15px; 
-        }
-
-        .status-tag { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px; 
-            color: var(--accent); 
-            font-size: 0.7rem; 
-            font-weight: 700; 
-        }
+        .quantum-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .status-tag { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 0.7rem; font-weight: 700; }
         
-        /* NEW FEATURE: Network Latency Style */
-        .ping-indicator {
-            color: var(--text-dim);
-            font-size: 0.65rem;
-            font-weight: 500;
-            margin-left: 2px;
-        }
+        .ping-indicator { color: var(--text-dim); font-size: 0.65rem; font-weight: 500; margin-left: 2px; }
+        .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulse-glow 2s infinite; }
+        .live-clock { color: var(--text-dim); font-family: monospace; font-size: 0.8rem; }
 
-        .dot { 
-            width: 6px; 
-            height: 6px; 
-            background: var(--accent); 
-            border-radius: 50%; 
-            box-shadow: 0 0 8px var(--accent); 
-            animation: pulse-glow 2s infinite; 
-        }
+        .welcome-card h1 { margin: 0; font-size: 1.7rem; font-weight: 800; color: #fff; line-height: 1.2; word-wrap: break-word; min-height: 34px; }
+        .welcome-card p { color: var(--text-dim); margin-top: 10px; font-size: 0.85rem; line-height: 1.5; min-height: 21px; }
 
-        .live-clock { 
-            color: var(--text-dim); 
-            font-family: monospace; 
-            font-size: 0.8rem; 
-        }
-
-        .welcome-card h1 { 
-            margin: 0; 
-            font-size: 1.7rem; 
-            font-weight: 800; 
-            color: #fff; 
-            line-height: 1.2; 
-            word-wrap: break-word; 
-            min-height: 34px; 
-        }
-
-        .welcome-card p { 
-            color: var(--text-dim); 
-            margin-top: 10px; 
-            font-size: 0.85rem; 
-            line-height: 1.5; 
-            min-height: 21px; 
-        }
-
-        .activity-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-            margin-top: 25px; 
-        }
-        
+        .activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
         .activity-card { 
-            background: #0d0d0d; 
-            border: 1px solid var(--border); 
-            padding: 20px; 
-            border-radius: 20px; 
-            position: relative; 
-            min-height: 130px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: flex-end;
-            transition: 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            cursor: pointer;
-            overflow: hidden; 
+            background: #0d0d0d; border: 1px solid var(--border); padding: 20px; 
+            border-radius: 20px; position: relative; min-height: 130px; display: flex; 
+            flex-direction: column; justify-content: flex-end; transition: 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            cursor: pointer; overflow: hidden; 
         }
-
-        .activity-card:active { 
-            transform: scale(0.96); 
-            background: #151515; 
-        }
+        .activity-card:active { transform: scale(0.96); background: #151515; }
         
         .card-icon-area { 
-            position: absolute; 
-            top: 20px; 
-            right: 20px; 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 10px; 
-            background: #1a1a1a; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            overflow: hidden; 
-            border: 1px solid var(--border); 
+            position: absolute; top: 20px; right: 20px; width: 32px; height: 32px; 
+            border-radius: 10px; background: #1a1a1a; display: flex; align-items: center; 
+            justify-content: center; overflow: hidden; border: 1px solid var(--border); 
         }
+        .card-icon-area img { width: 100%; height: 100%; object-fit: cover; }
+        .card-icon-area div { color: var(--text-dim); font-size: 9px; font-weight: 800; }
 
-        .card-icon-area img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-        }
+        .time-badge { font-size: 0.7rem; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
+        .count-num { font-size: 1.3rem; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .count-label { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
 
-        .card-icon-area div { 
-            color: var(--text-dim); 
-            font-size: 9px; 
-            font-weight: 800; 
-        }
+        .activity-card.has-count { border-color: rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.05); }
+        .activity-card.missed-alert { border-color: rgba(255, 68, 68, 0.3); background: rgba(255, 68, 68, 0.05); }
+        .missed-alert .count-num { color: var(--danger); }
 
-        .time-badge { 
-            font-size: 0.7rem; 
-            color: var(--accent); 
-            margin-bottom: 4px; 
-            font-weight: 600; 
-        }
-
-        .count-num { 
-            font-size: 1.3rem; 
-            font-weight: 800; 
-            color: #fff; 
-            margin-bottom: 2px; 
-        }
-
-        .count-label { 
-            font-size: 0.7rem; 
-            color: var(--text-dim); 
-            font-weight: 600; 
-        }
-
-        .activity-card.has-count { 
-            border-color: rgba(0, 210, 255, 0.3); 
-            background: rgba(0, 210, 255, 0.05); 
-        }
-
-        .activity-card.missed-alert { 
-            border-color: rgba(255, 68, 68, 0.3); 
-            background: rgba(255, 68, 68, 0.05); 
-        }
-
-        .missed-alert .count-num { 
-            color: var(--danger); 
-        }
-
-        .skeleton { 
-            background: #151515; 
-            color: transparent !important; 
-            border-radius: 6px; 
-            animation: pulse-skel 1.5s infinite; 
-        }
-
-        @keyframes pulse-skel { 
-            0% { opacity: 0.6; } 
-            50% { opacity: 1; } 
-            100% { opacity: 0.6; } 
-        }
+        .skeleton { background: #151515; color: transparent !important; border-radius: 6px; animation: pulse-skel 1.5s infinite; }
+        @keyframes pulse-skel { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
         /* 🚀 MAIN NAVBAR PRE-ALLOCATION TO FIX GLITCHING */
         main-navbar {
-            display: block;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: calc(65px + env(safe-area-inset-bottom));
-            background-color: var(--bg);
-            z-index: 1000;
+            display: block; position: fixed; bottom: 0; left: 0; width: 100%;
+            height: calc(65px + env(safe-area-inset-bottom)); background-color: var(--bg); z-index: 1000;
         }
-
-        /* Toggled by JS Observer on component */
         main-navbar.hidden-nav {
-            opacity: 0 !important;
-            pointer-events: none !important;
-            transform: translateY(100px) !important;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0 !important; pointer-events: none !important;
+            transform: translateY(100px) !important; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         /* ==========================================================================
            MOMENTS FAB STYLES
            ========================================================================== */
         .moments-fab {
-            position: fixed;
-            bottom: calc(85px + env(safe-area-inset-bottom)); 
-            right: 20px;
-            width: 56px; 
-            height: 56px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 2px solid var(--border);
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            z-index: 9998; 
-            cursor: pointer;
+            position: fixed; bottom: calc(85px + env(safe-area-inset-bottom)); right: 20px;
+            width: 56px; height: 56px; border-radius: 50%; background: var(--surface);
+            border: 2px solid var(--border); display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 9998; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        .moments-fab:active { transform: scale(0.85); }
+        .moments-fab.has-moment { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,210,255,0.3); }
 
-        .moments-fab:active { 
-            transform: scale(0.85); 
-        }
+        @keyframes pulse-glow { 0% { box-shadow: 0 0 5px var(--accent); } 50% { box-shadow: 0 0 15px var(--accent); } 100% { box-shadow: 0 0 5px var(--accent); } }
 
-        .moments-fab.has-moment { 
-            border-color: var(--accent); 
-            box-shadow: 0 0 15px rgba(0,210,255,0.3); 
-        }
-
-        @keyframes pulse-glow { 
-            0% { box-shadow: 0 0 5px var(--accent); } 
-            50% { box-shadow: 0 0 15px var(--accent); } 
-            100% { box-shadow: 0 0 5px var(--accent); } 
-        }
-
-        .moments-fab img { 
-            width: 100%; 
-            height: 100%; 
-            border-radius: 50%; 
-            object-fit: cover; 
-        }
-
+        .moments-fab img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .moments-fab .material-icons-round { 
-            color: var(--accent); 
-            font-size: 30px; 
-            font-family: 'Material Icons Round', sans-serif;
-            font-feature-settings: 'liga';
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
+            color: var(--accent); font-size: 30px; font-family: 'Material Icons Round', sans-serif;
+            font-feature-settings: 'liga'; display: inline-block; white-space: nowrap; word-wrap: normal;
         }
-
-        .moments-fab.hidden-fab { 
-            transform: scale(0) translateY(50px) rotate(45deg); 
-            pointer-events: none; 
-            opacity: 0; 
-        }
+        .moments-fab.hidden-fab { transform: scale(0) translateY(50px) rotate(45deg); pointer-events: none; opacity: 0; }
 
         /* ==========================================================================
            QUANTUM RIPPLE EFFECT
            ========================================================================== */
         .ripple {
-            position: absolute; 
-            border-radius: 50%; 
-            transform: scale(0);
-            animation: quantum-ripple 600ms linear; 
-            background-color: rgba(255, 255, 255, 0.1);
+            position: absolute; border-radius: 50%; transform: scale(0);
+            animation: quantum-ripple 600ms linear; background-color: rgba(255, 255, 255, 0.1);
             pointer-events: none;
         }
+        @keyframes quantum-ripple { to { transform: scale(4); opacity: 0; } }
 
-        @keyframes quantum-ripple { 
-            to { transform: scale(4); opacity: 0; } 
-        }
-
-        view-notes { 
-            z-index: 9999 !important; 
-            position: relative; 
-        }
+        /* Ensures the web components overlay perfectly */
+        view-drops { z-index: 9999 !important; position: relative; }
 
         /* ==========================================================================
-           FULL-SCREEN GREETING OVERLAY ANIMATIONS (CARTOON UI)
+           FULL-SCREEN GREETING OVERLAY ANIMATIONS
            ========================================================================== */
         .greeting-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 100000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.8s ease;
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            overflow: hidden;
+            position: fixed; inset: 0; z-index: 100000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; opacity: 0; pointer-events: none; 
+            transition: opacity 0.8s ease; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); overflow: hidden;
         }
         .greeting-overlay.active { opacity: 1; pointer-events: all; }
         
         .g-beam {
             position: absolute; width: 200%; height: 100px;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transform: rotate(-45deg) translateY(-100vh);
-            animation: beamSweep 3s ease-in-out infinite;
-            pointer-events: none;
+            transform: rotate(-45deg) translateY(-100vh); animation: beamSweep 3s ease-in-out infinite; pointer-events: none;
         }
-        @keyframes beamSweep {
-            0% { transform: rotate(-45deg) translateY(-100vh) translateX(-50vw); }
-            100% { transform: rotate(-45deg) translateY(100vh) translateX(50vw); }
-        }
+        @keyframes beamSweep { 0% { transform: rotate(-45deg) translateY(-100vh) translateX(-50vw); } 100% { transform: rotate(-45deg) translateY(100vh) translateX(50vw); } }
 
         .greeting-content { 
-            z-index: 10; text-align: center; 
-            padding: 40px 30px; border-radius: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transform: translateY(50px) scale(0.9); 
-            opacity: 0;
-            transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s; 
+            z-index: 10; text-align: center; padding: 40px 30px; border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1); transform: translateY(50px) scale(0.9); 
+            opacity: 0; transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s; 
         }
         .greeting-overlay.active .greeting-content { transform: translateY(0) scale(1); opacity: 1; }
         
-        .greeting-pretext {
-            font-size: 0.75rem; color: rgba(255,255,255,0.7); font-weight: 800;
-            letter-spacing: 4px; margin-bottom: 10px; text-transform: uppercase;
-        }
-        .greeting-name { 
-            font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; text-transform: capitalize;
-            margin-bottom: 20px; color: #fff; text-shadow: 0 4px 15px rgba(0,0,0,0.3); 
-        }
+        .greeting-pretext { font-size: 0.75rem; color: rgba(255,255,255,0.7); font-weight: 800; letter-spacing: 4px; margin-bottom: 10px; text-transform: uppercase; }
+        .greeting-name { font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; text-transform: capitalize; margin-bottom: 20px; color: #fff; text-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .greeting-text { 
             font-size: 4rem; font-weight: 900; line-height: 1.1;
             background: linear-gradient(to bottom right, #ffffff 20%, rgba(255,255,255,0.5) 100%); 
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
         }
         
-        /* THEMES - Professional Cartoon Backgrounds */
         .theme-morning { background: linear-gradient(180deg, #87CEEB 0%, #e0f6ff 100%); color: #fff; }
         .theme-afternoon { background: linear-gradient(180deg, #00BFFF 0%, #87CEFA 100%); color: #fff; }
         .theme-evening { background: linear-gradient(180deg, #FF7E5F 0%, #FEB47B 100%); color: #fff; }
         .theme-night { background: linear-gradient(180deg, #0F2027 0%, #203A43 50%, #2C5364 100%); color: #fff; }
 
-        /* CARTOON ELEMENTS */
         .c-sun, .c-moon, .c-cloud, .c-stars { position: absolute; pointer-events: none; z-index: 1; opacity: 0; }
         
-        /* Morning Animations - Sun Rising */
         .theme-morning .c-sun { 
             opacity: 1; width: 120px; height: 120px; background: #FFDF00; border-radius: 50%;
             bottom: -150px; left: 50%; margin-left: -60px; box-shadow: 0 0 60px #FFDF00, 0 0 100px #FF9900;
@@ -677,19 +352,13 @@
         }
         @keyframes sunRise { to { bottom: 50%; transform: scale(1.2); } }
 
-        /* Afternoon Animations - Bright Rotating Sun */
         .theme-afternoon .c-sun {
             opacity: 1; width: 150px; height: 150px; background: #FFF314; border-radius: 50%;
             top: 10%; right: 10%; box-shadow: 0 0 80px #FFF314, 0 0 150px #FFD700;
             animation: sunPulseRotate 4s linear infinite;
         }
-        @keyframes sunPulseRotate {
-            0% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.1) rotate(180deg); }
-            100% { transform: scale(1) rotate(360deg); }
-        }
+        @keyframes sunPulseRotate { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
 
-        /* Evening Animations - Sun Setting */
         .theme-evening .c-sun {
             opacity: 1; width: 120px; height: 120px; background: #FF4500; border-radius: 50%;
             top: 40%; left: 50%; margin-left: -60px; box-shadow: 0 0 60px #FF4500, 0 0 120px #FF0000;
@@ -697,11 +366,9 @@
         }
         @keyframes sunSet { to { top: 120%; transform: scale(0.8); opacity: 0.5; } }
 
-        /* Night Animations - Floating Moon & Twinkling Stars */
         .theme-night .c-moon {
             opacity: 1; width: 100px; height: 100px; background: transparent; border-radius: 50%;
-            box-shadow: 25px 10px 0 0 #F6F1D5; top: 15%; right: 20%;
-            animation: moonFloat 4s ease-in-out infinite alternate;
+            box-shadow: 25px 10px 0 0 #F6F1D5; top: 15%; right: 20%; animation: moonFloat 4s ease-in-out infinite alternate;
         }
         @keyframes moonFloat { from { transform: translateY(0); } to { transform: translateY(15px); } }
 
@@ -712,53 +379,32 @@
         }
         @keyframes starTwinkle { 0% { opacity: 0.3; } 100% { opacity: 1; box-shadow: 100px 50px #fff, 200px 150px #fff, 50px 200px #fff, 250px 50px #fff, 300px 250px #fff, -50px 100px #fff; } }
 
-        /* Clouds for Morning & Afternoon */
         .theme-morning .c-cloud, .theme-afternoon .c-cloud {
             opacity: 0.8; width: 120px; height: 40px; background: #fff; border-radius: 50px;
-            position: absolute; top: 30%; left: -150px;
-            animation: cloudMove 8s linear infinite;
+            position: absolute; top: 30%; left: -150px; animation: cloudMove 8s linear infinite;
         }
-        .theme-morning .c-cloud::before, .theme-afternoon .c-cloud::before {
-            content: ''; position: absolute; width: 60px; height: 60px; background: #fff; border-radius: 50%; top: -30px; left: 15px;
-        }
-        .theme-morning .c-cloud::after, .theme-afternoon .c-cloud::after {
-            content: ''; position: absolute; width: 40px; height: 40px; background: #fff; border-radius: 50%; top: -15px; right: 15px;
-        }
+        .theme-morning .c-cloud::before, .theme-afternoon .c-cloud::before { content: ''; position: absolute; width: 60px; height: 60px; background: #fff; border-radius: 50%; top: -30px; left: 15px; }
+        .theme-morning .c-cloud::after, .theme-afternoon .c-cloud::after { content: ''; position: absolute; width: 40px; height: 40px; background: #fff; border-radius: 50%; top: -15px; right: 15px; }
         .c-cloud.two { top: 50%; animation-duration: 12s; animation-delay: 2s; transform: scale(0.7); }
         .c-cloud.three { top: 15%; animation-duration: 10s; animation-delay: 5s; transform: scale(0.5); }
-        
         @keyframes cloudMove { to { left: 110%; } }
         
         .g-fx-obj { 
             position: absolute; border-radius: 50%; width: 150px; height: 150px; 
-            top: -50px; right: -50px; filter: blur(30px); opacity: 0; 
-            animation: floatObj 4s ease-in-out infinite alternate;
+            top: -50px; right: -50px; filter: blur(30px); opacity: 0; animation: floatObj 4s ease-in-out infinite alternate;
         }
-        
         @keyframes floatObj { from { transform: translateY(0); } to { transform: translateY(20px); } }
 
-        /* ==========================================================================
-           FOUT ICON TEXT FLASH FIX (Pure CSS logic)
-           ========================================================================== */
-        /* 🚀 FIX: Commented out transparent !important which permanently hid the icons */
-        /* .material-icons-round { color: transparent !important; text-shadow: none !important; } */
+        /* FOUT FIX */
         body.fonts-ready .material-icons-round { color: inherit; text-shadow: inherit; }
         body.fonts-ready .msg-icon { color: #fff !important; }
         body.fonts-ready .moments-fab .material-icons-round { color: var(--accent) !important; }
         body.fonts-ready .pulse-icon { color: var(--accent) !important; }
 
-        /* INSTEAD: Added max-width and overflow hidden so fallback text doesn't stretch the layout */
-        /* --- [GLITCH FIX]: RESTORED SQUISH CSS TO FIX FOUT TEXT SPAM GLOBALLY --- */
         .material-icons-round {
-            /* color: inherit; */ /* Fixed: Removed !important so verification badges keep their own color */
-            max-width: 1em;
-            overflow: hidden;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            white-space: nowrap;
+            max-width: 1em; overflow: hidden; display: inline-flex;
+            justify-content: center; align-items: center; white-space: nowrap;
         }
-        /* Fix for Emoji/Verification Badges so they don't turn black/white */
         .material-icons-round[class*="verif"], .verified, .verification-badge { color: var(--accent) !important; }
         .msg-icon { color: #fff !important; }
         .moments-fab .material-icons-round { color: var(--accent) !important; }
@@ -768,42 +414,22 @@
            PROFESSIONAL CAUGHT UP MESSAGE UI
            ========================================================================== */
         .caught-up-msg {
-            display: none;
-            text-align: center;
-            padding: 40px 20px 20px 20px;
-            color: var(--text-dim);
-            font-size: 1.1rem;
-            font-weight: 700;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            animation: fadeIn 0.5s ease;
+            display: none; text-align: center; padding: 40px 20px 20px 20px; color: var(--text-dim);
+            font-size: 1.1rem; font-weight: 700; flex-direction: column; align-items: center; gap: 8px; animation: fadeIn 0.5s ease;
         }
-        .caught-up-msg.visible {
-            display: flex;
-        }
+        .caught-up-msg.visible { display: flex; }
         .caught-up-icon {
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 210, 255, 0.05);
-            color: var(--accent);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 5px;
-            border: 1px solid rgba(0, 210, 255, 0.2);
+            width: 50px; height: 50px; background: rgba(0, 210, 255, 0.05); color: var(--accent);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 5px; border: 1px solid rgba(0, 210, 255, 0.2);
         }
-        .caught-up-icon .material-icons-round {
-            font-size: 26px;
-        }
+        .caught-up-icon .material-icons-round { font-size: 26px; }
 
         /* ==========================================================================
            SYSTEM POPUP (BOTTOM MODAL)
            ========================================================================== */
         .system-popup-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); z-index: 100005;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100005;
             display: flex; align-items: flex-end; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -813,13 +439,9 @@
         .system-popup-card {
             background: var(--surface); border-top: 1px solid var(--border);
             border-left: 1px solid var(--border); border-right: 1px solid var(--border);
-            padding: 30px 25px max(30px, env(safe-area-inset-bottom));
-            border-radius: 28px 28px 0 0; text-align: left;
-            width: 100%; max-width: 500px; transform: translateY(100%);
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column; gap: 15px;
-            max-height: 85vh; overflow-y: auto;
+            padding: 30px 25px max(30px, env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; text-align: left;
+            width: 100%; max-width: 500px; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 15px; max-height: 85vh; overflow-y: auto;
         }
         .system-popup-overlay.active .system-popup-card { transform: translateY(0); }
         
@@ -831,11 +453,9 @@
         .sys-pop-img { width: 100%; border-radius: 16px; margin-top: 10px; display: none; object-fit: cover; border: 1px solid var(--border); }
         .sys-pop-btn {
             background: var(--accent); color: #000; font-weight: 800; border: none;
-            padding: 16px 0; width: 100%; border-radius: 16px; font-size: 1.05rem;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2); transition: 0.2s ease; margin-top: 10px;
+            padding: 16px 0; width: 100%; border-radius: 16px; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2); transition: 0.2s ease; margin-top: 10px;
         }
         .sys-pop-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(0, 210, 255, 0.2); }
-
     </style>
 
     <script>
@@ -846,18 +466,15 @@
             catch (e) { console.error("Cache parsing error", e); }
         }
 
-        // 🚀 INSTANT LOAD FIX: Hide dashboard instantly if moments cache exists to avoid flashing
         const cachedMoments = localStorage.getItem('goorac_moments_html_cache');
         if (cachedMoments && cachedMoments.length > 5) {
             document.write('<style id="dash-cache-hide">#dashboard-content { display: none !important; }</style>');
         }
 
-        // 🚀 INSTANT MSG BADGE LOAD FIX: Only show if messages > 0
         if (preloadedData && preloadedData.msgState && preloadedData.msgState.unreadTotal && preloadedData.msgState.unreadTotal > 0) {
             document.write('<style>#header-msg-btn { display: flex !important; } #header-msg-count { opacity: 1 !important; transform: scale(1) !important; }</style>');
         }
 
-        // 🚀 FAST NATIVE NOTIFICATION PROMPT ON LOAD
         document.addEventListener('DOMContentLoaded', () => {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
@@ -912,7 +529,6 @@
                 <path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V6h-2v12zm4-8v4h2v-4h-2z" fill="currentColor"/>
             </svg>
             <script>
-                // Make it store to local storage like notification icon logic
                 const cachedPulseSvg = localStorage.getItem('goorac_pulse_svg_cache');
                 const pulseSvgEl = document.getElementById('pulse-svg-icon');
                 if (cachedPulseSvg) {
@@ -936,7 +552,6 @@
         </div>
         <img id="header-pfp" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="header-pfp skeleton" onclick="window.location.href='profile.html'">
         <script>
-            // 🚀 0ms HEADER PFP INJECTION 
             if (preloadedData && preloadedData.photoURL) {
                 const pfp = document.getElementById('header-pfp');
                 pfp.src = preloadedData.photoURL;
@@ -948,40 +563,38 @@
 
 <main-navbar id="main-nav"></main-navbar>
 <script>
-    // 🚀 INSTANT 0ms NAVBAR CACHE INJECTION
     const cachedNavbarHtmlData = localStorage.getItem('goorac_navbar_html_cache');
     if (cachedNavbarHtmlData) {
-        // [GLITCH FIX]: Disabled forcing raw HTML into the element, allowing the component to load its own 0ms SVGs cleanly
-        // document.getElementById('main-nav').innerHTML = cachedNavbarHtmlData;
+        // Handled by component logic
     }
 </script>
 
-<div id="notes-container">
-    <div class="note-item" id="my-note-btn">
-        <div class="note-bubble" id="my-note-preview" style="display:none;"></div>
-        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="note-pfp skeleton" id="my-note-pfp" width="65" height="65">
-        <script>
-            // 🚀 0ms NOTE PFP INJECTION 
-            if (preloadedData && preloadedData.photoURL) {
-                const notePfp = document.getElementById('my-note-pfp');
-                notePfp.src = preloadedData.photoURL;
-                notePfp.classList.remove('skeleton');
-            }
-        </script>
-        <span class="note-username">You</span>
+<div id="drops-tray-container">
+    <div class="dt-item me-empty" onclick="window.location.href='drops.html'">
+        <div class="dt-ring-wrap">
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="dt-avatar skeleton" id="my-drop-pfp">
+        </div>
+        <span class="dt-name">Add Drop</span>
     </div>
 </div>
 <script>
-    // 🚀 INSTANT 0ms NOTES CACHE INJECTION
-    const cachedNotesHtml = localStorage.getItem('goorac_notes_html_cache');
-    if (cachedNotesHtml) {
-        document.getElementById('notes-container').innerHTML = cachedNotesHtml;
+    // 🚀 INSTANT 0ms DROPS CACHE INJECTION
+    const cachedDropsHtml = localStorage.getItem('goorac_drops_html_cache');
+    if (cachedDropsHtml) {
+        document.getElementById('drops-tray-container').innerHTML = cachedDropsHtml;
+    }
+    // Inject Pre-loaded PFP for "Add Drop"
+    if (preloadedData && preloadedData.photoURL) {
+        const dropPfp = document.getElementById('my-drop-pfp');
+        if(dropPfp) {
+            dropPfp.src = preloadedData.photoURL;
+            dropPfp.classList.remove('skeleton');
+        }
     }
 </script>
 
 <view-moments id="moments-feed"></view-moments> 
 <script>
-    // 🚀 INSTANT 0ms MOMENTS CACHE INJECTION
     const cachedMomentsHtmlData = localStorage.getItem('goorac_moments_html_cache');
     if (cachedMomentsHtmlData) {
         document.getElementById('moments-feed').innerHTML = cachedMomentsHtmlData;
@@ -1026,7 +639,6 @@
 </div>
 
 <script>
-    // 🚀 INSTANT 0ms DASHBOARD CACHE INJECTION
     const cachedDashboardHtmlData = localStorage.getItem('goorac_dashboard_html_cache');
     if (cachedDashboardHtmlData) {
         document.getElementById('dashboard-content').innerHTML = cachedDashboardHtmlData;
@@ -1053,9 +665,7 @@
 </script>
 
 <call-notifier></call-notifier>
-<view-notes id="note-viewer"></view-notes>
-
-<div id="system-popup-overlay" class="system-popup-overlay" onclick="closeSystemPopup()">
+<view-drops id="drops-viewer"></view-drops> <div id="system-popup-overlay" class="system-popup-overlay" onclick="closeSystemPopup()">
     <div class="system-popup-card" onclick="event.stopPropagation()">
         <div class="sys-pop-header">
             <span class="material-icons-round sys-pop-icon">campaign</span>
@@ -1083,15 +693,14 @@
             }
             if (preloadedData.photoURL) {
                 const headerPfp = document.getElementById('header-pfp');
-                const notePfp = document.getElementById('my-note-pfp');
+                const dropPfp = document.getElementById('my-drop-pfp'); // Sync to Add Drop icon
                 headerPfp.src = preloadedData.photoURL;
                 headerPfp.classList.remove('skeleton');
-                if(notePfp) {
-                    notePfp.src = preloadedData.photoURL;
-                    notePfp.classList.remove('skeleton');
+                if(dropPfp) {
+                    dropPfp.src = preloadedData.photoURL;
+                    dropPfp.classList.remove('skeleton');
                 }
             }
-            // FAST LOAD BADGE VALUE RESTORE
             if (preloadedData.msgState && preloadedData.msgState.unreadTotal && preloadedData.msgState.unreadTotal > 0) {
                 const badge = document.getElementById('header-msg-count');
                 const btn = document.getElementById('header-msg-btn');
@@ -1104,12 +713,8 @@
         });
     }
 
-    // 🚀 UPGRADED: FULL SCREEN GREETING ANIMATION LOGIC
-    // Added a timestamp requirement so it doesn't get blocked if someone sends "Good Morning" twice in the same chat
     window.checkGreeting = function(text, sender, msgId, timestampStr) {
         if (!text) return;
-        
-        // Use a unique key including the timestamp so new greetings in the same chat aren't ignored
         const uniqueTS = timestampStr || Date.now();
         const playedKey = 'played_greeting_' + msgId + '_' + uniqueTS;
         
@@ -1119,22 +724,10 @@
         let theme = '';
         let vibePattern = [];
         
-        if (t.includes('good morning')) { 
-            theme = 'morning'; 
-            vibePattern = [500, 200, 500]; // 2 pulses
-        }
-        else if (t.includes('good afternoon')) { 
-            theme = 'afternoon'; 
-            vibePattern = [300, 100, 300, 100, 300]; // 3 quick pulses
-        }
-        else if (t.includes('good evening')) { 
-            theme = 'evening'; 
-            vibePattern = [800, 200, 800]; // 2 longer pulses
-        }
-        else if (t.includes('good night')) { 
-            theme = 'night'; 
-            vibePattern = [1000, 500, 1000, 500, 1000]; // Long sleepy pulses
-        }
+        if (t.includes('good morning')) { theme = 'morning'; vibePattern = [500, 200, 500]; }
+        else if (t.includes('good afternoon')) { theme = 'afternoon'; vibePattern = [300, 100, 300, 100, 300]; }
+        else if (t.includes('good evening')) { theme = 'evening'; vibePattern = [800, 200, 800]; }
+        else if (t.includes('good night')) { theme = 'night'; vibePattern = [1000, 500, 1000, 500, 1000]; }
         
         if (theme) {
             sessionStorage.setItem(playedKey, 'true');
@@ -1144,23 +737,14 @@
             
             overlay.className = 'greeting-overlay theme-' + theme;
             nameEl.innerText = `${sender}`;
-            
-            // FIX: Restore text display
             textEl.innerText = text; 
             textEl.style.display = 'block'; 
             
-            void overlay.offsetWidth; // Force CSS reflow
-            
+            void overlay.offsetWidth; 
             overlay.classList.add('active');
             
-            // Unique vibration for each of the four greetings
-            if(window.navigator && window.navigator.vibrate) {
-                navigator.vibrate(vibePattern); 
-            }
-            
-            setTimeout(() => {
-                overlay.classList.remove('active');
-            }, 4500); 
+            if(window.navigator && window.navigator.vibrate) navigator.vibrate(vibePattern); 
+            setTimeout(() => overlay.classList.remove('active'), 4500); 
         }
     };
 
@@ -1183,16 +767,14 @@
             });
         });
 
-        // New Feature initialization: Network Ping Sim
         setInterval(() => {
             const pingEl = document.getElementById('quantum-ping');
             if(pingEl) {
-                const ping = Math.floor(Math.random() * (45 - 12 + 1)) + 12; // Simulate 12-45ms latency
+                const ping = Math.floor(Math.random() * (45 - 12 + 1)) + 12;
                 pingEl.innerText = `(${ping}ms)`;
             }
         }, 3500);
 
-        // 🚀 LIVE CACHE SAVER FOR DASHBOARD (0ms latency prep - stores the whole dashboard structure)
         const dashboardContentEl = document.getElementById('dashboard-content');
         if (dashboardContentEl) {
             new MutationObserver(() => {
@@ -1200,15 +782,14 @@
             }).observe(dashboardContentEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
 
-        // 🚀 LIVE CACHE SAVER FOR NOTES (0ms latency prep)
-        const notesContainerEl = document.getElementById('notes-container');
-        if (notesContainerEl) {
+        // 🚀 LIVE CACHE SAVER FOR DROPS
+        const dropsContainerEl = document.getElementById('drops-tray-container');
+        if (dropsContainerEl) {
             new MutationObserver(() => {
-                localStorage.setItem('goorac_notes_html_cache', notesContainerEl.innerHTML);
-            }).observe(notesContainerEl, { childList: true, subtree: true, attributes: true, characterData: true });
+                localStorage.setItem('goorac_drops_html_cache', dropsContainerEl.innerHTML);
+            }).observe(dropsContainerEl, { childList: true, subtree: true, attributes: true, characterData: true });
         }
 
-        // 🚀 LIVE CACHE SAVER FOR MOMENTS (0ms latency prep)
         const momentsFeedEl = document.getElementById('moments-feed');
         if (momentsFeedEl) {
             new MutationObserver(() => {
@@ -1218,7 +799,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        const noteViewer = document.getElementById('note-viewer');
+        const dropsViewer = document.getElementById('drops-viewer');
         const mainNav = document.getElementById('main-nav');
         const fab = document.getElementById('moments-fab');
         const momentsFeed = document.getElementById('moments-feed');
@@ -1234,26 +815,24 @@
             }
         }
 
-        if (noteViewer) {
+        // 🚀 NAV HIDER FOR DROPS (Watches the internal VD-overlay)
+        if (dropsViewer) {
             new MutationObserver(() => {
-                const style = window.getComputedStyle(noteViewer);
-                const isNotesOpen = (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') ||
-                    noteViewer.classList.contains('open') || noteViewer.classList.contains('active') || noteViewer.hasAttribute('open');
+                const isDropsOpen = document.getElementById('vd-overlay')?.classList.contains('open');
                 let isModalOpen = false;
                 if (momentsFeed) {
                     isModalOpen = momentsFeed.querySelector('.m-full-modal.open') || momentsFeed.querySelector('.c-overlay.open');
                 }
-                toggleOverlays(isNotesOpen || isModalOpen);
-            }).observe(noteViewer, { attributes: true, attributeFilter: ['style', 'class', 'open'] });
+                toggleOverlays(isDropsOpen || isModalOpen);
+            }).observe(dropsViewer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
         }
 
         if (momentsFeed) {
-            // 🚀 UPGRADED: Moments Observer now checks shadow DOM perfectly and toggles Caught Up state
             new MutationObserver(() => {
+                const isDropsOpen = document.getElementById('vd-overlay')?.classList.contains('open');
                 const isModalOpen = momentsFeed.querySelector('.m-full-modal.open') || momentsFeed.querySelector('.c-overlay.open');
-                toggleOverlays(isModalOpen);
+                toggleOverlays(isDropsOpen || isModalOpen);
                 
-                // Backup query if component uses Shadow DOM
                 const mCards = momentsFeed.shadowRoot ? momentsFeed.shadowRoot.querySelectorAll('.m-card') : momentsFeed.querySelectorAll('.m-card');
                 const hasMoments = mCards.length > 0;
                 
@@ -1270,7 +849,6 @@
                 }
             }).observe(momentsFeed, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 
-            // 🚀 UPGRADED: Bulletproof fallback interval. If moments completely empty and doesn't trigger MutationObserver, this fixes the stuck display bug permanently.
             setInterval(() => {
                 const mCards = momentsFeed.shadowRoot ? momentsFeed.shadowRoot.querySelectorAll('.m-card') : momentsFeed.querySelectorAll('.m-card');
                 const hasMoments = mCards.length > 0;
@@ -1318,11 +896,7 @@
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const db = firebase.firestore();
 
-    // ==========================================
-    // SYSTEM POPUP LOGIC
-    // ==========================================
     let currentPopupVersion = "";
-
     function listenToSystemPopup() {
         db.collection("system").doc("global_popup").onSnapshot(doc => {
             if (doc.exists) {
@@ -1345,10 +919,7 @@
                             imgEl.style.display = 'none';
                         }
 
-                        // Open modal
                         document.getElementById('system-popup-overlay').classList.add('active');
-                        
-                        // Push history state for mobile back button
                         history.pushState({ systemPopupOpen: true }, "");
                     }
                 }
@@ -1360,29 +931,19 @@
         const overlay = document.getElementById('system-popup-overlay');
         if (overlay && overlay.classList.contains('active')) {
             overlay.classList.remove('active');
-            if (currentPopupVersion) {
-                localStorage.setItem('seen_sys_popup_version', currentPopupVersion);
-            }
-            if (!fromBackButton && history.state && history.state.systemPopupOpen) {
-                history.back();
-            }
+            if (currentPopupVersion) localStorage.setItem('seen_sys_popup_version', currentPopupVersion);
+            if (!fromBackButton && history.state && history.state.systemPopupOpen) history.back();
         }
     }
 
-    // Handle back button for system popup
     window.addEventListener('popstate', (e) => {
         const overlay = document.getElementById('system-popup-overlay');
-        if (overlay && overlay.classList.contains('active')) {
-            closeSystemPopup(true);
-        }
+        if (overlay && overlay.classList.contains('active')) closeSystemPopup(true);
     });
-    // ==========================================
 
     setInterval(() => {
         const clockElement = document.getElementById('clock');
-        if (clockElement) {
-            clockElement.innerText = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
-        }
+        if (clockElement) clockElement.innerText = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
     }, 1000);
 
     function formatTime(ts) {
@@ -1397,25 +958,6 @@
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-
-            // 🚀 [GLITCH FIX]: CLEAN UP GHOST HTML NOTES INJECTED BY 0ms CACHE
-            try {
-                const notesContainer = document.getElementById('notes-container');
-                if (notesContainer) {
-                    const rawCache = localStorage.getItem('mutual_notes_cache_' + user.uid);
-                    const validNotesData = rawCache ? JSON.parse(rawCache) : {};
-                    
-                    notesContainer.querySelectorAll('.friend-note').forEach(noteEl => {
-                        const friendUid = noteEl.id.replace('note-', '');
-                        // If the JSON cache doesn't have this note anymore (it expired), remove the visual HTML!
-                        if (!validNotesData[friendUid]) {
-                            noteEl.remove();
-                        }
-                    });
-                }
-            } catch(e) { console.error("Ghost note cleanup failed:", e); }
-            // -----------------------------------------------------------------
-
             const doc = await db.collection("users").doc(user.uid).get();
             if (doc.exists) {
                 const userData = doc.data();
@@ -1423,39 +965,23 @@
                 startLiveCounters(user.uid);
                 listenNotifications(user.uid);
                 checkMyMoment(user.uid, userData.photoURL);
-                listenToSystemPopup(); // <-- Added System Popup Listener Here
+                listenToSystemPopup();
 
-                // ==========================================
-                // ADDED: PUSHER BEAMS REGISTRATION LOGIC
-                // ==========================================
                 if (window.pusherConfig && window.PusherPushNotifications) {
                     try {
                         const beamsClient = new window.PusherPushNotifications.Client({
                             instanceId: window.pusherConfig.instanceId,
                         });
-
                         await beamsClient.start();
-                        
-                        // Subscribe to the global 'hello' channel
                         await beamsClient.addDeviceInterest('hello'); 
-                        
-                        // Also subscribe the device to the user's personal UID!
-                        // This allows you to send private messages directly to them later.
                         await beamsClient.addDeviceInterest(user.uid); 
-
-                        // ✅ Updated console log to verify it grabbed the correct UID
-                        console.log('✅ Pusher Beams successfully registered and subscribed to UID:', user.uid);
-                    } catch (error) {
-                        console.error('❌ Pusher Beams registration failed:', error);
-                    }
+                    } catch (error) { console.error('❌ Pusher Beams registration failed:', error); }
                 }
-                // ==========================================
-
             } else {
                 window.location.href = "setup.html";
             }
         } else {
-            localStorage.removeItem('goorac_notes_html_cache');
+            localStorage.removeItem('goorac_drops_html_cache');
             localStorage.removeItem('goorac_moments_html_cache');
             window.location.href = "login.html";
         }
@@ -1474,13 +1000,11 @@
                     fab.dataset.momentId = momentId;
                     fab.classList.add('has-moment');
                     fab.innerHTML = `<img src="${photoURL || 'https://via.placeholder.com/150'}">`;
-                    // Update LocalStorage Cache for instant load next time
                     localStorage.setItem('goorac_my_moment_state', JSON.stringify({ hasMoment: true, id: momentId, photoURL: photoURL }));
                 } else {
                     fab.dataset.momentId = '';
                     fab.classList.remove('has-moment');
                     fab.innerHTML = `<span class="material-icons-round">add</span>`;
-                    // Clear cache state
                     localStorage.setItem('goorac_my_moment_state', JSON.stringify({ hasMoment: false }));
                 }
             });
@@ -1512,7 +1036,7 @@
         const nameEl = document.getElementById('welcome-name');
         const textEl = document.getElementById('welcome-text');
         const pfpEl = document.getElementById('header-pfp');
-        const notePfp = document.getElementById('my-note-pfp');
+        const dropPfp = document.getElementById('my-drop-pfp');
         const hour = new Date().getHours();
         let greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
         nameEl.innerText = `${greeting}, ` + (data.name.split(' ')[0] || "Agent");
@@ -1520,9 +1044,9 @@
         const src = data.photoURL || 'https://via.placeholder.com/150';
         pfpEl.src = src; 
         pfpEl.classList.remove('skeleton');
-        if(notePfp) {
-            notePfp.src = src; 
-            notePfp.classList.remove('skeleton');
+        if(dropPfp) {
+            dropPfp.src = src; 
+            dropPfp.classList.remove('skeleton');
         }
         textEl.innerText = "System operational. Connection secure.";
         textEl.classList.remove('skeleton');
@@ -1543,7 +1067,6 @@
     }
 
     function startLiveCounters(uid) {
-        // 🚀 ADDED: Flag to prevent special effects from triggering on initial page load
         let isInitialLoad = true; 
         
         db.collection("chats")
@@ -1552,26 +1075,22 @@
             .onSnapshot(snap => {
                 let latest = null;
                 let latestDoc = null;
-                let unreadTotal = 0; // Added to count total unread chats
+                let unreadTotal = 0; 
                 
                 for (const doc of snap.docs) {
                     const d = doc.data();
-                    
-                    // FIX: Group chat seen logic (Respect unreadCount object, not global boolean)
                     let isUnread = false;
                     if(d.isGroup) {
                         isUnread = (d.unreadCount && d.unreadCount[uid] > 0);
                     } else {
                         isUnread = (d.lastSender !== uid && d.seen === false);
                     }
-                    
                     if (isUnread) { 
                         unreadTotal++;
-                        if (!latest) { latest = d; latestDoc = doc; } // Capture the very first one for the dashboard card
+                        if (!latest) { latest = d; latestDoc = doc; }
                     }
                 }
                 
-                // --- NEW HEADER MESSAGE BADGE UPDATE ---
                 const headerMsgBtn = document.getElementById('header-msg-btn');
                 const headerMsgBadge = document.getElementById('header-msg-count');
                 if (headerMsgBadge && headerMsgBtn) {
@@ -1585,35 +1104,25 @@
                     }
                 }
 
-                // --- 🚀 UPGRADED: GREETING DETECTION LOGIC ---
                 if (latest && latestDoc && latest.lastSender !== uid) {
                     let txt = latest.lastMessage || latest.text || latest.message || "";
                     let tsMillis = 0;
-                    
                     if (latest.lastTimestamp) {
                         if (typeof latest.lastTimestamp.toMillis === 'function') tsMillis = latest.lastTimestamp.toMillis();
                         else if (latest.lastTimestamp.seconds) tsMillis = latest.lastTimestamp.seconds * 1000;
                         else tsMillis = latest.lastTimestamp;
                     }
-                    
-                    // Allows greeting on initial load ONLY IF the message was sent less than 60 seconds ago and is unread
                     let isRecent = (Date.now() - tsMillis) < 60000; 
-                    
                     let isUnreadMsg = false;
-                    if(latest.isGroup) {
-                        isUnreadMsg = (latest.unreadCount && latest.unreadCount[uid] > 0);
-                    } else {
-                        isUnreadMsg = (latest.seen === false);
-                    }
+                    if(latest.isGroup) isUnreadMsg = (latest.unreadCount && latest.unreadCount[uid] > 0);
+                    else isUnreadMsg = (latest.seen === false);
                     
                     if (!isInitialLoad || (isInitialLoad && isRecent && isUnreadMsg)) {
-                        // For groups, show the group name in greeting if no sender name is attached yet
                         let senderDisplay = latest.lastSenderName || (latest.isGroup ? latest.groupName : "Someone");
                         if (window.checkGreeting) window.checkGreeting(txt, senderDisplay, latestDoc.id, tsMillis);
                     }
                 }
 
-                // --- EXISTING DASHBOARD CARD UPDATE ---
                 const header = document.getElementById('msg-header');
                 const sub = document.getElementById('msg-subtext');
                 const time = document.getElementById('msg-time');
@@ -1621,7 +1130,6 @@
                 const pfp = document.getElementById('msg-pfp-area');
                 
                 if (latest) {
-                    // Group Chat Inbox Fix
                     if(latest.isGroup) {
                         header.innerText = "New Group Message"; 
                         sub.innerText = latest.groupName || "Incoming";
@@ -1641,8 +1149,6 @@
                     card.classList.remove('has-count'); pfp.innerHTML = `<div>MSG</div>`;
                 }
                 saveHomeState();
-                
-                // 🚀 Set false so subsequent snapshot updates trigger the greeting 
                 isInitialLoad = false; 
             });
 
@@ -1672,22 +1178,15 @@
             });
     }
 
-    // 🚀 ADDED: PWA Install Prompt Listener
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent default mini-infobar
         e.preventDefault();
-        // Stash the event
         deferredPrompt = e;
-        
-        // Only show button if we haven't already
         if (!document.getElementById('pwa-install-btn')) {
             const installBtn = document.createElement('button');
             installBtn.id = 'pwa-install-btn';
             installBtn.innerText = 'Install App';
-            // Styling it directly at the bottom
             installBtn.style.cssText = 'position:fixed;bottom:130px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;border:none;padding:12px 24px;border-radius:24px;font-weight:900;z-index:10000;box-shadow:0 8px 20px rgba(0, 210, 255, 0.4);animation:popInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);';
-            
             installBtn.onclick = async () => {
                 installBtn.style.display = 'none';
                 deferredPrompt.prompt();
@@ -1697,7 +1196,6 @@
             document.body.appendChild(installBtn);
         }
     });
-
 </script>
 </body>
 </html>
