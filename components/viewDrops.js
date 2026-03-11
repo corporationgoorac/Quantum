@@ -29,7 +29,8 @@ class ViewDrops extends HTMLElement {
             isDragging: false,
             startY: 0,
             currentY: 0,
-            optionsOpen: false
+            optionsOpen: false,
+            viewsOpen: false // Added state for the swipe-up views modal
         };
     }
 
@@ -175,6 +176,21 @@ class ViewDrops extends HTMLElement {
                 100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
             }
 
+            /* --- OWN DROP FOOTER (SWIPE UP / STATS) --- */
+            .vd-own-footer {
+                position: absolute; bottom: 0; left: 0; width: 100%; z-index: 50;
+                padding: 15px 20px; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%);
+                display: none; align-items: center; justify-content: flex-end; gap: 15px;
+            }
+            .vd-own-action {
+                background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2); border-radius: 50px;
+                padding: 10px 16px; color: #fff; font-size: 14px; font-weight: 700;
+                display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;
+            }
+            .vd-own-action:active { transform: scale(0.95); }
+            .vd-own-action.danger { background: rgba(255, 59, 48, 0.15); border-color: rgba(255, 59, 48, 0.3); color: #ff3b30; }
+
             /* --- OPTIONS MODAL (BOTTOM SHEET) --- */
             .vd-opt-overlay {
                 position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 30000;
@@ -190,22 +206,35 @@ class ViewDrops extends HTMLElement {
             }
             .vd-opt-overlay.active .vd-opt-sheet { transform: translateY(0); }
             
-            .vd-opt-drag-handle { width: 40px; height: 5px; background: #333; border-radius: 10px; margin: 0 auto 15px auto; }
+            .vd-opt-drag-handle { width: 40px; height: 5px; background: #333; border-radius: 10px; margin: 0 auto 15px auto; flex-shrink: 0; }
             
             .vd-opt-btn {
                 background: #1a1a1a; color: #fff; border: 1px solid rgba(255,255,255,0.05); padding: 16px 20px;
                 border-radius: 16px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 15px;
-                cursor: pointer; transition: 0.2s; text-align: left; width: 100%;
+                cursor: pointer; transition: 0.2s; text-align: left; width: 100%; flex-shrink: 0;
             }
             .vd-opt-btn:active { background: #222; transform: scale(0.98); }
             .vd-opt-btn.danger { color: #ff3b30; }
             .vd-opt-btn.danger .material-icons-round { color: #ff3b30; }
-            .vd-opt-stats { display: flex; justify-content: space-around; background: #1a1a1a; border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+            .vd-opt-stats { display: flex; justify-content: space-around; background: #1a1a1a; border-radius: 16px; padding: 15px; margin-bottom: 10px; flex-shrink: 0; }
             .vd-stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
             .vd-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
             .vd-stat-lbl { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
-            .vd-opt-header-text { text-align: center; color: #888; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+            .vd-opt-header-text { text-align: center; color: #888; font-size: 12px; font-weight: 600; margin-bottom: 10px; flex-shrink: 0; }
+
+            /* --- VIEWERS LIST STYLES (INSIDE MODAL) --- */
+            .vd-viewer-item {
+                display: flex; align-items: center; justify-content: space-between;
+                padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+            .vd-viewer-left { display: flex; align-items: center; gap: 12px; }
+            .vd-viewer-pfp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
+            .vd-viewer-name { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
+            .vd-viewer-right { display: flex; align-items: center; gap: 10px; }
+            .vd-viewer-like-badge { color: #ff3b30; display: flex; align-items: center; justify-content: center; animation: popIn 0.3s; }
+            
+            @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
         </style>
 
         <div class="vd-overlay" id="vd-overlay">
@@ -266,6 +295,17 @@ class ViewDrops extends HTMLElement {
                     <span class="material-icons-round" id="vd-like-icon" style="font-size: 32px;">favorite_border</span>
                 </button>
             </div>
+
+            <div class="vd-own-footer vd-safe-bottom" id="vd-own-footer">
+                <div style="flex: 1;"></div>
+                <div class="vd-own-action" id="vd-own-view-btn">
+                    <span class="material-icons-round" style="font-size: 18px;">visibility</span>
+                    <span id="vd-own-view-count">0</span>
+                </div>
+                <div class="vd-own-action danger" id="vd-own-delete-btn">
+                    <span class="material-icons-round" style="font-size: 18px;">delete</span>
+                </div>
+            </div>
             
         </div>
 
@@ -276,6 +316,19 @@ class ViewDrops extends HTMLElement {
                 <div id="vd-opt-dynamic-content"></div>
             </div>
         </div>
+
+        <div class="vd-opt-overlay" id="vd-views-overlay">
+            <div class="vd-opt-sheet" id="vd-views-sheet" style="height: 75vh;">
+                <div class="vd-opt-drag-handle"></div>
+                <div class="vd-opt-header-text">Drop Analytics</div>
+                <div class="vd-opt-stats" id="vd-views-stats">
+                    <div class="vd-stat-item"><span class="vd-stat-val">-</span><span class="vd-stat-lbl">Views</span></div>
+                    <div class="vd-stat-item"><span class="vd-stat-val" style="color:#ff3b30;">-</span><span class="vd-stat-lbl">Likes</span></div>
+                </div>
+                <div id="vd-views-list" style="overflow-y: auto; flex: 1; padding-bottom: 20px;">
+                    </div>
+            </div>
+        </div>
         `;
     }
 
@@ -283,6 +336,13 @@ class ViewDrops extends HTMLElement {
         this.querySelector('#vd-options-btn').onclick = () => this.openOptions();
         this.querySelector('#vd-opt-overlay').onclick = (e) => {
             if (e.target.id === 'vd-opt-overlay') this.closeOptions();
+        };
+
+        // Own Footer View & Delete Buttons
+        this.querySelector('#vd-own-view-btn').onclick = () => this.openViewsModal();
+        this.querySelector('#vd-own-delete-btn').onclick = () => this.deleteOwnDrop();
+        this.querySelector('#vd-views-overlay').onclick = (e) => {
+            if (e.target.id === 'vd-views-overlay') this.closeViewsModal();
         };
         
         // Tap Navigation
@@ -317,6 +377,8 @@ class ViewDrops extends HTMLElement {
         window.addEventListener('popstate', (e) => {
             if (this.state.optionsOpen) {
                 this.closeOptions(true);
+            } else if (this.state.viewsOpen) {
+                this.closeViewsModal(true);
             } else if (this.querySelector('#vd-overlay').classList.contains('open')) {
                 this.close(true);
             }
@@ -334,34 +396,47 @@ class ViewDrops extends HTMLElement {
         const overlay = this.querySelector('#vd-overlay');
         
         overlay.addEventListener('touchstart', (e) => {
-            if (e.target.tagName.toLowerCase() === 'input' || this.state.optionsOpen) return;
+            if (e.target.tagName.toLowerCase() === 'input' || this.state.optionsOpen || this.state.viewsOpen) return;
             this.state.isDragging = true;
             this.state.startY = e.touches[0].clientY;
             overlay.style.transition = 'none';
         }, {passive: true});
 
         overlay.addEventListener('touchmove', (e) => {
-            if (!this.state.isDragging || this.state.optionsOpen) return;
+            if (!this.state.isDragging || this.state.optionsOpen || this.state.viewsOpen) return;
             this.state.currentY = e.touches[0].clientY;
             const delta = this.state.currentY - this.state.startY;
             
-            if (delta > 0) {
+            const isMyDrop = this.dropsList[this.currentIndex]?.uid === this.myUid;
+            
+            if (delta > 0) { // Swiping Down (Close)
                 e.preventDefault();
                 overlay.style.transform = `translateY(${delta}px)`;
                 overlay.style.opacity = 1 - (delta / window.innerHeight);
+            } else if (delta < 0 && isMyDrop) { // Swiping Up (Views Modal - ONLY for own drops)
+                e.preventDefault();
+                overlay.style.transform = `translateY(${delta}px)`;
             }
         }, {passive: false});
 
         overlay.addEventListener('touchend', () => {
-            if (!this.state.isDragging || this.state.optionsOpen) return;
+            if (!this.state.isDragging || this.state.optionsOpen || this.state.viewsOpen) return;
             this.state.isDragging = false;
             const delta = this.state.currentY - this.state.startY;
+            const isMyDrop = this.dropsList[this.currentIndex]?.uid === this.myUid;
             
             overlay.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease';
             
             if (delta > window.innerHeight * 0.2) {
+                // Closed via swipe down
                 this.close();
+            } else if (delta < -window.innerHeight * 0.15 && isMyDrop) {
+                // Opened views via swipe up
+                overlay.style.transform = 'translateY(0)';
+                overlay.style.opacity = '1';
+                this.openViewsModal();
             } else {
+                // Snap back
                 overlay.style.transform = 'translateY(0)';
                 overlay.style.opacity = '1';
             }
@@ -478,10 +553,19 @@ class ViewDrops extends HTMLElement {
 
         // Setup Footer state
         const footer = this.querySelector('#vd-footer');
+        const ownFooter = this.querySelector('#vd-own-footer');
         if (drop.uid === this.myUid) {
             footer.style.display = 'none'; 
+            ownFooter.style.display = 'flex';
+            
+            // Instantly fetch view count for the footer badge
+            this.db.collection('drops').doc(this.myUid).collection('views').get().then(snap => {
+                this.querySelector('#vd-own-view-count').innerText = snap.size;
+            }).catch(e=>{});
+
         } else {
             footer.style.display = 'flex';
+            ownFooter.style.display = 'none';
             this.checkLikeState(drop.uid);
         }
 
@@ -589,7 +673,7 @@ class ViewDrops extends HTMLElement {
     }
 
     pauseDrop() {
-        if (this.state.optionsOpen) return;
+        if (this.state.optionsOpen || this.state.viewsOpen) return;
         this.isPaused = true;
         this.bgAudio.pause();
         const vid = this.querySelector('#vd-video');
@@ -598,7 +682,7 @@ class ViewDrops extends HTMLElement {
     }
 
     resumeDrop() {
-        if (this.state.optionsOpen) return;
+        if (this.state.optionsOpen || this.state.viewsOpen) return;
         this.isPaused = false;
         if (this.bgAudio.src) this.bgAudio.play().catch(e=>{});
         const vid = this.querySelector('#vd-video');
@@ -624,10 +708,93 @@ class ViewDrops extends HTMLElement {
         }
     }
 
-    // --- OPTIONS MODAL LOGIC ---
+    // --- SWIPE-UP VIEWS MODAL LOGIC (FOR OWN DROPS) ---
+    async openViewsModal() {
+        if (navigator.vibrate) navigator.vibrate(10);
+        this.pauseDrop(); 
+        this.state.viewsOpen = true;
+        
+        const overlay = this.querySelector('#vd-views-overlay');
+        const viewsList = this.querySelector('#vd-views-list');
+        const viewsStats = this.querySelector('#vd-views-stats');
+        
+        viewsList.innerHTML = `<div style="text-align:center; padding: 30px;"><span class="material-icons-round" style="animation:spin 1s linear infinite;">refresh</span></div>`;
+        overlay.classList.add('active');
+        window.history.pushState({ viewsModalOpen: true }, "", "#drops-views");
+
+        try {
+            // Fetch Views and Likes
+            const viewsSnap = await this.db.collection('drops').doc(this.myUid).collection('views').orderBy('timestamp', 'desc').get();
+            const likesSnap = await this.db.collection('drops').doc(this.myUid).collection('likes').get();
+            
+            const likedUids = new Set();
+            likesSnap.forEach(doc => likedUids.add(doc.id));
+
+            viewsStats.innerHTML = `
+                <div class="vd-stat-item"><span class="vd-stat-val">${viewsSnap.size}</span><span class="vd-stat-lbl">Views</span></div>
+                <div class="vd-stat-item"><span class="vd-stat-val" style="color:#ff3b30;">${likesSnap.size}</span><span class="vd-stat-lbl">Likes</span></div>
+            `;
+
+            if (viewsSnap.empty) {
+                viewsList.innerHTML = `<div style="text-align:center; color:#888; padding: 40px;">No views yet</div>`;
+                return;
+            }
+
+            let html = '';
+            for (let doc of viewsSnap.docs) {
+                const viewData = doc.data();
+                const viewerUid = doc.id;
+                const hasLiked = likedUids.has(viewerUid);
+                
+                let isVerified = false;
+                let realName = viewData.viewerName || 'User';
+                let realPfp = viewData.viewerPfp || 'https://via.placeholder.com/150';
+
+                // Realtime verification fetch
+                try {
+                    const uDoc = await this.db.collection('users').doc(viewerUid).get();
+                    if(uDoc.exists) {
+                        const ud = uDoc.data();
+                        isVerified = ud.verified === true;
+                        realName = ud.name || ud.username || realName;
+                        realPfp = ud.photoURL || realPfp;
+                    }
+                } catch(e){}
+
+                html += `
+                    <div class="vd-viewer-item">
+                        <div class="vd-viewer-left">
+                            <img src="${realPfp}" class="vd-viewer-pfp">
+                            <div class="vd-viewer-name">
+                                ${realName}
+                                ${isVerified ? `<span class="material-icons-round" style="font-size: 14px; color: #00d2ff;">verified</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="vd-viewer-right">
+                            ${hasLiked ? `<div class="vd-viewer-like-badge"><span class="material-icons-round" style="font-size: 18px;">favorite</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            viewsList.innerHTML = html;
+
+        } catch(e) {
+            console.error(e);
+            viewsList.innerHTML = `<div style="text-align:center; color:#ff4444; padding: 20px;">Failed to load viewers</div>`;
+        }
+    }
+
+    closeViewsModal(fromHistory = false) {
+        this.state.viewsOpen = false;
+        this.querySelector('#vd-views-overlay').classList.remove('active');
+        if (!fromHistory && window.location.hash === '#drops-views') window.history.back();
+        this.resumeDrop();
+    }
+
+    // --- GENERAL OPTIONS MODAL LOGIC ---
     async openOptions() {
         if (navigator.vibrate) navigator.vibrate(10);
-        this.pauseDrop(); // Hard pause when options open
+        this.pauseDrop(); 
         this.state.optionsOpen = true;
         
         const drop = this.dropsList[this.currentIndex];
@@ -645,26 +812,10 @@ class ViewDrops extends HTMLElement {
         window.history.pushState({ optModalOpen: true }, "", "#drops-opt");
 
         if (drop.uid === this.myUid) {
-            // Fetch live counts for MY drop
-            let viewsCount = 0; let likesCount = 0;
-            try {
-                const viewsSnap = await this.db.collection('drops').doc(this.myUid).collection('views').get();
-                viewsCount = viewsSnap.size;
-                const likesSnap = await this.db.collection('drops').doc(this.myUid).collection('likes').get();
-                likesCount = likesSnap.size;
-            } catch(e) {}
-
             content.innerHTML = `
-                <div class="vd-opt-stats">
-                    <div class="vd-stat-item">
-                        <span class="vd-stat-val">${viewsCount}</span>
-                        <span class="vd-stat-lbl">Views</span>
-                    </div>
-                    <div class="vd-stat-item">
-                        <span class="vd-stat-val" style="color:#ff3b30;">${likesCount}</span>
-                        <span class="vd-stat-lbl">Likes</span>
-                    </div>
-                </div>
+                <button class="vd-opt-btn" onclick="document.querySelector('view-drops').openViewsModal(); document.querySelector('view-drops').closeOptions(false);">
+                    <span class="material-icons-round">bar_chart</span> Analytics & Viewers
+                </button>
                 <button class="vd-opt-btn" onclick="window.location.href='drops.html'">
                     <span class="material-icons-round">add_circle</span> New Drop
                 </button>
@@ -689,7 +840,7 @@ class ViewDrops extends HTMLElement {
         this.state.optionsOpen = false;
         this.querySelector('#vd-opt-overlay').classList.remove('active');
         if (!fromHistory && window.location.hash === '#drops-opt') window.history.back();
-        this.resumeDrop();
+        if (!this.state.viewsOpen) this.resumeDrop(); // Only resume if views modal didn't open
     }
 
     async deleteOwnDrop() {
