@@ -14,7 +14,17 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+    <script>
+        if (typeof window.initFirebaseCore === 'function') {
+            window.initFirebaseCore();
+        } else if (!firebase.apps.length && window.firebaseConfig) {
+            firebase.initializeApp(window.firebaseConfig);
+        }
+    </script>
+
     <script type="module" src="components/presence.js"></script>
+    <script src="components/chatLoader.js" defer></script>
+    <script src="components/call-notifier.js" defer></script>
     <script src="components/navbar.js" defer></script>
     
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -240,6 +250,8 @@
 </head>
 <body>
 
+<chat-loader></chat-loader>
+
 <div id="start-screen" onclick="initExperience()">
     <div class="start-btn-pulse"><span class="material-icons-round" style="font-size:40px;">play_arrow</span></div>
     <h2 style="margin:0; font-weight:800; font-size:1.5rem;">Tap to enter Bites</h2>
@@ -290,14 +302,12 @@
 </div>
 
 <main-navbar></main-navbar>
+<call-notifier></call-notifier>
 
 <script>
     // ==========================================================================
     // SYSTEM & FIREBASE INIT
     // ==========================================================================
-    if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
-    else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
-
     const db = firebase.firestore();
     const auth = firebase.auth();
     let myUid = null;
@@ -363,12 +373,13 @@
     })();
 
     // ==========================================================================
-    // BACKGROUND APP SUPPORT (Prevent audio playing while minimized)
+    // BACKGROUND APP SUPPORT & FIRESTORE BATCH SYNC TRIGGER
     // ==========================================================================
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
+            syncInterestsToFirestore(); // 🚀 Prevent data loss and flush queue safely
         } else {
             if (hasStarted) playActivePlayer();
         }
@@ -498,7 +509,6 @@
         const viewport = document.getElementById('bites-viewport');
         if (!viewport || playersReady < 2) return;
         
-        // FIX: Grab the actual pixel height of a slide, not the padded viewport
         const firstSlide = document.querySelector('.bite-slide');
         const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
         const scrollPosition = viewport.scrollTop;
@@ -510,14 +520,13 @@
                 swapPlayers();
                 if (hasStarted) currentVideoStartTime = Date.now();
             } else {
-                // If we are already on the index, ensure playback is primed
                 if (hasStarted) playActivePlayer();
             }
         }
     }
 
     // ==========================================================================
-    // SCROLL ENGINE & ALGORITHMIC TELEMETRY
+    // SCROLL ENGINE & FIRESTORE COST MITIGATION
     // ==========================================================================
     let lastScrollProcessTime = 0; 
     
@@ -527,7 +536,6 @@
         const now = Date.now();
         const viewport = document.getElementById('bites-viewport');
         
-        // FIX: Calculate utilizing the exact slide size to prevent math drifting on 5th/6th slide
         const firstSlide = document.querySelector('.bite-slide');
         const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
         const scrollPosition = viewport.scrollTop;
@@ -565,16 +573,45 @@
 
             // SMART FETCH: Load aggressively early when 5 videos remain
             if (currentIndex >= bitesQueue.length - 5 && !isFetching) {
-                if (!isSearchPlaying) {
-                    fetchMoreBites(); 
-                }
+                if (!isSearchPlaying) fetchMoreBites(); 
             }
         }
     }
 
     // ==========================================================================
-    // THE DEEP-LEARNING ALGORITHM ENGINE
+    // 🧠 THE BATCHED DEEP-LEARNING ALGORITHM (FIRESTORE READ/WRITE OPTIMIZED)
     // ==========================================================================
+    let pendingInterestUpdates = {};
+    let interestSyncTimer = null;
+
+    // 🚀 Adds interests to a local queue rather than slamming Firestore instantly
+    function queueInterestUpdate(category, scoreChange) {
+        if(!myUid || !category) return;
+        const key = `interests.${category.toLowerCase()}`;
+        
+        if (pendingInterestUpdates[key]) pendingInterestUpdates[key] += scoreChange;
+        else pendingInterestUpdates[key] = scoreChange;
+
+        // Auto-flush the queue every 15 seconds to minimize writes
+        if(!interestSyncTimer) {
+            interestSyncTimer = setTimeout(syncInterestsToFirestore, 15000); 
+        }
+    }
+
+    function syncInterestsToFirestore() {
+        if(Object.keys(pendingInterestUpdates).length === 0 || !myUid) return;
+        
+        let firestoreUpdates = {};
+        for(let key in pendingInterestUpdates) {
+            firestoreUpdates[key] = firebase.firestore.FieldValue.increment(pendingInterestUpdates[key]);
+        }
+        
+        db.collection("users").doc(myUid).set(firestoreUpdates, { merge: true }).catch(e => {});
+        
+        pendingInterestUpdates = {}; 
+        interestSyncTimer = null;
+    }
+
     function extractHashtags(text) {
         if (!text) return [];
         const matches = text.match(/#[\w]+/g);
@@ -591,17 +628,11 @@
         else if (timeSpentMs >= 7000) { scoreChange = 5; shouldExtractTags = true; } 
         else scoreChange = 1;
 
-        let updates = { [`interests.${bite.category.toLowerCase()}`]: firebase.firestore.FieldValue.increment(scoreChange) };
+        if(scoreChange !== 0) queueInterestUpdate(bite.category, scoreChange);
 
         if (shouldExtractTags) {
             const tags = extractHashtags(bite.title);
-            tags.slice(0, 3).forEach(tag => {
-                updates[`interests.${tag}`] = firebase.firestore.FieldValue.increment(3);
-            });
-        }
-
-        if(myUid && scoreChange !== 0) {
-            db.collection("users").doc(myUid).set(updates, { merge: true }).catch(e => {});
+            tags.slice(0, 3).forEach(tag => queueInterestUpdate(tag, 3));
         }
     }
 
@@ -615,10 +646,8 @@
         else if (action === 'searched') scoreChange = 20;
         else if (action === 'rewatched') { scoreChange = 8; tags = extractHashtags(biteTitle).slice(0, 3); }
 
-        let updates = { [`interests.${category.toLowerCase()}`]: firebase.firestore.FieldValue.increment(scoreChange) };
-        tags.forEach(tag => { updates[`interests.${tag}`] = firebase.firestore.FieldValue.increment(5); });
-
-        db.collection("users").doc(myUid).set(updates, { merge: true }).catch(e => {});
+        if(scoreChange !== 0) queueInterestUpdate(category, scoreChange);
+        tags.forEach(tag => queueInterestUpdate(tag, 5));
     }
 
     window.handleLike = function(event, index) {
@@ -664,16 +693,12 @@
             document.getElementById('player-container-b').classList.remove('active');
             document.getElementById('player-container-a').classList.add('active');
             
-            // Player A handles current
             if (currentVid) {
                 if (currentLoadedA !== currentVid) {
                     hasStarted ? playerA.loadVideoById(currentVid) : playerA.cueVideoById(currentVid);
                     currentLoadedA = currentVid;
-                } else if (hasStarted) {
-                    playerA.playVideo();
-                }
+                } else if (hasStarted) playerA.playVideo();
             }
-            // Player B safely cues next
             if (nextVid && currentLoadedB !== nextVid) {
                 playerB.cueVideoById(nextVid);
                 currentLoadedB = nextVid;
@@ -683,16 +708,12 @@
             document.getElementById('player-container-a').classList.remove('active');
             document.getElementById('player-container-b').classList.add('active');
             
-            // Player B handles current
             if (currentVid) {
                 if (currentLoadedB !== currentVid) {
                     hasStarted ? playerB.loadVideoById(currentVid) : playerB.cueVideoById(currentVid);
                     currentLoadedB = currentVid;
-                } else if (hasStarted) {
-                    playerB.playVideo();
-                }
+                } else if (hasStarted) playerB.playVideo();
             }
-            // Player A safely cues next
             if (nextVid && currentLoadedA !== nextVid) {
                 playerA.cueVideoById(nextVid);
                 currentLoadedA = nextVid;
@@ -799,10 +820,7 @@
             }
         }
 
-        if (!success && loaderText) {
-            loaderText.innerText = "Network slow or no new videos. Scroll to retry.";
-        }
-
+        if (!success && loaderText) loaderText.innerText = "Network slow or no new videos. Scroll to retry.";
         isFetching = false; 
     }
 
@@ -859,14 +877,12 @@
             viewport.innerHTML = '';
             renderDOMSlides();
             
-            // FIX: Match exact slide height calculation
             const firstSlide = document.querySelector('.bite-slide');
             const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
             viewport.scrollTop = currentIndex * slideHeight;
             currentVideoStartTime = Date.now(); 
             
             syncPlayersToScrollPosition(); 
-            
             document.getElementById('discover-modal').classList.add('active');
             return;
         }
