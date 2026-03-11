@@ -319,6 +319,7 @@
     let fetchTimeoutFallback = null; 
     let hasStarted = false;
     let viewedVideoIds = new Set(); 
+    let consecutiveDuplicateFetches = 0; // 🚀 New Anti-Duplicate Failsafe
     
     let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
     let currentVideoStartTime = 0; 
@@ -357,6 +358,18 @@
     })();
 
     // ==========================================================================
+    // BACKGROUND APP SUPPORT (Prevent audio playing while minimized)
+    // ==========================================================================
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
+            if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
+        } else {
+            if (hasStarted) playActivePlayer();
+        }
+    });
+
+    // ==========================================================================
     // YOUTUBE IFRAME API DYNAMIC INJECTION (FIX FOR DEADLOCK)
     // ==========================================================================
     window.onYouTubeIframeAPIReady = function() {
@@ -373,7 +386,7 @@
         });
     };
 
-    // Safely inject API after the global function is strictly defined
+    // Safely inject API to guarantee load order
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -383,21 +396,10 @@
         playersReady++;
         if (playersReady === 2) {
             if (bitesQueue.length > 0) {
-                playerA.cueVideoById(bitesQueue[0].videoId);
-                currentLoadedA = bitesQueue[0].videoId; 
-                if(bitesQueue.length > 1) {
-                    playerB.cueVideoById(bitesQueue[1].videoId);
-                    currentLoadedB = bitesQueue[1].videoId; 
-                }
+                // Initialize the correct videos and state seamlessly
+                syncPlayersToScrollPosition(); 
                 renderDOMSlides();
                 
-                // If they tapped start before players were ready, play instantly now
-                if (hasStarted) {
-                    playActivePlayer();
-                    currentVideoStartTime = Date.now();
-                }
-
-                // 🚀 ANTI-STUCK: If cache is small, refill immediately
                 if (bitesQueue.length < 5) fetchMoreBites();
             } else {
                 fetchMoreBites();
@@ -480,6 +482,31 @@
     }
 
     // ==========================================================================
+    // 🚀 THE ULTIMATE "STUCK ON LOADING" FIX (SCROLL-SYNC ENGINE)
+    // ==========================================================================
+    function syncPlayersToScrollPosition() {
+        const viewport = document.getElementById('bites-viewport');
+        if (!viewport || playersReady < 2) return;
+        
+        const slideHeight = viewport.clientHeight;
+        const scrollPosition = viewport.scrollTop;
+        const actualIndex = Math.round(scrollPosition / slideHeight);
+
+        if (actualIndex >= 0 && actualIndex < bitesQueue.length) {
+            if (actualIndex !== currentIndex) {
+                currentIndex = actualIndex;
+                swapPlayers();
+                if (hasStarted) {
+                    currentVideoStartTime = Date.now();
+                }
+            } else if (hasStarted) {
+                // Same index, just ensure the correct one is playing in case it was paused by the loader
+                playActivePlayer();
+            }
+        }
+    }
+
+    // ==========================================================================
     // SCROLL ENGINE & ALGORITHMIC TELEMETRY
     // ==========================================================================
     let lastScrollProcessTime = 0; 
@@ -494,9 +521,14 @@
         
         const newIndex = Math.round(scrollPosition / slideHeight);
 
-        // 🚀 OVERRIDE: If scrolled to the spinner, FORCE a fetch immediately
+        // 🚀 OVERRIDE: If scrolled to the spinner, FORCE a fetch immediately and pause video
         if (newIndex === bitesQueue.length) {
+            if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
+            if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
+            
             if (!isFetching && !isSearchPlaying) {
+                const loaderText = document.querySelector('.loader-text');
+                if (loaderText) loaderText.innerText = "Finding more bites...";
                 fetchMoreBites();
             }
             return; 
@@ -603,26 +635,22 @@
     // HARDWARE PLAYER SWAPPING & LOOPING
     // ==========================================================================
     function swapPlayers() {
-        const pA = document.getElementById('player-container-a');
-        const pB = document.getElementById('player-container-b');
-
+        if (!playerA || !playerB) return;
+        
         const currentVid = bitesQueue[currentIndex]?.videoId;
         const nextVid = bitesQueue[currentIndex + 1]?.videoId;
 
-        playerA.pauseVideo();
-        playerB.pauseVideo();
-
         if (activePlayer === 'A') {
             activePlayer = 'B';
-            pA.classList.remove('active');
-            pB.classList.add('active');
+            document.getElementById('player-container-a').classList.remove('active');
+            document.getElementById('player-container-b').classList.add('active');
             
             if (currentVid) {
                 if(currentLoadedB !== currentVid) {
                     playerB.loadVideoById(currentVid);
                     currentLoadedB = currentVid;
                 }
-                playerB.playVideo();
+                if (hasStarted) playerB.playVideo();
             }
             if (nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
                 playerA.cueVideoById(nextVid);
@@ -630,15 +658,15 @@
             }
         } else {
             activePlayer = 'A';
-            pB.classList.remove('active');
-            pA.classList.add('active');
+            document.getElementById('player-container-b').classList.remove('active');
+            document.getElementById('player-container-a').classList.add('active');
             
             if (currentVid) {
                 if(currentLoadedA !== currentVid) {
                     playerA.loadVideoById(currentVid);
                     currentLoadedA = currentVid;
                 }
-                playerA.playVideo();
+                if (hasStarted) playerA.playVideo();
             }
             if (nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
                 playerB.cueVideoById(nextVid);
@@ -649,7 +677,7 @@
 
     function playActivePlayer() {
         const p = activePlayer === 'A' ? playerA : playerB;
-        if (bitesQueue[currentIndex]) {
+        if (bitesQueue[currentIndex] && p && typeof p.playVideo === 'function') {
             const currentVid = bitesQueue[currentIndex].videoId;
             if(activePlayer === 'A' && currentLoadedA !== currentVid) {
                 p.loadVideoById(currentVid);
@@ -664,6 +692,8 @@
 
     function togglePlayPause() {
         const p = activePlayer === 'A' ? playerA : playerB;
+        if (!p || typeof p.getPlayerState !== 'function') return;
+        
         const state = p.getPlayerState();
         const icon = document.getElementById('play-pause-icon');
         const inner = document.getElementById('pp-icon-inner');
@@ -690,7 +720,7 @@
     }
 
     // ==========================================================================
-    // NETWORK FETCHING & PARANOID DEDUPLICATION
+    // NETWORK FETCHING & CACHE BUSTING (ANTI-DUPLICATE ENGINE)
     // ==========================================================================
     async function fetchMoreBites(overrideTopic = null) {
         if (isFetching) return;
@@ -701,7 +731,11 @@
         }
 
         clearTimeout(fetchTimeoutFallback);
-        fetchTimeoutFallback = setTimeout(() => { isFetching = false; }, 15000);
+        fetchTimeoutFallback = setTimeout(() => { 
+            isFetching = false; 
+            const loaderText = document.querySelector('.loader-text');
+            if (loaderText) loaderText.innerText = "Network slow, scroll to retry.";
+        }, 12000);
 
         let queryTopic = overrideTopic;
         if (!queryTopic || queryTopic === "tamil") {
@@ -725,24 +759,27 @@
                     uniqueNewBites.push(b);
                 });
 
+                // 🚀 CACHE BUSTER: If backend gave us duplicate pool items, force a new dynamic scrape!
+                if (uniqueNewBites.length === 0 && !isSearchPlaying) {
+                    consecutiveDuplicateFetches++;
+                    isFetching = false; 
+                    if (consecutiveDuplicateFetches < 3) {
+                        const bustWords = ["viral", "hits", "trending", "wow"];
+                        const bust = bustWords[Math.floor(Math.random() * bustWords.length)];
+                        fetchMoreBites(queryTopic + " " + bust);
+                    } else {
+                        const loaderText = document.querySelector('.loader-text');
+                        if (loaderText) loaderText.innerText = "All caught up! Refresh to discover more.";
+                    }
+                    return;
+                }
+
+                consecutiveDuplicateFetches = 0; // Reset failsafe
+
                 if (uniqueNewBites.length > 0) {
                     uniqueNewBites.forEach(b => bitesQueue.push(b));
                     renderDOMSlides();
-                    
-                    // 🚀 SAFE INITIALIZATION LOGIC
-                    if (currentIndex === 0 && playersReady === 2 && bitesQueue.length > 0) {
-                        playerA.cueVideoById(bitesQueue[0].videoId);
-                        currentLoadedA = bitesQueue[0].videoId;
-                        if(bitesQueue.length > 1) {
-                            playerB.cueVideoById(bitesQueue[1].videoId);
-                            currentLoadedB = bitesQueue[1].videoId;
-                        }
-                        // Instantly play if they already clicked the start button
-                        if (hasStarted) {
-                            playActivePlayer();
-                            currentVideoStartTime = Date.now();
-                        }
-                    }
+                    syncPlayersToScrollPosition(); // 🚀 GOLDEN FIX: Instantly sync player if user was stuck
                 }
             }
         } catch (error) {
@@ -809,30 +846,7 @@
             viewport.scrollTop = currentIndex * viewport.clientHeight;
             currentVideoStartTime = Date.now(); 
             
-            const currentVid = bitesQueue[currentIndex]?.videoId;
-            const nextVid = bitesQueue[currentIndex+1]?.videoId;
-
-            if (activePlayer === 'A') {
-                if (currentVid && currentLoadedA !== currentVid) {
-                    playerA.loadVideoById(currentVid);
-                    currentLoadedA = currentVid;
-                }
-                playerA.playVideo();
-                if(nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
-                    playerB.cueVideoById(nextVid);
-                    currentLoadedB = nextVid;
-                }
-            } else {
-                if (currentVid && currentLoadedB !== currentVid) {
-                    playerB.loadVideoById(currentVid);
-                    currentLoadedB = currentVid;
-                }
-                playerB.playVideo();
-                if(nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
-                    playerA.cueVideoById(nextVid);
-                    currentLoadedA = nextVid;
-                }
-            }
+            syncPlayersToScrollPosition(); // Perfectly restores hardware state
             
             document.getElementById('discover-modal').classList.add('active');
             return;
@@ -908,30 +922,7 @@
         renderDOMSlides();
         currentVideoStartTime = Date.now(); 
         
-        const currentVid = bitesQueue[0]?.videoId;
-        const nextVid = bitesQueue[1]?.videoId;
-
-        if (activePlayer === 'A') {
-            if (currentVid && currentLoadedA !== currentVid) {
-                playerA.loadVideoById(currentVid);
-                currentLoadedA = currentVid;
-            }
-            playerA.playVideo();
-            if(nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
-                playerB.cueVideoById(nextVid);
-                currentLoadedB = nextVid;
-            }
-        } else {
-            if (currentVid && currentLoadedB !== currentVid) {
-                playerB.loadVideoById(currentVid);
-                currentLoadedB = currentVid;
-            }
-            playerB.playVideo();
-            if(nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
-                playerA.cueVideoById(nextVid);
-                currentLoadedA = nextVid;
-            }
-        }
+        syncPlayersToScrollPosition(); // Forces immediate hardware playback
     }
 
 </script>
