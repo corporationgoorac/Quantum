@@ -203,7 +203,7 @@
         .start-btn-pulse { width: 80px; height: 80px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px var(--accent); animation: startPulse 2s infinite; margin-bottom: 20px; color: #000; }
         @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
 
-        /* MAIN FEED SKELETON LOADER */
+        /* SKELETON LOADERS */
         #main-skeleton {
             position: absolute; inset: 0; z-index: 15; background: #000;
             display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; padding-bottom: 25px;
@@ -385,9 +385,10 @@
         playersReady++;
         if (playersReady === 2) {
             if (bitesQueue.length > 0) {
+                // Ensure the initial video is loaded securely
                 syncPlayersToScrollPosition(); 
                 renderDOMSlides();
-                if (bitesQueue.length < 8) fetchMoreBites(); // Aggressive early fetch
+                if (bitesQueue.length < 8) fetchMoreBites();
             } else {
                 fetchMoreBites();
             }
@@ -406,7 +407,7 @@
     }
 
     // ==========================================================================
-    // DOM SLIDE RENDERER (INFINITE SMART SCROLL - NO LOADERS)
+    // DOM SLIDE RENDERER & SKELETON APPENDER
     // ==========================================================================
     function renderDOMSlides() {
         const viewport = document.getElementById('bites-viewport');
@@ -416,7 +417,10 @@
             skeleton.style.display = 'none';
         }
 
-        // Smart append: Only add slides that don't exist yet
+        // Remove old skeleton loader if it exists
+        const existingLoader = document.getElementById('infinite-loader-slide');
+        if (existingLoader) existingLoader.remove();
+
         while (viewport.children.length < bitesQueue.length) {
             const index = viewport.children.length;
             const bite = bitesQueue[index];
@@ -426,7 +430,6 @@
             slide.dataset.index = index;
             slide.onclick = () => togglePlayPause();
 
-            // Action stack uses transparent favorite_border default and Share
             slide.innerHTML = `
                 <div class="bite-ui-layer">
                     <div class="side-actions">
@@ -451,10 +454,31 @@
             `;
             viewport.appendChild(slide);
         }
+
+        // Add the new beautiful Skeleton Loader at the bottom of the stack
+        const loaderSlide = document.createElement('div');
+        loaderSlide.id = 'infinite-loader-slide';
+        loaderSlide.className = 'bite-slide';
+        loaderSlide.style.background = "#000";
+        loaderSlide.innerHTML = `
+            <div class="bite-ui-layer" style="z-index: 30;">
+                <div class="skel-side" style="position: absolute; right: 15px; bottom: 25px; display: flex; flex-direction: column; gap: 25px; align-items: center;">
+                    <div class="skel-circle"></div>
+                    <div class="skel-circle" style="width:35px; height:35px;"></div>
+                    <div class="skel-circle" style="width:35px; height:35px;"></div>
+                </div>
+                <div class="skel-bottom" style="max-width: 78%; padding-bottom: 5px; width: 100%;">
+                    <div class="skel-line-long"></div>
+                    <div class="skel-line-short"></div>
+                    <div class="skel-line-short" style="width: 30%;"></div>
+                </div>
+            </div>
+        `;
+        viewport.appendChild(loaderSlide);
     }
 
     // ==========================================================================
-    // 🚀 SCROLL-SYNC ENGINE
+    // 🚀 THE ULTIMATE "STUCK ON LOADING" & DUPLICATE FIX
     // ==========================================================================
     function syncPlayersToScrollPosition() {
         const viewport = document.getElementById('bites-viewport');
@@ -472,29 +496,19 @@
                     currentVideoStartTime = Date.now();
                 }
             } else {
+                // FORCE LOAD to overcome YT API Race Conditions
                 const currentVid = bitesQueue[currentIndex]?.videoId;
-                const nextVid = bitesQueue[currentIndex + 1]?.videoId;
                 
                 if (activePlayer === 'A') {
                     if (currentVid && currentLoadedA !== currentVid) {
-                        if (hasStarted) playerA.loadVideoById(currentVid);
-                        else playerA.cueVideoById(currentVid);
+                        playerA.loadVideoById(currentVid);
                         currentLoadedA = currentVid;
-                    }
-                    if (nextVid && currentLoadedB !== nextVid) {
-                        playerB.cueVideoById(nextVid);
-                        currentLoadedB = nextVid;
                     }
                     if (hasStarted && typeof playerA.playVideo === 'function') playerA.playVideo();
                 } else {
                     if (currentVid && currentLoadedB !== currentVid) {
-                        if (hasStarted) playerB.loadVideoById(currentVid);
-                        else playerB.cueVideoById(currentVid);
+                        playerB.loadVideoById(currentVid);
                         currentLoadedB = currentVid;
-                    }
-                    if (nextVid && currentLoadedA !== nextVid) {
-                        playerA.cueVideoById(nextVid);
-                        currentLoadedA = nextVid;
                     }
                     if (hasStarted && typeof playerB.playVideo === 'function') playerB.playVideo();
                 }
@@ -517,6 +531,17 @@
         
         const newIndex = Math.round(scrollPosition / slideHeight);
 
+        // 🚀 FATAL STUCK PREVENTER: If scrolled to the Skeleton Slide
+        if (newIndex === bitesQueue.length) {
+            if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
+            if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
+            
+            if (!isFetching && !isSearchPlaying) {
+                fetchMoreBites();
+            }
+            return; 
+        }
+
         if (newIndex !== currentIndex && newIndex >= 0 && newIndex < bitesQueue.length) {
             if (now - lastScrollProcessTime < 100) return;
             lastScrollProcessTime = now;
@@ -533,8 +558,8 @@
             cleanUpQueueAndCache();
             swapPlayers();
 
-            // 🚀 SMART FETCH: Load aggressively early when 8 videos are remaining
-            if (currentIndex >= bitesQueue.length - 8 && !isFetching) {
+            // 🚀 SMART FETCH: Load exactly when 5 videos are remaining
+            if (currentIndex >= bitesQueue.length - 5 && !isFetching) {
                 if (!isSearchPlaying) {
                     fetchMoreBites(); 
                 }
@@ -598,7 +623,6 @@
         
         if (!btn.classList.contains('liked')) {
             btn.classList.add('liked');
-            // Change transparent outline to solid filled icon
             document.getElementById(`like-icon-${index}`).innerText = 'favorite';
             let cSpan = btn.querySelector('.count');
             cSpan.innerText = formatNumber(bite.likes + 1);
@@ -618,49 +642,38 @@
     }
 
     // ==========================================================================
-    // HARDWARE PLAYER SWAPPING & LOOPING
+    // HARDWARE PLAYER SWAPPING & LOOPING (RACE CONDITION DESTROYED)
     // ==========================================================================
     function swapPlayers() {
         if (!playerA || !playerB) return;
         
         const currentVid = bitesQueue[currentIndex]?.videoId;
-        const nextVid = bitesQueue[currentIndex + 1]?.videoId;
+        if (!currentVid) return;
 
         if (typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
         if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
 
+        // 🚀 JUST-IN-TIME (JIT) RENDERING. Absolutely no background cueing.
         if (activePlayer === 'A') {
             activePlayer = 'B';
             document.getElementById('player-container-a').classList.remove('active');
             document.getElementById('player-container-b').classList.add('active');
             
-            if (currentVid) {
-                if(currentLoadedB !== currentVid) {
-                    playerB.loadVideoById(currentVid);
-                    currentLoadedB = currentVid;
-                }
-                if (hasStarted) playerB.playVideo();
+            if(currentLoadedB !== currentVid) {
+                playerB.loadVideoById(currentVid);
+                currentLoadedB = currentVid;
             }
-            if (nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
-                playerA.cueVideoById(nextVid);
-                currentLoadedA = nextVid;
-            }
+            if (hasStarted && typeof playerB.playVideo === 'function') playerB.playVideo();
         } else {
             activePlayer = 'A';
             document.getElementById('player-container-b').classList.remove('active');
             document.getElementById('player-container-a').classList.add('active');
             
-            if (currentVid) {
-                if(currentLoadedA !== currentVid) {
-                    playerA.loadVideoById(currentVid);
-                    currentLoadedA = currentVid;
-                }
-                if (hasStarted) playerA.playVideo();
+            if(currentLoadedA !== currentVid) {
+                playerA.loadVideoById(currentVid);
+                currentLoadedA = currentVid;
             }
-            if (nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
-                playerB.cueVideoById(nextVid);
-                currentLoadedB = nextVid;
-            }
+            if (hasStarted && typeof playerA.playVideo === 'function') playerA.playVideo();
         }
     }
 
@@ -719,7 +732,7 @@
             document.getElementById('main-skeleton').style.display = 'flex';
         }
 
-        // Extremely robust failsafe lock breaker
+        // Failsafe to guarantee the app NEVER gets locked on "Loading"
         clearTimeout(fetchTimeoutFallback);
         fetchTimeoutFallback = setTimeout(() => { 
             isFetching = false; 
@@ -744,13 +757,13 @@
                     uniqueNewBites.push(b);
                 });
 
-                // 🚀 CACHE BUSTER: If backend gave us duplicate pool items, force a new dynamic scrape instantly
+                // 🚀 CACHE BUSTER: If backend gave us duplicates, bypass cache instantly
                 if (uniqueNewBites.length === 0 && !isSearchPlaying) {
                     consecutiveDuplicateFetches++;
                     if (consecutiveDuplicateFetches < 4) {
                         const bustWords = ["viral", "hits", "trending", "wow", "latest"];
                         const bust = bustWords[Math.floor(Math.random() * bustWords.length)];
-                        isFetching = false; // explicitly unlock before recursive call
+                        isFetching = false; // Unlock before recursive call
                         clearTimeout(fetchTimeoutFallback);
                         return fetchMoreBites(queryTopic + " " + bust);
                     }
@@ -758,24 +771,26 @@
                     consecutiveDuplicateFetches = 0; 
                     uniqueNewBites.forEach(b => bitesQueue.push(b));
                     renderDOMSlides();
+                    
+                    // 🚀 INSTANT SYNC: If user was staring at skeleton, play instantly
                     syncPlayersToScrollPosition(); 
                 }
             } else if (!isSearchPlaying) {
-                // 🚀 Backend returned Empty Array Failsafe
+                // Failsafe for empty backend array
                 consecutiveDuplicateFetches++;
                 if (consecutiveDuplicateFetches < 4) {
                     const bustWords = ["viral", "hits", "trending", "wow"];
                     const bust = bustWords[Math.floor(Math.random() * bustWords.length)];
-                    isFetching = false; // explicitly unlock before recursive call
+                    isFetching = false; 
                     clearTimeout(fetchTimeoutFallback);
                     return fetchMoreBites(queryTopic + " " + bust);
                 }
             }
         } catch (error) {
-            console.error("Failed to fetch bites", error);
+            console.error("Fetch failed", error);
         } finally {
             clearTimeout(fetchTimeoutFallback);
-            isFetching = false;
+            isFetching = false; // The absolute lock breaker
         }
     }
 
