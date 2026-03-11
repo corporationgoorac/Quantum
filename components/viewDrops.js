@@ -118,17 +118,22 @@ class ViewDrops extends HTMLElement {
             .vd-backdrop { position: absolute; inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(40px) brightness(0.3); z-index: 1; }
             .vd-media-element { position: relative; z-index: 2; width: 100%; height: 100%; object-fit: contain; }
             
-            /* YouTube Card specific */
+            /* YouTube Card specific - Fixed Alignment */
             .vd-yt-wrapper {
-                position: relative; z-index: 3; display: none; width: 100%; height: 100%;
+                position: absolute; inset: 0; margin: auto; z-index: 3; display: none; 
+                width: 100vw; height: 100vh;
                 align-items: center; justify-content: center;
             }
             .vd-yt-card {
                 position: relative; width: 85vw; max-width: 360px; aspect-ratio: 9/16;
                 background: #050505; border-radius: 24px; overflow: hidden;
                 box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+                margin: auto;
             }
-            .vd-yt-overlay { position: absolute; inset: 0; z-index: 5; } /* Blocks iframe clicks */
+            .vd-yt-card iframe {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; pointer-events: none !important;
+            }
+            .vd-yt-overlay { position: absolute; inset: 0; z-index: 5; pointer-events: auto; } /* Blocks iframe clicks */
 
             /* --- NAVIGATION TAP ZONES --- */
             .vd-tap-zones { position: absolute; inset: 0; z-index: 30; display: flex; }
@@ -388,6 +393,7 @@ class ViewDrops extends HTMLElement {
         
         // STRICT YOUTUBE TEARDOWN TO PREVENT AUDIO BLEED
         if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
+            try { this.ytPlayer.stopVideo(); } catch(e) {}
             this.ytPlayer.destroy();
             this.ytPlayer = null;
         }
@@ -490,6 +496,7 @@ class ViewDrops extends HTMLElement {
         
         // STRICT YOUTUBE TEARDOWN BEFORE LOADING NEXT
         if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
+            try { this.ytPlayer.stopVideo(); } catch(e) {}
             this.ytPlayer.destroy();
             this.ytPlayer = null;
         }
@@ -743,16 +750,17 @@ class ViewDrops extends HTMLElement {
             if (!isCurrentlyLiked) {
                 await likeRef.set({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 
-                // INTERNAL DB NOTIFICATION
+                // INTERNAL DB NOTIFICATION (FIXED DATABASE KEYS for notifications.html)
                 await this.db.collection("notifications").add({
-                    ownerUid: drop.uid,
-                    senderUid: this.myUid,
+                    toUid: drop.uid,
+                    fromUid: this.myUid,
                     senderName: this.myUserData?.name || "User",
                     senderPfp: this.myUserData?.photoURL || 'https://via.placeholder.com/150',
                     type: "drop_like",
                     text: msgText,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    read: false,
+                    isRead: false,
+                    isSeen: false,
                     link: "home.html"
                 });
                 await this.db.collection("users").doc(drop.uid).update({
