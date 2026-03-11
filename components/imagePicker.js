@@ -131,9 +131,11 @@
                     width: 46px; height: 46px; border-radius: 50%; 
                     box-shadow: 0 4px 20px rgba(0, 149, 246, 0.5);
                     display: flex; align-items: center; justify-content: center;
+                    transition: transform 0.2s, opacity 0.2s;
                 }
+                .ip-nav-send:active { transform: scale(0.9); }
                 .ip-nav-send svg { width: 20px; height: 20px; fill: white; margin-left: 3px; margin-top: 1px;}
-                .ip-nav-send:disabled { opacity: 0.5; box-shadow: none; filter: grayscale(1); }
+                .ip-nav-send:disabled { opacity: 0.5; box-shadow: none; filter: grayscale(1); pointer-events: none; }
 
                 .ip-workspace {
                     position: absolute; top: 80px; bottom: 230px; left: 0; right: 0;
@@ -183,6 +185,7 @@
                 }
                 .ip-pill-btn.confirm { background: white; color: black; }
                 .ip-pill-btn:active { transform: scale(0.95); }
+                .ip-pill-btn:disabled { opacity: 0.5; pointer-events: none; }
 
                 .ip-toolbar {
                     position: absolute; bottom: 0; left: 0; width: 100%;
@@ -439,7 +442,11 @@
             const sendBtn = this.querySelector('#ip-btn-send');
             
             input.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) this.handleFileSelect(e.target.files[0]);
+                if (e.target.files.length > 0) {
+                    this.handleFileSelect(e.target.files[0]);
+                }
+                // --- FIX 1: Clear the input so selecting the exact same file works the second time
+                e.target.value = ''; 
             });
 
             closeBtn.addEventListener('click', () => {
@@ -458,7 +465,11 @@
             });
 
             sendBtn.addEventListener('click', () => {
-                this.startPipeline();
+                // Prevent multi-clicks
+                if (this.mode !== 'exporting') {
+                    sendBtn.disabled = true;
+                    this.startPipeline();
+                }
             });
 
             // Initialize Advanced Filters
@@ -553,8 +564,13 @@
             this.querySelector('#ip-btn-crop-cancel').addEventListener('click', () => {
                 this.destroyCropper();
             });
-            this.querySelector('#ip-btn-crop-save').addEventListener('click', () => {
-                this.commitCrop();
+            this.querySelector('#ip-btn-crop-save').addEventListener('click', async () => {
+                const btn = this.querySelector('#ip-btn-crop-save');
+                btn.innerText = "Saving...";
+                btn.disabled = true;
+                await this.commitCrop();
+                btn.innerText = "Save Crop";
+                btn.disabled = false;
             });
         }
 
@@ -643,8 +659,6 @@
             this.updateImageVisuals();
         }
 
-        // --- ASYNC CROP FIX ---
-        // Pauses execution until the new Base64 string is rendered into the DOM Image objects
         async commitCrop() {
             return new Promise((resolve) => {
                 if (!this.cropper) return resolve();
@@ -789,6 +803,12 @@
             this.querySelector('#ip-overlay').classList.add('open');
             window.history.pushState({ ipEditorOpen: true }, "");
 
+            // --- FIX 3: Ensure UI components are set back to visible on new file select
+            this.querySelector('#ip-workspace').style.display = 'flex';
+            this.querySelector('#ip-toolbar').style.display = 'flex';
+            this.querySelector('.ip-nav-send').style.display = 'flex';
+            this.querySelector('.ip-nav-send').disabled = false;
+
             const reader = new FileReader();
             reader.onload = (evt) => {
                 this.previewUrl = evt.target.result;
@@ -854,35 +874,44 @@
         async startPipeline() {
             if (!this.previewUrl) return;
 
-            // Commit crop if open & await completion to prevent 0-byte blob errors
-            if (this.cropper) {
-                await this.commitCrop();
-            }
-
-            // Transition to Export Screen
             this.mode = 'exporting';
+
+            // --- FIX 2: Swap the UI *Instantly* before hitting heavy main-thread JS actions
             this.querySelector('#ip-toolbar').style.display = 'none';
             this.querySelector('#ip-workspace').style.display = 'none';
             this.querySelector('.ip-nav-send').style.display = 'none'; 
             
             const exportScreen = this.querySelector('#ip-export-screen');
             exportScreen.classList.add('active');
-            
-            // Set Static Image
-            const thumbnailEl = this.querySelector('#ip-export-thumbnail');
-            thumbnailEl.src = this.captureStaticThumbnail();
 
+            const pctText = this.querySelector('#ip-export-pct');
             const rectFg = this.querySelector('#ip-progress-rect');
             const rectLength = rectFg.getTotalLength() || 1500;
+            
+            // Set Initial Visual Load State Instantly
             rectFg.style.strokeDasharray = rectLength;
             rectFg.style.strokeDashoffset = rectLength;
+            pctText.innerText = "0%";
+            
+            // Force the browser to render the UI updates before freezing the thread with canvas operations
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
             try {
+                // Commit crop if open & await completion
+                if (this.cropper) {
+                    await this.commitCrop();
+                }
+
+                // Set Static Image visually on the export page
+                const thumbnailEl = this.querySelector('#ip-export-thumbnail');
+                thumbnailEl.src = this.captureStaticThumbnail();
+
+                // Heavy Lifting Canvas Build
                 const finalBlob = await this.executeCanvasExport();
-                this.uploadToImgBB(finalBlob, rectFg, rectLength);
+                this.uploadToImgBB(finalBlob, rectFg, rectLength, pctText);
             } catch (e) {
                 console.error("Export Error:", e);
-                alert("Processing failed. Could not upload image.");
+                alert("Processing failed. Could not format image.");
                 this.hideUI();
             }
         }
@@ -954,16 +983,14 @@
             });
         }
 
-        async uploadToImgBB(blob, rectFg, rectLength) {
+        async uploadToImgBB(blob, rectFg, rectLength, pctText) {
             if (!this.apiKey) {
                 alert("Missing ImgBB API Key");
                 this.hideUI();
                 return;
             }
 
-            const pctText = this.querySelector('#ip-export-pct');
             const subText = this.querySelector('.ip-export-sub');
-            
             const formData = new FormData();
             formData.append('image', blob);
 
@@ -1035,7 +1062,6 @@
             this.querySelector('#ip-overlay').classList.remove('open');
             this.querySelector('#ip-export-screen').classList.remove('active');
             
-            // --- INPUT RESET FIX ---
             // Allow selecting the exact same file after closing out of the modal
             this.querySelector('#ip-file-input').value = ''; 
             
@@ -1044,8 +1070,13 @@
             this.textOverlays = [];
             this.querySelector('#ip-text-layer').innerHTML = '';
             
+            // --- FIX 3 (part 2): Re-enable all default states so the editor isn't blank next open
             this.querySelector('#ip-toolbar').style.display = 'flex';
             this.querySelector('.ip-nav-send').style.display = 'flex';
+            this.querySelector('.ip-nav-send').disabled = false;
+            this.querySelector('#ip-workspace').style.display = 'flex'; 
+            this.querySelector('#ip-image-preview').src = ''; 
+            
             this.destroyCropper();
         }
     }
