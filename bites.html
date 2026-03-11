@@ -76,6 +76,7 @@
             overflow-y: scroll; scroll-snap-type: y mandatory;
             scrollbar-width: none; -webkit-overflow-scrolling: touch;
             z-index: 10; padding-bottom: var(--nav-height);
+            scroll-behavior: smooth; /* Advanced smooth scrolling capability */
         }
         #bites-viewport::-webkit-scrollbar { display: none; }
 
@@ -91,6 +92,7 @@
             height: calc(100vh - var(--nav-height));
             z-index: 1; opacity: 0; pointer-events: none; background: #000;
             transform: scale(1.05); /* Slight scale to hide YouTube borders */
+            transition: opacity 0.35s ease-in-out; /* Enhanced smooth crossfade between players */
         }
         .yt-player-container.active { opacity: 1; z-index: 2; }
         .yt-iframe { width: 100%; height: 100%; pointer-events: none; }
@@ -335,6 +337,10 @@
     let playerA, playerB;
     let activePlayer = 'A'; // 'A' or 'B'
     let playersReady = 0;
+    
+    // 🚀 ADVANCED FIX: Explicitly track loaded states to prevent duplicate playback bugs
+    let currentLoadedA = null;
+    let currentLoadedB = null;
 
     // Load from Cache immediately
     (function loadCache() {
@@ -368,7 +374,11 @@
         playersReady++;
         if (playersReady === 2 && bitesQueue.length > 0) {
             playerA.cueVideoById(bitesQueue[0].videoId);
-            if(bitesQueue.length > 1) playerB.cueVideoById(bitesQueue[1].videoId);
+            currentLoadedA = bitesQueue[0].videoId; // Sync tracker
+            if(bitesQueue.length > 1) {
+                playerB.cueVideoById(bitesQueue[1].videoId);
+                currentLoadedB = bitesQueue[1].videoId; // Sync tracker
+            }
             renderDOMSlides();
         } else if (playersReady === 2 && bitesQueue.length === 0) {
             fetchMoreBites("tamil");
@@ -455,9 +465,12 @@
     // ==========================================================================
     // SCROLL ENGINE & ALGORITHMIC TELEMETRY
     // ==========================================================================
+    let lastScrollProcessTime = 0; // Throttle state
+    
     function handleScroll() {
         if (!hasStarted) return;
 
+        const now = Date.now();
         const viewport = document.getElementById('bites-viewport');
         const slideHeight = viewport.clientHeight;
         const scrollPosition = viewport.scrollTop;
@@ -467,8 +480,12 @@
         // Valid scroll event (and not scrolling onto the loading spinner slide)
         if (newIndex !== currentIndex && newIndex >= 0 && newIndex < bitesQueue.length) {
             
+            // 🚀 Advanced Throttle to completely kill duplicate firing triggers on erratic scrolls
+            if (now - lastScrollProcessTime < 100) return;
+            lastScrollProcessTime = now;
+            
             // 🚀 1. CALCULATE EXACT TIME SPENT FOR ALGORITHM
-            const timeSpentMs = Date.now() - currentVideoStartTime;
+            const timeSpentMs = now - currentVideoStartTime;
             const previousBite = bitesQueue[currentIndex];
             
             // Fire telemetry processing
@@ -599,6 +616,10 @@
         const pA = document.getElementById('player-container-a');
         const pB = document.getElementById('player-container-b');
 
+        // Advanced Fix: Pre-validate state before loading to eliminate same-video bugs
+        const currentVid = bitesQueue[currentIndex]?.videoId;
+        const nextVid = bitesQueue[currentIndex + 1]?.videoId;
+
         playerA.pauseVideo();
         playerB.pauseVideo();
 
@@ -607,24 +628,32 @@
             pA.classList.remove('active');
             pB.classList.add('active');
             
-            if(bitesQueue[currentIndex]) {
-                playerB.loadVideoById(bitesQueue[currentIndex].videoId);
+            if (currentVid) {
+                if(currentLoadedB !== currentVid) {
+                    playerB.loadVideoById(currentVid);
+                    currentLoadedB = currentVid;
+                }
                 playerB.playVideo();
             }
-            if (bitesQueue[currentIndex + 1]) {
-                playerA.cueVideoById(bitesQueue[currentIndex + 1].videoId);
+            if (nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
+                playerA.cueVideoById(nextVid);
+                currentLoadedA = nextVid;
             }
         } else {
             activePlayer = 'A';
             pB.classList.remove('active');
             pA.classList.add('active');
             
-            if(bitesQueue[currentIndex]) {
-                playerA.loadVideoById(bitesQueue[currentIndex].videoId);
+            if (currentVid) {
+                if(currentLoadedA !== currentVid) {
+                    playerA.loadVideoById(currentVid);
+                    currentLoadedA = currentVid;
+                }
                 playerA.playVideo();
             }
-            if (bitesQueue[currentIndex + 1]) {
-                playerB.cueVideoById(bitesQueue[currentIndex + 1].videoId);
+            if (nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
+                playerB.cueVideoById(nextVid);
+                currentLoadedB = nextVid;
             }
         }
     }
@@ -632,7 +661,14 @@
     function playActivePlayer() {
         const p = activePlayer === 'A' ? playerA : playerB;
         if (bitesQueue[currentIndex]) {
-            p.loadVideoById(bitesQueue[currentIndex].videoId);
+            const currentVid = bitesQueue[currentIndex].videoId;
+            if(activePlayer === 'A' && currentLoadedA !== currentVid) {
+                p.loadVideoById(currentVid);
+                currentLoadedA = currentVid;
+            } else if(activePlayer === 'B' && currentLoadedB !== currentVid) {
+                p.loadVideoById(currentVid);
+                currentLoadedB = currentVid;
+            }
             p.playVideo();
         }
     }
@@ -704,7 +740,11 @@
                 
                 if (currentIndex === 0 && !hasStarted && playersReady === 2) {
                     playerA.cueVideoById(bitesQueue[0].videoId);
-                    if(bitesQueue.length > 1) playerB.cueVideoById(bitesQueue[1].videoId);
+                    currentLoadedA = bitesQueue[0].videoId;
+                    if(bitesQueue.length > 1) {
+                        playerB.cueVideoById(bitesQueue[1].videoId);
+                        currentLoadedB = bitesQueue[1].videoId;
+                    }
                 }
             }
         } catch (error) {
@@ -772,14 +812,30 @@
             viewport.scrollTop = currentIndex * viewport.clientHeight;
             currentVideoStartTime = Date.now(); // Restart telemetry timer
             
+            // Protected restoring logic
+            const currentVid = bitesQueue[currentIndex]?.videoId;
+            const nextVid = bitesQueue[currentIndex+1]?.videoId;
+
             if (activePlayer === 'A') {
-                playerA.loadVideoById(bitesQueue[currentIndex].videoId);
+                if (currentVid && currentLoadedA !== currentVid) {
+                    playerA.loadVideoById(currentVid);
+                    currentLoadedA = currentVid;
+                }
                 playerA.playVideo();
-                if(bitesQueue[currentIndex+1]) playerB.cueVideoById(bitesQueue[currentIndex+1].videoId);
+                if(nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
+                    playerB.cueVideoById(nextVid);
+                    currentLoadedB = nextVid;
+                }
             } else {
-                playerB.loadVideoById(bitesQueue[currentIndex].videoId);
+                if (currentVid && currentLoadedB !== currentVid) {
+                    playerB.loadVideoById(currentVid);
+                    currentLoadedB = currentVid;
+                }
                 playerB.playVideo();
-                if(bitesQueue[currentIndex+1]) playerA.cueVideoById(bitesQueue[currentIndex+1].videoId);
+                if(nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
+                    playerA.cueVideoById(nextVid);
+                    currentLoadedA = nextVid;
+                }
             }
             
             document.getElementById('discover-modal').classList.add('active');
@@ -858,14 +914,29 @@
         renderDOMSlides();
         currentVideoStartTime = Date.now(); // Restart telemetry for search feed
         
+        const currentVid = bitesQueue[0]?.videoId;
+        const nextVid = bitesQueue[1]?.videoId;
+
         if (activePlayer === 'A') {
-            playerA.loadVideoById(bitesQueue[0].videoId);
+            if (currentVid && currentLoadedA !== currentVid) {
+                playerA.loadVideoById(currentVid);
+                currentLoadedA = currentVid;
+            }
             playerA.playVideo();
-            if(bitesQueue[1]) playerB.cueVideoById(bitesQueue[1].videoId);
+            if(nextVid && currentLoadedB !== nextVid && nextVid !== currentVid) {
+                playerB.cueVideoById(nextVid);
+                currentLoadedB = nextVid;
+            }
         } else {
-            playerB.loadVideoById(bitesQueue[0].videoId);
+            if (currentVid && currentLoadedB !== currentVid) {
+                playerB.loadVideoById(currentVid);
+                currentLoadedB = currentVid;
+            }
             playerB.playVideo();
-            if(bitesQueue[1]) playerA.cueVideoById(bitesQueue[1].videoId);
+            if(nextVid && currentLoadedA !== nextVid && nextVid !== currentVid) {
+                playerA.cueVideoById(nextVid);
+                currentLoadedA = nextVid;
+            }
         }
     }
 
