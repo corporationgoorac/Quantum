@@ -127,7 +127,6 @@
         .action-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #fff; cursor: pointer; transition: 0.2s;}
         .action-btn:active { transform: scale(0.85); }
         
-        /* Sleek transparent icons */
         .action-btn .material-icons-round { 
             font-size: 36px; 
             color: #fff; 
@@ -136,7 +135,6 @@
         
         .action-btn span.count { font-size: 0.75rem; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
         
-        /* Filled Like State */
         .action-btn.liked .material-icons-round { color: var(--danger); }
         .action-btn.liked { animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
@@ -241,7 +239,6 @@
         .skel-line-long { height: 16px; width: 60%; background: #1a1a1a; border-radius: 8px; margin-bottom: 12px; animation: skelPulse 1.5s infinite; }
         .skel-line-short { height: 14px; width: 40%; background: #1a1a1a; border-radius: 8px; margin-bottom: 10px; animation: skelPulse 1.5s infinite; }
 
-        /* MAIN NAVBAR */
         main-navbar { 
             display: block; position: fixed; bottom: 0; left: 0; width: 100%;
             height: var(--nav-height); background-color: var(--bg); z-index: 1000; 
@@ -328,7 +325,7 @@
     });
 
     // ==========================================================================
-    // THE BITES ENGINE (STATE & CACHE)
+    // THE BITES ENGINE (STATE, SHARED URLS & CACHE)
     // ==========================================================================
     let bitesQueue = [];
     let currentIndex = 0;
@@ -336,7 +333,6 @@
     let hasStarted = false;
     let viewedVideoIds = new Set(); 
     
-    // INCREASED CAPACITY: App now remembers the last 2000 watched videos
     let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
     let currentVideoStartTime = 0; 
 
@@ -351,27 +347,60 @@
     let currentLoadedA = null;
     let currentLoadedB = null;
 
-    // Load from Cache strictly applying History deduplication
-    (function loadCache() {
+    // 🚀 DYNAMIC URL REDIRECTION: Check if user arrived via a shared link
+    let sharedVidId = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawUrlParam = urlParams.get('v') || urlParams.get('url');
+    
+    if (rawUrlParam) {
+        if (rawUrlParam.length === 11) {
+            sharedVidId = rawUrlParam; // Clean ID provided
+        } else {
+            // Extract from standard YouTube Links if provided
+            const match = rawUrlParam.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/);
+            if (match) sharedVidId = match[1];
+        }
+    }
+
+    // Cache Loader Engine
+    (function initializeAppQueue() {
+        const uniqueCache = [];
+        const seen = new Set();
+
+        // 1. Force the shared video to be the first slide if one exists
+        if (sharedVidId) {
+            uniqueCache.push({
+                videoId: sharedVidId,
+                title: "Shared Video",
+                author: "Goorac",
+                category: "shared",
+                likes: 0,
+                imgUrl: `https://img.youtube.com/vi/${sharedVidId}/hqdefault.jpg`
+            });
+            seen.add(sharedVidId);
+            viewedVideoIds.add(sharedVidId);
+            
+            // Silently clean the URL bar so they don't get trapped in a loop on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // 2. Load the rest of the standard cache
         const cached = localStorage.getItem('goorac_bites_queue');
         if (cached) {
             try { 
                 const parsed = JSON.parse(cached);
                 if (parsed.length > 0) {
-                    const uniqueCache = [];
-                    const seen = new Set();
                     parsed.forEach(b => {
-                        // Strict filter: If it exists in History, do NOT load it
                         if(b && b.videoId && !seen.has(b.videoId) && !bitesHistory.includes(b.videoId)) {
                             seen.add(b.videoId);
                             uniqueCache.push(b);
                             viewedVideoIds.add(b.videoId);
                         }
                     });
-                    bitesQueue = uniqueCache; 
                 }
             } catch(e) {}
         }
+        bitesQueue = uniqueCache; 
     })();
 
     // ==========================================================================
@@ -388,8 +417,6 @@
 
     function cleanUpQueueAndCache() {
         if (isSearchPlaying) return; 
-        // 🚀 CRITICAL FIX: Save from `currentIndex + 1`. 
-        // We explicitly delete the currently playing video from the cache so it never repeats on a refresh.
         const cacheSlice = bitesQueue.slice(currentIndex + 1);
         localStorage.setItem('goorac_bites_queue', JSON.stringify(cacheSlice.slice(0, 15))); 
     }
@@ -448,12 +475,10 @@
         hasStarted = true;
         
         if (playersReady === 2 && bitesQueue.length > 0) {
-            // BURN ON SIGHT: Mark the very first video as viewed the second you click Play
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
-            
             playActivePlayer();
             currentVideoStartTime = Date.now(); 
-            cleanUpQueueAndCache(); // Instantly evict it from next session cache
+            cleanUpQueueAndCache(); 
         }
     }
 
@@ -493,7 +518,7 @@
                         </div>
                         <div class="action-btn" onclick="shareBite(event, ${index})">
                             <span class="material-icons-round">reply</span>
-                            <span class="count">Share</span>
+                            <span class="count share-text">Share</span>
                         </div>
                     </div>
                     <div class="bottom-info" onclick="event.stopPropagation()">
@@ -528,7 +553,7 @@
     }
 
     // ==========================================================================
-    // SCROLL-SYNC ENGINE (Instantly recovers stuck state)
+    // SCROLL-SYNC ENGINE
     // ==========================================================================
     function syncPlayersToScrollPosition() {
         const viewport = document.getElementById('bites-viewport');
@@ -542,21 +567,18 @@
         if (actualIndex >= 0 && actualIndex < bitesQueue.length) {
             if (actualIndex !== currentIndex) {
                 currentIndex = actualIndex;
-                if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId); // BURN ON SIGHT
+                if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
                 swapPlayers();
                 if (hasStarted) currentVideoStartTime = Date.now();
             } else {
                 if (hasStarted) {
-                    if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId); // BURN ON SIGHT
+                    if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
                     playActivePlayer();
                 }
             }
         }
     }
 
-    // ==========================================================================
-    // SCROLL ENGINE 
-    // ==========================================================================
     let lastScrollProcessTime = 0; 
     
     function handleScroll() {
@@ -571,7 +593,6 @@
         
         const newIndex = Math.round(scrollPosition / slideHeight);
 
-        // FATAL STUCK PREVENTER: Scrolled onto the Loader Slide
         if (newIndex === bitesQueue.length) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
@@ -594,12 +615,9 @@
             processEngagementAlgorithm(previousBite, timeSpentMs);
 
             currentIndex = newIndex;
-            
-            // BURN ON SIGHT
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId); 
             
             currentVideoStartTime = Date.now(); 
-            
             cleanUpQueueAndCache();
             swapPlayers();
 
@@ -610,7 +628,7 @@
     }
 
     // ==========================================================================
-    // 🧠 THE BATCHED DEEP-LEARNING ALGORITHM (FIRESTORE READ/WRITE OPTIMIZED)
+    // 🧠 THE BATCHED DEEP-LEARNING ALGORITHM
     // ==========================================================================
     let pendingInterestUpdates = {};
     let interestSyncTimer = null;
@@ -696,7 +714,7 @@
     }
 
     // ==========================================================================
-    // DETERMINISTIC PLAYER SWAPPER (DUPLICATE ANNIHILATOR)
+    // DETERMINISTIC PLAYER SWAPPER
     // ==========================================================================
     function swapPlayers() {
         if (!playerA || !playerB) return;
@@ -823,7 +841,6 @@
                 if (data.success && data.bites && data.bites.length > 0) {
                     const uniqueNewBites = [];
                     data.bites.forEach(b => {
-                        // Strict check: Is it in the session set, the 2000+ history array, or the current queue?
                         if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
                         
                         viewedVideoIds.add(b.videoId);
@@ -834,7 +851,7 @@
                         uniqueNewBites.forEach(b => bitesQueue.push(b));
                         renderDOMSlides();
                         syncPlayersToScrollPosition(); 
-                        cleanUpQueueAndCache(); // Cache instantly
+                        cleanUpQueueAndCache(); 
                         success = true;
                     }
                 }
@@ -847,15 +864,28 @@
         isFetching = false; 
     }
 
+    // 🚀 DYNAMIC SHARING ENGINE
     window.shareBite = function(event, index) {
         event.stopPropagation();
         const bite = bitesQueue[index];
+        const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
+        
         if (navigator.share) {
             navigator.share({
                 title: bite.title,
                 text: `Check out this Bite on Goorac!`,
-                url: `https://youtube.com/watch?v=${bite.videoId}`
+                url: shareUrl
             }).catch(e => {});
+        } else {
+            // Fallback for desktop/unsupported browsers: Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const btnText = event.currentTarget.querySelector('.share-text');
+                const originalText = btnText.innerText;
+                btnText.innerText = "Copied!";
+                setTimeout(() => btnText.innerText = originalText, 2000);
+            }).catch(e => {
+                console.error("Failed to copy", e);
+            });
         }
     }
 
