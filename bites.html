@@ -248,9 +248,21 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     let myUid = null;
+    let myInterests = ["tamil"]; // Default array if completely fresh user
 
     auth.onAuthStateChanged(user => {
-        if (user) { myUid = user.uid; } 
+        if (user) { 
+            myUid = user.uid; 
+            // 🚀 SMART ALGORITHM INIT: Fetch top 5 interests from DB
+            db.collection("users").doc(myUid).get().then(doc => {
+                if(doc.exists && doc.data().interests) {
+                    const ints = doc.data().interests;
+                    // Sort descending by score, grab the top 5 topic names
+                    myInterests = Object.keys(ints).sort((a,b) => ints[b] - ints[a]).slice(0, 5);
+                    if(myInterests.length === 0) myInterests = ["tamil"]; // Failsafe
+                }
+            });
+        } 
         else { window.location.href = 'login.html'; }
     });
 
@@ -261,7 +273,11 @@
     let currentIndex = 0;
     let isFetching = false;
     let hasStarted = false;
-    let viewedVideoIds = new Set(); // To ensure no repeats in session
+    let viewedVideoIds = new Set(); // To ensure no repeats in current session
+    
+    // 🚀 NEW: THE 200-BITE MEMORY BANK
+    let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
+    let watchTimer = null; // To track if watched > 15 secs
 
     // --- NEW: Backup State for Temporary Search Mode ---
     let backupQueue = [];
@@ -321,6 +337,7 @@
         
         if (playersReady === 2 && bitesQueue.length > 0) {
             playActivePlayer();
+            startWatchTimer(bitesQueue[currentIndex]); // Start the 15s timer for the first video
         }
     }
 
@@ -385,10 +402,15 @@
 
         if (newIndex !== currentIndex && newIndex >= 0 && newIndex < bitesQueue.length) {
             
-            // 1. Send algorithmic watch data for the video we just swiped past
+            // 🚀 PERMANENT MEMORY & ALGORITHM TRACK
+            markAsViewed(bitesQueue[currentIndex].videoId);
+            clearTimeout(watchTimer); // Reset the 15s timer for the one we just left
             trackInterest(bitesQueue[currentIndex].category, 'watched');
 
             currentIndex = newIndex;
+            
+            // 🚀 START DEEP-WATCH TIMER FOR THE NEW VIDEO
+            startWatchTimer(bitesQueue[currentIndex]);
             
             // 2. Remove old videos from the top to save RAM, but keep the immediate previous one for back-scrolling
             cleanUpQueueAndCache();
@@ -399,10 +421,29 @@
             // 4. Fetch more if we are nearing the bottom
             if (currentIndex >= bitesQueue.length - 4 && !isFetching) {
                 if (!isSearchPlaying) {
-                    fetchMoreBites(bitesQueue[currentIndex].category || "tamil");
+                    fetchMoreBites(); // Empty call lets it use the smart multi-interest array
                 }
             }
         }
+    }
+
+    // 🚀 NEW LOGIC: Permanent Memory Filter Function
+    function markAsViewed(videoId) {
+        if (!videoId || isSearchPlaying) return; // Don't pollute history with search mode
+        if (!bitesHistory.includes(videoId)) {
+            bitesHistory.push(videoId);
+            if (bitesHistory.length > 200) bitesHistory.shift(); // Keep only last 200
+            localStorage.setItem('goorac_bites_history', JSON.stringify(bitesHistory));
+        }
+    }
+
+    // 🚀 NEW LOGIC: 15-Second Deep Watch Algorithm Trigger
+    function startWatchTimer(bite) {
+        clearTimeout(watchTimer);
+        if (!bite || isSearchPlaying) return;
+        watchTimer = setTimeout(() => {
+            trackInterest(bite.category, 'watched_long');
+        }, 15000); 
     }
 
     function swapPlayers() {
@@ -481,19 +522,25 @@
     }
 
     // ==========================================================================
-    // CACHE & NETWORK LOGIC
+    // CACHE & NETWORK LOGIC (Upgraded Multi-Interest Fetch)
     // ==========================================================================
-    async function fetchMoreBites(topic) {
+    async function fetchMoreBites(overrideTopic = null) {
         if (isFetching) return;
         isFetching = true;
 
+        // 🚀 ALGORITHM: If no specific topic requested, send the user's top 5 interests to backend
+        let queryTopic = overrideTopic;
+        if (!queryTopic || queryTopic === "tamil") {
+            queryTopic = myInterests.length > 0 ? myInterests.join(',') : "tamil";
+        }
+
         try {
-            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(topic)}`);
+            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`);
             const data = await res.json();
             
             if (data.success && data.bites.length > 0) {
-                // Filter out videos we've already seen in this session
-                const newBites = data.bites.filter(b => !viewedVideoIds.has(b.videoId));
+                // 🚀 MEMORY BANK FILTER: Exclude current session views AND permanent 200 history
+                const newBites = data.bites.filter(b => !viewedVideoIds.has(b.videoId) && !bitesHistory.includes(b.videoId));
                 
                 newBites.forEach(b => {
                     viewedVideoIds.add(b.videoId);
@@ -535,7 +582,7 @@
             let cSpan = btn.querySelector('.count');
             cSpan.innerText = formatNumber(bite.likes + 1);
             
-            // 🚀 Algorithm Write
+            // 🚀 Algorithm Write (Liked = Huge Boost)
             trackInterest(bite.category, 'liked');
             
             // Vibrate hardware
@@ -546,12 +593,19 @@
     function trackInterest(category, action) {
         if (!myUid || !category) return;
         
-        let scoreChange = action === 'liked' ? 10 : 2; // Liked = +10, Swiped past = +2
+        let scoreChange = 2; // Default swipe past = +2
+        if (action === 'liked') scoreChange = 10; // Liked = +10
+        if (action === 'watched_long') scoreChange = 15; // Watched >15s = +15
+        if (action === 'searched') scoreChange = 20; // Direct Search Click = +20
         
-        // Write directly to user document securely
-        db.collection("users").doc(myUid).update({
-            [`interests.${category}`]: firebase.firestore.FieldValue.increment(scoreChange)
-        }).catch(e => console.error("Algo update fail", e));
+        const cleanCategory = category.toLowerCase().trim();
+
+        // 🚀 Write directly to user document securely, merge ensures it creates the object if missing
+        db.collection("users").doc(myUid).set({
+            interests: {
+                [cleanCategory]: firebase.firestore.FieldValue.increment(scoreChange)
+            }
+        }, { merge: true }).catch(e => console.error("Algo update fail", e));
     }
 
     window.shareBite = function(event, index) {
@@ -579,7 +633,7 @@
         document.getElementById('discover-modal').classList.add('active');
         history.pushState({ modal: 'discover' }, "", "#discover");
         
-        // Auto-load trending grid if empty
+        // Auto-load default grid if empty
         const grid = document.getElementById('search-grid');
         if(grid.children.length <= 1) executeSearch("tamil");
     }
@@ -671,6 +725,13 @@
 
     // When user clicks a search result, it overwrites the main feed and plays instantly
     function launchSearchResultFeed(clickedBite, allResults) {
+        
+        // 🚀 ALGORITHM INJECTION: Save this search keyword explicitly as a major interest
+        const searchInputBox = document.getElementById('search-input');
+        if (searchInputBox && searchInputBox.value.trim()) {
+            trackInterest(searchInputBox.value.trim(), 'searched');
+        }
+
         // BACKUP STATE
         backupQueue = [...bitesQueue];
         backupIndex = currentIndex;
