@@ -248,7 +248,7 @@ class MainNavbar extends HTMLElement {
                 <span>Explore</span>
             </a>
             <a href="bites.html" class="nav-item" aria-label="Bites">
-                <span class="material-icons-round">smart_display</span>
+                <span class="material-icons-round">amp_stories</span>
                 <span>Bites</span>
             </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
