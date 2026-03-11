@@ -16,11 +16,11 @@ class ShareBites extends HTMLElement {
                 
                 #share-overlay {
                     position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 10000;
-                    backdrop-filter: blur(5px); display: none; opacity: 0; transition: opacity 0.3s ease;
+                    backdrop-filter: blur(8px); display: none; opacity: 0; transition: opacity 0.3s ease;
                 }
                 
                 #share-sheet {
-                    position: fixed; bottom: -100%; left: 0; width: 100%; height: 60vh;
+                    position: fixed; bottom: -100%; left: 0; width: 100%; height: 65vh;
                     background: #121212; border-radius: 24px 24px 0 0; z-index: 10001;
                     display: flex; flex-direction: column; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                     border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
@@ -29,7 +29,7 @@ class ShareBites extends HTMLElement {
                 .handle-bar { width: 40px; height: 5px; background: #444; border-radius: 10px; margin: 12px auto; }
                 
                 .header { padding: 0 20px 10px; display: flex; flex-direction: column; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-                .search-input { width: 100%; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); padding: 12px 16px; border-radius: 14px; color: white; outline: none; font-size: 15px; }
+                .search-input { width: 100%; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); padding: 12px 16px; border-radius: 14px; color: white; outline: none; font-size: 15px; transition: border-color 0.2s;}
                 .search-input:focus { border-color: #00d2ff; background: #222; }
 
                 /* Grid Layout for Contacts */
@@ -37,7 +37,7 @@ class ShareBites extends HTMLElement {
                     flex: 1; overflow-y: auto; padding: 20px; 
                     display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); 
                     gap: 15px 10px; align-content: start;
-                    padding-bottom: 100px; /* Space for send button */
+                    padding-bottom: 120px; /* Space for the bottom bar */
                 }
                 
                 .contact-item { 
@@ -55,10 +55,10 @@ class ShareBites extends HTMLElement {
                 
                 .contact-name { color: #ccc; font-size: 0.75rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
                 
-                /* Selection Styles (Glowing & Checkmark) */
+                /* Selection Styles */
                 .contact-item.selected .avatar { 
                     border-color: #00d2ff; 
-                    padding: 2px; /* Creates the ring gap effect */
+                    padding: 2px; 
                     transform: scale(1.05);
                     box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
                 }
@@ -75,15 +75,42 @@ class ShareBites extends HTMLElement {
 
                 @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
-                /* Fixed Bottom Send Bar */
-                .bottom-action-bar {
+                /* --- BOTTOM ACTION BAR (DUAL STATE) --- */
+                .bottom-action-container {
                     position: absolute; bottom: 0; left: 0; width: 100%; 
                     padding: 15px 20px calc(15px + env(safe-area-inset-bottom));
-                    background: linear-gradient(to top, #121212 70%, transparent);
-                    display: flex; justify-content: center;
-                    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    background: linear-gradient(to top, rgba(18,18,18,0.95) 70%, transparent);
+                    display: flex; flex-direction: column; overflow: hidden;
                 }
-                .bottom-action-bar.visible { transform: translateY(0); }
+
+                /* State 1: Global Actions (Add to Drops / Copy Link) */
+                .global-actions {
+                    display: flex; gap: 15px; width: 100%;
+                    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+                }
+                .global-actions.hidden {
+                    transform: translateY(100%); opacity: 0; pointer-events: none; position: absolute;
+                }
+                
+                .action-btn {
+                    flex: 1; background: #1a1a1a; color: #fff; border: 1px solid rgba(255,255,255,0.1); 
+                    padding: 14px; border-radius: 16px; font-weight: 700; font-size: 0.95rem; 
+                    cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+                }
+                .action-btn:active { transform: scale(0.96); background: #222; }
+                .action-btn svg { width: 20px; height: 20px; fill: currentColor; }
+                
+                .btn-drops { background: rgba(0, 210, 255, 0.1); border-color: rgba(0, 210, 255, 0.3); color: #00d2ff; }
+
+                /* State 2: Send to Friends */
+                .send-action {
+                    width: 100%;
+                    transform: translateY(100%); opacity: 0; position: absolute; pointer-events: none;
+                    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+                }
+                .send-action.visible {
+                    transform: translateY(0); opacity: 1; position: relative; pointer-events: auto;
+                }
 
                 .send-btn { 
                     width: 100%; background: #00d2ff; color: #000; border: none; 
@@ -95,7 +122,6 @@ class ShareBites extends HTMLElement {
                 .send-btn:active { transform: scale(0.97); }
                 .send-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
-                /* Loader */
                 .loader-text { grid-column: 1 / -1; text-align: center; color: #666; padding: 40px 0; font-size: 0.9rem; }
             </style>
 
@@ -110,24 +136,40 @@ class ShareBites extends HTMLElement {
                     <div class="loader-text">Loading contacts...</div>
                 </div>
 
-                <div class="bottom-action-bar" id="action-bar">
-                    <button class="send-btn" id="send-btn">
-                        Send <span id="send-count"></span>
-                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                <div class="bottom-action-container">
+                    <div class="global-actions" id="global-actions">
+                        <button class="action-btn btn-drops" id="add-drops-btn">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                            Add to Drops
+                        </button>
+                        <button class="action-btn" id="copy-link-btn">
+                            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                            Copy Link
+                        </button>
+                    </div>
+
+                    <div class="send-action" id="send-action">
+                        <button class="send-btn" id="send-btn">
+                            Send <span id="send-count"></span>
+                            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
 
-        // Event Listeners
+        // Base Event Listeners
         this.shadowRoot.getElementById('share-overlay').addEventListener('click', () => this.close(true));
         this.shadowRoot.getElementById('search-input').addEventListener('input', (e) => this.filterChats(e.target.value));
         this.shadowRoot.getElementById('send-btn').addEventListener('click', () => this.executeSend());
+        
+        // Global Action Event Listeners
+        this.shadowRoot.getElementById('add-drops-btn').addEventListener('click', () => this.addToDrops());
+        this.shadowRoot.getElementById('copy-link-btn').addEventListener('click', () => this.copyLink());
 
-        // Handle Mobile Back Button globally
         this.popStateHandler = (e) => {
             if (this.isOpen && (!e.state || e.state.modal !== 'shareBite')) {
-                this.close(false); // False because history already popped
+                this.close(false); 
             }
         };
         window.addEventListener('popstate', this.popStateHandler);
@@ -155,7 +197,6 @@ class ShareBites extends HTMLElement {
         this.updateSendButton();
         this.shadowRoot.getElementById('search-input').value = "";
 
-        // Push history state for Mobile Back Button
         history.pushState({ modal: 'shareBite' }, "", "#share");
 
         this.shadowRoot.getElementById('share-overlay').style.display = 'block';
@@ -174,6 +215,9 @@ class ShareBites extends HTMLElement {
         
         setTimeout(() => {
             this.shadowRoot.getElementById('share-overlay').style.display = 'none';
+            // Reset copy button visual state just in case
+            const copyBtn = this.shadowRoot.getElementById('copy-link-btn');
+            copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy Link`;
         }, 400);
 
         if (triggerBack && window.location.hash === "#share") {
@@ -181,9 +225,41 @@ class ShareBites extends HTMLElement {
         }
     }
 
+    // --- GLOBAL ACTIONS ---
+    addToDrops() {
+        if (!this.currentBite || !this.currentBite.videoId) return;
+        if (navigator.vibrate) navigator.vibrate(15);
+        // Uses the routing architecture established in drops.html
+        window.location.href = `drops.html?v=${this.currentBite.videoId}`;
+    }
+
+    copyLink() {
+        if (!this.currentBite || !this.currentBite.videoId) return;
+        if (navigator.vibrate) navigator.vibrate(10);
+        
+        const url = `https://www.goorac.biz/bites.html?v=${this.currentBite.videoId}`;
+        const btn = this.shadowRoot.getElementById('copy-link-btn');
+        
+        navigator.clipboard.writeText(url).then(() => {
+            btn.innerHTML = `<span class="material-icons-round" style="font-family: 'Material Icons Round'; font-size:18px;">check</span> Copied!`;
+            btn.style.background = "#32D74B";
+            btn.style.borderColor = "#32D74B";
+            btn.style.color = "#fff";
+            
+            setTimeout(() => {
+                btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy Link`;
+                btn.style.background = "#1a1a1a";
+                btn.style.borderColor = "rgba(255,255,255,0.1)";
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy link.');
+        });
+    }
+
+    // --- CONTACTS LOGIC ---
     async loadRecentChats() {
         try {
-            // Get all chats user is part of (covers Groups & Mutuals with history)
             const snap = await this.db.collection("chats")
                 .where("participants", "array-contains", this.myUid)
                 .orderBy("lastTimestamp", "desc")
@@ -217,15 +293,11 @@ class ShareBites extends HTMLElement {
                 rawChats.push(chat);
             }
 
-            // --- SMART SORTING ALGORITHM (Based on local storage sharing history) ---
             const shareFreq = JSON.parse(localStorage.getItem('goorac_share_freq') || '{}');
-            
             rawChats.sort((a, b) => {
                 const freqA = shareFreq[a.id] || 0;
                 const freqB = shareFreq[b.id] || 0;
-                // Primary sort by how many times we've shared to them
                 if (freqB !== freqA) return freqB - freqA;
-                // Secondary sort by recent message timestamp
                 const timeA = a.lastTimestamp?.toMillis ? a.lastTimestamp.toMillis() : 0;
                 const timeB = b.lastTimestamp?.toMillis ? b.lastTimestamp.toMillis() : 0;
                 return timeB - timeA;
@@ -285,14 +357,19 @@ class ShareBites extends HTMLElement {
     }
 
     updateSendButton() {
-        const actionBar = this.shadowRoot.getElementById('action-bar');
+        const globalActions = this.shadowRoot.getElementById('global-actions');
+        const sendAction = this.shadowRoot.getElementById('send-action');
         const countSpan = this.shadowRoot.getElementById('send-count');
         
         if (this.selectedChats.size > 0) {
-            actionBar.classList.add('visible');
+            // Hide global, show send
+            globalActions.classList.add('hidden');
+            sendAction.classList.add('visible');
             countSpan.innerText = `(${this.selectedChats.size})`;
         } else {
-            actionBar.classList.remove('visible');
+            // Show global, hide send
+            globalActions.classList.remove('hidden');
+            sendAction.classList.remove('visible');
         }
     }
 
@@ -303,15 +380,12 @@ class ShareBites extends HTMLElement {
         btn.innerHTML = `Sending...`;
         btn.style.pointerEvents = 'none';
 
-        // Load Frequency map to update it
         const shareFreq = JSON.parse(localStorage.getItem('goorac_share_freq') || '{}');
 
-        // Create an array of Promises so we send to everyone in parallel instantly
         const sendPromises = Array.from(this.selectedChats).map(async (chatId) => {
             const chat = this.chatsData.find(c => c.id === chatId);
             if (!chat) return;
 
-            // Increment frequency for future sorting
             shareFreq[chatId] = (shareFreq[chatId] || 0) + 1;
 
             const biteMsg = {
@@ -327,10 +401,8 @@ class ShareBites extends HTMLElement {
                 biteImgUrl: this.currentBite.imgUrl
             };
 
-            // 1. Add Message
             await this.db.collection("chats").doc(chat.id).collection("messages").add(biteMsg);
 
-            // 2. Update Chat Metadata & Unread Counts
             let unreadUpdates = {};
             chat.participants.forEach(uid => {
                 if (uid !== this.myUid) unreadUpdates[`unreadCount.${uid}`] = firebase.firestore.FieldValue.increment(1);
@@ -344,7 +416,6 @@ class ShareBites extends HTMLElement {
                 ...unreadUpdates
             });
 
-            // 3. Send Push Notification to everyone in the chat
             const senderName = this.myUserData ? this.myUserData.name : "Someone";
             const senderPhoto = this.myUserData ? this.myUserData.photoURL : "https://www.goorac.biz/icon.png";
             
@@ -366,26 +437,22 @@ class ShareBites extends HTMLElement {
                             icon: senderPhoto,
                             click_action: deepLink
                         })
-                    }).catch(e => {}); // Fire and forget
+                    }).catch(e => {}); 
                 }
             });
         });
 
         try {
             await Promise.all(sendPromises);
-            
-            // Save updated sorting algorithm data locally
             localStorage.setItem('goorac_share_freq', JSON.stringify(shareFreq));
 
-            // Success UI
             if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-            btn.style.background = "#32D74B"; // Green success
+            btn.style.background = "#32D74B"; 
             btn.style.color = "#fff";
             btn.innerHTML = `Sent! <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
             
             setTimeout(() => {
                 this.close(true);
-                // Reset button style for next use
                 setTimeout(() => {
                     btn.style.background = "#00d2ff";
                     btn.style.color = "#000";
