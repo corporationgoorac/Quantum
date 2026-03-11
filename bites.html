@@ -26,6 +26,7 @@
     <script src="components/chatLoader.js" defer></script>
     <script src="components/call-notifier.js" defer></script>
     <script src="components/navbar.js" defer></script>
+    <script src="components/shareBites.js" defer></script>
     
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
@@ -298,6 +299,7 @@
     </div>
 </div>
 
+<share-bites id="share-bites-modal"></share-bites>
 <main-navbar></main-navbar>
 <call-notifier></call-notifier>
 
@@ -864,28 +866,47 @@
         isFetching = false; 
     }
 
-    // 🚀 DYNAMIC SHARING ENGINE
+    // 🚀 DYNAMIC SHARING ENGINE WITH SHARE-BITES COMPONENT
     window.shareBite = function(event, index) {
         event.stopPropagation();
         const bite = bitesQueue[index];
-        const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
+        const shareModal = document.getElementById('share-bites-modal');
+        const navBar = document.querySelector('main-navbar');
         
-        if (navigator.share) {
-            navigator.share({
-                title: bite.title,
-                text: `Check out this Bite on Goorac!`,
-                url: shareUrl
-            }).catch(e => {});
+        if (shareModal && typeof shareModal.open === 'function') {
+            // Hide navbar when modal opens
+            if (navBar) navBar.style.display = 'none';
+            
+            // Patch the modal's close method to show navbar again seamlessly
+            if (!shareModal._navPatch) {
+                const origClose = shareModal.close;
+                shareModal.close = function(triggerBack) {
+                    if (navBar) navBar.style.display = 'block';
+                    origClose.apply(this, arguments);
+                };
+                shareModal._navPatch = true;
+            }
+            
+            shareModal.open(bite);
         } else {
-            // Fallback for desktop/unsupported browsers: Copy to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                const btnText = event.currentTarget.querySelector('.share-text');
-                const originalText = btnText.innerText;
-                btnText.innerText = "Copied!";
-                setTimeout(() => btnText.innerText = originalText, 2000);
-            }).catch(e => {
-                console.error("Failed to copy", e);
-            });
+            // Fallback just in case component fails to load
+            const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: bite.title,
+                    text: `Check out this Bite on Goorac!`,
+                    url: shareUrl
+                }).catch(e => {});
+            } else {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    const btnText = event.currentTarget.querySelector('.share-text');
+                    const originalText = btnText.innerText;
+                    btnText.innerText = "Copied!";
+                    setTimeout(() => btnText.innerText = originalText, 2000);
+                }).catch(e => {
+                    console.error("Failed to copy", e);
+                });
+            }
         }
     }
 
