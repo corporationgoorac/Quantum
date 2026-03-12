@@ -113,17 +113,17 @@ class ViewDrops extends HTMLElement {
             }
             @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-            /* --- NEW: SHARED BITE WATERMARK --- */
+            /* --- NEW: SHARED BITE WATERMARK (RE-STYLED & RE-POSITIONED) --- */
             .vd-bite-watermark {
-                position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
-                background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
-                backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-                display: none; align-items: center; gap: 8px; padding: 8px 18px;
-                border-radius: 100px; color: #fff; z-index: 60; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                position: absolute; top: calc(80px + env(safe-area-inset-top)); left: 20px;
+                background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+                backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+                display: none; align-items: center; gap: 6px; padding: 6px 12px;
+                border-radius: 8px; color: #fff; z-index: 60; 
                 pointer-events: none;
             }
-            .vd-bite-watermark .material-icons-round { font-size: 18px; color: var(--accent); }
-            .vd-bite-watermark span:last-child { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+            .vd-bite-watermark .material-icons-round { font-size: 14px; color: #fff; opacity: 0.9; }
+            .vd-bite-watermark span:last-child { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; opacity: 0.9; }
 
             /* --- MEDIA CANVAS --- */
             .vd-media-container {
@@ -468,8 +468,8 @@ class ViewDrops extends HTMLElement {
             const deltaX = this.state.currentX - this.state.startX;
             const deltaY = this.state.currentY - this.state.startY;
             
-            // MATH LOCK: Only process vertical swipes, ignore if swiping sideways
-            if (Math.abs(deltaX) > Math.abs(deltaY)) return; 
+            // STRICT MATH LOCK: Only process vertical swipes. Prevents diagonal or horizontal taps from triggering modal.
+            if (Math.abs(deltaX) * 2 > Math.abs(deltaY)) return; 
             
             const isMyDrop = this.dropsList[this.currentIndex]?.uid === this.myUid;
             
@@ -477,7 +477,7 @@ class ViewDrops extends HTMLElement {
                 e.preventDefault();
                 overlay.style.transform = `translateY(${deltaY}px)`;
                 overlay.style.opacity = 1 - (deltaY / window.innerHeight);
-            } else if (deltaY < -20 && isMyDrop) { // Swiping Up (Views Modal - ONLY for own drops with strict threshold)
+            } else if (deltaY < -10 && isMyDrop) { // Swiping Up (Views Modal)
                 e.preventDefault();
                 overlay.style.transform = `translateY(${deltaY}px)`;
             }
@@ -492,14 +492,14 @@ class ViewDrops extends HTMLElement {
             
             overlay.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease';
             
-            // Verify it was a vertical swipe, not a horizontal one
-            if (Math.abs(deltaY) > Math.abs(deltaX)) {
+            // Verify it was a strong vertical swipe
+            if (Math.abs(deltaY) > Math.abs(deltaX) * 2) {
                 if (deltaY > window.innerHeight * 0.15) {
                     // Closed via swipe down
                     this.close();
                     return;
                 } else if (deltaY < -window.innerHeight * 0.1 && isMyDrop) {
-                    // Opened views via swipe up
+                    // STRICT Opened views via swipe up (requires pulling up at least 10% of screen)
                     overlay.style.transform = 'translateY(0)';
                     overlay.style.opacity = '1';
                     this.openViewsModal();
@@ -1008,7 +1008,7 @@ class ViewDrops extends HTMLElement {
             if (!isCurrentlyLiked) {
                 await likeRef.set({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 
-                // INTERNAL DB NOTIFICATION (FIXED DATABASE KEYS for notifications.html)
+                // INTERNAL DB NOTIFICATION 
                 await this.db.collection("notifications").add({
                     toUid: drop.uid,
                     fromUid: this.myUid,
@@ -1137,9 +1137,19 @@ customElements.define('view-drops', ViewDrops);
 const DropsManager = {
     myUid: null,
     myCloseFriends: [],
+    _isFirstLoad: true, // Tracking first load for shimmer effect
 
     init: function() {
         this.injectTrayStyles();
+        
+        // Show cache instantly with shimmer if it exists
+        const cachedHtml = localStorage.getItem('goorac_drops_html_cache');
+        const container = document.getElementById('drops-tray-container');
+        if (cachedHtml && container) {
+            container.innerHTML = cachedHtml;
+            container.classList.add('loading-shimmer'); // Apply professional shimmer while Firebase connects
+        }
+
         if (typeof firebase !== 'undefined' && firebase.auth) {
             firebase.auth().onAuthStateChanged(async user => {
                 if (user) {
@@ -1164,8 +1174,17 @@ const DropsManager = {
             #drops-tray-container {
                 display: flex; overflow-x: auto; padding: 15px 15px 5px 15px; gap: 18px;
                 scrollbar-width: none; scroll-snap-type: x mandatory; align-items: flex-start;
+                position: relative;
             }
             #drops-tray-container::-webkit-scrollbar { display: none; }
+
+            /* --- LOADING SHIMMER EFFECT --- */
+            #drops-tray-container.loading-shimmer::after {
+                content: ''; position: absolute; inset: 0; z-index: 10;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+                animation: shimmer 1.5s infinite; pointer-events: none;
+            }
+            @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
             .dt-item {
                 display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -1272,6 +1291,13 @@ const DropsManager = {
             }
 
             this.sortAndRender(secureDrops);
+            
+            // Remove shimmer once data is loaded for the first time
+            if (this._isFirstLoad) {
+                const container = document.getElementById('drops-tray-container');
+                if(container) container.classList.remove('loading-shimmer');
+                this._isFirstLoad = false;
+            }
         });
     },
 
