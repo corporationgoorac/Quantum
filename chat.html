@@ -1940,6 +1940,19 @@ box-shadow: var(--received-shadow);
     const micWrapper = document.getElementById('mic-btn-wrapper');
 
     // =========================================
+    //  NEW: GLOBAL MEDIA SCROLL FIX (ResizeObserver)
+    // =========================================
+    window.isInitialLoadScroll = true;
+    setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
+
+    const msgResizeObserver = new ResizeObserver(() => {
+        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 450))) {
+            window.scrollToBottom();
+        }
+    });
+    if (container) msgResizeObserver.observe(container);
+
+    // =========================================
     //  12. INSTANT LOAD / 0ms RENDER
     // =========================================
     (function instantRender() {
@@ -3151,7 +3164,7 @@ box-shadow: var(--received-shadow);
             mediaHtml = `
             <div class="msg-media-wrapper ${groupClass}" onclick="handleBiteClick(event, '${m.biteId}', '${id}')">
                 <div style="position:relative; width:220px; border-radius:18px; overflow:hidden; background:#111; aspect-ratio: 9/16;">
-                    <img src="${m.biteImgUrl || 'https://via.placeholder.com/220x390?text=Bite'}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450) window.scrollToBottom(true)" style="width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; pointer-events:none;">
+                    <img src="${m.biteImgUrl || 'https://via.placeholder.com/220x390?text=Bite'}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)" style="width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; pointer-events:none;">
                     <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); pointer-events:none;"></div>
                     
                     <div class="play-overlay" style="border-color: var(--accent); background: rgba(0,0,0,0.6); pointer-events:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid var(--accent);"><span class="material-icons-round" style="font-size:36px; color:white;">play_arrow</span></div>
@@ -3172,7 +3185,7 @@ box-shadow: var(--received-shadow);
         else if (renderImageUrl) {
             mediaHtml = `
             <div class="msg-media-wrapper ${groupClass}" onclick="document.getElementById('media-viewer').open('${renderImageUrl}')">
-                <img src="${renderImageUrl}" class="chat-media-img" style="${dynamicStyle}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450) window.scrollToBottom(true)">
+                <img src="${renderImageUrl}" class="chat-media-img" style="${dynamicStyle}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)">
                 <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
             </div>`;
             bubbleClass = `bubble has-media ${groupClass}`;
@@ -3181,7 +3194,7 @@ box-shadow: var(--received-shadow);
         else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('video')) {
             mediaHtml = `
             <div class="msg-video-container" onclick="document.getElementById('media-viewer').open('${renderFileUrl}', 'video')">
-                <video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:auto; max-height:380px; background:#000; ${dynamicStyle}" preload="metadata" onloadeddata="if(this.videoWidth && this.videoHeight){ localStorage.setItem('media_ratio_${id}', this.videoWidth + '/' + this.videoHeight); this.style.aspectRatio = this.videoWidth + '/' + this.videoHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450) window.scrollToBottom(true)"></video>
+                <video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:auto; max-height:380px; background:#000; ${dynamicStyle}" preload="metadata" onloadeddata="if(this.videoWidth && this.videoHeight){ localStorage.setItem('media_ratio_${id}', this.videoWidth + '/' + this.videoHeight); this.style.aspectRatio = this.videoWidth + '/' + this.videoHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)"></video>
                 <div class="play-overlay"><span class="material-icons-round" style="font-size:32px; color:white;">play_arrow</span></div>
                 <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
             </div>`;
@@ -3827,6 +3840,7 @@ box-shadow: var(--received-shadow);
             // Make the fetch call non-blocking but track its resolution
             fetch(backendUrl, {
                 method: "POST",
+                keepalive: true, // NEW FIX: Ensures request completes blazingly fast even during UI stutters
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -3961,6 +3975,7 @@ box-shadow: var(--received-shadow);
             const idToEdit = editModeId; editModeId = null;
             cancelInteraction(); 
             db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true }).catch(e=>console.error(e));
+            updateLastMsg(text); // NEW FIX: Instantly updates inbox text for edits
         } else {
             const rText = replyingTo; cancelInteraction(); 
             window.scrollToBottom(true);
@@ -4200,6 +4215,12 @@ box-shadow: var(--received-shadow);
             await msgRef.update({ [`reactions.${myUid}`]: firebase.firestore.FieldValue.delete() });
         } else {
             await msgRef.update({ [`reactions.${myUid}`]: { emoji: emoji, timestamp: Date.now() } });
+            
+            // NEW FIX: Updates inbox text and pushes notification instantly if reacting to THEIR message
+            if (data.sender !== myUid) {
+                updateLastMsg(`Reacted ${emoji} to a message`);
+                sendPushNotification(`Reacted ${emoji} to your message`);
+            }
         }
     }
 
