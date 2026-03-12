@@ -30,7 +30,7 @@
             --surface: #0a0a0a;
             --surface-glass: rgba(15, 15, 15, 0.85);
             --border: rgba(255, 255, 255, 0.08);
-            --accent: #00d2ff; /* Vision Cyan */
+            --accent: #00d2ff;
             --accent-dark: #0099cc;
             --accent-glow: rgba(0, 210, 255, 0.4);
             --text: #ffffff;
@@ -41,7 +41,6 @@
             --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
             --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
             
-            /* Chat Specific Vars */
             --sent-bg: linear-gradient(135deg, #00d2ff 0%, #0088ff 100%);
             --sent-text: #ffffff;
             --received-bg: #1c1c1c; 
@@ -54,7 +53,6 @@
             outline: none;
         }
 
-        /* STRICT PWA LOCK: Prevents entire body from scrolling/bouncing */
         html, body {
             background: var(--bg); color: var(--text);
             font-family: 'Inter', 'Noto Color Emoji', -apple-system, sans-serif;
@@ -62,7 +60,6 @@
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* Prevent Text Selection universally except inputs */
         div, span, p, h1, h2, h3, img { user-select: none; -webkit-user-select: none; }
         input, textarea { user-select: text !important; -webkit-user-select: text !important; }
 
@@ -159,10 +156,8 @@
         /* ==========================================================================
            5. STRICT LAYOUT ZONES (VIDEO, INFO, CHAT)
            ========================================================================== */
-        
-        /* --- 1. THE VIDEO PLAYER ZONE (Fixed Size) --- */
         .video-zone {
-            flex: 0 0 35vh; /* STRICTLY LOCKS THE HEIGHT to 35% of the screen */
+            flex: 0 0 35vh;
             min-height: 250px; 
             width: 100%; 
             background: #050505;
@@ -171,13 +166,12 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             padding-top: calc(var(--safe-top));
             display: flex; align-items: center; justify-content: center;
-            transition: flex 0.3s ease, min-height 0.3s ease; /* Smooth transition for keyboard open/close */
+            transition: flex 0.3s ease, min-height 0.3s ease; 
         }
 
-        /* Responsive scaling when the mobile keyboard is open */
         body.keyboard-open .video-zone {
             flex: 0 0 22vh;
-            min-height: 160px; /* Video becomes slightly smaller so text area remains visible */
+            min-height: 160px; 
         }
 
         #video-placeholder {
@@ -187,7 +181,6 @@
 
         #youtube-player { width: 100%; height: 100%; pointer-events: none; z-index: 10; } 
         
-        /* The custom touch layer to prevent scrubbing and handle play/pause */
         .video-touch-overlay {
             position: absolute; inset: 0; z-index: 25; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -213,21 +206,19 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Interactive Timeline Feature */
         #video-progress-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 25px; /* Larger touch target area */
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 25px;
             z-index: 40; cursor: pointer; display: flex; align-items: flex-end;
             background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
         }
         #video-progress-bar {
             height: 3px; background: var(--accent); width: 0%;
             transition: width 0.2s linear; box-shadow: 0 0 10px var(--accent-glow);
-            pointer-events: none; /* Allows the click to be caught by the container */
+            pointer-events: none; 
         }
 
-        /* --- 2. THE INFO BAR (Fixed Size) --- */
         .info-bar {
-            flex: 0 0 auto; /* Lock height */
+            flex: 0 0 auto;
             width: 100%; padding: 12px 20px; background: #111;
             border-bottom: 1px solid var(--border); display: flex;
             align-items: center; justify-content: space-between; z-index: 15;
@@ -246,7 +237,6 @@
         .dj-btn:active { transform: scale(0.95); }
         .dj-btn.disabled { background: #333; color: #888; box-shadow: none; pointer-events: none; }
 
-        /* NEW: ACTION CONTROLS & ICONS */
         .action-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .icon-action-btn {
             background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.1);
@@ -258,9 +248,8 @@
         #delete-vid-btn:hover, #delete-vid-btn:active { background: rgba(255, 69, 58, 0.2); color: #ff453a; border-color: rgba(255, 69, 58, 0.4); }
         #swap-turn-btn:hover, #swap-turn-btn:active { background: rgba(0, 210, 255, 0.2); color: var(--accent); border-color: var(--accent-glow); }
 
-        /* --- 3. LIVE CHAT ENGINE (Fills bottom) --- */
         #chat-container {
-            flex: 1; /* Takes all remaining space strictly below info bar */
+            flex: 1; 
             display: flex; flex-direction: column; background: var(--bg);
             overflow: hidden; position: relative;
         }
@@ -305,7 +294,6 @@
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typingWave { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-4px); opacity: 1; } }
 
-        /* THE PWA TEXT BOX FIX: Removed artificial gap, kept standard safe-area calculation */
         .input-area-container { 
             flex: 0 0 auto;
             padding: 10px 15px calc(10px + var(--safe-bottom)); 
@@ -369,7 +357,6 @@
         .vid-title-text { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .vid-channel { font-size: 11px; color: #888; }
 
-        /* Loading Skeleton */
         .skel-card { display: flex; gap: 12px; padding: 12px; margin-bottom: 12px; }
         .skel-thumb { width: 120px; height: 68px; border-radius: 8px; background: #222; animation: skelPulse 1.5s infinite; }
         .skel-line { height: 12px; background: #222; border-radius: 6px; margin-bottom: 8px; animation: skelPulse 1.5s infinite; }
@@ -500,7 +487,7 @@
 
     <script>
         // ==========================================================================
-        // 1. SYSTEM INITIALIZATION & VARIABLES (Fixed Variable Naming)
+        // 1. SYSTEM INITIALIZATION & VARIABLES
         // ==========================================================================
         if (typeof window.initFirebaseCore === 'function') window.initFirebaseCore();
         else if (!firebase.apps.length && window.firebaseConfig) firebase.initializeApp(window.firebaseConfig);
@@ -524,7 +511,7 @@
         let isMyTurn = false;
         let ignoreSyncEvent = false; 
         let lastKnownState = -1; 
-        let syncInterval = null; // Added for the Video Timer Feature
+        let syncInterval = null; 
 
         // Chat State
         const chatInput = document.getElementById('chat-input');
@@ -532,11 +519,9 @@
         const chatFlow = document.getElementById('chat-flow');
         const msgContainer = document.getElementById('messages-container');
 
-        // Safe particle engine load
         let particleEngine = null;
         try { if(typeof ParticleEngine !== 'undefined') particleEngine = new ParticleEngine(); } catch(e){}
 
-        // Sounds
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
 
         // --- iOS PWA KEYBOARD RESIZE FIX & AUTO SCROLL FIX ---
@@ -545,43 +530,37 @@
             baseViewportHeight = window.visualViewport.height;
             window.visualViewport.addEventListener('resize', () => {
                 document.body.style.height = window.visualViewport.height + 'px';
-                
-                // Smart Keyboard Detection: If the viewport shrinks significantly, add class to scale video
                 if (window.visualViewport.height < baseViewportHeight - 100) {
                     document.body.classList.add('keyboard-open');
                 } else {
                     document.body.classList.remove('keyboard-open');
                 }
-                
                 window.scrollTo(0, 0);
                 scrollToBottom(); 
             });
         }
 
         // ==========================================================================
-        // 2. AUTHENTICATION & CACHE (With LocalStorage Fix)
+        // 2. AUTHENTICATION & CACHE
         // ==========================================================================
         visionAuth.onAuthStateChanged(async (user) => {
             if (user) {
                 myUid = user.uid;
                 
-                // Immediately check cache for My Profile to prevent blank waiting screens
                 const cachedMe = localStorage.getItem(`pulse_cache_user_me`);
                 if (cachedMe) {
                     myProfile = JSON.parse(cachedMe);
                     document.getElementById('my-avatar-img').src = myProfile.photoURL || 'https://via.placeholder.com/150';
                 }
 
-                // Load My PFP Live
                 visionDb.collection('users').doc(user.uid).get().then(doc => {
                     if(doc.exists) {
                         myProfile = doc.data();
-                        localStorage.setItem(`pulse_cache_user_me`, JSON.stringify(myProfile)); // Update Cache
+                        localStorage.setItem(`pulse_cache_user_me`, JSON.stringify(myProfile));
                         document.getElementById('my-avatar-img').src = myProfile.photoURL || 'https://via.placeholder.com/150';
                     }
                 });
 
-                // Load Target User (With Cache Support)
                 if (targetUsername) {
                     try {
                         const cached = localStorage.getItem(`pulse_cache_user_${targetUsername}`);
@@ -591,7 +570,7 @@
                         if (!snap.empty) {
                             targetProfile = snap.docs[0].data();
                             targetUid = snap.docs[0].id;
-                            localStorage.setItem(`pulse_cache_user_${targetUsername}`, JSON.stringify(targetProfile)); // Update Cache
+                            localStorage.setItem(`pulse_cache_user_${targetUsername}`, JSON.stringify(targetProfile)); 
                             updateTargetUI(targetProfile);
                             initRoom();
                         } else { showError("User not found."); }
@@ -627,7 +606,6 @@
             }, { merge: true }).then(() => {
                 roomRef.get().then(doc => {
                     if (!doc.exists || !doc.data().status) {
-                        // Init clean state
                         roomRef.set({ 
                             turn: myUid, 
                             status: 'picking', 
@@ -641,41 +619,34 @@
                 });
             });
 
-            // Prevent Sleep
             requestWakeLock();
             
-            // Listeners
             window.addEventListener('beforeunload', () => roomRef.update({ [myField]: 'offline' }));
             document.addEventListener('visibilitychange', () => { if (document.hidden) roomRef.update({ [myField]: 'offline' }); });
 
-            // START ENGINE
             roomUnsub = roomRef.onSnapshot(snap => {
-                // FIX: IF DOCUMENT IS DELETED, AUTO EXIT FOR BOTH USERS
-                if (!snap.exists) {
-                    if (player) player.destroy();
-                    if (wakeLock) wakeLock.release();
-                    window.location.replace('visionLobby.html');
-                    return;
-                }
+                if (!snap.exists) return;
 
                 const data = snap.data();
                 
-                if (data.sessionStatus === 'ended') { exitSession(); return; }
+                if (data.sessionStatus === 'ended') { 
+                    exitSession(true); 
+                    return; 
+                }
 
-                // Check Connection
                 if (data[otherField] === 'online') {
                     document.getElementById('target-group').classList.add('active');
                     document.getElementById('connect-line').classList.add('connected');
                     if (!document.getElementById('screen-active').classList.contains('active')) {
                         showScreen('screen-active');
-                        initChatListener(); // Start chat only when both inside
+                        initChatListener(); 
                     }
                     syncVisionEngine(data);
                 } else {
                     document.getElementById('target-group').classList.remove('active');
                     document.getElementById('connect-line').classList.remove('connected');
                     showScreen('screen-waiting');
-                    if(player) player.pauseVideo();
+                    if(player && typeof player.pauseVideo === 'function') player.pauseVideo();
                 }
             });
         }
@@ -683,36 +654,40 @@
         // ==========================================================================
         // 4. VISION ENGINE (YOUTUBE SYNC LOGIC) & TIMER SYSTEM
         // ==========================================================================
-        function onYouTubeIframeAPIReady() {} // Standard requirement
+        function onYouTubeIframeAPIReady() {}
 
-        function createPlayer(vidId) {
-            // Remove Placeholder, Reveal Player & Touch Overlay
+        function createPlayer(vidId, startTime = 0) {
             document.getElementById('video-placeholder').style.display = 'none';
             document.getElementById('video-touch-overlay').style.display = 'flex';
 
             if (player) {
-                player.loadVideoById(vidId);
+                player.loadVideoById({videoId: vidId, startSeconds: startTime});
                 return;
             }
             player = new YT.Player('youtube-player', {
                 videoId: vidId,
                 playerVars: { 
                     'autoplay': 1, 
-                    'controls': 0, // NO NATIVE CONTROLS
-                    'disablekb': 1, // NO KEYBOARD FORWARDING
+                    'controls': 0, 
+                    'disablekb': 1, 
                     'fs': 0, 
                     'rel': 0, 
                     'modestbranding': 1,
-                    'playsinline': 1 
+                    'playsinline': 1,
+                    'start': Math.floor(startTime)
                 },
                 events: {
-                    'onReady': () => { isPlayerReady = true; player.playVideo(); },
+                    'onReady': () => { 
+                        isPlayerReady = true; 
+                        visionDb.collection('vision_rooms').doc(roomId).get().then(doc => {
+                            if(doc.exists) syncVisionEngine(doc.data());
+                        });
+                    },
                     'onStateChange': onPlayerStateChange
                 }
             });
         }
 
-        // Video Progress Timer Function
         function startProgressTimer() {
             if (syncInterval) clearInterval(syncInterval);
             syncInterval = setInterval(() => {
@@ -724,7 +699,6 @@
                         const pct = (cur / dur) * 100;
                         document.getElementById('video-progress-bar').style.width = pct + '%';
                         
-                        // Hardware-level precise timer auto-swap check
                         if (isMyTurn && (dur - cur) <= 1.5) {
                             swapTurn();
                             clearInterval(syncInterval);
@@ -740,44 +714,39 @@
             const swapBtn = document.getElementById('swap-turn-btn');
             const deleteBtn = document.getElementById('delete-vid-btn');
             
-            // UI Updates based on turn (FIXED "WAITING..." BUG)
             if (isMyTurn) {
                 btn.className = "dj-btn";
                 btn.innerHTML = data.status === 'picking' ? `<span class="material-icons-round">search</span> PICK VIDEO` : `<span class="material-icons-round">search</span> CHANGE VIDEO`;
                 document.getElementById('info-sub').innerText = "YOUR TURN";
-                swapBtn.style.display = 'flex'; // Show swap button if it's your turn
+                swapBtn.style.display = 'flex'; 
             } else {
                 btn.className = "dj-btn disabled";
                 btn.innerHTML = data.status === 'picking' ? `WAITING...` : `WATCHING`;
                 const name = targetProfile ? targetProfile.name.split(' ')[0].toUpperCase() : 'THEM';
                 document.getElementById('info-sub').innerText = `${name}'S TURN`;
-                swapBtn.style.display = 'none'; // Hide swap button if it's not your turn
+                swapBtn.style.display = 'none'; 
             }
 
-            // Global Delete Video visibility: show to BOTH users if a video is currently loaded
             if (data.videoData && data.videoData.id) {
                 deleteBtn.style.display = 'flex';
             } else {
                 deleteBtn.style.display = 'none';
             }
 
-            // FIX: HIDE BUTTON AFTER SELECTING SO IT DISAPPEARS AND SHOWS PROPERLY WHEN TURN SWAPS
             if (data.status === 'playing') {
                 btn.style.display = 'none';
             } else {
                 btn.style.display = 'flex';
-                document.getElementById('video-progress-bar').style.width = '0%'; // Reset progress bar visually
+                document.getElementById('video-progress-bar').style.width = '0%'; 
             }
 
-            // Phase: Picking
             if (data.status === 'picking') {
                 document.getElementById('info-title').innerText = "Waiting for selection...";
                 
-                // Show placeholder again if picking completely new video
                 if(!data.videoData) {
                     document.getElementById('video-placeholder').style.display = 'flex';
                     document.getElementById('video-touch-overlay').style.display = 'none';
-                    if (player && typeof player.stopVideo === 'function') player.stopVideo(); // Ensure previous video is cleared from background
+                    if (player && typeof player.stopVideo === 'function') player.stopVideo(); 
                 } else {
                     document.getElementById('video-touch-overlay').style.background = 'rgba(0,0,0,0.8)';
                     document.getElementById('v-state-icon').classList.remove('show');
@@ -786,46 +755,54 @@
                 if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
             }
 
-            // Phase: Playing/Syncing
             if (data.videoData && data.videoData.id) {
                 const vid = data.videoData;
                 document.getElementById('info-title').innerText = vid.title;
 
-                if (currentVideoId !== vid.id) {
-                    currentVideoId = vid.id;
-                    createPlayer(vid.id);
+                let calculatedTime = data.time || 0;
+                if (data.playbackState === 'playing' && data.ts) {
+                    calculatedTime += Math.max(0, (Date.now() - data.ts) / 1000); // FIX: Prevent negative drift if clocks are mismatched
                 }
 
-                // --- THE QUANTUM SYNC EXECUTION ---
+                if (currentVideoId !== vid.id) {
+                    currentVideoId = vid.id;
+                    createPlayer(vid.id, calculatedTime);
+                }
+
                 if (isPlayerReady) {
-                    // Prevent ECHO LOOP
-                    if (data.updatedBy === myUid) return;
-
-                    ignoreSyncEvent = true; // Lock local listener
-
-                    // 1. Time Drift Correction (Strict Sync)
-                    const diff = Math.abs(player.getCurrentTime() - data.time);
-                    if (diff > 2.0) { // If out of sync by 2 seconds, force jump
-                        player.seekTo(data.time, true);
+                    if (data.updatedBy === myUid) {
+                        lastKnownState = data.playbackState === 'playing' ? YT.PlayerState.PLAYING : YT.PlayerState.PAUSED;
+                        return;
                     }
 
-                    // 2. Playback State Enforcement
+                    ignoreSyncEvent = true; 
+
+                    const diff = Math.abs(player.getCurrentTime() - calculatedTime);
+                    if (diff > 2.0) { 
+                        player.seekTo(calculatedTime, true);
+                    }
+
                     if (data.playbackState === 'playing') {
-                        player.playVideo();
-                        updateOverlayUI('playing');
-                        startProgressTimer(); // Start timer externally
+                        if (lastKnownState !== YT.PlayerState.PLAYING) {
+                            lastKnownState = YT.PlayerState.PLAYING;
+                            player.playVideo();
+                            updateOverlayUI('playing');
+                            startProgressTimer(); 
+                        }
                     } else {
-                        player.pauseVideo();
-                        updateOverlayUI('paused');
-                        if (syncInterval) clearInterval(syncInterval);
+                        if (lastKnownState !== YT.PlayerState.PAUSED) {
+                            lastKnownState = YT.PlayerState.PAUSED;
+                            player.pauseVideo();
+                            updateOverlayUI('paused');
+                            if (syncInterval) clearInterval(syncInterval);
+                        }
                     }
 
-                    setTimeout(() => { ignoreSyncEvent = false; }, 500); // Unlock
+                    setTimeout(() => { ignoreSyncEvent = false; }, 1500); // FIX: Increased timeout to 1500ms for robust mobile network buffering
                 }
             }
         }
 
-        // Local Player Event Catching
         function onPlayerStateChange(event) {
             if (ignoreSyncEvent) return;
 
@@ -838,19 +815,17 @@
                 document.getElementById('v-spinner').style.display = 'none';
             }
 
-            // --- FIX: PROPER TURN SWAP ON VIDEO END (Backed up by our custom interval timer) ---
             if (newState === YT.PlayerState.ENDED) {
                 if (isMyTurn) swapTurn();
                 if (syncInterval) clearInterval(syncInterval);
                 return;
             }
 
-            // Only broadcast genuine Play/Pause clicks
             if (newState === YT.PlayerState.PLAYING && lastKnownState !== YT.PlayerState.PLAYING) {
                 lastKnownState = YT.PlayerState.PLAYING;
                 broadcastState('playing');
                 updateOverlayUI('playing');
-                startProgressTimer(); // Re-trigger timer if played
+                startProgressTimer(); 
             } 
             else if (newState === YT.PlayerState.PAUSED && lastKnownState !== YT.PlayerState.PAUSED) {
                 lastKnownState = YT.PlayerState.PAUSED;
@@ -858,38 +833,31 @@
                 updateOverlayUI('paused');
                 if (syncInterval) clearInterval(syncInterval);
                 
-                // Backup check in case it pauses at the very end
                 if (player.getDuration() > 0 && (player.getDuration() - player.getCurrentTime() < 2)) {
                     if (isMyTurn) swapTurn();
                 }
             }
         }
 
-        // The Custom Invisible Glass Overlay Click Handler
         function handleVideoTap() {
             if (!isPlayerReady || !currentVideoId) return;
             
-            // This is the ONLY way users can control the video. Scrubbing is impossible.
             const state = player.getPlayerState();
-            if (state === 1) { // Playing
-                player.pauseVideo(); // Will trigger onPlayerStateChange
+            if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) { 
+                player.pauseVideo(); 
             } else {
                 player.playVideo();
             }
         }
 
-        // --- NEW INTERACTIVE TIMELINE LOGIC ---
         function seekTimeline(event) {
-            // Prevent the pause/play toggle from firing underneath
             event.stopPropagation(); 
             
-            // Only allow scrubbing if the video is ready and it is actually your turn
             if (!isPlayerReady || !currentVideoId || !isMyTurn) return;
 
             const container = document.getElementById('video-progress-container');
             const rect = container.getBoundingClientRect();
             
-            // Calculate where the user touched relative to the container width
             const clickX = event.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, clickX / rect.width));
             
@@ -898,19 +866,17 @@
 
             let newTime = percentage * dur;
             
-            // If they scrub perfectly to the end, adjust slightly back so the hardware auto-swap triggers correctly
             if (newTime >= dur - 1.5) newTime = dur - 1.5;
 
-            // Command local YouTube player to jump immediately
             player.seekTo(newTime, true);
             
-            // Instantly update the visual blue bar to make it feel highly responsive
             document.getElementById('video-progress-bar').style.width = (percentage * 100) + '%';
 
-            // Broadcast the exact timestamp jump to the other user via Firestore
+            lastKnownState = player.getPlayerState();
+
             visionDb.collection('vision_rooms').doc(roomId).update({
                 time: newTime,
-                playbackState: player.getPlayerState() === 1 ? 'playing' : 'paused',
+                playbackState: player.getPlayerState() === YT.PlayerState.PLAYING ? 'playing' : 'paused',
                 updatedBy: myUid,
                 ts: Date.now()
             });
@@ -942,7 +908,6 @@
             });
         }
 
-        // FULLY RE-WRITTEN TO STRICTLY ERASE THE VIDEO AND PASS CONTROL OVER
         function swapTurn() {
             if (syncInterval) clearInterval(syncInterval);
             visionDb.collection('vision_rooms').doc(roomId).update({
@@ -956,7 +921,6 @@
             });
         }
 
-        // ALLOWS EITHER USER TO CLEAR THE CURRENT VIDEO WITHOUT FORCING A TURN SWAP
         function clearVideo() {
             if (!roomId) return;
             if (syncInterval) clearInterval(syncInterval);
@@ -981,7 +945,6 @@
         }
         
         function closePicker() {
-            // FIX: Ensure safe popstate trigger
             if (history.state && history.state.modal === 'picker') {
                 history.back();
             } else {
@@ -996,7 +959,6 @@
                 
                 const container = document.getElementById('picker-results');
                 
-                // URL Interceptor
                 const urlRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
                 const match = query.match(urlRegex);
                 
@@ -1005,7 +967,6 @@
                     return;
                 }
 
-                // Search Loader
                 container.innerHTML = `
                     <div class="skel-card"><div class="skel-thumb"></div><div style="flex:1"><div class="skel-line" style="width:90%"></div><div class="skel-line" style="width:60%"></div></div></div>
                     <div class="skel-card"><div class="skel-thumb"></div><div style="flex:1"><div class="skel-line" style="width:80%"></div><div class="skel-line" style="width:40%"></div></div></div>
@@ -1014,7 +975,6 @@
                 let results = [];
 
                 try {
-                    // Attempt 1: Render Server
                     const res = await fetch(`https://pishaa.onrender.com/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
                     const data = await res.json();
                     if (data.bites && data.bites.length > 0) results = data.bites;
@@ -1023,7 +983,6 @@
                 }
 
                 if (results.length === 0) {
-                    // Attempt 2: Direct Public Invidious API (Failsafe)
                     try {
                         const fallback = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=all`);
                         const fbData = await fallback.json();
@@ -1040,7 +999,6 @@
                     }
                 }
 
-                // Render Final Results
                 container.innerHTML = '';
                 if (results.length > 0) {
                     results.forEach(vid => {
@@ -1076,19 +1034,17 @@
         }
 
         // ==========================================================================
-        // 6. LIVE CHAT ENGINE (Ephemeral RTDB)
+        // 6. LIVE CHAT ENGINE
         // ==========================================================================
         function initChatListener() {
             if (chatUnsub) visionRdb.ref(`vision_chat/${roomId}`).off('child_added', chatUnsub);
-            msgContainer.innerHTML = ''; // Clear old
+            msgContainer.innerHTML = ''; 
 
-            // Listen for new messages
             chatUnsub = visionRdb.ref(`vision_chat/${roomId}`).limitToLast(30).on('child_added', snap => {
                 const msg = snap.val();
                 renderChatMessage(msg);
             });
 
-            // Listen for Typing Indicator
             visionRdb.ref(`typing/vision_${roomId}/${targetUid}`).on('value', snap => {
                 document.getElementById('typing-row').style.display = snap.val() ? 'flex' : 'none';
                 scrollToBottom();
@@ -1139,13 +1095,15 @@
         }
 
         function renderChatMessage(msg) {
-            // FIX: ABSOLUTE PROTECTION AGAINST CORRUPT DATABASE ENTRIES
             if (!msg || typeof msg.text !== 'string') return; 
+
+            // FIX: CRITICAL XSS SANITIZATION
+            const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
             if (msg.type === 'sys') {
                 const div = document.createElement('div');
                 div.className = "system-msg";
-                div.innerText = msg.text;
+                div.innerText = msg.text; // innerText is natively safe from XSS
                 msgContainer.appendChild(div);
                 scrollToBottom();
                 return;
@@ -1154,11 +1112,10 @@
             const isMine = (msg.sender === myUid);
             const rowClass = isMine ? 'sent' : 'received';
             
-            // --- NEW: VIBRATION FEATURE WHEN RECEIVING MESSAGES ---
             if (!isMine) {
                 checkKeywords(msg.text);
                 try {
-                    if (navigator.vibrate) navigator.vibrate([100]); // Short tactile bump for incoming chats
+                    if (navigator.vibrate) navigator.vibrate([100]); 
                 } catch(e){}
             }
             
@@ -1176,14 +1133,14 @@
                     <div class="received-inner-row">
                         <img src="${targetProfile ? targetProfile.photoURL : ''}" class="msg-avatar">
                         <div class="msg-bubble-box">
-                            <div class="bubble" style="${bubbleStyle}">${msg.text}</div>
+                            <div class="bubble" style="${bubbleStyle}">${safeText}</div>
                         </div>
                     </div>
                 `;
             } else {
                 div.innerHTML = `
                     <div class="msg-bubble-box">
-                        <div class="bubble" style="${bubbleStyle}">${msg.text}</div>
+                        <div class="bubble" style="${bubbleStyle}">${safeText}</div>
                     </div>
                 `;
             }
@@ -1192,7 +1149,6 @@
             scrollToBottom();
         }
 
-        // --- FIX: ADDED DELAY SO BROWSER CALCULATES SCROLL HEIGHT AFTER RENDER ---
         function scrollToBottom() {
             setTimeout(() => {
                 if (chatFlow) chatFlow.scrollTop = chatFlow.scrollHeight;
@@ -1220,7 +1176,8 @@
         // 8. SYSTEM HARDWARE & EXIT LOGIC
         // ==========================================================================
         async function requestWakeLock() {
-            if ('wakeLock' in navigator) {
+            // FIX: Added visibilityState check to prevent unhandled DOM Exception on hidden tabs
+            if ('wakeLock' in navigator && document.visibilityState === 'visible') {
                 try { wakeLock = await navigator.wakeLock.request('screen'); } 
                 catch (err) {}
             }
@@ -1236,7 +1193,6 @@
                     closed = true;
                 }
             });
-            // If the back button is pressed and no modal is open, properly exit room
             if(!closed && !e.state) exitSession();
         });
 
@@ -1250,22 +1206,23 @@
             showScreen('screen-error');
         }
 
-        function exitSession() {
-            if (roomId) {
+        function exitSession(isAlreadyEnded = false) {
+            if (roomId && !isAlreadyEnded) {
                 const myField = (myUid < targetUid) ? 'userA' : 'userB';
                 visionDb.collection('vision_rooms').doc(roomId).update({
                     [myField]: 'offline',
                     sessionStatus: 'ended'
                 }).catch(()=>{});
 
-                // FIX: HARD DELETE ROOM AND CHAT DATA SO NO GHOST INVITES REMAIN
-                visionDb.collection('vision_rooms').doc(roomId).delete().catch(()=>{});
-                visionRdb.ref(`vision_chat/${roomId}`).remove().catch(()=>{});
-                visionRdb.ref(`typing/vision_${roomId}`).remove().catch(()=>{});
+                setTimeout(() => {
+                    visionDb.collection('vision_rooms').doc(roomId).delete().catch(()=>{});
+                    visionRdb.ref(`vision_chat/${roomId}`).remove().catch(()=>{});
+                    visionRdb.ref(`typing/vision_${roomId}`).remove().catch(()=>{});
+                }, 3000);
             }
-            if (player) player.destroy();
-            if (wakeLock) wakeLock.release();
-            window.location.replace('visionLobby.html'); // Safely navigates backward via JS
+            if (player && typeof player.destroy === 'function') player.destroy();
+            if (wakeLock) wakeLock.release().catch(()=>{});
+            window.location.replace('visionLobby.html'); 
         }
 
     </script>
