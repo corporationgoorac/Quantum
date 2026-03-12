@@ -1,15 +1,16 @@
 // config.js
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCFzAEHC5KLiO2DEkVtoTlFn9zeCQrwImE",
-  authDomain: "goorac-c3b59.firebaseapp.com",
-  projectId: "goorac-c3b59",
-  storageBucket: "goorac-c3b59.firebasestorage.app",
-  messagingSenderId: "746746595332",
-  appId: "1:746746595332:web:d3f8527d27fe8ca2530d51",
-  measurementId: "G-M46FEVRYSS",
+  apiKey: "AIzaSyDIlvAUfe9_l-5xGR_A10AuQSyk4KsIxbk",
+  authDomain: "goorac-quantum.firebaseapp.com",
+  projectId: "goorac-quantum",
+  storageBucket: "goorac-quantum.firebasestorage.app",
+  messagingSenderId: "907666610122",
+  appId: "1:907666610122:web:75b3d4b3db96a806706133",
+  measurementId: "G-B45S1VTQ4J",
   // IMPORTANT: Required for Online Status / Presence features
-  databaseURL: "https://goorac-c3b59-default-rtdb.firebaseio.com"
+  databaseURL: "https://goorac-quantum-default-rtdb.firebaseio.com"
 };
 
 // Pusher Beams Configuration for Goorac Quantum (Learning Hack)
