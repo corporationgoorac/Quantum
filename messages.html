@@ -30,7 +30,7 @@
         * { box-sizing: border-box !important; }
 
         /* PREVENT CUSTOM ELEMENTS FROM CAUSING LAYOUT SHIFT BEFORE UPGRADE */
-        view-notes:not(:defined), chat-loader:not(:defined), call-notifier:not(:defined), main-navbar:not(:defined), image-picker:not(:defined) { display: none !important; }
+        view-notes:not(:defined), chat-loader:not(:defined), call-notifier:not(:defined), image-picker:not(:defined) { display: none !important; }
 
         :root {
             --bg: #000;
@@ -205,15 +205,18 @@
         
         /* 🚀 MAIN NAVBAR PRE-ALLOCATION TO FIX GLITCHING */
         main-navbar { 
-            display: block;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             height: calc(65px + env(safe-area-inset-bottom));
-            background-color: var(--bg);
+            background-color: var(--bg) !important;
             z-index: 1000;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            contain: layout size;
         }
 
         /* NETWORK TOAST */
@@ -287,6 +290,8 @@
         #notes-wrapper {
             background: #000; border-bottom: 1px solid rgba(255,255,255,0.05);
             margin-top: -15px; min-height: 170px !important; height: 170px !important; box-sizing: border-box !important; overflow: hidden;
+            display: block !important;
+            contain: layout size;
         }
         #notes-container {
             display: flex; overflow-x: auto; padding-top: 70px; padding-bottom: 10px;
@@ -390,6 +395,7 @@
         <svg onclick="openGroupModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; cursor: pointer; opacity: 0.95;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
     </div>
 </header>
+<main-navbar></main-navbar>
 
 <script>
     (function loadAppIconInstant() {
@@ -628,7 +634,6 @@
     <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #00ff41; border-radius: 50%; border: 2px solid #000; z-index: 2; animation: pulseOnlineFAB 2s infinite; box-shadow: 0 0 8px rgba(0,255,65,0.6);"></div>
 </div>
 
-<main-navbar></main-navbar>
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
 
