@@ -956,6 +956,25 @@ class ViewMoments extends HTMLElement {
                     color: #888; 
                     font-weight: 500; 
                 }
+
+                /* Running Text for Song Titles */
+                @keyframes runText {
+                    0% { transform: translateX(0%); }
+                    100% { transform: translateX(-50%); }
+                }
+                .running-text-box {
+                    overflow: hidden;
+                    position: relative;
+                    width: 180px; 
+                    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+                    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+                }
+                .running-text-content {
+                    display: inline-block;
+                    white-space: nowrap;
+                    animation: runText 8s linear infinite;
+                }
+                
                 .m-song { 
                     font-size: 11px; 
                     color: #fff; 
@@ -1554,8 +1573,12 @@ class ViewMoments extends HTMLElement {
                         </div>
                         <div class="m-song">
                             ${moment.songName ? `
-                                <span class="material-icons-round" style="font-size:12px;">music_note</span>
-                                ${moment.songName} • ${moment.songArtist}
+                                <span class="material-icons-round" style="font-size:12px; margin-right:4px;">music_note</span>
+                                <div class="running-text-box">
+                                    <div class="running-text-content">
+                                        ${moment.songName} • ${moment.songArtist} &nbsp;&nbsp;&nbsp;&nbsp; ${moment.songName} • ${moment.songArtist}
+                                    </div>
+                                </div>
                             ` : `<span class="m-username">@${moment.username}</span>`}
                         </div>
                     </div>
@@ -1928,7 +1951,16 @@ class ViewMoments extends HTMLElement {
                             ${moment.verified ? '<span class="material-icons-round m-verified">verified</span>' : ''}
                             <span style="font-size:11px; color:#888; font-weight:normal;">• ${this.getRelativeTime(moment.createdAt)}</span>
                         </div>
-                        ${moment.songName ? `<div class="m-song"><span class="material-icons-round" style="font-size:12px;">music_note</span>${moment.songName}</div>` : ''}
+                        ${moment.songName ? `
+                            <div class="m-song" style="margin-top: 4px;">
+                                <span class="material-icons-round" style="font-size:12px; margin-right:4px;">music_note</span>
+                                <div class="running-text-box" style="width: 200px;">
+                                    <div class="running-text-content">
+                                        ${moment.songName} • ${moment.songArtist || ''} &nbsp;&nbsp;&nbsp;&nbsp; ${moment.songName} • ${moment.songArtist || ''}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
 
@@ -2242,17 +2274,30 @@ class ViewMoments extends HTMLElement {
             mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:bold; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,0.1);">Aa</div>`;
         }
 
-        const snippet = moment.caption || (moment.type === 'text' ? moment.text : 'A moment');
+        let rawSnippet = moment.caption || (moment.type === 'text' ? moment.text : 'A moment');
+        let snippetWords = rawSnippet.split(/\s+/);
+        let snippet = snippetWords.length > 5 ? snippetWords.slice(0, 5).join(' ') + '...' : rawSnippet;
+
+        // Folding the reply text every 5 words for proper line folding as requested
+        const foldReplyText = (str) => {
+            const words = str.split(/\s+/);
+            let result = '';
+            for (let i = 0; i < words.length; i += 5) {
+                result += words.slice(i, i + 5).join(' ') + '<br/>';
+            }
+            return result;
+        };
+        const foldedText = foldReplyText(text);
 
         const htmlPayload = `
-            <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:14px; border-left:4px solid #ff007f; margin-bottom:8px; display:flex; gap:12px; align-items:center;">
+            <div style="background: linear-gradient(135deg, rgba(255,0,127,0.1) 0%, rgba(20,20,20,0.8) 100%); padding:12px; border-radius:16px; border: 1px solid rgba(255,0,127,0.3); border-left:4px solid #ff007f; margin-bottom:12px; display:flex; gap:12px; align-items:center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                 ${mediaThumb}
                 <div style="display:flex; flex-direction:column; overflow:hidden; flex:1;">
-                    <span style="font-size:11px; color:#aaa; margin-bottom:3px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Replied to your moment</span>
-                    <span style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${snippet}"</span>
+                    <span style="font-size:10px; color:#ff80bf; margin-bottom:4px; text-transform:uppercase; font-weight:800; letter-spacing:0.8px;">Replied to moment</span>
+                    <span style="font-size:13px; color:#fff; font-weight:600; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${snippet}"</span>
                 </div>
             </div>
-            <div style="font-size:15px; color:#fff; word-break:break-word;">${text}</div>
+            <div style="font-size:15px; color:#fff; line-height:1.5; word-wrap:break-word; overflow-wrap:break-word; max-width:100%; white-space:pre-wrap;">${foldedText}</div>
         `;
 
         try {
