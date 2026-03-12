@@ -1128,7 +1128,9 @@ customElements.define('view-drops', ViewDrops);
  */
 const DropsManager = {
     myUid: null,
+    myUserData: null,
     myCloseFriends: [],
+    myFriends: [],
     _isFirstLoad: true, // Tracking first load for shimmer effect
 
     init: function() {
@@ -1148,7 +1150,20 @@ const DropsManager = {
                     this.myUid = user.uid;
                     
                     const myDoc = await firebase.firestore().collection('users').doc(user.uid).get();
-                    if (myDoc.exists) this.myCloseFriends = myDoc.data().closeFriends || [];
+                    if (myDoc.exists) {
+                        this.myUserData = myDoc.data();
+                        this.myCloseFriends = this.myUserData.closeFriends || [];
+                        this.myFriends = this.myUserData.friends || this.myUserData.following || [];
+                        
+                        // Store my profile pic to local storage
+                        if (this.myUserData.photoURL) {
+                            localStorage.setItem('goorac_my_pfp', this.myUserData.photoURL);
+                        }
+                    } else {
+                        this.myUserData = null;
+                        this.myCloseFriends = [];
+                        this.myFriends = [];
+                    }
                     
                     if(document.getElementById('drops-tray-container')) {
                         this.listenToDrops();
@@ -1272,14 +1287,37 @@ const DropsManager = {
             
             const secureDrops = [];
             for (let d of this._cachedLiveDrops) {
-                if (d.audience === 'close_friends' && d.uid !== this.myUid) {
+                // ALWAYS show own drop
+                if (d.uid === this.myUid) {
+                    secureDrops.push(d);
+                    continue;
+                }
+
+                if (d.uid !== this.myUid) {
                     try {
                         const creatorDoc = await db.collection('users').doc(d.uid).get();
-                        const creatorCFList = creatorDoc.exists ? (creatorDoc.data().closeFriends || []) : [];
-                        if (creatorCFList.includes(this.myUid)) secureDrops.push(d);
-                    } catch (e) { }
-                } else {
-                    secureDrops.push(d);
+                        if (creatorDoc.exists) {
+                            const creatorData = creatorDoc.data();
+                            const creatorFriends = creatorData.friends || creatorData.following || [];
+                            const creatorCFList = creatorData.closeFriends || [];
+
+                            // MUTUAL FRIENDS LOGIC:
+                            // Check if I am in their friends list AND they are in my friends list
+                            const theyAreInMyList = this.myFriends.includes(d.uid);
+                            const iAmInTheirList = creatorFriends.includes(this.myUid);
+                            const isMutual = theyAreInMyList && iAmInTheirList;
+
+                            if (isMutual) {
+                                if (d.audience === 'close_friends') {
+                                    if (creatorCFList.includes(this.myUid)) {
+                                        secureDrops.push(d);
+                                    }
+                                } else {
+                                    secureDrops.push(d);
+                                }
+                            }
+                        }
+                    } catch (e) { console.error(e); }
                 }
             }
 
@@ -1360,7 +1398,9 @@ const DropsManager = {
             };
         } else {
             myItem.className = `dt-item me-empty`;
-            const myPfp = (this.myUserData && this.myUserData.photoURL) ? this.myUserData.photoURL : 'https://via.placeholder.com/150';
+            const myStoredPfp = localStorage.getItem('goorac_my_pfp');
+            const myPfp = (this.myUserData && this.myUserData.photoURL) ? this.myUserData.photoURL : (myStoredPfp ? myStoredPfp : 'https://via.placeholder.com/150');
+            
             myItem.innerHTML = `
                 <div class="dt-ring-wrap">
                     <img src="${myPfp}" class="dt-avatar">
