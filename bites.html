@@ -95,15 +95,13 @@
             position: relative;
         }
 
-        /* THE HARDWARE PLAYERS (FIXED BEHIND SCROLL) */
+        /* THE HARDWARE PLAYERS (UPDATED TO SCROLL WITH VIEWPORT) */
         .yt-player-container {
-            position: fixed; top: 0; left: 0; width: 100vw; 
+            position: absolute; top: 0; left: 0; width: 100vw; 
             height: calc(100vh - var(--nav-height));
-            z-index: 1; opacity: 0; pointer-events: none; background: #000;
-            transform: scale(1.05); 
-            transition: opacity 0.35s ease-in-out; 
+            z-index: 1; opacity: 1; pointer-events: none; background: #000;
         }
-        .yt-player-container.active { opacity: 1; z-index: 2; }
+        .yt-player-container.active { z-index: 2; }
         
         /* STRICT IFRAME LOCK: Prevents YouTube from stealing clicks */
         iframe { width: 100%; height: 100%; border: none; pointer-events: none !important; }
@@ -265,9 +263,6 @@
     </div>
 </header>
 
-<div id="player-container-a" class="yt-player-container active"><div id="yt-player-a"></div></div>
-<div id="player-container-b" class="yt-player-container"><div id="yt-player-b"></div></div>
-
 <div id="main-skeleton" style="display:flex;">
     <div class="skel-side">
         <div class="skel-circle"></div>
@@ -283,7 +278,10 @@
 
 <div class="play-indicator" id="play-pause-icon"><span class="material-icons-round" id="pp-icon-inner">pause</span></div>
 
-<div id="bites-viewport" onscroll="handleScroll()"></div>
+<div id="bites-viewport" onscroll="handleScroll()">
+    <div id="player-container-a" class="yt-player-container active"><div id="yt-player-a"></div></div>
+    <div id="player-container-b" class="yt-player-container"><div id="yt-player-b"></div></div>
+</div>
 
 <div id="discover-modal">
     <div class="modal-header">
@@ -498,13 +496,15 @@
         const existingLoader = document.getElementById('infinite-loader-slide');
         if (existingLoader) existingLoader.remove();
 
-        while (viewport.children.length < bitesQueue.length) {
-            const index = viewport.children.length;
-            const bite = bitesQueue[index];
+        // Calculate count correctly by ignoring player containers
+        const slideCount = document.querySelectorAll('.bite-slide').length;
+
+        for (let i = slideCount; i < bitesQueue.length; i++) {
+            const bite = bitesQueue[i];
             
             const slide = document.createElement('div');
             slide.className = 'bite-slide';
-            slide.dataset.index = index;
+            slide.dataset.index = i;
             slide.onclick = () => togglePlayPause();
 
             slide.innerHTML = `
@@ -514,11 +514,11 @@
                             <img src="${bite.imgUrl}" class="creator-pfp">
                             <div class="follow-badge">+</div>
                         </div>
-                        <div class="action-btn" id="like-btn-${index}" onclick="handleLike(event, ${index})">
-                            <span class="material-icons-round" id="like-icon-${index}">favorite_border</span>
+                        <div class="action-btn" id="like-btn-${i}" onclick="handleLike(event, ${i})">
+                            <span class="material-icons-round" id="like-icon-${i}">favorite_border</span>
                             <span class="count">${formatNumber(bite.likes)}</span>
                         </div>
-                        <div class="action-btn" onclick="shareBite(event, ${index})">
+                        <div class="action-btn" onclick="shareBite(event, ${i})">
                             <span class="material-icons-round">reply</span>
                             <span class="count share-text">Share</span>
                         </div>
@@ -582,6 +582,7 @@
     }
 
     let lastScrollProcessTime = 0; 
+    let lastScrollDir = 'down';
     
     function handleScroll() {
         if (!hasStarted) return;
@@ -592,6 +593,33 @@
         const firstSlide = document.querySelector('.bite-slide');
         const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
         const scrollPosition = viewport.scrollTop;
+
+        // DYNAMIC PLAYER LEAPFROG TO SWIPE WITH SLIDES
+        const inactiveId = activePlayer === 'A' ? 'player-container-b' : 'player-container-a';
+        const inactiveEl = document.getElementById(inactiveId);
+        const inactivePlayerObj = activePlayer === 'A' ? playerB : playerA;
+        
+        if (scrollPosition < currentIndex * slideHeight - 10) {
+            if (lastScrollDir !== 'up') {
+                lastScrollDir = 'up';
+                inactiveEl.style.top = ((currentIndex - 1) * slideHeight) + 'px';
+                const prevVid = bitesQueue[currentIndex - 1]?.videoId;
+                if (prevVid) {
+                    inactivePlayerObj.cueVideoById(prevVid);
+                    if(activePlayer === 'A') currentLoadedB = prevVid; else currentLoadedA = prevVid;
+                }
+            }
+        } else if (scrollPosition > currentIndex * slideHeight + 10) {
+            if (lastScrollDir !== 'down') {
+                lastScrollDir = 'down';
+                inactiveEl.style.top = ((currentIndex + 1) * slideHeight) + 'px';
+                const nextVid = bitesQueue[currentIndex + 1]?.videoId;
+                if (nextVid) {
+                    inactivePlayerObj.cueVideoById(nextVid);
+                    if(activePlayer === 'A') currentLoadedB = nextVid; else currentLoadedA = nextVid;
+                }
+            }
+        }
         
         const newIndex = Math.round(scrollPosition / slideHeight);
 
@@ -728,10 +756,15 @@
         if (typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
         if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
 
+        const firstSlide = document.querySelector('.bite-slide');
+        const h = firstSlide ? firstSlide.clientHeight : 0;
+
         if (isEven) {
             activePlayer = 'A';
             document.getElementById('player-container-b').classList.remove('active');
             document.getElementById('player-container-a').classList.add('active');
+            
+            document.getElementById('player-container-a').style.top = (currentIndex * h) + 'px';
             
             if (currentVid) {
                 if (currentLoadedA !== currentVid) {
@@ -740,6 +773,7 @@
                 } else if (hasStarted) playerA.playVideo();
             }
             if (nextVid && currentLoadedB !== nextVid) {
+                document.getElementById('player-container-b').style.top = ((currentIndex + 1) * h) + 'px';
                 playerB.cueVideoById(nextVid);
                 currentLoadedB = nextVid;
             }
@@ -748,6 +782,8 @@
             document.getElementById('player-container-a').classList.remove('active');
             document.getElementById('player-container-b').classList.add('active');
             
+            document.getElementById('player-container-b').style.top = (currentIndex * h) + 'px';
+            
             if (currentVid) {
                 if (currentLoadedB !== currentVid) {
                     hasStarted ? playerB.loadVideoById(currentVid) : playerB.cueVideoById(currentVid);
@@ -755,6 +791,7 @@
                 } else if (hasStarted) playerB.playVideo();
             }
             if (nextVid && currentLoadedA !== nextVid) {
+                document.getElementById('player-container-a').style.top = ((currentIndex + 1) * h) + 'px';
                 playerA.cueVideoById(nextVid);
                 currentLoadedA = nextVid;
             }
@@ -829,7 +866,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                let fetchUrl = `https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
+                let fetchUrl = `https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
                 if (attempts > 1) {
                     const bustWords = ["viral", "hits", "trending", "wow"];
                     fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
@@ -942,7 +979,24 @@
             currentIndex = backupIndex;
             
             const viewport = document.getElementById('bites-viewport');
+            
+            // Revert players back to absolute positioning since we are resetting viewport
+            document.getElementById('player-container-a').style.top = '0px';
+            document.getElementById('player-container-b').style.top = '0px';
+
+            const playerA_el = document.getElementById('player-container-a');
+            const playerB_el = document.getElementById('player-container-b');
+            
+            // Temporarily remove players to clear viewport properly without deleting them
+            playerA_el.remove();
+            playerB_el.remove();
+            
             viewport.innerHTML = '';
+            
+            // Re-append players
+            viewport.appendChild(playerA_el);
+            viewport.appendChild(playerB_el);
+            
             renderDOMSlides();
             
             const firstSlide = document.querySelector('.bite-slide');
@@ -977,7 +1031,7 @@
         grid.innerHTML = skelHtml;
 
         try {
-            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true`);
+            const res = await fetch(`https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true`);
             const data = await res.json();
             
             if (data.success && data.bites.length > 0) {
@@ -1017,7 +1071,19 @@
         bitesQueue = [clickedBite, ...otherResults];
         
         const viewport = document.getElementById('bites-viewport');
+        
+        const playerA_el = document.getElementById('player-container-a');
+        const playerB_el = document.getElementById('player-container-b');
+        playerA_el.style.top = '0px';
+        playerB_el.style.top = '0px';
+        
+        playerA_el.remove();
+        playerB_el.remove();
+        
         viewport.innerHTML = '';
+        viewport.appendChild(playerA_el);
+        viewport.appendChild(playerB_el);
+        
         currentIndex = 0;
         viewport.scrollTop = 0;
         viewedVideoIds.clear();
