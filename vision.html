@@ -352,7 +352,12 @@
             margin-bottom: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
         }
         .vid-card:active { transform: scale(0.97); background: #1a1a1a; }
-        .vid-thumb { width: 120px; height: 68px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; }
+        
+        /* NEW: Added UI for Time Duration overlay matching YouTube style */
+        .thumb-wrapper { position: relative; width: 120px; height: 68px; flex-shrink: 0; }
+        .vid-thumb { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; background: #222; }
+        .vid-duration { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.85); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; letter-spacing: 0.5px; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
+        
         .vid-details { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
         .vid-title-text { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .vid-channel { font-size: 11px; color: #888; }
@@ -486,6 +491,21 @@
     </div>
 
     <script>
+        // NEW STATE VARIABLES FOR INFINITE SCROLL
+        let currentSearchQuery = "";
+        let isFetchingMore = false;
+        let pipedNextPageToken = "";
+
+        // NEW HELPER: Format Time Duration
+        function formatDuration(seconds) {
+            if (!seconds) return "";
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
         // ==========================================================================
         // 1. SYSTEM INITIALIZATION & VARIABLES
         // ==========================================================================
@@ -952,6 +972,71 @@
             }
         }
 
+        // NEW: Infinite Scroll Listener
+        document.getElementById('picker-results').addEventListener('scroll', function() {
+            if (this.scrollTop + this.clientHeight >= this.scrollHeight - 50) {
+                if (!isFetchingMore && currentSearchQuery && pipedNextPageToken) {
+                    loadMoreResults();
+                }
+            }
+        });
+
+        // NEW: Fetch Next Page Function
+        async function loadMoreResults() {
+            isFetchingMore = true;
+            const container = document.getElementById('picker-results');
+            
+            const loader = document.createElement('div');
+            loader.id = 'inf-loader';
+            loader.innerHTML = '<div class="skel-card"><div class="skel-thumb"></div><div style="flex:1"><div class="skel-line" style="width:90%"></div><div class="skel-line" style="width:60%"></div></div></div>';
+            container.appendChild(loader);
+
+            let newResults = [];
+            try {
+                const fallback = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(currentSearchQuery)}&filter=all&nextpage=${pipedNextPageToken}`);
+                const fbData = await fallback.json();
+                
+                if (fbData.nextpage) pipedNextPageToken = fbData.nextpage;
+                else pipedNextPageToken = "";
+
+                if (fbData.items && fbData.items.length > 0) {
+                    newResults = fbData.items.filter(i => i.type === 'stream').map(v => ({
+                        videoId: v.url.replace('/watch?v=', ''),
+                        title: v.title,
+                        author: v.uploaderName,
+                        imgUrl: v.thumbnail,
+                        lengthSeconds: v.duration
+                    }));
+                }
+            } catch (err) {
+                console.error("Infinite scroll error:", err);
+            }
+
+            const loaderEl = document.getElementById('inf-loader');
+            if(loaderEl) loaderEl.remove();
+
+            if (newResults.length > 0) {
+                newResults.forEach(vid => {
+                    const card = document.createElement('div');
+                    card.className = 'vid-card';
+                    card.onclick = () => selectVideo({ id: vid.videoId, title: vid.title, author: vid.author });
+                    const durationHtml = vid.lengthSeconds ? `<div class="vid-duration">${formatDuration(vid.lengthSeconds)}</div>` : '';
+                    card.innerHTML = `
+                        <div class="thumb-wrapper">
+                            <img src="${vid.imgUrl}" class="vid-thumb">
+                            ${durationHtml}
+                        </div>
+                        <div class="vid-details">
+                            <div class="vid-title-text">${vid.title}</div>
+                            <div class="vid-channel">${vid.author || "YouTube"}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            isFetchingMore = false;
+        }
+
         document.getElementById('vid-search-input').addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const query = e.target.value.trim();
@@ -959,6 +1044,9 @@
                 
                 const container = document.getElementById('picker-results');
                 
+                currentSearchQuery = query; 
+                pipedNextPageToken = ""; 
+
                 const urlRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
                 const match = query.match(urlRegex);
                 
@@ -975,7 +1063,8 @@
                 let results = [];
 
                 try {
-                    const res = await fetch(`https://pishaa.onrender.com/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
+                    // NEW: Updated to point to your new Master Backend Proxy API Link
+                    const res = await fetch(`https://pish-uigm.onrender.com/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
                     const data = await res.json();
                     if (data.bites && data.bites.length > 0) results = data.bites;
                 } catch (err) {
@@ -986,17 +1075,25 @@
                     try {
                         const fallback = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=all`);
                         const fbData = await fallback.json();
+                        if (fbData.nextpage) pipedNextPageToken = fbData.nextpage; 
                         if (fbData.items && fbData.items.length > 0) {
                             results = fbData.items.filter(i => i.type === 'stream').map(v => ({
                                 videoId: v.url.replace('/watch?v=', ''),
                                 title: v.title,
                                 author: v.uploaderName,
-                                imgUrl: v.thumbnail
+                                imgUrl: v.thumbnail,
+                                lengthSeconds: v.duration 
                             }));
                         }
                     } catch (err) {
                         console.error("All Search APIs Failed.");
                     }
+                } else {
+                    // NEW: Background fetch to just grab the nextPageToken for infinite scroll if our API succeeds
+                    fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=all`)
+                        .then(r => r.json())
+                        .then(d => { if(d.nextpage) pipedNextPageToken = d.nextpage; })
+                        .catch(()=>{});
                 }
 
                 container.innerHTML = '';
@@ -1005,8 +1102,15 @@
                         const card = document.createElement('div');
                         card.className = 'vid-card';
                         card.onclick = () => selectVideo({ id: vid.videoId, title: vid.title, author: vid.author });
+                        
+                        // NEW: HTML injection with formatting logic for lengthSeconds
+                        const durationHtml = vid.lengthSeconds ? `<div class="vid-duration">${formatDuration(vid.lengthSeconds)}</div>` : '';
+
                         card.innerHTML = `
-                            <img src="${vid.imgUrl}" class="vid-thumb">
+                            <div class="thumb-wrapper">
+                                <img src="${vid.imgUrl}" class="vid-thumb">
+                                ${durationHtml}
+                            </div>
                             <div class="vid-details">
                                 <div class="vid-title-text">${vid.title}</div>
                                 <div class="vid-channel">${vid.author || "YouTube"}</div>
