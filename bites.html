@@ -32,7 +32,7 @@
 
     <style>
         /* ==========================================================================
-           GLOBAL RESET & THEME (ENHANCED WITH HARDWARE ACCELERATION)
+           GLOBAL RESET & THEME
            ========================================================================== */
         * { box-sizing: border-box !important; -webkit-tap-highlight-color: transparent; }
 
@@ -40,17 +40,18 @@
             --bg: #000;
             --accent: #00d2ff;
             --border: rgba(255, 255, 255, 0.1);
+            --text-dim: #888;
             --danger: #ff4444;
+            --glass: rgba(0, 0, 0, 0.4);
+            --text-main: #ffffff;
             --nav-height: calc(65px + env(safe-area-inset-bottom)); 
-            --glass-bg: rgba(20, 20, 20, 0.6);
         }
 
         body {
             background: var(--bg); color: white; margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden; 
             width: 100vw; height: 100vh;
-            overscroll-behavior-y: none;
         }
 
         /* ==========================================================================
@@ -61,22 +62,20 @@
             padding: 15px 20px; display: flex; justify-content: space-between;
             align-items: center; z-index: 1000;
             padding-top: max(15px, env(safe-area-inset-top));
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
             pointer-events: none; 
-            will-change: transform;
         }
-        .header-title { font-weight: 800; font-size: 1.4rem; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); pointer-events: auto; letter-spacing: -0.5px;}
+        .header-title { font-weight: 800; font-size: 1.4rem; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); pointer-events: auto; }
         .header-right { pointer-events: auto; }
         
         .search-btn {
             width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.25);
-            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+            transition: 0.2s;
         }
-        .search-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.3); }
+        .search-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
 
         /* ==========================================================================
            THE VIRTUAL SWIPER ENGINE (CSS SNAP)
@@ -87,7 +86,6 @@
             scrollbar-width: none; -webkit-overflow-scrolling: touch;
             z-index: 10; padding-bottom: var(--nav-height);
             scroll-behavior: smooth; 
-            will-change: scroll-position;
         }
         #bites-viewport::-webkit-scrollbar { display: none; }
 
@@ -95,7 +93,6 @@
             width: 100vw; height: calc(100vh - var(--nav-height));
             scroll-snap-align: start; scroll-snap-stop: always;
             position: relative;
-            contain: strict;
         }
 
         /* THE HARDWARE PLAYERS (FIXED BEHIND SCROLL) */
@@ -105,9 +102,10 @@
             z-index: 1; opacity: 0; pointer-events: none; background: #000;
             transform: scale(1.05); 
             transition: opacity 0.35s ease-in-out; 
-            will-change: opacity;
         }
         .yt-player-container.active { opacity: 1; z-index: 2; }
+        
+        /* STRICT IFRAME LOCK: Prevents YouTube from stealing clicks */
         iframe { width: 100%; height: 100%; border: none; pointer-events: none !important; }
 
         /* ==========================================================================
@@ -117,38 +115,43 @@
             position: absolute; inset: 0; z-index: 20;
             display: flex; flex-direction: column; justify-content: flex-end;
             padding: 15px; 
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 30%, transparent 50%);
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 45%);
             padding-bottom: 25px; 
-            pointer-events: none;
         }
 
         .side-actions {
             position: absolute; right: 15px; 
             bottom: 25px; 
-            display: flex; flex-direction: column; gap: 28px; align-items: center;
-            pointer-events: auto;
+            display: flex; flex-direction: column; gap: 25px; align-items: center;
         }
 
-        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; cursor: pointer; transition: 0.2s;}
-        .action-btn:active { transform: scale(0.8); }
-        .action-btn .material-icons-round { font-size: 38px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.8)); transition: color 0.3s; }
-        .action-btn span.count { font-size: 0.8rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+        .action-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #fff; cursor: pointer; transition: 0.2s;}
+        .action-btn:active { transform: scale(0.85); }
+        
+        .action-btn .material-icons-round { 
+            font-size: 36px; 
+            color: #fff; 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); 
+        }
+        
+        .action-btn span.count { font-size: 0.75rem; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+        
         .action-btn.liked .material-icons-round { color: var(--danger); }
-        .action-btn.liked { animation: heartPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+        .action-btn.liked { animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
-        .creator-pfp-wrap { position: relative; width: 48px; height: 48px; margin-bottom: 12px; pointer-events: auto; }
-        .creator-pfp { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; background: #222; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .creator-pfp-wrap { position: relative; width: 45px; height: 45px; margin-bottom: 10px; }
+        .creator-pfp { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; background: #222; }
         .follow-badge {
-            position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: #000; width: 20px; height: 20px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900;
-            border: 2px solid #000; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: #000; width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900;
+            border: 2px solid #000;
         }
 
-        .bottom-info { max-width: 78%; padding-bottom: 8px; pointer-events: auto; }
-        .bite-author { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.9); display: flex; align-items: center; gap: 6px; letter-spacing: -0.3px;}
-        .bite-desc { font-size: 0.95rem; color: #f4f4f4; line-height: 1.45; text-shadow: 0 2px 6px rgba(0,0,0,0.9); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .bottom-info { max-width: 80%; padding-bottom: 5px; }
+        .bite-author { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 1px 5px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 6px; }
+        .bite-desc { font-size: 0.9rem; color: #eee; line-height: 1.4; text-shadow: 0 1px 5px rgba(0,0,0,0.8); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
         /* ==========================================================================
            INFINITE SCROLL LOADER SLIDE
@@ -157,89 +160,89 @@
             width: 100vw; height: calc(100vh - var(--nav-height));
             scroll-snap-align: start; scroll-snap-stop: always;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #000; color: #888; position: relative;
+            background: transparent; color: #666;
         }
         .circular-loader {
-            width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1);
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
             border-top-color: var(--accent); border-radius: 50%;
-            animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader-text { margin-top: 18px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; text-align: center; padding: 0 20px; line-height: 1.5; color: #aaa; }
+        .loader-text { margin-top: 15px; font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-align: center; padding: 0 20px; line-height: 1.4; }
 
         /* ==========================================================================
            SEARCH DISCOVER MODAL
            ========================================================================== */
         #discover-modal {
             position: fixed; top: 0; right: -100%; width: 100vw; height: 100vh;
-            background: #050505; z-index: 2000; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #000; z-index: 2000; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column;
         }
         #discover-modal.active { right: 0; }
 
         .modal-header {
             padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top));
-            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: rgba(10,10,10,0.95);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: #000;
         }
-        .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; padding: 0; }
+        .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; }
         .search-input-box {
-            flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 14px 18px;
-            border-radius: 16px; color: #fff; font-size: 16px; outline: none; transition: 0.3s;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px 16px;
+            border-radius: 14px; color: #fff; font-size: 16px; outline: none; transition: 0.2s;
         }
-        .search-input-box:focus { border-color: var(--accent); background: #222; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 10px rgba(0, 210, 255, 0.2); }
+        .search-input-box:focus { border-color: var(--accent); background: #222; }
 
         .grid-results {
             flex: 1; overflow-y: auto; padding: 2px;
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
-            align-content: start; background: #000;
+            align-content: start;
         }
 
-        .grid-item { aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden; border-radius: 2px; }
-        .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-        .grid-item:active img { transform: scale(1.08); }
+        .grid-item {
+            aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden;
+        }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .grid-item:active img { transform: scale(1.05); }
         .grid-item .views-overlay {
-            position: absolute; bottom: 6px; left: 6px; font-size: 0.75rem; font-weight: 800; color: #fff;
-            display: flex; align-items: center; gap: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-            background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 6px; backdrop-filter: blur(4px);
+            position: absolute; bottom: 5px; left: 5px; font-size: 0.7rem; font-weight: 700; color: #fff;
+            display: flex; align-items: center; gap: 3px; text-shadow: 0 1px 3px #000;
         }
 
-        .skel-grid-item { aspect-ratio: 9 / 16; background: #1a1a1a; animation: skelPulse 1.5s infinite; border-radius: 2px; }
-        @keyframes skelPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .skel-grid-item { aspect-ratio: 9 / 16; background: #1a1a1a; animation: skelPulse 1.5s infinite; }
+        @keyframes skelPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* PLAY/PAUSE OVERLAY INDICATOR */
         .play-indicator {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 75px; height: 75px; background: rgba(0,0,0,0.6); border-radius: 50%;
+            width: 70px; height: 70px; background: rgba(0,0,0,0.5); border-radius: 50%;
             display: flex; align-items: center; justify-content: center; color: #fff;
-            opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 30; pointer-events: none;
-            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            opacity: 0; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 30; pointer-events: none;
         }
-        .play-indicator .material-icons-round { font-size: 45px; }
+        .play-indicator .material-icons-round { font-size: 40px; }
         .play-indicator.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
+        /* TAP TO START SCREEN */
         #start-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: opacity 0.4s;
+            color: #fff; cursor: pointer; backdrop-filter: blur(10px); transition: opacity 0.3s;
         }
-        .start-btn-pulse { width: 85px; height: 85px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 35px var(--accent); animation: startPulse 2s infinite; margin-bottom: 25px; color: #000; }
-        @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.8); } 70% { box-shadow: 0 0 0 25px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
+        .start-btn-pulse { width: 80px; height: 80px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px var(--accent); animation: startPulse 2s infinite; margin-bottom: 20px; color: #000; }
+        @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
 
+        /* MAIN FEED SKELETON LOADER */
         #main-skeleton {
             position: absolute; inset: 0; z-index: 15; background: #000;
             display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; padding-bottom: 25px;
         }
-        .skel-side { position: absolute; right: 15px; bottom: 25px; display: flex; flex-direction: column; gap: 28px; align-items: center; }
-        .skel-circle { width: 48px; height: 48px; border-radius: 50%; background: #1a1a1a; animation: skelPulse 1.5s infinite; }
+        .skel-side { position: absolute; right: 15px; bottom: 25px; display: flex; flex-direction: column; gap: 25px; align-items: center; }
+        .skel-circle { width: 45px; height: 45px; border-radius: 50%; background: #1a1a1a; animation: skelPulse 1.5s infinite; }
         .skel-bottom { max-width: 78%; }
-        .skel-line-long { height: 18px; width: 65%; background: #1a1a1a; border-radius: 10px; margin-bottom: 14px; animation: skelPulse 1.5s infinite; }
-        .skel-line-short { height: 15px; width: 45%; background: #1a1a1a; border-radius: 10px; margin-bottom: 12px; animation: skelPulse 1.5s infinite; }
+        .skel-line-long { height: 16px; width: 60%; background: #1a1a1a; border-radius: 8px; margin-bottom: 12px; animation: skelPulse 1.5s infinite; }
+        .skel-line-short { height: 14px; width: 40%; background: #1a1a1a; border-radius: 8px; margin-bottom: 10px; animation: skelPulse 1.5s infinite; }
 
         main-navbar { 
             display: block; position: fixed; bottom: 0; left: 0; width: 100%;
             height: var(--nav-height); background-color: var(--bg); z-index: 1000; 
-            border-top: 1px solid rgba(255,255,255,0.05);
         }
     </style>
 </head>
@@ -248,9 +251,9 @@
 <chat-loader></chat-loader>
 
 <div id="start-screen" onclick="initExperience()">
-    <div class="start-btn-pulse"><span class="material-icons-round" style="font-size:45px;">play_arrow</span></div>
-    <h2 style="margin:0; font-weight:800; font-size:1.6rem; letter-spacing: -0.5px;">Tap to enter Bites</h2>
-    <p style="color:#aaa; font-size:0.95rem; margin-top:12px; font-weight: 500;">Turn your volume up</p>
+    <div class="start-btn-pulse"><span class="material-icons-round" style="font-size:40px;">play_arrow</span></div>
+    <h2 style="margin:0; font-weight:800; font-size:1.5rem;">Tap to enter Bites</h2>
+    <p style="color:#aaa; font-size:0.9rem; margin-top:10px;">Turn your volume up</p>
 </div>
 
 <header>
@@ -268,13 +271,13 @@
 <div id="main-skeleton" style="display:flex;">
     <div class="skel-side">
         <div class="skel-circle"></div>
-        <div class="skel-circle" style="width:38px; height:38px;"></div>
-        <div class="skel-circle" style="width:38px; height:38px;"></div>
+        <div class="skel-circle" style="width:35px; height:35px;"></div>
+        <div class="skel-circle" style="width:35px; height:35px;"></div>
     </div>
     <div class="skel-bottom">
         <div class="skel-line-long"></div>
         <div class="skel-line-short"></div>
-        <div class="skel-line-short" style="width: 35%;"></div>
+        <div class="skel-line-short" style="width: 30%;"></div>
     </div>
 </div>
 
@@ -285,13 +288,13 @@
 <div id="discover-modal">
     <div class="modal-header">
         <button class="back-btn" onclick="closeDiscoverModal(true)"><span class="material-icons-round">west</span></button>
-        <input type="text" id="search-input" class="search-input-box" placeholder="Search top viral bites..." autocomplete="off">
+        <input type="text" id="search-input" class="search-input-box" placeholder="Search trending topics..." autocomplete="off">
     </div>
     <div class="grid-results" id="search-grid">
-        <div style="grid-column: 1 / -1; text-align:center; padding: 60px 20px; color: #555;">
-            <span class="material-icons-round" style="font-size: 55px; opacity:0.6; margin-bottom: 12px; color: var(--accent);">explore</span>
-            <p style="font-weight:700; font-size:1.2rem; color: #ddd;">Discover Quantum Bites</p>
-            <p style="font-size:0.9rem; margin-top:8px; line-height: 1.5;">Search the universe for gaming, cinema, tech, and viral hits.</p>
+        <div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">
+            <span class="material-icons-round" style="font-size: 50px; opacity:0.5; margin-bottom: 10px;">explore</span>
+            <p style="font-weight:600; font-size:1.1rem;">Discover New Bites</p>
+            <p style="font-size:0.85rem; margin-top:5px;">Search for gaming, comedy, tech, and more.</p>
         </div>
     </div>
 </div>
@@ -307,117 +310,24 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     let myUid = null;
-    let myInterests = []; 
-
-    async function sniffRegionalInterest() {
-        try {
-            const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
-            const data = await res.json();
-            const region = (data.region || "").toLowerCase();
-            
-            if (region.includes("tamil nadu")) return "tamil";
-            if (region.includes("kerala")) return "malayalam";
-            if (region.includes("karnataka")) return "kannada";
-            if (region.includes("andhra") || region.includes("telangana")) return "telugu";
-            if (region.includes("maharashtra") || region.includes("gujarat") || region.includes("delhi")) return "hindi";
-            
-            return null;
-        } catch(e) { return null; }
-    }
+    let myInterests = ["tamil"]; 
 
     auth.onAuthStateChanged(user => {
         if (user) { 
             myUid = user.uid; 
-            db.collection("users").doc(myUid).get().then(async doc => {
+            db.collection("users").doc(myUid).get().then(doc => {
                 if(doc.exists && doc.data().interests) {
                     const ints = doc.data().interests;
                     myInterests = Object.keys(ints).sort((a,b) => ints[b] - ints[a]).slice(0, 5);
+                    if(myInterests.length === 0) myInterests = ["tamil"]; 
                 }
-                
-                if(!myInterests || myInterests.length === 0) {
-                    myInterests = ["trending"]; 
-                    const regionalTopic = await sniffRegionalInterest();
-                    if (regionalTopic && !myInterests.includes(regionalTopic)) myInterests.push(regionalTopic);
-                    
-                    const userLang = navigator.language || navigator.userLanguage; 
-                    if (userLang.startsWith('ml') && !myInterests.includes('malayalam')) myInterests.push('malayalam');
-                    else if (userLang.startsWith('te') && !myInterests.includes('telugu')) myInterests.push('telugu');
-                    else if (userLang.startsWith('ta') && !myInterests.includes('tamil')) myInterests.push('tamil');
-                    else if (userLang.startsWith('hi') && !myInterests.includes('hindi')) myInterests.push('hindi');
-                }
-
-                if (playersReady === 2 && bitesQueue.length === 0 && !isFetching && !isSearchPlaying) fetchMoreBites();
-            }).catch(e => {
-                myInterests = ["trending"];
-                if (playersReady === 2 && bitesQueue.length === 0 && !isFetching && !isSearchPlaying) fetchMoreBites();
             });
         } 
         else { window.location.href = 'login.html'; }
     });
 
     // ==========================================================================
-    // 🧠 ADVANCED QUANTUM NLP BRAIN (CLIENT-SIDE MACHINE LEARNING)
-    // ==========================================================================
-    /**
-     * The QuantumBrain class is an advanced mathematical engine that runs directly
-     * on the user's device. It calculates Term Frequency-Inverse Document Frequency (TF-IDF)
-     * and Cosine Similarity to instantly re-rank the database pool based on the user's 
-     * micro-interactions in the current session.
-     */
-    class QuantumBrain {
-        constructor() {
-            this.userTasteVector = new Map(); // Real-time session preferences
-            this.stopWords = new Set(["the", "is", "in", "and", "to", "a", "of", "for", "on", "with", "oru", "athu", "ithu", "video", "shorts", "status"]);
-        }
-
-        // Tokenize and clean text using Regex and Stop Words
-        tokenize(text) {
-            if (!text) return [];
-            return text.toLowerCase()
-                .replace(/[^\w\s\p{L}]/gu, '')
-                .split(/\s+/)
-                .filter(w => w.length > 2 && !this.stopWords.has(w));
-        }
-
-        // When a user watches a video, analyze it and update their brain vector
-        absorbEngagement(video, scoreChange) {
-            if (!video || scoreChange === 0) return;
-            const tokens = this.tokenize(video.title + " " + (video.category || ""));
-            const weight = scoreChange > 0 ? scoreChange : (scoreChange / 2); // Penalize skips slightly less
-
-            tokens.forEach(token => {
-                const currentWeight = this.userTasteVector.get(token) || 0;
-                // Exponential decay to prioritize recent watching behavior over old
-                this.userTasteVector.set(token, (currentWeight * 0.9) + weight); 
-            });
-        }
-
-        // Mathematically rank a batch of videos against the user's current brain vector
-        rankFeed(videosArray) {
-            if (this.userTasteVector.size === 0) return videosArray; // No data yet, return as-is
-
-            return videosArray.map(video => {
-                const videoTokens = this.tokenize(video.title + " " + (video.category || ""));
-                let similarityScore = 0;
-
-                // Calculate dot product (simplified cosine similarity)
-                videoTokens.forEach(token => {
-                    if (this.userTasteVector.has(token)) {
-                        similarityScore += this.userTasteVector.get(token);
-                    }
-                });
-
-                // Mix mathematical score with pure randomness to maintain discovery (Explore vs Exploit)
-                const finalScore = similarityScore + (Math.random() * 10);
-                return { ...video, quantumScore: finalScore };
-            }).sort((a, b) => b.quantumScore - a.quantumScore);
-        }
-    }
-
-    const sessionBrain = new QuantumBrain();
-
-    // ==========================================================================
-    // THE BITES ENGINE (PURE STATE, NO STALE LOCAL CACHE)
+    // THE BITES ENGINE (STATE, SHARED URLS & CACHE)
     // ==========================================================================
     let bitesQueue = [];
     let currentIndex = 0;
@@ -425,7 +335,6 @@
     let hasStarted = false;
     let viewedVideoIds = new Set(); 
     
-    // Increased watch history limit so it remembers what you've seen longer
     let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
     let currentVideoStartTime = 0; 
 
@@ -440,40 +349,83 @@
     let currentLoadedA = null;
     let currentLoadedB = null;
 
+    // 🚀 DYNAMIC URL REDIRECTION: Check if user arrived via a shared link
     let sharedVidId = null;
     const urlParams = new URLSearchParams(window.location.search);
     const rawUrlParam = urlParams.get('v') || urlParams.get('url');
+    
     if (rawUrlParam) {
-        if (rawUrlParam.length === 11) sharedVidId = rawUrlParam;
-        else {
+        if (rawUrlParam.length === 11) {
+            sharedVidId = rawUrlParam; // Clean ID provided
+        } else {
+            // Extract from standard YouTube Links if provided
             const match = rawUrlParam.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/);
             if (match) sharedVidId = match[1];
         }
     }
 
-    if (sharedVidId && !bitesHistory.includes(sharedVidId)) {
-        bitesQueue.push({
-            videoId: sharedVidId,
-            title: "Shared Video",
-            author: "Goorac",
-            category: "shared",
-            likes: 0,
-            imgUrl: `https://img.youtube.com/vi/${sharedVidId}/hqdefault.jpg`
-        });
-        viewedVideoIds.add(sharedVidId);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    // Cache Loader Engine
+    (function initializeAppQueue() {
+        const uniqueCache = [];
+        const seen = new Set();
 
+        // 1. Force the shared video to be the first slide if one exists
+        if (sharedVidId) {
+            uniqueCache.push({
+                videoId: sharedVidId,
+                title: "Shared Video",
+                author: "Goorac",
+                category: "shared",
+                likes: 0,
+                imgUrl: `https://img.youtube.com/vi/${sharedVidId}/hqdefault.jpg`
+            });
+            seen.add(sharedVidId);
+            viewedVideoIds.add(sharedVidId);
+            
+            // Silently clean the URL bar so they don't get trapped in a loop on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // 2. Load the rest of the standard cache
+        const cached = localStorage.getItem('goorac_bites_queue');
+        if (cached) {
+            try { 
+                const parsed = JSON.parse(cached);
+                if (parsed.length > 0) {
+                    parsed.forEach(b => {
+                        if(b && b.videoId && !seen.has(b.videoId) && !bitesHistory.includes(b.videoId)) {
+                            seen.add(b.videoId);
+                            uniqueCache.push(b);
+                            viewedVideoIds.add(b.videoId);
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+        bitesQueue = uniqueCache; 
+    })();
+
+    // ==========================================================================
+    // WATCH HISTORY "BURN-ON-SIGHT" LOGIC
+    // ==========================================================================
     function markAsViewed(videoId) {
         if (!videoId || isSearchPlaying) return; 
         if (!bitesHistory.includes(videoId)) {
             bitesHistory.push(videoId);
-            if (bitesHistory.length > 3000) bitesHistory.shift(); 
+            if (bitesHistory.length > 2000) bitesHistory.shift(); 
             localStorage.setItem('goorac_bites_history', JSON.stringify(bitesHistory));
-            viewedVideoIds.add(videoId);
         }
     }
 
+    function cleanUpQueueAndCache() {
+        if (isSearchPlaying) return; 
+        const cacheSlice = bitesQueue.slice(currentIndex + 1);
+        localStorage.setItem('goorac_bites_queue', JSON.stringify(cacheSlice.slice(0, 15))); 
+    }
+
+    // ==========================================================================
+    // BACKGROUND APP SUPPORT & FIRESTORE BATCH SYNC TRIGGER
+    // ==========================================================================
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
@@ -485,12 +437,20 @@
     });
 
     // ==========================================================================
-    // YOUTUBE IFRAME API
+    // YOUTUBE IFRAME API DYNAMIC INJECTION
     // ==========================================================================
     window.onYouTubeIframeAPIReady = function() {
         const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 0 };
-        playerA = new YT.Player('yt-player-a', { playerVars: playerVars, events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }});
-        playerB = new YT.Player('yt-player-b', { playerVars: playerVars, events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }});
+        
+        playerA = new YT.Player('yt-player-a', {
+            playerVars: playerVars,
+            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
+        });
+        
+        playerB = new YT.Player('yt-player-b', {
+            playerVars: playerVars,
+            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
+        });
     };
 
     const tag = document.createElement('script');
@@ -506,7 +466,7 @@
                 renderDOMSlides();
                 if (bitesQueue.length < 8) fetchMoreBites();
             } else {
-                if (myInterests.length > 0) fetchMoreBites();
+                fetchMoreBites();
             }
         }
     }
@@ -520,17 +480,20 @@
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
             playActivePlayer();
             currentVideoStartTime = Date.now(); 
+            cleanUpQueueAndCache(); 
         }
     }
 
     // ==========================================================================
-    // DOM SLIDE RENDERER
+    // DOM SLIDE RENDERER & SKELETON APPENDER
     // ==========================================================================
     function renderDOMSlides() {
         const viewport = document.getElementById('bites-viewport');
         const skeleton = document.getElementById('main-skeleton');
         
-        if(bitesQueue.length > 0 && skeleton.style.display !== 'none') skeleton.style.display = 'none';
+        if(bitesQueue.length > 0 && skeleton.style.display !== 'none') {
+            skeleton.style.display = 'none';
+        }
 
         const existingLoader = document.getElementById('infinite-loader-slide');
         if (existingLoader) existingLoader.remove();
@@ -571,10 +534,22 @@
 
         const loaderSlide = document.createElement('div');
         loaderSlide.id = 'infinite-loader-slide';
-        loaderSlide.className = 'loader-slide';
+        loaderSlide.className = 'bite-slide';
+        loaderSlide.style.background = "#000";
         loaderSlide.innerHTML = `
-            <div class="circular-loader"></div>
-            <div class="loader-text">Navigating the Quantum Realm...</div>
+            <div class="bite-ui-layer" style="z-index: 30;">
+                <div class="skel-side" style="position: absolute; right: 15px; bottom: 25px; display: flex; flex-direction: column; gap: 25px; align-items: center;">
+                    <div class="skel-circle"></div>
+                    <div class="skel-circle" style="width:35px; height:35px;"></div>
+                    <div class="skel-circle" style="width:35px; height:35px;"></div>
+                </div>
+                <div class="skel-bottom" style="max-width: 78%; padding-bottom: 5px; width: 100%;">
+                    <div class="skel-line-long"></div>
+                    <div class="skel-line-short"></div>
+                    <div class="skel-line-short" style="width: 30%;"></div>
+                </div>
+            </div>
+            <div class="loader-text" style="position:absolute; top:50%; width:100%; text-align:center; color:#666; font-size:0.9rem;"></div>
         `;
         viewport.appendChild(loaderSlide);
     }
@@ -597,9 +572,11 @@
                 if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
                 swapPlayers();
                 if (hasStarted) currentVideoStartTime = Date.now();
-            } else if (hasStarted) {
-                if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
-                playActivePlayer();
+            } else {
+                if (hasStarted) {
+                    if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
+                    playActivePlayer();
+                }
             }
         }
     }
@@ -608,16 +585,25 @@
     
     function handleScroll() {
         if (!hasStarted) return;
+
         const now = Date.now();
         const viewport = document.getElementById('bites-viewport');
+        
         const firstSlide = document.querySelector('.bite-slide');
         const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
-        const newIndex = Math.round(viewport.scrollTop / slideHeight);
+        const scrollPosition = viewport.scrollTop;
+        
+        const newIndex = Math.round(scrollPosition / slideHeight);
 
         if (newIndex === bitesQueue.length) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
-            if (!isFetching && !isSearchPlaying) fetchMoreBites();
+            
+            if (!isFetching && !isSearchPlaying) {
+                const loaderText = document.querySelector('.loader-text');
+                if (loaderText) loaderText.innerText = "Finding more bites...";
+                fetchMoreBites();
+            }
             return; 
         }
 
@@ -625,20 +611,26 @@
             if (now - lastScrollProcessTime < 100) return;
             lastScrollProcessTime = now;
             
-            processEngagementAlgorithm(bitesQueue[currentIndex], now - currentVideoStartTime);
+            const timeSpentMs = now - currentVideoStartTime;
+            const previousBite = bitesQueue[currentIndex];
+            
+            processEngagementAlgorithm(previousBite, timeSpentMs);
 
             currentIndex = newIndex;
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId); 
             
             currentVideoStartTime = Date.now(); 
+            cleanUpQueueAndCache();
             swapPlayers();
 
-            if (currentIndex >= bitesQueue.length - 5 && !isFetching && !isSearchPlaying) fetchMoreBites(); 
+            if (currentIndex >= bitesQueue.length - 5 && !isFetching) {
+                if (!isSearchPlaying) fetchMoreBites(); 
+            }
         }
     }
 
     // ==========================================================================
-    // 🧠 THE BATCHED DEEP-LEARNING ALGORITHM (FIREBASE SYNC)
+    // 🧠 THE BATCHED DEEP-LEARNING ALGORITHM
     // ==========================================================================
     let pendingInterestUpdates = {};
     let interestSyncTimer = null;
@@ -646,15 +638,25 @@
     function queueInterestUpdate(category, scoreChange) {
         if(!myUid || !category) return;
         const key = `interests.${category.toLowerCase()}`;
-        pendingInterestUpdates[key] = (pendingInterestUpdates[key] || 0) + scoreChange;
-        if(!interestSyncTimer) interestSyncTimer = setTimeout(syncInterestsToFirestore, 15000); 
+        
+        if (pendingInterestUpdates[key]) pendingInterestUpdates[key] += scoreChange;
+        else pendingInterestUpdates[key] = scoreChange;
+
+        if(!interestSyncTimer) {
+            interestSyncTimer = setTimeout(syncInterestsToFirestore, 15000); 
+        }
     }
 
     function syncInterestsToFirestore() {
         if(Object.keys(pendingInterestUpdates).length === 0 || !myUid) return;
+        
         let firestoreUpdates = {};
-        for(let key in pendingInterestUpdates) firestoreUpdates[key] = firebase.firestore.FieldValue.increment(pendingInterestUpdates[key]);
+        for(let key in pendingInterestUpdates) {
+            firestoreUpdates[key] = firebase.firestore.FieldValue.increment(pendingInterestUpdates[key]);
+        }
+        
         db.collection("users").doc(myUid).set(firestoreUpdates, { merge: true }).catch(e => {});
+        
         pendingInterestUpdates = {}; 
         interestSyncTimer = null;
     }
@@ -667,6 +669,7 @@
 
     function processEngagementAlgorithm(bite, timeSpentMs) {
         if (!bite || isSearchPlaying) return;
+
         let scoreChange = 0;
         let shouldExtractTags = false;
 
@@ -674,16 +677,17 @@
         else if (timeSpentMs >= 7000) { scoreChange = 5; shouldExtractTags = true; } 
         else scoreChange = 1;
 
-        // Feed data to Firestore
         if(scoreChange !== 0) queueInterestUpdate(bite.category, scoreChange);
-        if (shouldExtractTags) extractHashtags(bite.title).slice(0, 3).forEach(tag => queueInterestUpdate(tag, 3));
 
-        // 🧠 Feed data instantly to the Local Quantum Brain for real-time sorting
-        sessionBrain.absorbEngagement(bite, scoreChange);
+        if (shouldExtractTags) {
+            const tags = extractHashtags(bite.title);
+            tags.slice(0, 3).forEach(tag => queueInterestUpdate(tag, 3));
+        }
     }
 
     function trackExplicitAction(category, action, biteTitle = "") {
         if (!myUid || !category || isSearchPlaying) return;
+        
         let scoreChange = 0;
         let tags = [];
 
@@ -693,9 +697,6 @@
 
         if(scoreChange !== 0) queueInterestUpdate(category, scoreChange);
         tags.forEach(tag => queueInterestUpdate(tag, 5));
-
-        // Send massive signal to Local Quantum Brain
-        sessionBrain.absorbEngagement({ title: biteTitle, category: category }, scoreChange * 2);
     }
 
     window.handleLike = function(event, index) {
@@ -706,7 +707,9 @@
         if (!btn.classList.contains('liked')) {
             btn.classList.add('liked');
             document.getElementById(`like-icon-${index}`).innerText = 'favorite';
-            btn.querySelector('.count').innerText = formatNumber(bite.likes + 1);
+            let cSpan = btn.querySelector('.count');
+            cSpan.innerText = formatNumber(bite.likes + 1);
+            
             trackExplicitAction(bite.category, 'liked', bite.title);
             if(navigator.vibrate) navigator.vibrate(50);
         }
@@ -717,6 +720,7 @@
     // ==========================================================================
     function swapPlayers() {
         if (!playerA || !playerB) return;
+        
         const currentVid = bitesQueue[currentIndex]?.videoId;
         const nextVid = bitesQueue[currentIndex + 1]?.videoId;
         const isEven = currentIndex % 2 === 0;
@@ -735,7 +739,10 @@
                     currentLoadedA = currentVid;
                 } else if (hasStarted) playerA.playVideo();
             }
-            if (nextVid && currentLoadedB !== nextVid) { playerB.cueVideoById(nextVid); currentLoadedB = nextVid; }
+            if (nextVid && currentLoadedB !== nextVid) {
+                playerB.cueVideoById(nextVid);
+                currentLoadedB = nextVid;
+            }
         } else {
             activePlayer = 'B';
             document.getElementById('player-container-a').classList.remove('active');
@@ -747,7 +754,10 @@
                     currentLoadedB = currentVid;
                 } else if (hasStarted) playerB.playVideo();
             }
-            if (nextVid && currentLoadedA !== nextVid) { playerA.cueVideoById(nextVid); currentLoadedA = nextVid; }
+            if (nextVid && currentLoadedA !== nextVid) {
+                playerA.cueVideoById(nextVid);
+                currentLoadedA = nextVid;
+            }
         }
     }
 
@@ -755,8 +765,13 @@
         const p = activePlayer === 'A' ? playerA : playerB;
         if (bitesQueue[currentIndex] && p && typeof p.playVideo === 'function') {
             const currentVid = bitesQueue[currentIndex].videoId;
-            if(activePlayer === 'A' && currentLoadedA !== currentVid) { p.loadVideoById(currentVid); currentLoadedA = currentVid; } 
-            else if(activePlayer === 'B' && currentLoadedB !== currentVid) { p.loadVideoById(currentVid); currentLoadedB = currentVid; }
+            if(activePlayer === 'A' && currentLoadedA !== currentVid) {
+                p.loadVideoById(currentVid);
+                currentLoadedA = currentVid;
+            } else if(activePlayer === 'B' && currentLoadedB !== currentVid) {
+                p.loadVideoById(currentVid);
+                currentLoadedB = currentVid;
+            }
             p.playVideo();
         }
     }
@@ -764,14 +779,19 @@
     function togglePlayPause() {
         const p = activePlayer === 'A' ? playerA : playerB;
         if (!p || typeof p.getPlayerState !== 'function') return;
+        
         const state = p.getPlayerState();
         const icon = document.getElementById('play-pause-icon');
         const inner = document.getElementById('pp-icon-inner');
 
         if (state === 1) { 
-            p.pauseVideo(); inner.innerText = 'pause'; icon.classList.add('show');
+            p.pauseVideo();
+            inner.innerText = 'pause';
+            icon.classList.add('show');
         } else {
-            p.playVideo(); inner.innerText = 'play_arrow'; icon.classList.add('show');
+            p.playVideo();
+            inner.innerText = 'play_arrow';
+            icon.classList.add('show');
             setTimeout(() => icon.classList.remove('show'), 800);
         }
     }
@@ -779,145 +799,74 @@
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.ENDED) {
             event.target.playVideo(); 
-            if(bitesQueue[currentIndex]) trackExplicitAction(bitesQueue[currentIndex].category, 'rewatched', bitesQueue[currentIndex].title);
+            if(bitesQueue[currentIndex]) {
+                trackExplicitAction(bitesQueue[currentIndex].category, 'rewatched', bitesQueue[currentIndex].title);
+            }
         }
     }
 
     // ==========================================================================
-    // 🚀 THE INFINITE CONTENT ENGINE (NEVER EMPTY, 100% BULLETPROOF)
+    // BULLETPROOF LINEAR FETCHING ENGINE
     // ==========================================================================
-    function filterOutSeenVideos(videosArray) {
-        return videosArray.filter(v => 
-            !bitesHistory.includes(v.videoId) && 
-            !viewedVideoIds.has(v.videoId) &&
-            !bitesQueue.some(q => q.videoId === v.videoId)
-        );
-    }
-
-    function perfectRandomShuffle(array) {
-        let arr = [...array];
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    }
-
     async function fetchMoreBites(overrideTopic = null) {
-        if (isFetching || isSearchPlaying) return;
+        if (isFetching) return;
         isFetching = true;
 
         const loaderText = document.querySelector('.loader-text');
-        if (loaderText) loaderText.innerText = "Analyzing Quantum Data Pools...";
-
-        try {
-            let topicsToFetch = overrideTopic ? [overrideTopic] : [...myInterests];
-            if (!topicsToFetch || topicsToFetch.length === 0) topicsToFetch = ["trending"];
-            if (!topicsToFetch.includes('trending')) topicsToFetch.push('trending');
-
-            let combinedVideos = [];
-
-            // 1. FAST PATH: Pull from Firestore
-            const fetchPromises = topicsToFetch.map(topic => {
-                const safeName = topic.toLowerCase().replace(/\s+/g, '_');
-                return db.collection('bites_pools').doc(safeName).get();
-            });
-
-            const snapshots = await Promise.all(fetchPromises);
-            snapshots.forEach(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data && data.videos && Array.isArray(data.videos)) combinedVideos.push(...data.videos);
-                }
-            });
-
-            // 2. Filter out already viewed videos
-            let freshVideos = filterOutSeenVideos(combinedVideos);
-
-            // 💡 THE CRITICAL "AMNESIA PROTOCOL" FIX (Destroys Infinite Loops)
-            // If we filtered out so many videos that we have less than 8 left, 
-            // but the database ACTUALLY has plenty of videos, it means the user's
-            // history is too large. We wipe their memory to keep the feed alive.
-            if (freshVideos.length < 8 && combinedVideos.length > 25) {
-                console.warn("🧠 [QUANTUM BRAIN] Watch memory full! Initiating Amnesia Protocol to prevent loop...");
-                bitesHistory = []; 
-                localStorage.setItem('goorac_bites_history', '[]');
-                // Don't clear viewedVideoIds, we don't want repeats IN THIS SESSION, just clear the long-term history
-                freshVideos = filterOutSeenVideos(combinedVideos); // Recalculate
-            }
-
-            // 3. INFINITE LOOP PREVENTION (Only ping proxy if database is actually empty)
-            if (freshVideos.length < 8) {
-                if (loaderText) loaderText.innerText = "Breaching the proxy for new data...";
-                const primaryTopic = topicsToFetch[0] || "trending";
-                await triggerInfiniteLiveScraper(primaryTopic);
-                return; 
-            }
-
-            // 4. Quantum Brain Sorting (Replaces standard shuffle)
-            // We shuffle it randomly first, THEN run it through the Brain so the feed 
-            // has variety but still bubbles the most relevant items to the top.
-            let preShuffled = perfectRandomShuffle(freshVideos);
-            let finalBatch = sessionBrain.rankFeed(preShuffled).slice(0, 15);
-
-            finalBatch.forEach(b => {
-                viewedVideoIds.add(b.videoId);
-                bitesQueue.push(b);
-            });
-
-            renderDOMSlides();
-            syncPlayersToScrollPosition();
-
-        } catch (error) {
-            console.error("Direct Firestore Read Failed:", error);
-            if (loaderText) loaderText.innerText = "Neural connection failed. Scroll to retry.";
-        } finally {
-            isFetching = false;
+        if (bitesQueue.length === 0) {
+            document.getElementById('main-skeleton').style.display = 'flex';
+        } else if (loaderText) {
+            loaderText.innerText = "Finding more bites...";
         }
+
+        let queryTopic = overrideTopic || (myInterests.length > 0 ? myInterests.join(',') : "tamil");
+        let success = false;
+        let attempts = 0;
+
+        while (!success && attempts < 3) {
+            attempts++;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+                let fetchUrl = `https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
+                if (attempts > 1) {
+                    const bustWords = ["viral", "hits", "trending", "wow"];
+                    fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
+                }
+
+                const res = await fetch(fetchUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                const data = await res.json();
+                
+                if (data.success && data.bites && data.bites.length > 0) {
+                    const uniqueNewBites = [];
+                    data.bites.forEach(b => {
+                        if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
+                        
+                        viewedVideoIds.add(b.videoId);
+                        uniqueNewBites.push(b);
+                    });
+
+                    if (uniqueNewBites.length > 0) {
+                        uniqueNewBites.forEach(b => bitesQueue.push(b));
+                        renderDOMSlides();
+                        syncPlayersToScrollPosition(); 
+                        cleanUpQueueAndCache(); 
+                        success = true;
+                    }
+                }
+            } catch (error) {
+                console.error("Network attempt failed", error);
+            }
+        }
+
+        if (!success && loaderText) loaderText.innerText = "Network slow or no new videos. Scroll to retry.";
+        isFetching = false; 
     }
 
-    // 💡 THE INFINITE LIVE SCRAPER (Safe Fallback)
-    async function triggerInfiniteLiveScraper(baseTopic) {
-        try {
-            const infiniteModifiers = ["viral shorts", "trending today", "latest 2026", "new hits", "best moments", "must watch", "1080p edit"];
-            const randomMod = infiniteModifiers[Math.floor(Math.random() * infiniteModifiers.length)];
-            const dynamicQuery = `${baseTopic} ${randomMod}`;
-
-            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(dynamicQuery)}&search=true`);
-            if (!res.ok) throw new Error("Proxy error");
-            const data = await res.json();
-            
-            if (data.success && data.bites && data.bites.length > 0) {
-                let freshScraped = filterOutSeenVideos(data.bites);
-                
-                // If proxy data overlaps perfectly with history, wipe history to force render
-                if (freshScraped.length === 0) {
-                    bitesHistory = [];
-                    localStorage.setItem('goorac_bites_history', '[]');
-                    freshScraped = data.bites;
-                }
-
-                // Run proxy data through Quantum Brain too
-                let finalBatch = sessionBrain.rankFeed(perfectRandomShuffle(freshScraped)).slice(0, 15);
-                
-                if (finalBatch.length > 0) {
-                    finalBatch.forEach(b => { viewedVideoIds.add(b.videoId); bitesQueue.push(b); });
-                    renderDOMSlides();
-                    syncPlayersToScrollPosition();
-                }
-            } else {
-                const loaderText = document.querySelector('.loader-text');
-                if (loaderText) loaderText.innerText = "System exhausted. Please try searching a new topic.";
-            }
-        } catch (e) {
-            console.error("Infinite Scraper failed", e);
-            const loaderText = document.querySelector('.loader-text');
-            if (loaderText) loaderText.innerText = "Network anomaly. Keep scrolling.";
-        } finally {
-            isFetching = false;
-        }
-    }
-
+    // 🚀 DYNAMIC SHARING ENGINE WITH SHARE-BITES COMPONENT
     window.shareBite = function(event, index) {
         event.stopPropagation();
         const bite = bitesQueue[index];
@@ -925,7 +874,10 @@
         const navBar = document.querySelector('main-navbar');
         
         if (shareModal && typeof shareModal.open === 'function') {
+            // Hide navbar when modal opens
             if (navBar) navBar.style.display = 'none';
+            
+            // Patch the modal's close method to show navbar again seamlessly
             if (!shareModal._navPatch) {
                 const origClose = shareModal.close;
                 shareModal.close = function(triggerBack) {
@@ -934,17 +886,26 @@
                 };
                 shareModal._navPatch = true;
             }
+            
             shareModal.open(bite);
         } else {
+            // Fallback just in case component fails to load
             const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
-            if (navigator.share) navigator.share({ title: bite.title, text: `Check out this Bite!`, url: shareUrl }).catch(e => {});
-            else {
+            if (navigator.share) {
+                navigator.share({
+                    title: bite.title,
+                    text: `Check out this Bite on Goorac!`,
+                    url: shareUrl
+                }).catch(e => {});
+            } else {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     const btnText = event.currentTarget.querySelector('.share-text');
                     const originalText = btnText.innerText;
                     btnText.innerText = "Copied!";
                     setTimeout(() => btnText.innerText = originalText, 2000);
-                }).catch(e => {});
+                }).catch(e => {
+                    console.error("Failed to copy", e);
+                });
             }
         }
     }
@@ -961,8 +922,9 @@
     window.openDiscoverModal = function() {
         document.getElementById('discover-modal').classList.add('active');
         history.pushState({ modal: 'discover' }, "", "#discover");
+        
         const grid = document.getElementById('search-grid');
-        if(grid.children.length <= 1) executeSearch(myInterests[0] || "trending");
+        if(grid.children.length <= 1) executeSearch("tamil");
     }
 
     window.closeDiscoverModal = function(shouldGoBack) {
@@ -972,21 +934,27 @@
 
     window.onpopstate = (e) => { 
         const hash = window.location.hash;
+
         if (isSearchPlaying && hash === '#discover') {
             isSearchPlaying = false;
+            
             bitesQueue = [...backupQueue];
             currentIndex = backupIndex;
+            
             const viewport = document.getElementById('bites-viewport');
             viewport.innerHTML = '';
             renderDOMSlides();
+            
             const firstSlide = document.querySelector('.bite-slide');
             const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
             viewport.scrollTop = currentIndex * slideHeight;
             currentVideoStartTime = Date.now(); 
+            
             syncPlayersToScrollPosition(); 
             document.getElementById('discover-modal').classList.add('active');
             return;
         }
+
         if(document.getElementById('discover-modal').classList.contains('active') && hash !== '#discover') {
             closeDiscoverModal(false);
         }
@@ -996,42 +964,47 @@
     document.getElementById('search-input').addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         const val = e.target.value.trim();
-        searchTimeout = setTimeout(() => { if(val.length > 1) executeSearch(val); }, 600);
+        searchTimeout = setTimeout(() => {
+            if(val.length > 1) executeSearch(val);
+        }, 600);
     });
 
     async function executeSearch(query) {
         const grid = document.getElementById('search-grid');
+        
         let skelHtml = '';
-        for(let i=0; i<12; i++) skelHtml += `<div class="skel-grid-item"></div>`;
+        for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item"></div>`; }
         grid.innerHTML = skelHtml;
 
         try {
             const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true`);
-            if (!res.ok) throw new Error("Server responded with error status");
-            
             const data = await res.json();
             
-            if (data.success && data.bites && data.bites.length > 0) {
+            if (data.success && data.bites.length > 0) {
                 grid.innerHTML = '';
                 data.bites.forEach(bite => {
                     const el = document.createElement('div');
                     el.className = 'grid-item';
                     el.onclick = () => launchSearchResultFeed(bite, data.bites);
-                    el.innerHTML = `<img src="${bite.imgUrl}"><div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>`;
+                    el.innerHTML = `
+                        <img src="${bite.imgUrl}">
+                        <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
+                    `;
                     grid.appendChild(el);
                 });
             } else {
                 grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
             }
         } catch (error) {
-            console.error("Search fetch failed:", error);
-            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Search failed to connect.</div>`;
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
         }
     }
 
     function launchSearchResultFeed(clickedBite, allResults) {
         const searchInputBox = document.getElementById('search-input');
-        if (searchInputBox && searchInputBox.value.trim()) trackExplicitAction(searchInputBox.value.trim(), 'searched');
+        if (searchInputBox && searchInputBox.value.trim()) {
+            trackExplicitAction(searchInputBox.value.trim(), 'searched');
+        }
 
         backupQueue = [...bitesQueue];
         backupIndex = currentIndex;
@@ -1051,8 +1024,10 @@
 
         renderDOMSlides();
         currentVideoStartTime = Date.now(); 
+        
         syncPlayersToScrollPosition(); 
     }
+
 </script>
 </body>
 </html>
