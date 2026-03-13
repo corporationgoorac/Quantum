@@ -556,6 +556,18 @@
         /* -------------------------------------------------------------------------- */
         /* FIREBASE & PEER INITIALIZATION                                             */
         /* -------------------------------------------------------------------------- */
+        
+        // --- NEW ERROR CATCHERS AS REQUESTED ---
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error("Unhandled Promise Rejection:", event.reason);
+            alert("System Error Caught: " + (event.reason.message || event.reason));
+        });
+
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global JS Error:", message, error);
+        };
+        // ----------------------------------------
+
         const firebaseConfig = {
             apiKey: "AIzaSyCFzAEHC5KLiO2DEkVtoTlFn9zeCQrwImE",
             authDomain: "goorac-c3b59.firebaseapp.com",
@@ -566,10 +578,23 @@
             databaseURL: "https://goorac-c3b59-default-rtdb.firebaseio.com"
         };
 
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        try {
+            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        } catch(err) {
+            console.error("Firebase Init Error:", err);
+            alert("Firebase Init Error: " + err.message);
+        }
+
         const db = firebase.firestore();
         const rdb = firebase.database();
         const auth = firebase.auth();
+
+        // --- ENFORCE PERSISTENCE ---
+        try {
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } catch(err) {
+            console.error("Persistence Warning:", err);
+        }
 
         let myUid, myData, peer, currentCall, localStream, timerInterval, connectionRetry;
         let myBlockedList = []; // NEW: Global block list array
@@ -592,6 +617,7 @@
                     myBlockedList = (myData.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
                 } catch(err) {
                     console.error("Error fetching user data:", err);
+                    alert("Firebase Data Error: " + err.message);
                     myData = {};
                     myBlockedList = [];
                 }
@@ -621,11 +647,14 @@
                 listenForSignaling();
             } else { 
                 // Fix: Delay redirect to prevent false logouts on slow network/IndexedDB load
+                console.warn("Auth check: User is null. Waiting to see if session resolves...");
                 setTimeout(() => {
                     if (!firebase.auth().currentUser) {
+                        console.error("Auth Failure: No active Firebase session detected after waiting.");
+                        alert("Session Error: Firebase cannot find your login data. If you didn't log out, your browser/device might be clearing cookies or blocking IndexedDB. Redirecting to login.");
                         window.location.href = 'login.html'; 
                     }
-                }, 1500); 
+                }, 2500); 
             }
         });
 
