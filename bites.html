@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <title>Goorac | Bites Enterprise AI</title>
+    <title>Quantum | Bites Enterprise AI</title>
     
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -103,7 +103,7 @@
             overflow-y: scroll; scroll-snap-type: y mandatory;
             scrollbar-width: none; -webkit-overflow-scrolling: touch;
             z-index: 10; padding-bottom: var(--nav-height);
-            scroll-behavior: smooth; 
+            scroll-behavior: smooth; /* Controlled dynamically in JS for search jumps */
         }
         #bites-viewport::-webkit-scrollbar { display: none; }
 
@@ -112,7 +112,6 @@
             scroll-snap-align: start; scroll-snap-stop: always;
             position: relative; touch-action: pan-y; 
             background: #000;
-            will-change: transform; /* lag fix */
         }
 
         /* THE SEAMLESS COVER IMAGE FIX (NO YOUTUBE FLASH) */
@@ -127,7 +126,6 @@
             position: absolute; top: 0; left: 0; width: 100vw; 
             height: calc(100vh - var(--nav-height));
             z-index: 1; opacity: 1; pointer-events: none; background: #000;
-            will-change: transform; /* lag fix */
         }
         .yt-player-container.active { z-index: 2; }
         
@@ -273,8 +271,8 @@
 
         /* PROFESSIONAL TAP TO START SCREEN (CINEMATIC TRANSPARENCY) */
         #start-screen {
-            display: none !important; /* Force hidden for auto-play upgrade */
             position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999;
+            display: none !important; /* OVERRIDDEN: We auto-play muted now */
             flex-direction: column; align-items: center; justify-content: center;
             color: #fff; cursor: pointer; backdrop-filter: blur(25px); transition: opacity 0.5s ease;
         }
@@ -284,15 +282,6 @@
         }
         .start-btn-pulse { width: 90px; height: 90px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px var(--accent); animation: startPulse 2s infinite; margin-bottom: 25px; color: #000; position: relative; z-index: 2; }
         @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
-
-        /* UNMUTE TOAST (AUTO-PLAY UPGRADE) */
-        #unmute-toast {
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: #fff; padding: 8px 16px; border-radius: 20px;
-            z-index: 9999; font-size: 14px; font-weight: bold; backdrop-filter: blur(10px);
-            pointer-events: none; transition: opacity 0.5s; opacity: 0; border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 6px;
-        }
 
         /* MAIN FEED SKELETON LOADER (UPGRADED) */
         #main-skeleton {
@@ -309,6 +298,16 @@
             display: block; position: fixed; bottom: 0; left: 0; width: 100%;
             height: var(--nav-height); background-color: var(--bg); z-index: 1000; 
         }
+
+        /* NEW CENTER UNMUTE OVERLAY */
+        #tap-to-unmute-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 30px;
+            color: white; font-weight: bold; display: none; align-items: center; gap: 8px;
+            z-index: 1000; cursor: pointer; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -316,8 +315,6 @@
 <chat-loader></chat-loader>
 
 <div id="bite-progress-container"><div id="bite-progress-bar"></div></div>
-
-<div id="unmute-toast"><span class="material-icons-round" style="font-size:16px;">volume_off</span> Tap anywhere to unmute</div>
 
 <div id="start-screen" onclick="initExperience()">
     <img id="start-bg-img" src="">
@@ -349,6 +346,7 @@
 </div>
 
 <div class="center-indicator" id="center-icon-display"><span class="material-icons-round" id="center-icon-inner">pause</span></div>
+<div id="tap-to-unmute-overlay" onclick="initialUnmute()"><span class="material-icons-round">volume_off</span> Tap to Unmute</div>
 
 <div id="bites-viewport" onscroll="handleScroll()">
     <div id="player-container-a" class="yt-player-container active"><div id="yt-player-a"></div></div>
@@ -540,6 +538,7 @@
     let viewedVideoIds = new Set(); 
     
     let bitesHistory = JSON.parse(localStorage.getItem('goorac_bites_history') || '[]');
+    let likedBites = JSON.parse(localStorage.getItem('quantum_liked_bites') || '[]'); // NEW LocalStorage array
     let currentVideoStartTime = 0; 
 
     let backupQueue = [];
@@ -553,9 +552,8 @@
     let currentLoadedA = null;
     let currentLoadedB = null;
 
-    let globalMuted = true; // UPGRADED: Init as muted for browser autoplay policy
+    let globalMuted = true; // Auto-play relies on initial mute
     let progressInterval = null; 
-    let singleTapTimeout = null; // UPGRADED: For double-tap debounce fixing
 
     // 🚀 DYNAMIC URL REDIRECTION: Check if user arrived via a shared link
     let sharedVidId = null;
@@ -659,11 +657,6 @@
             syncPlayersToScrollPosition(); 
             renderDOMSlides();
             if (bitesQueue.length < 8) fetchMoreBites();
-            
-            // UPGRADED: Auto start silently without explicit tap screen
-            window.initExperience();
-            const toast = document.getElementById('unmute-toast');
-            if(toast && globalMuted) setTimeout(() => toast.style.opacity = '1', 1000);
         }
     })();
 
@@ -703,7 +696,7 @@
     // YOUTUBE IFRAME API DYNAMIC INJECTION
     // ==========================================================================
     window.onYouTubeIframeAPIReady = function() {
-        const playerVars = { 'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 1 }; // UPGRADED: 'mute': 1 to guarantee autoplay fires immediately
+        const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 1 };
         
         playerA = new YT.Player('yt-player-a', {
             playerVars: playerVars,
@@ -724,19 +717,30 @@
     function checkPlayersReady() {
         playersReady++;
         if (playersReady === 2) {
+            
+            // NEW: Auto-play the first video muted immediately
+            setTimeout(() => {
+                if(!hasStarted) window.initExperience();
+                const tapToUnmute = document.getElementById('tap-to-unmute-overlay');
+                if(tapToUnmute) tapToUnmute.style.display = 'flex';
+            }, 800);
+
             if (bitesQueue.length > 0) {
                 syncPlayersToScrollPosition(); 
                 renderDOMSlides();
                 if (bitesQueue.length < 8) fetchMoreBites();
-                
-                // UPGRADED: Auto start silently without explicit tap screen
-                window.initExperience();
-                const toast = document.getElementById('unmute-toast');
-                if(toast && globalMuted) setTimeout(() => toast.style.opacity = '1', 1000);
             } else {
                 fetchMoreBites();
             }
         }
+    }
+
+    window.initialUnmute = function() {
+        globalMuted = false;
+        const p = activePlayer === 'A' ? playerA : playerB;
+        if(p && typeof p.unMute === 'function') p.unMute();
+        document.getElementById('tap-to-unmute-overlay').style.display = 'none';
+        showCenterIcon('volume_up');
     }
 
     window.initExperience = function() {
@@ -767,9 +771,6 @@
         if (existingLoader) existingLoader.remove();
 
         const slideCount = document.querySelectorAll('.bite-slide').length;
-        
-        // UPGRADED: Retrieve Likes Memory to persist like state globally
-        let likedBitesCache = JSON.parse(localStorage.getItem('goorac_liked_bites') || '{}');
 
         for (let i = slideCount; i < bitesQueue.length; i++) {
             const bite = bitesQueue[i];
@@ -785,11 +786,11 @@
             slide.oncontextmenu = (e) => { e.preventDefault(); return false; }; 
 
             let descriptionHTML = bite.description ? `<div style="font-size:0.8rem; color:#aaa; margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${bite.description}</div>` : '';
-            
-            // UPGRADED: Like persistence rendering
-            const isLiked = !!likedBitesCache[bite.videoId];
-            const likedClass = isLiked ? 'liked' : '';
-            const likeIconStr = isLiked ? 'favorite' : 'favorite_border';
+
+            // NEW: Restore user's liked status dynamically
+            const isLiked = likedBites.includes(bite.videoId);
+            const likeClass = isLiked ? "action-btn liked" : "action-btn";
+            const likeIcon = isLiked ? "favorite" : "favorite_border";
 
             slide.innerHTML = `
                 <img src="${bite.imgUrl}" class="video-cover" id="cover-${i}">
@@ -799,8 +800,8 @@
                             <img src="${bite.imgUrl}" class="creator-pfp">
                             <div class="follow-badge">+</div>
                         </div>
-                        <div class="action-btn ${likedClass}" id="like-btn-${i}" onclick="handleLike(event, ${i})">
-                            <span class="material-icons-round" id="like-icon-${i}">${likeIconStr}</span>
+                        <div class="${likeClass}" id="like-btn-${i}" onclick="handleLike(event, ${i})">
+                            <span class="material-icons-round" id="like-icon-${i}">${likeIcon}</span>
                             <span class="count">${formatNumber(bite.likes)}</span>
                         </div>
                         <div class="action-btn" onclick="shareBite(event, ${i})">
@@ -841,46 +842,33 @@
     }
 
     // ==========================================================================
-    // UPGRADED LIKING LOGIC & LOCALSTORAGE SAVING
-    // ==========================================================================
-    window.handleLike = function(event, index) {
-        if (event && event.stopPropagation) event.stopPropagation();
-        const bite = bitesQueue[index];
-        if (!bite) return;
-        
-        const vid = bite.videoId;
-        let likedBites = JSON.parse(localStorage.getItem('goorac_liked_bites') || '{}');
-        const btn = document.getElementById(`like-btn-${index}`);
-        if (!btn) return;
-        
-        const icon = document.getElementById(`like-icon-${index}`);
-        const countSpan = btn.querySelector('.count');
-        
-        let isLiked = !!likedBites[vid];
-        
-        if (isLiked) {
-            delete likedBites[vid];
-            btn.classList.remove('liked');
-            icon.innerText = 'favorite_border';
-            bite.likes = Math.max(0, bite.likes - 1); 
-        } else {
-            likedBites[vid] = true;
-            btn.classList.add('liked');
-            icon.innerText = 'favorite';
-            bite.likes++;
-            trackExplicitAction(bite.category || "trending", 'liked', bite.title, bite.author);
-        }
-        
-        countSpan.innerText = formatNumber(bite.likes);
-        localStorage.setItem('goorac_liked_bites', JSON.stringify(likedBites));
-    };
-
-    // ==========================================================================
     // ADVANCED UI CONTROLS (LONG PRESS TO PAUSE, DOUBLE TAP TO LIKE, TAP TO MUTE)
     // ==========================================================================
     let pressTimer;
     let isLongPress = false;
     let lastTapTime = 0;
+    let singleTapTimer; // Added singleTapTimer explicitly to prevent mute on double tap
+
+    window.handleLike = function(event, index) {
+        if(event) event.stopPropagation();
+        const bite = bitesQueue[index];
+        if(!bite) return;
+        
+        const btn = document.getElementById(`like-btn-${index}`);
+        const icon = document.getElementById(`like-icon-${index}`);
+        
+        if (!likedBites.includes(bite.videoId)) {
+            likedBites.push(bite.videoId);
+            if(btn) btn.classList.add('liked');
+            if(icon) icon.innerText = 'favorite';
+            trackExplicitAction(bite.category || "trending", 'liked', bite.title, bite.author);
+        } else {
+            likedBites = likedBites.filter(id => id !== bite.videoId);
+            if(btn) btn.classList.remove('liked');
+            if(icon) icon.innerText = 'favorite_border';
+        }
+        localStorage.setItem('quantum_liked_bites', JSON.stringify(likedBites));
+    };
 
     window.handlePointerDown = function(event) {
         if(event.target.closest('.side-actions') || event.target.closest('.bottom-info')) return;
@@ -905,10 +893,10 @@
 
         const now = Date.now();
         if (!isLongPress && now - lastTapTime < 300) {
-            // 🔥 DOUBLE TAP DETECTED (UPGRADED: Stop mute bug)
-            clearTimeout(singleTapTimeout); 
+            // 🔥 DOUBLE TAP DETECTED
+            clearTimeout(singleTapTimer); // Prevent mute on double tap
             triggerDoubleTapAnimation(event.clientX, event.clientY, currentSlide);
-            handleLike(new Event('click'), index);
+            handleLike(null, index);
             lastTapTime = 0; // Reset
             return;
         }
@@ -918,8 +906,8 @@
             playActivePlayer(); // Release resumes play
         } else {
             // Single Tap -> Mute/Unmute
-            singleTapTimeout = setTimeout(() => {
-                toggleMute();
+            singleTapTimer = setTimeout(() => {
+                if (Date.now() - lastTapTime > 250) toggleMute();
             }, 300);
         }
         isLongPress = false;
@@ -948,10 +936,6 @@
         globalMuted = !globalMuted;
         const pA = playerA, pB = playerB;
         
-        // Hide tap to unmute toast forever once they toggle 
-        const toast = document.getElementById('unmute-toast');
-        if (toast) toast.style.opacity = '0';
-
         if(globalMuted) {
             if (pA && typeof pA.mute === 'function') pA.mute();
             if (pB && typeof pB.mute === 'function') pB.mute();
@@ -1179,7 +1163,6 @@
         let scoreChange = 0;
         let tags = nlpResult.topics;
 
-        // Note: liked triggers a direct increase inside handleLike too, we sync here for topic modeling
         if (action === 'liked') { scoreChange = 15; tags = tags.slice(0, 4); } 
         else if (action === 'searched') { scoreChange = 20; }
         else if (action === 'rewatched') { scoreChange = 8; tags = tags.slice(0, 4); }
@@ -1378,7 +1361,7 @@
         
         if (shareModal && typeof shareModal.open === 'function') {
             if (navBar) navBar.style.display = 'none';
-            // UPGRADED: Removed pausing video so it loops naturally behind the share menu!
+            // COMMENTED OUT: Don't pause video when share modal opens
             // const p = activePlayer === 'A' ? playerA : playerB;
             // if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
             
@@ -1386,7 +1369,7 @@
                 const origClose = shareModal.close;
                 shareModal.close = function(triggerBack) {
                     if (navBar) navBar.style.display = 'block';
-                    // UPGRADED: No need to resume play if we never paused!
+                    // COMMENTED OUT: Resume handled automatically since not paused
                     // if (!isSearchPlaying && hasStarted) {
                     //     const activeP = activePlayer === 'A' ? playerA : playerB;
                     //     if (activeP && typeof activeP.playVideo === 'function') activeP.playVideo();
@@ -1399,7 +1382,7 @@
         } else {
             const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
             if (navigator.share) {
-                navigator.share({ title: bite.title, text: `Check out this Bite on Goorac!`, url: shareUrl }).catch(e => {});
+                navigator.share({ title: bite.title, text: `Check out this Bite on Quantum!`, url: shareUrl }).catch(e => {});
             } else {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     const btnText = event.currentTarget.querySelector('.share-text');
@@ -1547,6 +1530,9 @@
         
         const viewport = document.getElementById('bites-viewport');
         
+        // TEMPORARY FIX: Disable smooth scroll so it jumps instantly without animated visual scroll 20 to 1
+        viewport.style.scrollBehavior = 'auto';
+        
         // FIX: Prevent YouTube API breakdown and extreme lag
         // Instead of destroying and recreating the iframes (which breaks the YT API reference and blocks the main thread), 
         // we safely clean up the slides and reset the load tracker.
@@ -1565,6 +1551,11 @@
         
         // FIX: Explicitly call swapPlayers so the hardware frames correctly map to their new DOM visual position
         swapPlayers();
+
+        // Restore smooth behavior after the jump completes
+        setTimeout(() => {
+            viewport.style.scrollBehavior = 'smooth';
+        }, 50);
     }
 
 </script>
