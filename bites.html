@@ -111,7 +111,7 @@
             width: 100vw; height: calc(100vh - var(--nav-height));
             scroll-snap-align: start; scroll-snap-stop: always;
             position: relative; touch-action: pan-y; 
-            background: transparent; /* 🔥 FIX: Changed from #000 so the YT Player underneath is visible! */
+            background: transparent; 
         }
 
         /* THE SEAMLESS COVER IMAGE FIX (NO YOUTUBE FLASH) */
@@ -126,7 +126,7 @@
             position: absolute; top: 0; left: 0; width: 100vw; 
             height: calc(100vh - var(--nav-height));
             z-index: 1; opacity: 1; pointer-events: none; background: #000;
-            will-change: transform; /* 🔥 FIX: Forces GPU Acceleration to stop lag */
+            will-change: transform; 
         }
         .yt-player-container.active { z-index: 2; }
         
@@ -259,7 +259,27 @@
             display: flex; align-items: center; gap: 3px; text-shadow: 0 1px 4px #000; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; backdrop-filter: blur(2px);
         }
 
-        /* MULTI-PURPOSE INDICATOR (Play/Pause/Mute) */
+        /* ==========================================================================
+           🔥 NEW: INSTANT FLOATING UNMUTE PROMPT & INDICATOR
+           ========================================================================== */
+        #unmute-overlay {
+            position: fixed; inset: 0; z-index: 5000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: transparent; cursor: pointer;
+        }
+        #unmute-overlay.active { display: flex; }
+        .unmute-btn-pulse {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.9);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+            animation: pulseWhite 2s infinite;
+        }
+        @keyframes pulseWhite {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
         .center-indicator {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
             width: 80px; height: 80px; background: rgba(0,0,0,0.6); border-radius: 50%;
@@ -270,20 +290,7 @@
         .center-indicator .material-icons-round { font-size: 46px; }
         .center-indicator.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
-        /* PROFESSIONAL TAP TO START SCREEN (CINEMATIC TRANSPARENCY) */
-        #start-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; backdrop-filter: blur(25px); transition: opacity 0.5s ease;
-        }
-        #start-bg-img {
-            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-            z-index: -1; opacity: 0.4; filter: blur(15px) brightness(0.8); transition: opacity 0.5s;
-        }
-        .start-btn-pulse { width: 90px; height: 90px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px var(--accent); animation: startPulse 2s infinite; margin-bottom: 25px; color: #000; position: relative; z-index: 2; }
-        @keyframes startPulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(0, 210, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); } }
-
-        /* MAIN FEED SKELETON LOADER (UPGRADED) */
+        /* MAIN FEED SKELETON LOADER */
         #main-skeleton {
             position: absolute; inset: 0; z-index: 15; background: transparent;
             display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; padding-bottom: 25px; pointer-events: none;
@@ -306,11 +313,11 @@
 
 <div id="bite-progress-container"><div id="bite-progress-bar"></div></div>
 
-<div id="start-screen" onclick="initExperience()">
-    <img id="start-bg-img" src="">
-    <div class="start-btn-pulse"><span class="material-icons-round" style="font-size:48px;">play_arrow</span></div>
-    <h2 style="margin:0; font-weight:900; font-size:1.8rem; letter-spacing:-0.5px; position:relative; z-index:2; text-shadow: 0 2px 10px #000;">Enter Bites</h2>
-    <p style="color:#eee; font-size:0.95rem; margin-top:12px; font-weight:600; position:relative; z-index:2; text-shadow: 0 1px 5px #000;">Turn your volume up</p>
+<div id="unmute-overlay" onclick="unmuteAndStart(event)">
+    <div class="unmute-btn-pulse">
+        <span class="material-icons-round" style="font-size:36px; color:#000;">volume_off</span>
+    </div>
+    <div style="color:#fff; font-weight:800; margin-top:15px; text-shadow:0 2px 10px rgba(0,0,0,0.9); letter-spacing:0.5px; font-size: 1.1rem;">Tap to Unmute</div>
 </div>
 
 <header>
@@ -513,7 +520,8 @@
     let currentLoadedA = null;
     let currentLoadedB = null;
 
-    let globalMuted = false;
+    // 🔥 FIX: Default to MUTED so browsers allow Autoplay instantly!
+    let globalMuted = true;
     let progressInterval = null; 
 
     let sharedVidId = null;
@@ -573,9 +581,6 @@
             seen.add(sharedVidId);
             viewedVideoIds.add(sharedVidId);
             window.history.replaceState({}, document.title, window.location.pathname);
-            
-            const bgImg = document.getElementById('start-bg-img');
-            if (bgImg) bgImg.src = realData.imgUrl;
         }
 
         const cached = localStorage.getItem('goorac_bites_queue');
@@ -595,11 +600,6 @@
         }
         
         bitesQueue = uniqueCache; 
-        
-        if (!sharedVidId && bitesQueue.length > 0) {
-            const bgImg = document.getElementById('start-bg-img');
-            if (bgImg) bgImg.src = bitesQueue[0].imgUrl;
-        }
 
         if (playersReady === 2) {
             syncPlayersToScrollPosition(); 
@@ -608,9 +608,6 @@
         }
     })();
 
-    // ==========================================================================
-    // STRICT "NEVER SHOW AGAIN" WATCH HISTORY LOGIC
-    // ==========================================================================
     function markAsViewed(videoId) {
         if (!videoId || isSearchPlaying) return; 
         if (!bitesHistory.includes(videoId)) {
@@ -637,8 +634,9 @@
         }
     });
 
+    // 🔥 FIX: Initialized with mute: 1 to guarantee silent autoplay on load
     window.onYouTubeIframeAPIReady = function() {
-        const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 0 };
+        const playerVars = { 'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 1 };
         
         playerA = new YT.Player('yt-player-a', {
             playerVars: playerVars,
@@ -662,6 +660,7 @@
             if (bitesQueue.length > 0) {
                 syncPlayersToScrollPosition(); 
                 renderDOMSlides();
+                startFeed(); // 🔥 Instantly starts playback
                 if (bitesQueue.length < 8) fetchMoreBites();
             } else {
                 fetchMoreBites();
@@ -669,18 +668,29 @@
         }
     }
 
-    window.initExperience = function() {
-        document.getElementById('start-screen').style.opacity = '0';
-        setTimeout(() => document.getElementById('start-screen').style.display = 'none', 500);
+    // 🔥 NEW: Instant Feed Starter (Replaces blocking Start Screen)
+    function startFeed() {
         hasStarted = true;
+        if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
+        playActivePlayer(); // Plays muted automatically!
+        currentVideoStartTime = Date.now(); 
+        cleanUpQueueAndCache(); 
         
-        if (playersReady === 2 && bitesQueue.length > 0) {
-            if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
-            playActivePlayer();
-            currentVideoStartTime = Date.now(); 
-            cleanUpQueueAndCache(); 
-        }
+        // Trigger the Unmute Prompt on the first video
+        document.getElementById('unmute-overlay').classList.add('active');
     }
+
+    // Function specifically for the Unmute Overlay Tap
+    window.unmuteAndStart = function(e) {
+        if (e) e.stopPropagation();
+        globalMuted = false;
+        
+        if (playerA && typeof playerA.unMute === 'function') playerA.unMute();
+        if (playerB && typeof playerB.unMute === 'function') playerB.unMute();
+        
+        document.getElementById('unmute-overlay').classList.remove('active');
+        showCenterIcon('volume_up');
+    };
 
     // ==========================================================================
     // DOM SLIDE RENDERER & SKELETON APPENDER (NOW WITH SEAMLESS COVER)
@@ -692,9 +702,6 @@
         if(bitesQueue.length > 0 && skeleton.style.display !== 'none') {
             skeleton.style.display = 'none';
         }
-
-        const existingLoader = document.getElementById('infinite-loader-slide');
-        if (existingLoader) existingLoader.remove();
 
         const slideCount = document.querySelectorAll('.bite-slide').length;
 
@@ -738,7 +745,11 @@
             `;
             viewport.appendChild(slide);
         }
-
+        
+        // Always append the loader at the absolute bottom
+        const existingLoader = document.getElementById('infinite-loader-slide');
+        if (existingLoader) existingLoader.remove();
+        
         const loaderSlide = document.createElement('div');
         loaderSlide.id = 'infinite-loader-slide';
         loaderSlide.className = 'bite-slide';
@@ -769,7 +780,8 @@
     let lastTapTime = 0;
 
     window.handlePointerDown = function(event) {
-        if(event.target.closest('.side-actions') || event.target.closest('.bottom-info')) return;
+        if(event.target.closest('.side-actions') || event.target.closest('.bottom-info') || document.getElementById('unmute-overlay').classList.contains('active')) return;
+        
         isLongPress = false;
         pressTimer = setTimeout(() => {
             isLongPress = true;
@@ -782,7 +794,8 @@
     };
 
     window.handlePointerUp = function(event, index) {
-        if(event.target.closest('.side-actions') || event.target.closest('.bottom-info')) return;
+        if(event.target.closest('.side-actions') || event.target.closest('.bottom-info') || document.getElementById('unmute-overlay').classList.contains('active')) return;
+        
         clearTimeout(pressTimer);
         
         const currentSlide = document.querySelector(`.bite-slide[data-index="${currentIndex}"]`);
@@ -1070,7 +1083,7 @@
         if (typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
         if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
 
-        stopProgressBar();
+        stopProgressBar(); 
 
         const allCovers = document.querySelectorAll('.video-cover');
         allCovers.forEach(c => {
@@ -1215,7 +1228,11 @@
                                 renderDOMSlides();
                                 if (idx === 0) {
                                     syncPlayersToScrollPosition(); 
-                                    if (hasStarted && !isLongPress) playActivePlayer(); 
+                                    if (!hasStarted) {
+                                        startFeed();
+                                    } else if (!isLongPress) {
+                                        playActivePlayer(); 
+                                    }
                                 }
                                 if (idx === uniqueNewBites.length - 1) {
                                     cleanUpQueueAndCache(); 
@@ -1361,6 +1378,7 @@
         const grid = document.getElementById('search-grid');
         
         let skelHtml = '';
+        // NEW: Added inline styles to guarantee skeleton rendering
         for(let i=0; i<18; i++) { 
             skelHtml += `<div class="skel-grid-item skel-shimmer" style="width:100%; min-height:150px; aspect-ratio:9/16; background:#1a1a1a; border-radius:4px;"></div>`; 
         }
@@ -1399,4 +1417,36 @@
 
         backupQueue = [...bitesQueue];
         backupIndex = currentIndex;
-        isSearchPlaying
+        isSearchPlaying = true;
+
+        history.pushState({ modal: 'search-playing' }, "", "#search-playing");
+        document.getElementById('discover-modal').classList.remove('active');
+        
+        const otherResults = allResults.filter(b => b.videoId !== clickedBite.videoId);
+        bitesQueue = [clickedBite, ...otherResults];
+        
+        const viewport = document.getElementById('bites-viewport');
+        const playerA_el = document.getElementById('player-container-a');
+        const playerB_el = document.getElementById('player-container-b');
+        
+        // 🔥 FIX: SAFELY RESET UI WITHOUT DESTROYING IFRAMES
+        document.querySelectorAll('.bite-slide').forEach(el => el.remove());
+        const loader = document.getElementById('infinite-loader-slide');
+        if (loader) loader.remove();
+        
+        playerA_el.style.transform = 'translateY(0px)';
+        playerB_el.style.transform = 'translateY(0px)';
+        
+        currentIndex = 0;
+        viewport.scrollTop = 0;
+        viewedVideoIds.clear();
+
+        renderDOMSlides();
+        currentVideoStartTime = Date.now(); 
+        
+        syncPlayersToScrollPosition(); 
+    }
+
+</script>
+</body>
+</html>
