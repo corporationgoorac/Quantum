@@ -5,6 +5,7 @@ class ShareBites extends HTMLElement {
         this.db = firebase.firestore();
         this.myUid = null;
         this.myUserData = null;
+        this.mutualUIDs = []; // Added for mutual friends tracking
         this.chatsData = [];
         this.selectedChats = new Set();
         this.currentBite = null;
@@ -180,7 +181,14 @@ class ShareBites extends HTMLElement {
             if (user) {
                 this.myUid = user.uid;
                 const doc = await this.db.collection("users").doc(this.myUid).get();
-                if (doc.exists) this.myUserData = doc.data();
+                if (doc.exists) {
+                    this.myUserData = doc.data();
+                    
+                    // --- MUTUAL FRIENDS CALCULATION ---
+                    const followingUIDs = (this.myUserData.following || []).map(i => typeof i === 'string' ? i : i.uid);
+                    const followersUIDs = (this.myUserData.followers || []).map(i => typeof i === 'string' ? i : i.uid);
+                    this.mutualUIDs = followingUIDs.filter(uid => followersUIDs.includes(uid));
+                }
             }
         });
     }
@@ -260,6 +268,7 @@ class ShareBites extends HTMLElement {
     // --- CONTACTS LOGIC ---
     async loadRecentChats() {
         try {
+            // Fetch recent chats to preserve groups and sorting
             const snap = await this.db.collection("chats")
                 .where("participants", "array-contains", this.myUid)
                 .orderBy("lastTimestamp", "desc")
@@ -267,6 +276,8 @@ class ShareBites extends HTMLElement {
                 .get();
 
             let rawChats = [];
+            let addedUids = new Set(); // Track UIDs already added via recent chats
+
             for (let d of snap.docs) {
                 let chat = d.data();
                 chat.id = d.id;
@@ -274,6 +285,7 @@ class ShareBites extends HTMLElement {
                 if (chat.isGroup) {
                     chat.displayName = chat.groupName;
                     chat.displayPic = chat.groupPhoto || "https://via.placeholder.com/150";
+                    rawChats.push(chat);
                 } else {
                     const otherUid = chat.participants.find(id => id !== this.myUid);
                     let otherUser = this.userCache[otherUid];
@@ -288,11 +300,43 @@ class ShareBites extends HTMLElement {
                     if (otherUser) {
                         chat.displayName = otherUser.name || otherUser.username;
                         chat.displayPic = otherUser.photoURL || "https://via.placeholder.com/150";
-                    } else continue; 
+                        rawChats.push(chat);
+                        addedUids.add(otherUid);
+                    }
                 }
-                rawChats.push(chat);
             }
 
+            // --- INJECT ALL MUTUAL FRIENDS ---
+            if (this.mutualUIDs && this.mutualUIDs.length > 0) {
+                const missingUids = this.mutualUIDs.filter(uid => !addedUids.has(uid));
+                
+                for (let uid of missingUids) {
+                    let userObj = this.userCache[uid];
+                    if (!userObj) {
+                        const uSnap = await this.db.collection("users").doc(uid).get();
+                        if (uSnap.exists) {
+                            userObj = uSnap.data();
+                            this.userCache[uid] = userObj;
+                        }
+                    }
+                    
+                    if (userObj) {
+                        // Generate the standard Firebase 1-on-1 chat ID format
+                        const generatedChatId = this.myUid < uid ? `${this.myUid}_${uid}` : `${uid}_${this.myUid}`;
+                        
+                        rawChats.push({
+                            id: generatedChatId,
+                            isGroup: false,
+                            displayName: userObj.name || userObj.username || "User",
+                            displayPic: userObj.photoURL || "https://via.placeholder.com/150",
+                            participants: [this.myUid, uid],
+                            lastTimestamp: { toMillis: () => 0 } // Push to bottom of list
+                        });
+                    }
+                }
+            }
+
+            // Sort by share frequency and recent timestamp
             const shareFreq = JSON.parse(localStorage.getItem('goorac_share_freq') || '{}');
             rawChats.sort((a, b) => {
                 const freqA = shareFreq[a.id] || 0;
@@ -408,13 +452,15 @@ class ShareBites extends HTMLElement {
                 if (uid !== this.myUid) unreadUpdates[`unreadCount.${uid}`] = firebase.firestore.FieldValue.increment(1);
             });
 
-            await this.db.collection("chats").doc(chat.id).update({
+            // UPDATED: Using .set() with { merge: true } so we don't error out if chat document is brand new!
+            await this.db.collection("chats").doc(chat.id).set({
                 lastMessage: "🎬 Shared a Bite",
                 lastSender: this.myUid,
                 lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 seen: false,
+                participants: chat.participants, // ensures participants array exists on new docs
                 ...unreadUpdates
-            });
+            }, { merge: true });
 
             const senderName = this.myUserData ? this.myUserData.name : "Someone";
             const senderPhoto = this.myUserData ? this.myUserData.photoURL : "https://www.goorac.biz/icon.png";
