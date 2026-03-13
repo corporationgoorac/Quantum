@@ -1304,10 +1304,19 @@
         
         if (shareModal && typeof shareModal.open === 'function') {
             if (navBar) navBar.style.display = 'none';
+            // NEW: Pause video when share modal opens
+            const p = activePlayer === 'A' ? playerA : playerB;
+            if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
+            
             if (!shareModal._navPatch) {
                 const origClose = shareModal.close;
                 shareModal.close = function(triggerBack) {
                     if (navBar) navBar.style.display = 'block';
+                    // NEW: Resume video when share modal closes
+                    if (!isSearchPlaying && hasStarted) {
+                        const activeP = activePlayer === 'A' ? playerA : playerB;
+                        if (activeP && typeof activeP.playVideo === 'function') activeP.playVideo();
+                    }
                     origClose.apply(this, arguments);
                 };
                 shareModal._navPatch = true;
@@ -1343,11 +1352,21 @@
         
         const grid = document.getElementById('search-grid');
         if(grid.children.length <= 1) executeSearch("tamil");
+        
+        // NEW: Pause video when search modal is opened
+        const p = activePlayer === 'A' ? playerA : playerB;
+        if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
     }
 
     window.closeDiscoverModal = function(shouldGoBack) {
         document.getElementById('discover-modal').classList.remove('active');
         if(shouldGoBack && window.location.hash === "#discover") history.back();
+        
+        // NEW: Resume video when search modal is closed
+        if (!isSearchPlaying && hasStarted) {
+            const p = activePlayer === 'A' ? playerA : playerB;
+            if (p && typeof p.playVideo === 'function') p.playVideo();
+        }
     }
 
     window.onpopstate = (e) => { 
@@ -1384,6 +1403,11 @@
             
             syncPlayersToScrollPosition(); 
             document.getElementById('discover-modal').classList.add('active');
+            
+            // NEW: Pause video since we are back in the search modal
+            const p = activePlayer === 'A' ? playerA : playerB;
+            if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
+            
             return;
         }
 
@@ -1405,11 +1429,13 @@
         const grid = document.getElementById('search-grid');
         
         let skelHtml = '';
-        for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item skel-shimmer"></div>`; }
+        // NEW: Added inline styles to guarantee skeleton rendering
+        for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item skel-shimmer" style="width:100%; min-height:150px; aspect-ratio:9/16; background:#1a1a1a; border-radius:4px;"></div>`; }
         grid.innerHTML = skelHtml;
 
         try {
-            const res = await fetch(`https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true`);
+            // NEW: Added timestamp to bypass cache and fetch new searches
+            const res = await fetch(`https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`);
             const data = await res.json();
             
             if (data.success && data.bites.length > 0) {
