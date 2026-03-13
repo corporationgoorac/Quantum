@@ -584,6 +584,9 @@
     let lastScrollProcessTime = 0; 
     let lastScrollDir = 'down';
     
+    // NEW FIX: Ensures final evaluation after rapid scrolling stops
+    let scrollStopTimer = null;
+
     function handleScroll() {
         if (!hasStarted) return;
 
@@ -655,6 +658,15 @@
                 if (!isSearchPlaying) fetchMoreBites(); 
             }
         }
+
+        // NEW FIX: Rapid scroll auto-play recovery lock
+        clearTimeout(scrollStopTimer);
+        scrollStopTimer = setTimeout(() => {
+            const finalIndex = Math.round(viewport.scrollTop / slideHeight);
+            if (finalIndex === currentIndex && hasStarted) {
+                playActivePlayer();
+            }
+        }, 150);
     }
 
     // ==========================================================================
@@ -809,7 +821,18 @@
                 p.loadVideoById(currentVid);
                 currentLoadedB = currentVid;
             }
+            
+            // NEW FIX: Ensure audio is turned on to fix the muted bug on rapid scroll
+            if(typeof p.unMute === 'function') p.unMute();
+            
             p.playVideo();
+
+            // NEW FIX: Secondary check to enforce playback in case browser blocked the first call
+            setTimeout(() => {
+                if (typeof p.getPlayerState === 'function' && p.getPlayerState() !== 1) {
+                    p.playVideo();
+                }
+            }, 250);
         }
     }
 
@@ -887,10 +910,28 @@
                     });
 
                     if (uniqueNewBites.length > 0) {
-                        uniqueNewBites.forEach(b => bitesQueue.push(b));
-                        renderDOMSlides();
-                        syncPlayersToScrollPosition(); 
-                        cleanUpQueueAndCache(); 
+                        // ORIGINAL LINE KEPT: uniqueNewBites.forEach(b => bitesQueue.push(b));
+                        // ORIGINAL LINE KEPT: renderDOMSlides();
+                        // ORIGINAL LINE KEPT: syncPlayersToScrollPosition(); 
+                        // ORIGINAL LINE KEPT: cleanUpQueueAndCache(); 
+                        // ORIGINAL LINE KEPT: success = true;
+
+                        // NEW FIX: Display progressively one by one as requested!
+                        let staggerDelay = 0;
+                        uniqueNewBites.forEach((b, idx) => {
+                            setTimeout(() => {
+                                bitesQueue.push(b);
+                                renderDOMSlides();
+                                if (idx === 0) {
+                                    syncPlayersToScrollPosition(); 
+                                    if (hasStarted) playActivePlayer(); // Instantly show first fetched video!
+                                }
+                                if (idx === uniqueNewBites.length - 1) {
+                                    cleanUpQueueAndCache(); 
+                                }
+                            }, staggerDelay);
+                            staggerDelay += 150; // Load one slide into the DOM every 150ms for performance
+                        });
                         success = true;
                     }
                 }
