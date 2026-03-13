@@ -310,8 +310,9 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     let myUid = null;
-    let myInterests = ["tamil"]; 
+    let myInterests = []; 
 
+    // 🚀 DYNAMIC LANGUAGE DETECTION (No more hardcoded Tamil)
     auth.onAuthStateChanged(user => {
         if (user) { 
             myUid = user.uid; 
@@ -319,7 +320,16 @@
                 if(doc.exists && doc.data().interests) {
                     const ints = doc.data().interests;
                     myInterests = Object.keys(ints).sort((a,b) => ints[b] - ints[a]).slice(0, 5);
-                    if(myInterests.length === 0) myInterests = ["tamil"]; 
+                }
+                
+                // Smart Fallback if profile is new/empty
+                if(!myInterests || myInterests.length === 0) {
+                    const userLang = navigator.language || navigator.userLanguage; 
+                    if (userLang.startsWith('ml')) myInterests = ["malayalam"];
+                    else if (userLang.startsWith('te')) myInterests = ["telugu"];
+                    else if (userLang.startsWith('ta')) myInterests = ["tamil"];
+                    else if (userLang.startsWith('hi')) myInterests = ["hindi"];
+                    else myInterests = ["trending"];
                 }
             });
         } 
@@ -349,27 +359,22 @@
     let currentLoadedA = null;
     let currentLoadedB = null;
 
-    // 🚀 DYNAMIC URL REDIRECTION: Check if user arrived via a shared link
     let sharedVidId = null;
     const urlParams = new URLSearchParams(window.location.search);
     const rawUrlParam = urlParams.get('v') || urlParams.get('url');
     
     if (rawUrlParam) {
-        if (rawUrlParam.length === 11) {
-            sharedVidId = rawUrlParam; // Clean ID provided
-        } else {
-            // Extract from standard YouTube Links if provided
+        if (rawUrlParam.length === 11) sharedVidId = rawUrlParam;
+        else {
             const match = rawUrlParam.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/);
             if (match) sharedVidId = match[1];
         }
     }
 
-    // Cache Loader Engine
     (function initializeAppQueue() {
         const uniqueCache = [];
         const seen = new Set();
 
-        // 1. Force the shared video to be the first slide if one exists
         if (sharedVidId) {
             uniqueCache.push({
                 videoId: sharedVidId,
@@ -381,12 +386,9 @@
             });
             seen.add(sharedVidId);
             viewedVideoIds.add(sharedVidId);
-            
-            // Silently clean the URL bar so they don't get trapped in a loop on refresh
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // 2. Load the rest of the standard cache
         const cached = localStorage.getItem('goorac_bites_queue');
         if (cached) {
             try { 
@@ -423,9 +425,6 @@
         localStorage.setItem('goorac_bites_queue', JSON.stringify(cacheSlice.slice(0, 15))); 
     }
 
-    // ==========================================================================
-    // BACKGROUND APP SUPPORT & FIRESTORE BATCH SYNC TRIGGER
-    // ==========================================================================
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
@@ -437,20 +436,12 @@
     });
 
     // ==========================================================================
-    // YOUTUBE IFRAME API DYNAMIC INJECTION
+    // YOUTUBE IFRAME API
     // ==========================================================================
     window.onYouTubeIframeAPIReady = function() {
         const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 0 };
-        
-        playerA = new YT.Player('yt-player-a', {
-            playerVars: playerVars,
-            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
-        });
-        
-        playerB = new YT.Player('yt-player-b', {
-            playerVars: playerVars,
-            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
-        });
+        playerA = new YT.Player('yt-player-a', { playerVars: playerVars, events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }});
+        playerB = new YT.Player('yt-player-b', { playerVars: playerVars, events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }});
     };
 
     const tag = document.createElement('script');
@@ -485,15 +476,13 @@
     }
 
     // ==========================================================================
-    // DOM SLIDE RENDERER & SKELETON APPENDER
+    // DOM SLIDE RENDERER
     // ==========================================================================
     function renderDOMSlides() {
         const viewport = document.getElementById('bites-viewport');
         const skeleton = document.getElementById('main-skeleton');
         
-        if(bitesQueue.length > 0 && skeleton.style.display !== 'none') {
-            skeleton.style.display = 'none';
-        }
+        if(bitesQueue.length > 0 && skeleton.style.display !== 'none') skeleton.style.display = 'none';
 
         const existingLoader = document.getElementById('infinite-loader-slide');
         if (existingLoader) existingLoader.remove();
@@ -572,11 +561,9 @@
                 if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
                 swapPlayers();
                 if (hasStarted) currentVideoStartTime = Date.now();
-            } else {
-                if (hasStarted) {
-                    if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
-                    playActivePlayer();
-                }
+            } else if (hasStarted) {
+                if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
+                playActivePlayer();
             }
         }
     }
@@ -585,25 +572,16 @@
     
     function handleScroll() {
         if (!hasStarted) return;
-
         const now = Date.now();
         const viewport = document.getElementById('bites-viewport');
-        
         const firstSlide = document.querySelector('.bite-slide');
         const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
-        const scrollPosition = viewport.scrollTop;
-        
-        const newIndex = Math.round(scrollPosition / slideHeight);
+        const newIndex = Math.round(viewport.scrollTop / slideHeight);
 
         if (newIndex === bitesQueue.length) {
             if (playerA && typeof playerA.pauseVideo === 'function') playerA.pauseVideo();
             if (playerB && typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
-            
-            if (!isFetching && !isSearchPlaying) {
-                const loaderText = document.querySelector('.loader-text');
-                if (loaderText) loaderText.innerText = "Finding more bites...";
-                fetchMoreBites();
-            }
+            if (!isFetching && !isSearchPlaying) fetchMoreBites();
             return; 
         }
 
@@ -611,10 +589,7 @@
             if (now - lastScrollProcessTime < 100) return;
             lastScrollProcessTime = now;
             
-            const timeSpentMs = now - currentVideoStartTime;
-            const previousBite = bitesQueue[currentIndex];
-            
-            processEngagementAlgorithm(previousBite, timeSpentMs);
+            processEngagementAlgorithm(bitesQueue[currentIndex], now - currentVideoStartTime);
 
             currentIndex = newIndex;
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId); 
@@ -623,9 +598,7 @@
             cleanUpQueueAndCache();
             swapPlayers();
 
-            if (currentIndex >= bitesQueue.length - 5 && !isFetching) {
-                if (!isSearchPlaying) fetchMoreBites(); 
-            }
+            if (currentIndex >= bitesQueue.length - 5 && !isFetching && !isSearchPlaying) fetchMoreBites(); 
         }
     }
 
@@ -638,25 +611,15 @@
     function queueInterestUpdate(category, scoreChange) {
         if(!myUid || !category) return;
         const key = `interests.${category.toLowerCase()}`;
-        
-        if (pendingInterestUpdates[key]) pendingInterestUpdates[key] += scoreChange;
-        else pendingInterestUpdates[key] = scoreChange;
-
-        if(!interestSyncTimer) {
-            interestSyncTimer = setTimeout(syncInterestsToFirestore, 15000); 
-        }
+        pendingInterestUpdates[key] = (pendingInterestUpdates[key] || 0) + scoreChange;
+        if(!interestSyncTimer) interestSyncTimer = setTimeout(syncInterestsToFirestore, 15000); 
     }
 
     function syncInterestsToFirestore() {
         if(Object.keys(pendingInterestUpdates).length === 0 || !myUid) return;
-        
         let firestoreUpdates = {};
-        for(let key in pendingInterestUpdates) {
-            firestoreUpdates[key] = firebase.firestore.FieldValue.increment(pendingInterestUpdates[key]);
-        }
-        
+        for(let key in pendingInterestUpdates) firestoreUpdates[key] = firebase.firestore.FieldValue.increment(pendingInterestUpdates[key]);
         db.collection("users").doc(myUid).set(firestoreUpdates, { merge: true }).catch(e => {});
-        
         pendingInterestUpdates = {}; 
         interestSyncTimer = null;
     }
@@ -669,7 +632,6 @@
 
     function processEngagementAlgorithm(bite, timeSpentMs) {
         if (!bite || isSearchPlaying) return;
-
         let scoreChange = 0;
         let shouldExtractTags = false;
 
@@ -678,16 +640,11 @@
         else scoreChange = 1;
 
         if(scoreChange !== 0) queueInterestUpdate(bite.category, scoreChange);
-
-        if (shouldExtractTags) {
-            const tags = extractHashtags(bite.title);
-            tags.slice(0, 3).forEach(tag => queueInterestUpdate(tag, 3));
-        }
+        if (shouldExtractTags) extractHashtags(bite.title).slice(0, 3).forEach(tag => queueInterestUpdate(tag, 3));
     }
 
     function trackExplicitAction(category, action, biteTitle = "") {
         if (!myUid || !category || isSearchPlaying) return;
-        
         let scoreChange = 0;
         let tags = [];
 
@@ -707,9 +664,7 @@
         if (!btn.classList.contains('liked')) {
             btn.classList.add('liked');
             document.getElementById(`like-icon-${index}`).innerText = 'favorite';
-            let cSpan = btn.querySelector('.count');
-            cSpan.innerText = formatNumber(bite.likes + 1);
-            
+            btn.querySelector('.count').innerText = formatNumber(bite.likes + 1);
             trackExplicitAction(bite.category, 'liked', bite.title);
             if(navigator.vibrate) navigator.vibrate(50);
         }
@@ -720,7 +675,6 @@
     // ==========================================================================
     function swapPlayers() {
         if (!playerA || !playerB) return;
-        
         const currentVid = bitesQueue[currentIndex]?.videoId;
         const nextVid = bitesQueue[currentIndex + 1]?.videoId;
         const isEven = currentIndex % 2 === 0;
@@ -739,10 +693,7 @@
                     currentLoadedA = currentVid;
                 } else if (hasStarted) playerA.playVideo();
             }
-            if (nextVid && currentLoadedB !== nextVid) {
-                playerB.cueVideoById(nextVid);
-                currentLoadedB = nextVid;
-            }
+            if (nextVid && currentLoadedB !== nextVid) { playerB.cueVideoById(nextVid); currentLoadedB = nextVid; }
         } else {
             activePlayer = 'B';
             document.getElementById('player-container-a').classList.remove('active');
@@ -754,10 +705,7 @@
                     currentLoadedB = currentVid;
                 } else if (hasStarted) playerB.playVideo();
             }
-            if (nextVid && currentLoadedA !== nextVid) {
-                playerA.cueVideoById(nextVid);
-                currentLoadedA = nextVid;
-            }
+            if (nextVid && currentLoadedA !== nextVid) { playerA.cueVideoById(nextVid); currentLoadedA = nextVid; }
         }
     }
 
@@ -765,13 +713,8 @@
         const p = activePlayer === 'A' ? playerA : playerB;
         if (bitesQueue[currentIndex] && p && typeof p.playVideo === 'function') {
             const currentVid = bitesQueue[currentIndex].videoId;
-            if(activePlayer === 'A' && currentLoadedA !== currentVid) {
-                p.loadVideoById(currentVid);
-                currentLoadedA = currentVid;
-            } else if(activePlayer === 'B' && currentLoadedB !== currentVid) {
-                p.loadVideoById(currentVid);
-                currentLoadedB = currentVid;
-            }
+            if(activePlayer === 'A' && currentLoadedA !== currentVid) { p.loadVideoById(currentVid); currentLoadedA = currentVid; } 
+            else if(activePlayer === 'B' && currentLoadedB !== currentVid) { p.loadVideoById(currentVid); currentLoadedB = currentVid; }
             p.playVideo();
         }
     }
@@ -779,19 +722,14 @@
     function togglePlayPause() {
         const p = activePlayer === 'A' ? playerA : playerB;
         if (!p || typeof p.getPlayerState !== 'function') return;
-        
         const state = p.getPlayerState();
         const icon = document.getElementById('play-pause-icon');
         const inner = document.getElementById('pp-icon-inner');
 
         if (state === 1) { 
-            p.pauseVideo();
-            inner.innerText = 'pause';
-            icon.classList.add('show');
+            p.pauseVideo(); inner.innerText = 'pause'; icon.classList.add('show');
         } else {
-            p.playVideo();
-            inner.innerText = 'play_arrow';
-            icon.classList.add('show');
+            p.playVideo(); inner.innerText = 'play_arrow'; icon.classList.add('show');
             setTimeout(() => icon.classList.remove('show'), 800);
         }
     }
@@ -799,74 +737,90 @@
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.ENDED) {
             event.target.playVideo(); 
-            if(bitesQueue[currentIndex]) {
-                trackExplicitAction(bitesQueue[currentIndex].category, 'rewatched', bitesQueue[currentIndex].title);
-            }
+            if(bitesQueue[currentIndex]) trackExplicitAction(bitesQueue[currentIndex].category, 'rewatched', bitesQueue[currentIndex].title);
         }
     }
 
     // ==========================================================================
-    // BULLETPROOF LINEAR FETCHING ENGINE
+    // 🚀 NEW: DIRECT FIRESTORE CONTENT ENGINE & CLIENT SHUFFLE
     // ==========================================================================
+    function addictiveShuffle(videosArray) {
+        let freshVideos = videosArray.filter(v => 
+            !bitesHistory.includes(v.videoId) && 
+            !viewedVideoIds.has(v.videoId) &&
+            !bitesQueue.some(q => q.videoId === v.videoId)
+        );
+
+        // Fisher-Yates Shuffle
+        for (let i = freshVideos.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [freshVideos[i], freshVideos[j]] = [freshVideos[j], freshVideos[i]];
+        }
+        return freshVideos;
+    }
+
     async function fetchMoreBites(overrideTopic = null) {
-        if (isFetching) return;
+        if (isFetching || isSearchPlaying) return;
         isFetching = true;
 
         const loaderText = document.querySelector('.loader-text');
-        if (bitesQueue.length === 0) {
-            document.getElementById('main-skeleton').style.display = 'flex';
-        } else if (loaderText) {
-            loaderText.innerText = "Finding more bites...";
-        }
+        if (loaderText) loaderText.innerText = "Diving into the pools...";
 
-        let queryTopic = overrideTopic || (myInterests.length > 0 ? myInterests.join(',') : "tamil");
-        let success = false;
-        let attempts = 0;
+        try {
+            let topicsToFetch = overrideTopic ? [overrideTopic] : myInterests;
+            if (!topicsToFetch || topicsToFetch.length === 0) topicsToFetch = ["trending"];
+            
+            let combinedVideos = [];
 
-        while (!success && attempts < 3) {
-            attempts++;
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
+            // 1. Direct Communication: Read Topic Pools from Firestore bypassing Render
+            const fetchPromises = topicsToFetch.map(topic => {
+                const safeName = topic.toLowerCase().replace(/\s+/g, '_');
+                return db.collection('bites_pools').doc(safeName).get();
+            });
 
-                let fetchUrl = `https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
-                if (attempts > 1) {
-                    const bustWords = ["viral", "hits", "trending", "wow"];
-                    fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
-                }
+            const snapshots = await Promise.all(fetchPromises);
 
-                const res = await fetch(fetchUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
+            snapshots.forEach(doc => {
+                if (doc.exists && doc.data().videos) combinedVideos.push(...doc.data().videos);
+            });
 
-                const data = await res.json();
-                
-                if (data.success && data.bites && data.bites.length > 0) {
-                    const uniqueNewBites = [];
-                    data.bites.forEach(b => {
-                        if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
-                        
-                        viewedVideoIds.add(b.videoId);
-                        uniqueNewBites.push(b);
-                    });
+            // 2. Addictive Client-Side Shuffle & Filter
+            const finalBatch = addictiveShuffle(combinedVideos).slice(0, 15);
 
-                    if (uniqueNewBites.length > 0) {
-                        uniqueNewBites.forEach(b => bitesQueue.push(b));
-                        renderDOMSlides();
-                        syncPlayersToScrollPosition(); 
-                        cleanUpQueueAndCache(); 
-                        success = true;
-                    }
-                }
-            } catch (error) {
-                console.error("Network attempt failed", error);
+            if (finalBatch.length > 0) {
+                finalBatch.forEach(b => {
+                    viewedVideoIds.add(b.videoId);
+                    bitesQueue.push(b);
+                });
+                renderDOMSlides();
+                syncPlayersToScrollPosition();
+                cleanUpQueueAndCache();
+            } else {
+                // 3. EMERGENCY FALLBACK: Pools empty or exhausted, use live proxy
+                await fetchSearchFallback(topicsToFetch[0]);
             }
+        } catch (error) {
+            console.error("Direct Firestore Read Failed:", error);
+            if (loaderText) loaderText.innerText = "Connection failed. Scroll to retry.";
+        } finally {
+            isFetching = false;
         }
-
-        if (!success && loaderText) loaderText.innerText = "Network slow or no new videos. Scroll to retry.";
-        isFetching = false; 
     }
 
-    // 🚀 DYNAMIC SHARING ENGINE WITH SHARE-BITES COMPONENT
+    async function fetchSearchFallback(topic) {
+        try {
+            const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(topic)}&search=true`);
+            const data = await res.json();
+            if (data.success && data.bites && data.bites.length > 0) {
+                const finalBatch = addictiveShuffle(data.bites).slice(0, 15);
+                finalBatch.forEach(b => { viewedVideoIds.add(b.videoId); bitesQueue.push(b); });
+                renderDOMSlides();
+                syncPlayersToScrollPosition();
+                cleanUpQueueAndCache();
+            }
+        } catch (e) { console.error("Fallback failed", e); }
+    }
+
     window.shareBite = function(event, index) {
         event.stopPropagation();
         const bite = bitesQueue[index];
@@ -874,10 +828,7 @@
         const navBar = document.querySelector('main-navbar');
         
         if (shareModal && typeof shareModal.open === 'function') {
-            // Hide navbar when modal opens
             if (navBar) navBar.style.display = 'none';
-            
-            // Patch the modal's close method to show navbar again seamlessly
             if (!shareModal._navPatch) {
                 const origClose = shareModal.close;
                 shareModal.close = function(triggerBack) {
@@ -886,26 +837,17 @@
                 };
                 shareModal._navPatch = true;
             }
-            
             shareModal.open(bite);
         } else {
-            // Fallback just in case component fails to load
             const shareUrl = `${window.location.origin}${window.location.pathname}?v=${bite.videoId}`;
-            if (navigator.share) {
-                navigator.share({
-                    title: bite.title,
-                    text: `Check out this Bite on Goorac!`,
-                    url: shareUrl
-                }).catch(e => {});
-            } else {
+            if (navigator.share) navigator.share({ title: bite.title, text: `Check out this Bite!`, url: shareUrl }).catch(e => {});
+            else {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     const btnText = event.currentTarget.querySelector('.share-text');
                     const originalText = btnText.innerText;
                     btnText.innerText = "Copied!";
                     setTimeout(() => btnText.innerText = originalText, 2000);
-                }).catch(e => {
-                    console.error("Failed to copy", e);
-                });
+                }).catch(e => {});
             }
         }
     }
@@ -917,14 +859,13 @@
     }
 
     // ==========================================================================
-    // INSTAGRAM-STYLE DISCOVER MODAL
+    // INSTAGRAM-STYLE DISCOVER MODAL (USES RENDER PROXY)
     // ==========================================================================
     window.openDiscoverModal = function() {
         document.getElementById('discover-modal').classList.add('active');
         history.pushState({ modal: 'discover' }, "", "#discover");
-        
         const grid = document.getElementById('search-grid');
-        if(grid.children.length <= 1) executeSearch("tamil");
+        if(grid.children.length <= 1) executeSearch(myInterests[0] || "trending");
     }
 
     window.closeDiscoverModal = function(shouldGoBack) {
@@ -934,27 +875,21 @@
 
     window.onpopstate = (e) => { 
         const hash = window.location.hash;
-
         if (isSearchPlaying && hash === '#discover') {
             isSearchPlaying = false;
-            
             bitesQueue = [...backupQueue];
             currentIndex = backupIndex;
-            
             const viewport = document.getElementById('bites-viewport');
             viewport.innerHTML = '';
             renderDOMSlides();
-            
             const firstSlide = document.querySelector('.bite-slide');
             const slideHeight = firstSlide ? firstSlide.clientHeight : viewport.clientHeight;
             viewport.scrollTop = currentIndex * slideHeight;
             currentVideoStartTime = Date.now(); 
-            
             syncPlayersToScrollPosition(); 
             document.getElementById('discover-modal').classList.add('active');
             return;
         }
-
         if(document.getElementById('discover-modal').classList.contains('active') && hash !== '#discover') {
             closeDiscoverModal(false);
         }
@@ -964,19 +899,17 @@
     document.getElementById('search-input').addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         const val = e.target.value.trim();
-        searchTimeout = setTimeout(() => {
-            if(val.length > 1) executeSearch(val);
-        }, 600);
+        searchTimeout = setTimeout(() => { if(val.length > 1) executeSearch(val); }, 600);
     });
 
     async function executeSearch(query) {
         const grid = document.getElementById('search-grid');
-        
         let skelHtml = '';
-        for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item"></div>`; }
+        for(let i=0; i<12; i++) skelHtml += `<div class="skel-grid-item"></div>`;
         grid.innerHTML = skelHtml;
 
         try {
+            // Live Search always asks the Render API Proxy
             const res = await fetch(`https://pishaa.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true`);
             const data = await res.json();
             
@@ -986,15 +919,10 @@
                     const el = document.createElement('div');
                     el.className = 'grid-item';
                     el.onclick = () => launchSearchResultFeed(bite, data.bites);
-                    el.innerHTML = `
-                        <img src="${bite.imgUrl}">
-                        <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
-                    `;
+                    el.innerHTML = `<img src="${bite.imgUrl}"><div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>`;
                     grid.appendChild(el);
                 });
-            } else {
-                grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
-            }
+            } else grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
         } catch (error) {
             grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
         }
@@ -1002,9 +930,7 @@
 
     function launchSearchResultFeed(clickedBite, allResults) {
         const searchInputBox = document.getElementById('search-input');
-        if (searchInputBox && searchInputBox.value.trim()) {
-            trackExplicitAction(searchInputBox.value.trim(), 'searched');
-        }
+        if (searchInputBox && searchInputBox.value.trim()) trackExplicitAction(searchInputBox.value.trim(), 'searched');
 
         backupQueue = [...bitesQueue];
         backupIndex = currentIndex;
@@ -1024,10 +950,8 @@
 
         renderDOMSlides();
         currentVideoStartTime = Date.now(); 
-        
         syncPlayersToScrollPosition(); 
     }
-
 </script>
 </body>
 </html>
