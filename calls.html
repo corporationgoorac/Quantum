@@ -19,6 +19,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <script src="config.js"></script>
+    
 <script type="module" src="components/presence.js"></script>
 
     <style>
@@ -188,9 +191,35 @@
         .feature-list-intro li svg { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; margin-top: 2px; }
         .modal-btn-intro { width: 100%; background: var(--text-main); color: #000000; border: none; padding: 18px; border-radius: 16px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
         .modal-btn-intro:active { transform: scale(0.97); opacity: 0.9; }
+
+        /* --- NEW ERROR MODAL CSS --- */
+        #firebase-error-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 9999999; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .error-content {
+            background: #1a1a1a; padding: 25px; border-radius: 16px; border: 1px solid var(--danger);
+            max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(255, 68, 68, 0.2);
+        }
+        .error-content h3 { margin-top: 0; color: var(--danger); font-weight: 800; }
+        .error-content p { color: #d1d1d1; font-size: 0.95rem; word-break: break-word; margin-bottom: 25px; line-height: 1.5; }
+        .error-content button {
+            background: var(--danger); color: white; border: none; padding: 12px 20px;
+            border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; transition: opacity 0.2s;
+        }
+        .error-content button:active { opacity: 0.8; }
     </style>
 </head>
 <body oncontextmenu="return false;">
+
+<div id="firebase-error-modal">
+    <div class="error-content">
+        <h3>Database Error</h3>
+        <p id="firebase-error-text">An unexpected error occurred.</p>
+        <button onclick="document.getElementById('firebase-error-modal').style.display='none'">Dismiss</button>
+    </div>
+</div>
 
 <div class="modal-overlay-intro" id="calls-intro-overlay" onclick="closeIntroModal()"></div>
 <div class="bottom-modal-intro" id="calls-intro-modal">
@@ -306,6 +335,15 @@
     <main-navbar></main-navbar>
 
     <script>
+        // --- ERROR HANDLING LOGIC ---
+        function showErrorPopup(msg) {
+            // Automatically format Firebase Index error URLs into clickable buttons/links
+            let formattedMsg = msg.replace(/(https?:\/\/[^\s]+)/g, '<br><br><a href="$1" target="_blank" style="color:var(--accent); text-decoration:underline; font-weight:bold;">[Click here to build the required index]</a>');
+            document.getElementById('firebase-error-text').innerHTML = formattedMsg;
+            document.getElementById('firebase-error-modal').style.display = 'flex';
+            console.error("Firebase Exception Caught:", msg);
+        }
+
         // --- NEW FEATURE: FIRST-TIME ONBOARDING LOGIC ---
         window.addEventListener('DOMContentLoaded', () => {
             if (!localStorage.getItem('goorac_calls_intro_seen')) {
@@ -556,44 +594,15 @@
         /* -------------------------------------------------------------------------- */
         /* FIREBASE & PEER INITIALIZATION                                             */
         /* -------------------------------------------------------------------------- */
+        // Configuration keys removed and externalized to config.js per request.
         
-        // --- NEW ERROR CATCHERS AS REQUESTED ---
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error("Unhandled Promise Rejection:", event.reason);
-            alert("System Error Caught: " + (event.reason.message || event.reason));
-        });
-
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error("Global JS Error:", message, error);
-        };
-        // ----------------------------------------
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCFzAEHC5KLiO2DEkVtoTlFn9zeCQrwImE",
-            authDomain: "goorac-c3b59.firebaseapp.com",
-            projectId: "goorac-c3b59",
-            storageBucket: "goorac-c3b59.firebasestorage.app",
-            messagingSenderId: "746746595332",
-            appId: "1:746746595332:web:d3f8527d27fe8ca2530d51",
-            databaseURL: "https://goorac-c3b59-default-rtdb.firebaseio.com"
-        };
-
+        let db, rdb, auth;
         try {
-            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        } catch(err) {
-            console.error("Firebase Init Error:", err);
-            alert("Firebase Init Error: " + err.message);
-        }
-
-        const db = firebase.firestore();
-        const rdb = firebase.database();
-        const auth = firebase.auth();
-
-        // --- ENFORCE PERSISTENCE ---
-        try {
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        } catch(err) {
-            console.error("Persistence Warning:", err);
+            db = firebase.firestore();
+            rdb = firebase.database();
+            auth = firebase.auth();
+        } catch (err) {
+            showErrorPopup("Firebase initialization failed. Please ensure config.js defines and initializes your app. Details: " + err.message);
         }
 
         let myUid, myData, peer, currentCall, localStream, timerInterval, connectionRetry;
@@ -610,17 +619,11 @@
         auth.onAuthStateChanged(async user => {
             if (user) {
                 myUid = user.uid;
-                try {
-                    const doc = await db.collection("users").doc(myUid).get();
-                    myData = doc.exists ? doc.data() : {};
-                    // NEW: Populate user's blocked list
-                    myBlockedList = (myData.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
-                } catch(err) {
-                    console.error("Error fetching user data:", err);
-                    alert("Firebase Data Error: " + err.message);
-                    myData = {};
-                    myBlockedList = [];
-                }
+                const doc = await db.collection("users").doc(myUid).get();
+                myData = doc.data() || {};
+                
+                // NEW: Populate user's blocked list
+                myBlockedList = (myData.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
                 
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('autoAnswer') === 'true') {
@@ -645,17 +648,7 @@
                 
                 loadData();
                 listenForSignaling();
-            } else { 
-                // Fix: Delay redirect to prevent false logouts on slow network/IndexedDB load
-                console.warn("Auth check: User is null. Waiting to see if session resolves...");
-                setTimeout(() => {
-                    if (!firebase.auth().currentUser) {
-                        console.error("Auth Failure: No active Firebase session detected after waiting.");
-                        alert("Session Error: Firebase cannot find your login data. If you didn't log out, your browser/device might be clearing cookies or blocking IndexedDB. Redirecting to login.");
-                        window.location.href = 'login.html'; 
-                    }
-                }, 2500); 
-            }
+            } else { window.location.href = 'login.html'; }
         });
 
         /* -------------------------------------------------------------------------- */
@@ -986,15 +979,22 @@
         }
 
         async function loadRecent() {
-            /* OLD QUERY COMMENTED OUT:
-            const snapshot = await db.collection("call_logs")
-                .where('participants', 'array-contains', myUid)
-                .orderBy('timestamp', 'desc').limit(20).get();
-            */
-            // NEW QUERY WITH LIMIT 10:
-            const snapshot = await db.collection("call_logs")
-                .where('participants', 'array-contains', myUid)
-                .orderBy('timestamp', 'desc').limit(10).get();
+            let snapshot;
+            try {
+                /* OLD QUERY COMMENTED OUT:
+                const snapshot = await db.collection("call_logs")
+                    .where('participants', 'array-contains', myUid)
+                    .orderBy('timestamp', 'desc').limit(20).get();
+                */
+                // NEW QUERY WITH LIMIT 10:
+                snapshot = await db.collection("call_logs")
+                    .where('participants', 'array-contains', myUid)
+                    .orderBy('timestamp', 'desc').limit(10).get();
+            } catch (err) {
+                showErrorPopup(err.message);
+                document.getElementById('list-container').innerHTML = "<p style='text-align:center; padding:40px; color:var(--danger);'>Failed to load recent calls</p>";
+                return;
+            }
             
             let html = "";
             const callPromises = snapshot.docs.map(async doc => {
@@ -1067,44 +1067,48 @@
 
             let html = "";
             
-            for (let item of following) {
-                const uid = (typeof item === 'object' && item.uid) ? item.uid : item;
-                
-                if (!uid) continue;
+            try {
+                for (let item of following) {
+                    const uid = (typeof item === 'object' && item.uid) ? item.uid : item;
+                    
+                    if (!uid) continue;
 
-                // NEW: My Block Check
-                if (myBlockedList.includes(uid)) continue;
+                    // NEW: My Block Check
+                    if (myBlockedList.includes(uid)) continue;
 
-                const uDoc = await db.collection("users").doc(uid).get();
-                if (!uDoc.exists) continue;
+                    const uDoc = await db.collection("users").doc(uid).get();
+                    if (!uDoc.exists) continue;
 
-                const u = uDoc.data();
-                
-                // NEW: Their Block Check
-                const theirBlockedList = (u?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
-                if (theirBlockedList.includes(myUid)) continue;
-                
-                let isMutual = false;
-                if (u && u.following) {
-                    if (Array.isArray(u.following)) {
-                        isMutual = u.following.some(f => {
-                            const fUid = (typeof f === 'object' && f.uid) ? f.uid : f;
-                            return fUid === myUid;
-                        });
+                    const u = uDoc.data();
+                    
+                    // NEW: Their Block Check
+                    const theirBlockedList = (u?.blocked || []).map(b => typeof b === 'string' ? b : b.uid);
+                    if (theirBlockedList.includes(myUid)) continue;
+                    
+                    let isMutual = false;
+                    if (u && u.following) {
+                        if (Array.isArray(u.following)) {
+                            isMutual = u.following.some(f => {
+                                const fUid = (typeof f === 'object' && f.uid) ? f.uid : f;
+                                return fUid === myUid;
+                            });
+                        }
+                    }
+
+                    if (isMutual) {
+                        html += `
+                            <div class="call-item">
+                                <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="call-pfp">
+                                <div class="call-info">
+                                    <div class="u-name">${u.name} ${u.verified ? '<span class="material-icons-round" style="color:var(--ig-blue); font-size:16px; margin-left:4px; vertical-align:middle;">verified</span>' : ''}</div>
+                                    <div class="call-meta">@${u.username || 'user'}</div>
+                                </div>
+                                <button class="btn-call" onclick="startCall('${uid}', '${u.name}', '${u.photoURL}', ${u.verified || false})">📞</button>
+                            </div>`;
                     }
                 }
-
-                if (isMutual) {
-                    html += `
-                        <div class="call-item">
-                            <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="call-pfp">
-                            <div class="call-info">
-                                <div class="u-name">${u.name} ${u.verified ? '<span class="material-icons-round" style="color:var(--ig-blue); font-size:16px; margin-left:4px; vertical-align:middle;">verified</span>' : ''}</div>
-                                <div class="call-meta">@${u.username || 'user'}</div>
-                            </div>
-                            <button class="btn-call" onclick="startCall('${uid}', '${u.name}', '${u.photoURL}', ${u.verified || false})">📞</button>
-                        </div>`;
-                }
+            } catch (err) {
+                showErrorPopup(err.message);
             }
             
             // --- NEW FIX: Prevent async overwrite glitch when switching tabs ---
