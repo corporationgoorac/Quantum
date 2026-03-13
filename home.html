@@ -805,6 +805,20 @@
         const momentsFeed = document.getElementById('moments-feed');
         const dashboardContent = document.getElementById('dashboard-content');
 
+        // --- NEW HELPER: Recursive Deep Pause ---
+        function deeplyPauseMedia(rootNode) {
+            if (!rootNode) return;
+            const media = rootNode.querySelectorAll('video, audio');
+            media.forEach(m => {
+                try { if (!m.paused && typeof m.pause === 'function') m.pause(); } catch(e){}
+            });
+            const allNodes = rootNode.querySelectorAll('*');
+            allNodes.forEach(node => {
+                if (node.shadowRoot) deeplyPauseMedia(node.shadowRoot);
+            });
+        }
+        // ----------------------------------------
+
         function toggleOverlays(shouldHide) {
             if (shouldHide) {
                 if (mainNav) mainNav.classList.add('hidden-nav');
@@ -825,17 +839,25 @@
                 }
                 toggleOverlays(isDropsOpen || isModalOpen);
 
-                // --- NEW AUDIO OVERLAP FIX: Pause Moments when Drops open ---
-                if (isDropsOpen && momentsFeed) {
-                    const mRoot = momentsFeed.shadowRoot || momentsFeed;
-                    const mMedia = mRoot.querySelectorAll('video, audio');
-                    mMedia.forEach(media => {
-                        if (typeof media.pause === 'function' && !media.paused) {
-                            media.pause();
-                        }
-                    });
+                // --- ENHANCED AUDIO OVERLAP FIX: Deeply pause Moments when Drops open ---
+                if (isDropsOpen) {
+                    if (momentsFeed) {
+                        // Pause DOM Elements
+                        deeplyPauseMedia(momentsFeed.shadowRoot || momentsFeed);
+                        
+                        // 🚀 TARGET JAVASCRIPT MEMORY AUDIO OBJECTS DIRECTLY
+                        try {
+                            if (momentsFeed.audioPlayer && typeof momentsFeed.audioPlayer.pause === 'function') {
+                                momentsFeed.audioPlayer.pause();
+                            }
+                            if (momentsFeed.modalAudioPlayer && typeof momentsFeed.modalAudioPlayer.pause === 'function') {
+                                momentsFeed.modalAudioPlayer.pause();
+                            }
+                        } catch(e) {}
+                    }
+                    window.dispatchEvent(new CustomEvent('goorac-pause-all-media'));
                 }
-                // ------------------------------------------------------------
+                // ------------------------------------------------------------------------
             }).observe(dropsViewer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
         }
 
@@ -845,17 +867,12 @@
                 const isModalOpen = momentsFeed.querySelector('.m-full-modal.open') || momentsFeed.querySelector('.c-overlay.open');
                 toggleOverlays(isDropsOpen || isModalOpen);
                 
-                // --- NEW AUDIO OVERLAP FIX: Pause Drops when Moments open ---
-                if (isModalOpen && dropsViewer) {
-                    const dRoot = dropsViewer.shadowRoot || dropsViewer;
-                    const dMedia = dRoot.querySelectorAll('video, audio');
-                    dMedia.forEach(media => {
-                        if (typeof media.pause === 'function' && !media.paused) {
-                            media.pause();
-                        }
-                    });
+                // --- ENHANCED AUDIO OVERLAP FIX: Deeply pause Drops when Moments open ---
+                if (isModalOpen) {
+                    if (dropsViewer) deeplyPauseMedia(dropsViewer.shadowRoot || dropsViewer);
+                    window.dispatchEvent(new CustomEvent('goorac-pause-all-media'));
                 }
-                // ------------------------------------------------------------
+                // ------------------------------------------------------------------------
 
                 const mCards = momentsFeed.shadowRoot ? momentsFeed.shadowRoot.querySelectorAll('.m-card') : momentsFeed.querySelectorAll('.m-card');
                 const hasMoments = mCards.length > 0;
