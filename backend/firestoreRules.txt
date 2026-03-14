@@ -151,14 +151,15 @@ service cloud.firestore {
     // =========================================================================
     // 6. PULSE & VISION ROOMS (Live Collaboration)
     // =========================================================================
+    // Secures 1-on-1 ephemeral rooms by verifying the user's UID is in the roomId (UidA_UidB)
     match /pulse_rooms/{roomId} {
       allow read, write: if request.auth != null && 
-        request.auth.uid in get(/databases/$(database)/documents/chats/$(roomId)).data.participants;
+        (roomId.split('_')[0] == request.auth.uid || roomId.split('_')[1] == request.auth.uid);
     }
     
     match /vision_rooms/{roomId} {
       allow read, write: if request.auth != null && 
-        request.auth.uid in get(/databases/$(database)/documents/chats/$(roomId)).data.participants;
+        (roomId.split('_')[0] == request.auth.uid || roomId.split('_')[1] == request.auth.uid);
     }
 
     // =========================================================================
