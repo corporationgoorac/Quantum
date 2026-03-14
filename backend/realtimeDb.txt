@@ -1,0 +1,56 @@
+{
+  "rules": {
+    
+    // =========================================================================
+    // 1. PRESENCE SYSTEM (Online / Offline Status)
+    // =========================================================================
+    "status": {
+      "$userId": {
+        // Anyone logged in can see if another user is online
+        ".read": "auth != null",
+        // A user can ONLY update their own status
+        ".write": "auth != null && auth.uid === $userId"
+      }
+    },
+    
+    // =========================================================================
+    // 2. TYPING INDICATORS (Standard Chats & Vision Rooms)
+    // =========================================================================
+    "typing": {
+      "$chatId": {
+        "$userId": {
+          // Anyone logged in can read typing statuses
+          ".read": "auth != null",
+          // You can only set the typing indicator for your own UID
+          ".write": "auth != null && auth.uid === $userId"
+        }
+      }
+    },
+
+    // =========================================================================
+    // 3. CALL SIGNALING (WebRTC Handshakes)
+    // =========================================================================
+    "calls_status": {
+      "$userId": {
+        // Users need to read their own incoming calls, and callers need to read the answer/decline status
+        ".read": "auth != null",
+        // Anyone logged in can write here to "ring" another user or respond to a call
+        // (This MUST be open to all authenticated users so User A can reach User B)
+        ".write": "auth != null"
+      }
+    },
+
+    // =========================================================================
+    // 4. TRANSIENT VISION CHAT (Live YouTube Rooms)
+    // =========================================================================
+    "vision_chat": {
+      "$roomId": {
+        // Participants can read the live messages
+        ".read": "auth != null",
+        // Participants can post messages and the host can delete the room on exit
+        ".write": "auth != null"
+      }
+    }
+
+  }
+}
