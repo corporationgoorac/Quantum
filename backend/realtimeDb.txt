@@ -45,10 +45,9 @@
     // =========================================================================
     "vision_chat": {
       "$roomId": {
-        // Participants can read the live messages
-        ".read": "auth != null",
-        // Participants can post messages and the host can delete the room on exit
-        ".write": "auth != null"
+        // Only the two users whose UIDs make up the Room ID can read/write the live chat
+        ".read": "auth != null && $roomId.contains(auth.uid)",
+        ".write": "auth != null && $roomId.contains(auth.uid)"
       }
     }
 
