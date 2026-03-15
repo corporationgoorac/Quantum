@@ -1288,7 +1288,7 @@
     }
 
     // ==========================================================================
-    // BULLETPROOF LINEAR FETCHING ENGINE (STRICT FILTERING)
+    // BULLETPROOF LINEAR FETCHING ENGINE (UPDATED TO SSE STREAMING)
     // ==========================================================================
     async function fetchMoreBites(overrideTopic = null) {
         if (isFetching) return;
@@ -1308,49 +1308,62 @@
         while (!success && attempts < 3) {
             attempts++;
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-
                 let fetchUrl = `https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
                 if (attempts > 1) {
                     const bustWords = ["viral", "hits", "trending", "wow"];
                     fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
                 }
 
-                const res = await fetch(fetchUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
+                // NEW: Stream via Server-Sent Events (SSE)
+                await new Promise((resolve) => {
+                    const evtSource = new EventSource(fetchUrl);
+                    
+                    let timeoutId = setTimeout(() => {
+                        evtSource.close();
+                        resolve();
+                    }, 15000); 
 
-                const data = await res.json();
-                
-                if (data.success && data.bites && data.bites.length > 0) {
-                    const uniqueNewBites = [];
-                    data.bites.forEach(b => {
-                        // 🛡️ STRICT DEDUPLICATION: Check history directly before accepting
-                        if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
+                    evtSource.onmessage = (event) => {
+                        clearTimeout(timeoutId); // We received data, don't timeout
+                        const data = JSON.parse(event.data);
                         
-                        viewedVideoIds.add(b.videoId);
-                        uniqueNewBites.push(b);
-                    });
+                        if (data.success && data.bites && data.bites.length > 0) {
+                            const uniqueNewBites = [];
+                            data.bites.forEach(b => {
+                                // 🛡️ STRICT DEDUPLICATION: Check history directly before accepting
+                                if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
+                                
+                                viewedVideoIds.add(b.videoId);
+                                uniqueNewBites.push(b);
+                            });
 
-                    if (uniqueNewBites.length > 0) {
-                        let staggerDelay = 0;
-                        uniqueNewBites.forEach((b, idx) => {
-                            setTimeout(() => {
-                                bitesQueue.push(b);
-                                renderDOMSlides();
-                                if (idx === 0) {
-                                    syncPlayersToScrollPosition(); 
-                                    if (hasStarted && !isLongPress) playActivePlayer(); 
-                                }
-                                if (idx === uniqueNewBites.length - 1) {
-                                    cleanUpQueueAndCache(); 
-                                }
-                            }, staggerDelay);
-                            staggerDelay += 150; 
-                        });
-                        success = true;
-                    }
-                }
+                            if (uniqueNewBites.length > 0) {
+                                let isInitialLoad = bitesQueue.length === 0;
+                                let staggerDelay = 0;
+                                uniqueNewBites.forEach((b, idx) => {
+                                    setTimeout(() => {
+                                        bitesQueue.push(b);
+                                        renderDOMSlides();
+                                        if (isInitialLoad && idx === 0) {
+                                            syncPlayersToScrollPosition(); 
+                                            if (hasStarted && !isLongPress) playActivePlayer(); 
+                                        }
+                                        if (idx === uniqueNewBites.length - 1) {
+                                            cleanUpQueueAndCache(); 
+                                        }
+                                    }, staggerDelay);
+                                    staggerDelay += 150; 
+                                });
+                                success = true;
+                            }
+                        }
+                    };
+
+                    evtSource.onerror = () => {
+                        evtSource.close();
+                        resolve(); // Stream finished successfully from the server side
+                    };
+                });
             } catch (error) {}
         }
 
@@ -1496,26 +1509,49 @@
         for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item skel-shimmer" style="width:100%; min-height:150px; aspect-ratio:9/16; background:#1a1a1a; border-radius:4px;"></div>`; }
         grid.innerHTML = skelHtml;
 
+        let totalSearchBites = []; // Keep track of all chunks together
+        let firstChunk = true;
+
         try {
-            // NEW: Added timestamp to bypass cache and fetch new searches
-            const res = await fetch(`https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`);
-            const data = await res.json();
+            const fetchUrl = `https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`;
             
-            if (data.success && data.bites.length > 0) {
-                grid.innerHTML = '';
-                data.bites.forEach(bite => {
-                    const el = document.createElement('div');
-                    el.className = 'grid-item';
-                    el.onclick = () => launchSearchResultFeed(bite, data.bites);
-                    el.innerHTML = `
-                        <img src="${bite.imgUrl}">
-                        <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
-                    `;
-                    grid.appendChild(el);
-                });
-            } else {
-                grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
-            }
+            // NEW: SSE Streaming replacement for Search Modal
+            await new Promise((resolve) => {
+                const evtSource = new EventSource(fetchUrl);
+                
+                evtSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.success && data.bites && data.bites.length > 0) {
+                        if (firstChunk) {
+                            grid.innerHTML = ''; // Clear skeletons instantly when real data streams in
+                            firstChunk = false;
+                        }
+                        
+                        data.bites.forEach(bite => {
+                            if(totalSearchBites.some(b => b.videoId === bite.videoId)) return; 
+                            totalSearchBites.push(bite);
+
+                            const el = document.createElement('div');
+                            el.className = 'grid-item';
+                            el.onclick = () => launchSearchResultFeed(bite, totalSearchBites);
+                            el.innerHTML = `
+                                <img src="${bite.imgUrl}">
+                                <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
+                            `;
+                            grid.appendChild(el);
+                        });
+                    }
+                };
+
+                evtSource.onerror = () => {
+                    evtSource.close();
+                    if (firstChunk) {
+                        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
+                    }
+                    resolve();
+                };
+            });
+            
         } catch (error) {
             grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
         }
