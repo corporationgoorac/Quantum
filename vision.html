@@ -1064,7 +1064,7 @@
 
                 try {
                     // NEW: Updated to point to your new Master Backend Proxy API Link
-                    const res = await fetch(`https://corporationgoorac-quantumbackend.hf.space/api/feed?topics=${encodeURIComponent(query)}&mode=strict=${encodeURIComponent(query)}&mode=strict`);
+                    const res = await fetch(`https://corporationgoorac-quantumbackend.hf.space/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
                     const data = await res.json();
                     if (data.bites && data.bites.length > 0) results = data.bites;
                 } catch (err) {
