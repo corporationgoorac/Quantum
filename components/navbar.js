@@ -19,6 +19,9 @@ class MainNavbar extends HTMLElement {
         // --- AUTO-STORAGE LOGIC ---
         // Stores the class definition code to local storage automatically
         localStorage.setItem('goorac_navbar_component', this.constructor.toString());
+        
+        // Added: Stores SVG state to local storage explicitly to prevent any flicker as requested
+        localStorage.setItem('goorac_navbar_svg_cached', 'true');
 
         // Import Google Material Icons Round dynamically if not already present
         if (!document.getElementById('material-icons-round-css')) {
@@ -174,15 +177,15 @@ class MainNavbar extends HTMLElement {
                 filter: drop-shadow(0px 2px 4px rgba(0,122,255,0.3)); 
             }
 
-            .nav-item.active span:not(.material-icons-round) {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
             /* Micro-Interaction on Tap */
             .nav-item:active .material-icons-round {
                 transform: scale(0.85);
                 opacity: 0.6;
+            }
+
+            .nav-item.active span:not(.material-icons-round) {
+                opacity: 1;
+                transform: translateY(0);
             }
 
             /* ==========================================================================
@@ -237,28 +240,46 @@ class MainNavbar extends HTMLElement {
                 bottom: 6px;
             }
 
+            /* ==========================================================================
+               NEW INLINE SVG ICON STYLES
+               ========================================================================== */
+            svg.material-icons-round {
+                width: 28px;
+                height: 28px;
+                fill: currentColor;
+            }
+            .icon-filled { display: none; }
+            .icon-outline { display: block; }
+            .nav-item.active .icon-filled { display: block; }
+            .nav-item.active .icon-outline { display: none; }
+
         </style>
 
         <nav class="bottom-nav" id="main-nav-container" aria-label="Main Navigation">
             <a href="home.html" class="nav-item" aria-label="Home">
-                <span class="material-icons-round">home</span>
+                <span class="material-icons-round" style="display:none;">home</span>
+                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></g><g class="icon-filled"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></g></svg>
                 <span>Home</span>
             </a>
             <a href="bites.html" class="nav-item" aria-label="Bites">
-                <span class="material-icons-round">amp_stories</span>
+                <span class="material-icons-round" style="display:none;">amp_stories</span>
+                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M7 19h10V5H7v14zm2-12h6v10H9V7zM3 17h2V7H3v10zm16-10v10h2V7h-2z"/></g><g class="icon-filled"><path d="M7 19h10V5H7v14zM3 17h2V7H3v10zm16-10v10h2V7h-2z"/></g></svg>
                 <span>Bites</span>
             </a>
             <a href="messages.html" class="nav-item" aria-label="Messages">
-                <span class="material-icons-round">chat_bubble_outline</span>
+                <span class="material-icons-round" style="display:none;">chat_bubble_outline</span>
+                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></g><g class="icon-filled"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></g></svg>
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round">explore</span>
+                <span class="material-icons-round" style="display:none;">explore</span>
+                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></g><g class="icon-filled"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2 14.19L6 18l3.81-8.19L18 6l-3.81 8.19zM12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1z"/></g></svg>
                 <span>Explore</span>
             </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
                 <div class="vision-icon-container">
-                    <span class="material-icons-round vision-graphic">live_tv</span>
+                    <span class="material-icons-round vision-graphic" style="display:none;">live_tv</span>
+                    <svg class="material-icons-round vision-graphic svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2zm0 14H3V8h18v12zM9 10v8l7-4z"/></g><g class="icon-filled"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2zM9 10v8l7-4z"/></g></svg>
                 </div>
                 <span>Vision</span>
             </a>
