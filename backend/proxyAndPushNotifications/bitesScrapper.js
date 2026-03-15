@@ -1,8 +1,8 @@
 /**
  * ============================================================================
  * 🚀 GOORAC QUANTUM BITES - ENTERPRISE BACKEND ENGINE
- * Version: 9.7.0 (Ultimate NLP, SSE Data Streaming, & 7-Day Memory)
- * Architecture: Pool-Based SWR Caching, Staggered Anti-Ban Scraping, Global ML
+ * Version: 9.8.0 (API-First + Scraper Fallback, 8-Hr ML & SSE Data Streaming)
+ * Architecture: Pool-Based SWR Caching, Dual-Layer Fetch, Global ML
  * ============================================================================
  */
 
@@ -36,8 +36,14 @@ const CONFIG = {
         SEARCH_BATCH_SIZE: 24,           // 🔥 Increased for denser Discover grid
     },
     ML: {
-        REFILL_INTERVAL: 12 * 60 * 60 * 1000, // 🕒 Changed from 30 mins to 12 hours per request
+        REFILL_INTERVAL: 8 * 60 * 60 * 1000, // 🕒 Changed to exactly 8 hours per request
         DECAY_RATE: 0.85                 
+    },
+    // 🔥 Direct API Integration via Render Environment Variable
+    API: {
+        KEY: process.env.YOUTUBE_API_KEY,  // Automatically pulled from Render
+        MAX_RESULTS: 15,                   // Matches your ALGO_BATCH_SIZE
+        USE_API: true                      // Master switch
     }
 };
 
@@ -307,10 +313,14 @@ class EnterpriseCache {
 const GlobalCache = new EnterpriseCache();
 
 // ============================================================================
-// 🛡️ 8. CIRCUIT BREAKER & ANTI-BAN SCRAPER
+// 🛡️ 8. CIRCUIT BREAKER & ANTI-BAN SCRAPER WITH YOUTUBE API DUAL-LAYER
 // ============================================================================
 class ScraperService {
-    constructor() { this.failures = 0; this.breakerTrippedUntil = 0; }
+    constructor() { 
+        this.failures = 0; 
+        this.breakerTrippedUntil = 0; 
+        this.apiQuotaExceeded = false; // Tracks if we are locked out of the API for the day
+    }
 
     isBreakerOpen() {
         if (this.failures >= CONFIG.SCRAPER.CIRCUIT_BREAKER_FAILURES) {
@@ -330,7 +340,41 @@ class ScraperService {
 
     async safeSearch(query, attempt = 1) {
         if (this.isBreakerOpen()) throw new Error("CIRCUIT_BREAKER_OPEN");
+
+        // 🟢 LAYER 1: Official YouTube API (Using Render Environment Variable)
+        if (CONFIG.API.USE_API && CONFIG.API.KEY && !this.apiQuotaExceeded) {
+            try {
+                // videoDuration=short targets shorts specifically
+                const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=short&maxResults=${CONFIG.API.MAX_RESULTS}&key=${CONFIG.API.KEY}`;
+                
+                const apiResponse = await fetch(apiUrl);
+                const apiData = await apiResponse.json();
+
+                if (apiResponse.ok && apiData.items) {
+                    // Format API data to perfectly match yt-search structure for the frontend
+                    return apiData.items.map(item => ({
+                        videoId: item.id.videoId,
+                        title: item.snippet.title,
+                        author: { name: item.snippet.channelTitle },
+                        image: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+                        seconds: 60, // Default to 60s
+                        views: 0,    // Pass 0 so EngagementEngine simulates it perfectly
+                        description: item.snippet.description
+                    }));
+                } else if (apiResponse.status === 403 || apiResponse.status === 429) {
+                    Logger.warn(`⚠️ YouTube API Quota Reached (Status ${apiResponse.status}). Switching to Scraper Fallback.`);
+                    this.apiQuotaExceeded = true; // Lock API to save requests
+                } else {
+                    Logger.warn(`⚠️ YouTube API Error: ${apiData.error?.message}. Falling back to Scraper.`);
+                }
+            } catch (apiError) {
+                Logger.warn(`⚠️ YouTube API Network Failure. Falling back to Scraper.`, apiError.message);
+            }
+        }
+
+        // 🟠 LAYER 2: yt-search Fallback (Your original logic)
         try {
+            Logger.info(`🕵️ Running Scraper for query: ${query}`);
             const result = await Promise.race([
                 ytSearch(query),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), CONFIG.SCRAPER.TIMEOUT_MS))
@@ -417,7 +461,7 @@ setInterval(() => GlobalMachineLearningEngine.analyzeNetworkAndRefill(), CONFIG.
 // ============================================================================
 BackgroundEventBus.on('refresh_algo_pool', async ({ baseTopic, cacheKey }) => {
     try {
-        Logger.info(`[BACKGROUND] Replenishing Pool for: ${baseTopic}`);
+        Logger.info(`[BACKGROUND] 🌊 Replenishing Algo Pool for user interest: ${baseTopic}`); // Custom log added here
         const queries = AlgorithmEngine.buildDynamicQueries(baseTopic);
         let newVideos = [];
         
