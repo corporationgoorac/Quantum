@@ -1311,7 +1311,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                let fetchUrl = `https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(queryTopic)}`;
+                let fetchUrl = `https://corporationgoorac-quantumbackend.hf.space/api/reels?topic=${encodeURIComponent(queryTopic)}`;
                 if (attempts > 1) {
                     const bustWords = ["viral", "hits", "trending", "wow"];
                     fetchUrl += `+${bustWords[Math.floor(Math.random() * bustWords.length)]}`;
@@ -1498,7 +1498,7 @@
 
         try {
             // NEW: Added timestamp to bypass cache and fetch new searches
-            const res = await fetch(`https://pish-uigm.onrender.com/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`);
+            const res = await fetch(`https://corporationgoorac-quantumbackend.hf.space/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`);
             const data = await res.json();
             
             if (data.success && data.bites.length > 0) {
