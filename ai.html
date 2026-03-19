@@ -239,6 +239,12 @@
     </style>
 </head>
 <body>
+<script>
+    // Prevent Chrome/Android from jumping the page on app resume
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+</script>
 
 <image-picker id="img-picker"></image-picker>
 <file-picker id="file-picker"></file-picker>
