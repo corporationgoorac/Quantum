@@ -1,35 +1,9 @@
-const CACHE_NAME = 'goorac-quantum-v13'; // Bumped to v13 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v11'; 
 const ASSETS = [
     '/',
-    '/aboutGroup.html',
-    '/admin.html',
-    '/ai.html',
-    '/bites.html',
-    '/calls.html',
-    '/chat.html',
-    '/config.js',
-    '/download.html',
-    '/drops.html',
-    '/explore.html',
-    '/favicon.ico',
-    '/followers.html',
-    '/following.html',
-    '/groupChat.html',
     '/home.html',
-    '/index.html',
-    '/login.html',
-    '/manifest.json',
-    '/messages.html',
-    '/moments.html',
-    '/notes.html',
-    '/notifications.html',
-    '/profile.html',
-    '/pulse.html',
-    '/pulseLobby.html',
-    '/setup.html',
-    '/userProfile.html',
-    '/vision.html',
-    '/visionLobby.html',
+    '/download.html',
+    '/config.js',
     '/notification-worker.js',
     'https://cdn-icons-png.flaticon.com/128/3067/3067451.png',
     'https://cdn-icons-png.flaticon.com/512/3067/3067451.png'
@@ -64,37 +38,14 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
+// 3. Fetch (Offline Support)
 self.addEventListener('fetch', (e) => {
-    // Only intercept standard GET requests
-    if (e.request.method !== 'GET') return;
-
-    e.respondWith(
-        caches.match(e.request).then((cachedResponse) => {
-            
-            // 1. Kick off a background network request to fetch the freshest data
-            const fetchPromise = fetch(e.request).then((networkResponse) => {
-                caches.open(CACHE_NAME).then((cache) => {
-                    // Update the cache silently in the background so the next launch is up-to-date
-                    // We clone() the response because it can only be consumed once
-                    if (networkResponse.ok) {
-                        cache.put(e.request, networkResponse.clone());
-                    }
-                });
-                return networkResponse;
-            }).catch(() => {
-                // Network failed (user is offline). 
-                // If they are trying to navigate to a new page, fallback to home.html
-                if (e.request.mode === 'navigate') {
-                    return caches.match('/home.html');
-                }
-            });
-
-            // 2. THE MAGIC TRICK: Return the cached response INSTANTLY if we have it.
-            // If we don't have it in the cache yet, wait for the network fetch.
-            return cachedResponse || fetchPromise;
-        })
-    );
+    if (e.request.mode === 'navigate') {
+        e.respondWith(fetch(e.request).catch(() => caches.match('/home.html')));
+    } else {
+        // Cache First Strategy
+        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+    }
 });
 
 // 4. Notification Click
