@@ -1440,6 +1440,12 @@ box-shadow: var(--received-shadow);
     </style>
 </head>
 <body>
+<script>
+    // Prevent Chrome/Android from jumping the page on app resume
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+</script>
 
 <script>
     // =========================================
