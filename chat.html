@@ -900,7 +900,7 @@ box-shadow: var(--received-shadow);
         .input-area-container { 
             background: transparent; /* Remove old blocky background */
             border-top: 1px solid transparent; 
-            padding-bottom: env(safe-area-inset-bottom, 10px); 
+            padding-bottom: calc(1px + env(safe-area-inset-bottom)) !important;
             flex-shrink: 0; 
             width: 100%; 
             z-index: 1000; 
