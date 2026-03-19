@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v11'; 
+const CACHE_NAME = 'goorac-quantum-v1'; 
 const ASSETS = [
     '/',
     '/home.html',
