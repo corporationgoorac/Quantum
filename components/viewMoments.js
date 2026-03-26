@@ -15,6 +15,7 @@
  * - Instagram-style Long Press to Pause & Progress Bar
  * - Smart Autoplay Block Recovery
  * - Enhanced Edge Caching & Performance Optimization
+ * - FULLY INTEGRATED WITH THEME.JS CSS VARIABLES
  * ============================================================================
  */
 
@@ -270,14 +271,13 @@ class ViewMoments extends HTMLElement {
             bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%) translateY(100px)',
-            background: 'var(--surface)', // Mapped to Theme Variable
-            color: 'var(--text-main)',    // Mapped to Theme Variable
+            background: 'var(--surface, #333)',
+            color: 'var(--text-main, #fff)',
             padding: '12px 24px',
             borderRadius: '30px',
             display: 'flex',
             alignItems: 'center',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-            border: '1px solid var(--border-color)', // Mapped to Theme Variable
             zIndex: '9999',
             transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
             fontSize: '14px',
@@ -904,17 +904,16 @@ class ViewMoments extends HTMLElement {
                 .moments-container { 
                     display: flex; 
                     flex-direction: column; 
-                    background: var(--bg); /* Mapped */
+                    background: var(--bg, #000); 
                     width: 100%; 
                 }
                 
                 /* Feed Card Styling */
                 .m-card { 
                     width: 100%; 
-                    border-bottom: 1px solid var(--border-color); /* Mapped */
+                    border-bottom: 1px solid var(--border-color, #1a1a1a); 
                     padding-bottom: 10px; 
                     margin-bottom: 10px; 
-                    background: var(--surface); /* Mapped */
                 }
                 .m-header { 
                     display: flex; 
@@ -927,7 +926,7 @@ class ViewMoments extends HTMLElement {
                     height: 36px; 
                     border-radius: 50%; 
                     object-fit: cover; 
-                    border: 2px solid var(--accent); /* Mapped */
+                    border: 2px solid var(--accent); 
                     cursor: pointer; 
                 }
                 .m-user-info { 
@@ -942,20 +941,20 @@ class ViewMoments extends HTMLElement {
                     gap: 4px; 
                     font-weight: 700; 
                     font-size: 14px; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                 }
                 .m-verified { 
-                    color: var(--accent); /* Mapped */
+                    color: var(--accent, #0095f6); 
                     font-size: 14px; 
                 }
                 .m-username { 
                     font-size: 12px; 
-                    color: var(--text-dim); /* Mapped */
+                    color: var(--text-dim, #aaa); 
                     font-weight: 400; 
                 }
                 .m-timestamp { 
                     font-size: 11px; 
-                    color: var(--text-dim); /* Mapped */
+                    color: var(--text-dim, #888); 
                     font-weight: 500; 
                 }
 
@@ -979,7 +978,7 @@ class ViewMoments extends HTMLElement {
                 
                 .m-song { 
                     font-size: 11px; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     display: flex; 
                     align-items: center; 
                     gap: 4px; 
@@ -990,7 +989,7 @@ class ViewMoments extends HTMLElement {
                 .m-canvas { 
                     width: 100%; 
                     aspect-ratio: 4/5; 
-                    background: #050505; /* Kept intentional for contrast */
+                    background: var(--bg, #050505); 
                     position: relative; 
                     overflow: hidden; 
                     display: flex; 
@@ -1026,7 +1025,7 @@ class ViewMoments extends HTMLElement {
                     top: 50%; 
                     left: 50%;
                     transform: translate(-50%, -50%) scale(0);
-                    color: #ff3b30; 
+                    color: var(--danger, #ff3b30); 
                     font-size: 90px; 
                     opacity: 0;
                     z-index: 100; 
@@ -1054,14 +1053,14 @@ class ViewMoments extends HTMLElement {
                 .pulse-attention {
                     animation: pulseAttention 1.5s infinite !important;
                     background: rgba(255,0,127,0.8) !important;
-                    border: 2px solid #fff !important;
+                    border: 2px solid var(--text-main, #fff) !important;
                 }
 
                 /* Audio Overlay */
                 .tap-to-enable-audio {
                     position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 50;
                     display: none; flex-direction: column; align-items: center; justify-content: center;
-                    color: white; font-weight: bold; pointer-events: none;
+                    color: var(--text-main, white); font-weight: bold; pointer-events: none;
                 }
                 .tap-to-enable-audio.show { display: flex; }
 
@@ -1069,7 +1068,7 @@ class ViewMoments extends HTMLElement {
                 .m-progress-container {
                     position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.2); z-index: 100;
                 }
-                .m-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; } /* Mapped */
+                .m-progress-fill { height: 100%; background: var(--accent, #fff); width: 0%; transition: width 0.1s linear; }
 
                 /* Hide UI for long press */
                 .hide-ui-transition { transition: opacity 0.2s; }
@@ -1090,7 +1089,7 @@ class ViewMoments extends HTMLElement {
                     display: flex; 
                     align-items: center; 
                     justify-content: center; 
-                    color:#fff; 
+                    color: var(--text-main, #fff); 
                     border:none; 
                     cursor:pointer;
                     transition: all 0.2s ease;
@@ -1102,12 +1101,11 @@ class ViewMoments extends HTMLElement {
                     padding: 12px 15px; 
                     gap: 20px; 
                     align-items: center; 
-                    background: var(--surface); /* Mapped */
                 }
                 .m-btn { 
                     background: none; 
                     border: none; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     padding: 0; 
                     cursor: pointer; 
                     display: flex; 
@@ -1124,14 +1122,14 @@ class ViewMoments extends HTMLElement {
                     -webkit-font-smoothing: antialiased;
                 }
                 .liked { 
-                    color: #ff3b30 !important; 
+                    color: var(--danger, #ff3b30) !important; 
                 }
 
                 /* Text Content */
                 .m-caption { 
                     padding: 0 15px 10px; 
                     font-size: 14px; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     line-height: 1.4; 
                     word-break: break-word; 
                 }
@@ -1144,7 +1142,7 @@ class ViewMoments extends HTMLElement {
                 .m-full-modal {
                     position: fixed; 
                     inset: 0; 
-                    background: var(--bg); /* Mapped */
+                    background: var(--bg, #000); 
                     z-index: 2000;
                     transform: translateX(100%); 
                     transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1162,10 +1160,8 @@ class ViewMoments extends HTMLElement {
                     align-items: center; 
                     justify-content: space-between; 
                     gap: 15px; 
-                    border-bottom: 1px solid var(--border-color); /* Mapped */
+                    border-bottom: 1px solid var(--border-color, #1a1a1a); 
                     position: relative;
-                    background: var(--bg-transparent); /* Mapped */
-                    backdrop-filter: blur(12px); /* Added missing theme standard */
                 }
                 
                 /* Advanced Action Buttons (Creator specific tools) */
@@ -1192,16 +1188,16 @@ class ViewMoments extends HTMLElement {
                     font-size: 22px; 
                 }
                 .m-action-btn.primary { 
-                    background: rgba(255, 255, 255, 0.1); 
-                    color: var(--text-main); /* Mapped */
+                    background: var(--surface, rgba(255, 255, 255, 0.1)); 
+                    color: var(--text-main, #fff); 
                 }
                 .m-action-btn.secondary { 
-                    background: rgba(255, 255, 255, 0.05); 
-                    color: var(--text-dim); /* Mapped */
+                    background: var(--surface, rgba(255, 255, 255, 0.05)); 
+                    color: var(--text-dim, #ccc); 
                 }
                 .m-action-btn.danger { 
                     background: rgba(255, 59, 48, 0.1); 
-                    color: #ff3b30; 
+                    color: var(--danger, #ff3b30); 
                 }
                 .m-action-btn:active { 
                     transform: scale(0.95); 
@@ -1209,16 +1205,16 @@ class ViewMoments extends HTMLElement {
 
                 /* Button Loaders */
                 .btn-spinner {
-                    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
+                    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid var(--text-main, #fff); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
                 }
-                .c-opt-btn { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); padding: 14px; border-radius: 12px; font-weight: 600; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 15px; transition: 0.2s;} /* Mapped */
-                .c-opt-btn.danger { color: #ff3b30; background: rgba(255,59,48,0.1); border-color: rgba(255,59,48,0.3); }
+                .c-opt-btn { background: var(--surface, rgba(255,255,255,0.05)); color: var(--text-main, #fff); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); padding: 14px; border-radius: 12px; font-weight: 600; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 15px; transition: 0.2s;}
+                .c-opt-btn.danger { color: var(--danger, #ff3b30); background: rgba(255,59,48,0.1); border-color: rgba(255,59,48,0.3); }
                 .c-opt-btn:active { transform: scale(0.98); }
                 .c-opt-btn:disabled { opacity: 0.6; pointer-events: none; }
 
                 /* Creator Statistics Dashboard */
                 .my-stats-box { 
-                    background: var(--surface); /* Mapped */
+                    background: var(--surface, #111); 
                     border-radius: 16px; 
                     padding: 15px; 
                     margin: 15px 0; 
@@ -1229,11 +1225,11 @@ class ViewMoments extends HTMLElement {
                 .stat-num { 
                     font-weight: 800; 
                     font-size: 20px; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                 }
                 .stat-lbl { 
                     font-size: 11px; 
-                    color: var(--text-dim); /* Mapped */
+                    color: var(--text-dim, #888); 
                     text-transform: uppercase; 
                     letter-spacing: 1px; 
                     margin-top: 4px; 
@@ -1256,7 +1252,7 @@ class ViewMoments extends HTMLElement {
                     justify-content: space-between; 
                     margin-bottom: 12px; 
                     padding: 10px; 
-                    background: rgba(255,255,255,0.03); 
+                    background: var(--surface, rgba(255,255,255,0.03)); 
                     border-radius: 16px; 
                 }
                 .viewer-info { 
@@ -1272,7 +1268,7 @@ class ViewMoments extends HTMLElement {
                     object-fit: cover; 
                 }
                 .viewer-name { 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     font-size: 14px; 
                     font-weight: 600; 
                     display: flex; 
@@ -1306,7 +1302,7 @@ class ViewMoments extends HTMLElement {
                 .c-sheet { 
                     width: 100%; 
                     height: 75vh; 
-                    background: var(--surface); /* Mapped */
+                    background: var(--bg, #121212); 
                     border-top-left-radius: 24px; 
                     border-top-right-radius: 24px; 
                     display: flex; 
@@ -1328,13 +1324,13 @@ class ViewMoments extends HTMLElement {
                     display: flex; 
                     justify-content: center; 
                     padding: 12px; 
-                    border-bottom: 1px solid var(--border-color); /* Mapped */
+                    border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.05)); 
                     position: relative; 
                 }
                 .c-drag { 
                     width: 40px; 
                     height: 4px; 
-                    background: #444; 
+                    background: var(--border-color, #444); 
                     border-radius: 10px; 
                 }
                 .c-title { 
@@ -1342,7 +1338,6 @@ class ViewMoments extends HTMLElement {
                     top: 15px; 
                     font-weight: 700; 
                     font-size: 14px; 
-                    color: var(--text-main); /* Mapped */
                 }
                 
                 /* Chat / Comments Inner Layout */
@@ -1364,7 +1359,7 @@ class ViewMoments extends HTMLElement {
                     height: 36px; 
                     border-radius: 50%; 
                     object-fit: cover; 
-                    border: 1px solid var(--bg); /* Mapped for seamlessness */
+                    border: 1px solid rgba(255,255,255,0.1); 
                 }
                 .c-content { 
                     flex: 1; 
@@ -1372,12 +1367,12 @@ class ViewMoments extends HTMLElement {
                 .c-name { 
                     font-weight: 700; 
                     font-size: 13px; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     margin-bottom: 2px; 
                 }
                 .c-text { 
                     font-size: 14px; 
-                    color: #eee; 
+                    color: var(--text-main, #eee); 
                     line-height: 1.4; 
                 }
                 .c-meta { 
@@ -1385,7 +1380,7 @@ class ViewMoments extends HTMLElement {
                     align-items: center; 
                     gap: 15px; 
                     font-size: 11px; 
-                    color: var(--text-dim); /* Mapped */
+                    color: var(--text-dim, #888); 
                     margin-top: 6px; 
                     font-weight: 600; 
                 }
@@ -1394,30 +1389,30 @@ class ViewMoments extends HTMLElement {
                     transition: 0.2s; 
                 }
                 .c-reply-btn:active { 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                 }
                 
                 /* Interactive Form Area */
                 .c-input-area { 
                     padding: 10px 15px calc(15px + env(safe-area-inset-bottom)); 
-                    border-top: 1px solid var(--border-color); /* Mapped */
+                    border-top: 1px solid var(--border-color, rgba(255,255,255,0.05)); 
                     display: flex; 
                     align-items: center; 
                     gap: 10px; 
-                    background: var(--surface); /* Mapped */
+                    background: var(--bg, #121212); 
                 }
                 .c-input { 
                     flex: 1; 
-                    background: var(--bg); /* Mapped */
+                    background: var(--surface, #222); 
                     border: none; 
-                    color: var(--text-main); /* Mapped */
+                    color: var(--text-main, #fff); 
                     padding: 12px 15px; 
                     border-radius: 20px; 
                     font-size: 14px; 
                     outline: none; 
                 }
                 .c-send { 
-                    color: var(--accent, #ff007f); /* Mapped fallback */
+                    color: var(--accent, #ff007f); 
                     font-weight: 700; 
                     background: none; 
                     border: none; 
@@ -1447,7 +1442,7 @@ class ViewMoments extends HTMLElement {
                 .loader-spinner { 
                     text-align: center; 
                     padding: 20px; 
-                    color: var(--accent, #ff007f); /* Mapped */
+                    color: var(--accent, #ff007f); 
                     display: none; 
                 }
                 .loader-spinner .material-icons-round { 
@@ -1477,7 +1472,7 @@ class ViewMoments extends HTMLElement {
                         <div class="c-drag"></div><div class="c-title">More Options</div>
                     </div>
                     <div style="padding: 20px 15px;">
-                        <div style="text-align:center; color:var(--text-dim); font-size:13px; margin-bottom: 20px; font-weight:600;" id="opt-expires-text">
+                        <div style="text-align:center; color:var(--text-dim, #aaa); font-size:13px; margin-bottom: 20px; font-weight:600;" id="opt-expires-text">
                             Moment expires in --
                         </div>
                         <button class="c-opt-btn" id="opt-unfollow-btn" onclick="document.querySelector('view-moments').actionUnfollow(this)">
@@ -1561,7 +1556,7 @@ class ViewMoments extends HTMLElement {
                 if (moment.effect === 'glow') effectClass = 'fx-glow';
                 else if (moment.effect === 'shadow') effectClass = 'fx-shadow';
 
-                mediaHtml = `<div class="m-media ${effectClass}" style="background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; font-family:${moment.font}; text-align:${moment.align || 'center'}; color:#fff; padding:30px; font-size:28px; word-break:break-word; white-space:pre-wrap;">${moment.text}</div>`;
+                mediaHtml = `<div class="m-media ${effectClass}" style="background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; font-family:${moment.font}; text-align:${moment.align || 'center'}; color:var(--text-main, #fff); padding:30px; font-size:28px; word-break:break-word; white-space:pre-wrap;">${moment.text}</div>`;
             }
 
             const muteIcon = this.isMuted ? 'volume_off' : 'volume_up';
@@ -1588,7 +1583,7 @@ class ViewMoments extends HTMLElement {
                             ` : `<span class="m-username">@${moment.username}</span>`}
                         </div>
                     </div>
-                    <span class="material-icons-round" style="color:var(--text-dim); cursor:pointer;" onclick="document.querySelector('view-moments').openOptions('${moment.id}')">more_vert</span>
+                    <span class="material-icons-round" style="color:var(--text-main, #fff); cursor:pointer;" onclick="document.querySelector('view-moments').openOptions('${moment.id}')">more_vert</span>
                 </div>
 
                 <div class="m-canvas" onclick="document.querySelector('view-moments').openFullModal('${moment.id}')">
@@ -1758,7 +1753,7 @@ class ViewMoments extends HTMLElement {
         const myUid = this.auth.currentUser.uid;
         
         btnElement.disabled = true;
-        btnElement.innerHTML = `<div class="btn-spinner" style="border-top-color:#ff3b30;"></div> Blocking...`;
+        btnElement.innerHTML = `<div class="btn-spinner" style="border-top-color:var(--danger, #ff3b30);"></div> Blocking...`;
 
         try {
             const myRef = this.db.collection('users').doc(myUid);
@@ -1869,7 +1864,7 @@ class ViewMoments extends HTMLElement {
             if (moment.effect === 'glow') effectClass = 'fx-glow';
             else if (moment.effect === 'shadow') effectClass = 'fx-shadow';
 
-            mediaHtml = `<div class="m-media ${effectClass}" style="background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; font-family:${moment.font}; text-align:${moment.align || 'center'}; color:#fff; padding:30px; font-size:32px; word-break:break-word; white-space:pre-wrap;">${moment.text}</div>`;
+            mediaHtml = `<div class="m-media ${effectClass}" style="background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; font-family:${moment.font}; text-align:${moment.align || 'center'}; color:var(--text-main, #fff); padding:30px; font-size:32px; word-break:break-word; white-space:pre-wrap;">${moment.text}</div>`;
         }
 
         let viewersHtml = '';
@@ -1888,7 +1883,7 @@ class ViewMoments extends HTMLElement {
             });
 
             if (allUids.length === 0) {
-                viewersHtml += `<div style="text-align:center; color:var(--text-dim); font-size:13px; padding: 20px;">No views yet. Share it around!</div>`;
+                viewersHtml += `<div style="text-align:center; color:var(--text-dim, #666); font-size:13px; padding: 20px;">No views yet. Share it around!</div>`;
             } else {
                 // Fetch profiles for viewer list
                 for (let vid of allUids) {
@@ -1904,13 +1899,13 @@ class ViewMoments extends HTMLElement {
                                         <img src="${vData.photoURL || 'https://via.placeholder.com/40'}" class="viewer-avatar">
                                         <div class="viewer-name">
                                             ${vData.name || vData.username}
-                                            ${vData.verified ? `<span class="material-icons-round" style="color:var(--accent); font-size:14px;">verified</span>` : ''}
+                                            ${vData.verified ? '<span class="material-icons-round" style="color:var(--accent, #0095f6); font-size:14px;">verified</span>' : ''}
                                         </div>
                                     </div>
                                     <div class="viewer-action-icon">
                                         ${hasLiked ? 
-                                            `<span class="material-icons-round" style="color:#ff3b30; font-size:20px;">favorite</span>` : 
-                                            `<span class="material-icons-round" style="color:var(--text-dim); font-size:20px;">visibility</span>`
+                                            `<span class="material-icons-round" style="color:var(--danger, #ff3b30); font-size:20px;">favorite</span>` : 
+                                            `<span class="material-icons-round" style="color:var(--text-dim, #888); font-size:20px;">visibility</span>`
                                         }
                                     </div>
                                 </div>
@@ -1954,8 +1949,8 @@ class ViewMoments extends HTMLElement {
                     <div class="m-user-info">
                         <div class="m-name-row">
                             ${moment.displayName} 
-                            ${moment.verified ? `<span class="material-icons-round m-verified">verified</span>` : ''}
-                            <span style="font-size:11px; color:var(--text-dim); font-weight:normal;">• ${this.getRelativeTime(moment.createdAt)}</span>
+                            ${moment.verified ? '<span class="material-icons-round m-verified">verified</span>' : ''}
+                            <span style="font-size:11px; color:var(--text-dim, #888); font-weight:normal;">• ${this.getRelativeTime(moment.createdAt)}</span>
                         </div>
                         ${moment.songName ? `
                             <div class="m-song" style="margin-top: 4px;">
@@ -1986,7 +1981,7 @@ class ViewMoments extends HTMLElement {
                             <span class="material-icons-round">add_circle_outline</span> New
                         </button>
                         ${moment.allowComments !== false ? `
-                        <button class="m-action-btn primary" onclick="document.querySelector('view-moments').openComments('${moment.id}')" style="background: rgba(255, 255, 255, 0.15); color: var(--text-main);">
+                        <button class="m-action-btn primary" onclick="document.querySelector('view-moments').openComments('${moment.id}')" style="background: var(--surface, rgba(255, 255, 255, 0.15)); color: var(--text-main, #fff);">
                             <span class="material-icons-round">chat_bubble_outline</span> Comments
                         </button>
                         ` : ''}
@@ -2000,15 +1995,15 @@ class ViewMoments extends HTMLElement {
                         </button>
                     </div>
 
-                    <h3 style="font-size: 14px; margin: 15px 0 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Activity Viewers</h3>
+                    <h3 style="font-size: 14px; margin: 15px 0 5px; border-bottom: 1px solid var(--border-color, #222); padding-bottom: 10px;">Activity Viewers</h3>
                     ${viewersHtml}
                 ` : `
-                    <div class="m-actions" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); justify-content: space-around; align-items: center; background: transparent;">
+                    <div class="m-actions" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color, rgba(255,255,255,0.1)); justify-content: space-around; align-items: center;">
                         <div style="display:flex; align-items:center; gap: 8px;">
                             <button class="m-btn ${isLiked ? 'liked' : ''}" onclick="const vm = document.querySelector('view-moments'); vm.toggleLike('${moment.id}'); const icon = this.querySelector('span.material-icons-round'); if(this.classList.contains('liked')){this.classList.remove('liked');icon.innerText='favorite_border';}else{this.classList.add('liked');icon.innerText='favorite';}">
                                 <span class="material-icons-round">${isLiked ? 'favorite' : 'favorite_border'}</span>
                             </button>
-                            <span class="live-likes-count-basic" style="font-weight:600; font-size:14px; color:var(--text-main); display:none !important;">${likesCount}</span>
+                            <span class="live-likes-count-basic" style="font-weight:600; font-size:14px; color:var(--text-main, #fff); display:none !important;">${likesCount}</span>
                         </div>
                         ${moment.allowComments !== false ? `
                         <button class="m-btn" onclick="document.querySelector('view-moments').openComments('${moment.id}')">
@@ -2018,7 +2013,7 @@ class ViewMoments extends HTMLElement {
                         <button class="m-btn" onclick="document.querySelector('view-moments').openReplySheet('${moment.id}')">
                             <span class="material-icons-round">send</span>
                         </button>
-                        <div style="display:none !important; align-items:center; gap: 5px; color:var(--text-dim); font-size:13px; font-weight:600;">
+                        <div style="display:none !important; align-items:center; gap: 5px; color:var(--text-dim, #888); font-size:13px; font-weight:600;">
                             <span class="material-icons-round" style="font-size:18px;">visibility</span>
                             <span class="live-views-count-basic">${viewsCount}</span>
                         </div>
@@ -2273,11 +2268,11 @@ class ViewMoments extends HTMLElement {
         // Generating Mini HTML Box Payload matching Goorac Chat specifications
         let mediaThumb = '';
         if (moment.type === 'image') {
-            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; border:1px solid rgba(255,255,255,0.1);"><span class="material-icons-round" style="font-size:24px;">image</span></div>`;
+            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:var(--surface, rgba(255,255,255,0.1)); display:flex; align-items:center; justify-content:center; color:var(--text-main, #fff); flex-shrink:0; border:1px solid var(--border-color, rgba(255,255,255,0.1));"><span class="material-icons-round" style="font-size:24px;">image</span></div>`;
         } else if (moment.type === 'video') {
-            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; border:1px solid rgba(255,255,255,0.1);"><span class="material-icons-round" style="font-size:24px;">videocam</span></div>`;
+            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:var(--surface, rgba(255,255,255,0.1)); display:flex; align-items:center; justify-content:center; color:var(--text-main, #fff); flex-shrink:0; border:1px solid var(--border-color, rgba(255,255,255,0.1));"><span class="material-icons-round" style="font-size:24px;">videocam</span></div>`;
         } else if (moment.type === 'text') {
-            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:bold; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,0.1);">Aa</div>`;
+            mediaThumb = `<div style="width:45px; height:45px; border-radius:8px; background:${moment.bgColor}; display:flex; align-items:center; justify-content:center; color:var(--text-main, #fff); font-size:12px; font-weight:bold; overflow:hidden; flex-shrink:0; border:1px solid var(--border-color, rgba(255,255,255,0.1));">Aa</div>`;
         }
 
         let rawSnippet = moment.caption || (moment.type === 'text' ? moment.text : 'A moment');
@@ -2300,10 +2295,10 @@ class ViewMoments extends HTMLElement {
                 ${mediaThumb}
                 <div style="display:flex; flex-direction:column; overflow:hidden; flex:1;">
                     <span style="font-size:10px; color:#ff80bf; margin-bottom:4px; text-transform:uppercase; font-weight:800; letter-spacing:0.8px;">Replied to moment</span>
-                    <span style="font-size:13px; color:#fff; font-weight:600; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${snippet}"</span>
+                    <span style="font-size:13px; color:var(--text-main, #fff); font-weight:600; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${snippet}"</span>
                 </div>
             </div>
-            <div style="font-size:15px; color:#fff; line-height:1.5; word-wrap:break-word; overflow-wrap:break-word; max-width:100%; white-space:pre-wrap;">${foldedText}</div>
+            <div style="font-size:15px; color:var(--text-main, #fff); line-height:1.5; word-wrap:break-word; overflow-wrap:break-word; max-width:100%; white-space:pre-wrap;">${foldedText}</div>
         `;
 
         try {
@@ -2440,7 +2435,7 @@ class ViewMoments extends HTMLElement {
             if (!isNextPage) cList.innerHTML = '';
             
             if (snap.empty && !isNextPage) {
-                cList.innerHTML = `<div style="text-align:center; color:var(--text-dim); padding:30px;">No comments yet. Start the conversation!</div>`;
+                cList.innerHTML = '<div style="text-align:center; color:var(--text-dim, #666); padding:30px;">No comments yet. Start the conversation!</div>';
                 this.loadingComments = false;
                 return;
             }
@@ -2467,7 +2462,7 @@ class ViewMoments extends HTMLElement {
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span class="material-icons-round c-like-btn" 
                               onclick="document.querySelector('view-moments').toggleCommentLike('${momentId}', '${doc.id}', this)"
-                              style="font-size:16px; cursor:pointer; transition:0.2s; color: ${isCommentLiked ? '#ff3b30' : '#666'};">
+                              style="font-size:16px; cursor:pointer; transition:0.2s; color: ${isCommentLiked ? 'var(--danger, #ff3b30)' : 'var(--text-dim, #666)'};">
                               ${isCommentLiked ? 'favorite' : 'favorite_border'}
                         </span>
                     </div>
@@ -2489,3 +2484,114 @@ class ViewMoments extends HTMLElement {
         input.value = `@${username} `;
         input.focus();
     }
+
+    /**
+     * Handles liking specific comments within the thread.
+     */
+    async toggleCommentLike(momentId, commentId, iconElement) {
+        const myUid = this.auth.currentUser?.uid;
+        if (!myUid) return;
+        
+        if(navigator.vibrate) navigator.vibrate(10);
+        
+        const isCurrentlyLiked = iconElement.innerHTML.trim() === 'favorite';
+        const ref = this.db.collection('moments').doc(momentId).collection('comments').doc(commentId);
+        
+        // Optimistic UI toggle logic
+        if (isCurrentlyLiked) {
+            iconElement.innerHTML = 'favorite_border';
+            iconElement.style.color = 'var(--text-dim, #666)';
+            iconElement.style.transform = 'scale(0.9)';
+            setTimeout(() => iconElement.style.transform = 'scale(1)', 150);
+            
+            await ref.update({ likes: firebase.firestore.FieldValue.arrayRemove(myUid) }).catch(()=>{});
+        } else {
+            iconElement.innerHTML = 'favorite';
+            iconElement.style.color = 'var(--danger, #ff3b30)';
+            iconElement.style.transform = 'scale(1.2)';
+            setTimeout(() => iconElement.style.transform = 'scale(1)', 150);
+            
+            await ref.update({ likes: firebase.firestore.FieldValue.arrayUnion(myUid) }).catch(()=>{});
+        }
+    }
+
+    /**
+     * Commits a new string comment to the moment's subcollection.
+     */
+    async postComment() {
+        const input = this.querySelector('#c-input-field');
+        const text = input.value.trim();
+        
+        if (!text || !this.activeMomentId || !this.currentUserData) return;
+
+        input.value = ''; 
+        const momentId = this.activeMomentId;
+        const moment = this.moments.find(m => m.id === momentId);
+
+        try {
+            await this.db.collection('moments').doc(momentId).collection('comments').add({
+                uid: this.currentUserData.uid,
+                name: this.currentUserData.name || this.currentUserData.username,
+                pfp: this.currentUserData.photoURL,
+                text: text,
+                likes: [],
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Reset pagination state and reload fresh
+            this.commentsLastDoc = null;
+            this.loadComments(momentId, false);
+
+            if (moment && moment.uid !== this.currentUserData.uid) {
+                this.sendNotification(moment.uid, 'comment_moment', momentId, `commented: "${text}"`);
+                
+                // ==========================================================
+                // ---> NEW CODE ADDED: PUSHER NOTIFICATION DISPATCH (COMMENT)
+                // ==========================================================
+                try {
+                    let senderUsername = "User";
+                    let senderName = "User";
+                    let senderPfp = 'https://via.placeholder.com/65';
+                    
+                    if (this.currentUserData) {
+                        senderUsername = this.currentUserData.username || "User";
+                        senderName = this.currentUserData.name || this.currentUserData.username || "User";
+                        senderPfp = this.currentUserData.photoURL || 'https://via.placeholder.com/65';
+                    }
+
+                    const deepLink = `https://www.goorac.biz/chat.html?user=${senderUsername}`;
+
+                    fetch('https://pish-uigm.onrender.com/send-push', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            targetUid: moment.uid,
+                            title: `New Comment 💬`,
+                            body: `${senderName} commented: "${text}"`,
+                            icon: senderPfp,
+                            click_action: deepLink
+                        })
+                    }).catch(e => console.error("Push Notification API failed:", e));
+
+                    if (window.pusherChannel) {
+                        window.pusherChannel.trigger('client-new-notification', {
+                            toUid: moment.uid,
+                            title: `New Comment`,
+                            body: `${senderName} commented: "${text}"`,
+                            icon: senderPfp
+                        });
+                    }
+                } catch (pushErr) {
+                    console.error("Pusher logic failed to execute:", pushErr);
+                }
+                // ==========================================================
+            }
+        } catch(e) { 
+            console.error("Comment dispatch error", e); 
+            this.showToast("Failed to post comment");
+        }
+    }
+}
+
+// Define HTML Web Component Element Registration
+customElements.define('view-moments', ViewMoments);
