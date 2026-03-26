@@ -1,20 +1,3 @@
-/**
- * =========================================================
- * QUANTUM ENTERPRISE AI - GLOBAL THEME BULLDOZER 
- * =========================================================
- * VERSION: 4.0.0 (Ultra Immersive Edition)
- * * DESCRIPTION:
- * This script forcefully injects the Instagram-style dark 
- * theme into every corner of the application. It features:
- * 1. Root Variable Injection (Direct Property Overrides)
- * 2. Light DOM Style Cascading (Important Flag Enforcement)
- * 3. Shadow DOM Piercing (Pierces Web Component Enclaves)
- * 4. Mutation Monitoring (Real-time tracking of new elements)
- * 5. Mobile UI Optimization (Toolbar & Notch handling)
- * * DESIGNED BY: Quantum Dev Team
- * =========================================================
- */
-
 const theme = {
   backgroundColor: '#121212', // Instagram-style premium dark gray
   bgTransparent: 'rgba(18, 18, 18, 0.85)', // For the blurry floating headers
@@ -26,15 +9,10 @@ const theme = {
   borderColor: '#333333'      // Retained, but overridden in CSS where borders are removed
 };
 
-/**
- * CORE LOGIC: ROOT VARIABLE INJECTION
- * Applies variables directly to the Document Object Model for 0ms reactivity.
- */
-const applyRootVariables = () => {
+const injectStyles = () => {
   // --- FIX: Forcefully override variables directly on the HTML tag ---
   // This guarantees they win against any page-level :root definitions
   const rootStyle = document.documentElement.style;
-  
   rootStyle.setProperty('--bg', theme.backgroundColor, 'important');
   rootStyle.setProperty('--surface', theme.surfaceColor, 'important');
   rootStyle.setProperty('--text-main', theme.textColor, 'important');
@@ -44,18 +22,11 @@ const applyRootVariables = () => {
   rootStyle.setProperty('--accent', theme.accentColor, 'important');
   rootStyle.setProperty('--border-color', theme.borderColor, 'important');
   rootStyle.setProperty('--border', theme.borderColor, 'important'); // Catch 'messages.html' specific var
-  
-  // Advanced browser support
-  rootStyle.setProperty('--quantum-accent', theme.accentColor, 'important');
-  rootStyle.setProperty('--quantum-bg', theme.backgroundColor, 'important');
-};
 
-/**
- * MASTER CSS BUILDER
- * Generates the raw CSS string used for both Light DOM and Shadow DOM injection.
- */
-const getGlobalCSS = () => {
-  return `
+  const style = document.createElement('style');
+  style.id = 'quantum-global-colors';
+  
+  style.textContent = `
     /* =========================================================
        0. HIDE SCROLLBARS GLOBALLY
        ========================================================= */
@@ -120,19 +91,18 @@ const getGlobalCSS = () => {
     #group-modal,
     #add-members-modal,
     #edit-modal,
-    /* NEW: Aggressively target Note Scroll areas */
+    /* Aggressively target Note Scroll areas */
     .notes-scroll,
     .notes-list,
     .story-tray,
     .stories-wrapper,
     .horizontal-scroll,
     .chats-body,
-    /* SHADOW DOM TARGETS: Moments and Viewers */
+    /* MOMENTS TARGETING: Force immersive background */
     .moment-wrapper,
     .moment-fullscreen,
     .moment-container,
-    .viewer-container,
-    .story-viewer {
+    .viewer-container {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
@@ -180,7 +150,7 @@ const getGlobalCSS = () => {
     .action-button,
     .add-note-btn,
     .modal-card,
-    /* NEW: Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
+    /* Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
     .modal-content, 
     .modal-body, 
     .group-modal, 
@@ -196,7 +166,7 @@ const getGlobalCSS = () => {
     .popup, 
     .dialog,
     .bottom-modal-intro,
-    /* MOMENT SPECIFIC UI */
+    /* MOMENTS TARGETING: Secondary UI elements */
     .moment-card,
     .comment-section,
     .comment-input-area,
@@ -255,6 +225,7 @@ const getGlobalCSS = () => {
     textarea:focus {
       border: 1px solid var(--accent) !important; /* Keep focus border so it's visible when typing */
       box-shadow: 0 0 10px rgba(0, 149, 246, 0.2) !important;
+      outline: none !important;
     }
 
     /* Ensure secondary text uses the dim gray color */
@@ -289,79 +260,12 @@ const getGlobalCSS = () => {
       color: var(--text-main) !important;
     }
   `;
-};
-
-/**
- * SHADOW DOM PIERCER
- * Recursively searches through the entire DOM to find Web Components
- * and inject the theme stylesheet into their Shadow Roots.
- */
-const pierceShadowRoots = (root = document) => {
-  const allElements = root.querySelectorAll('*');
-  const css = getGlobalCSS();
-
-  allElements.forEach(el => {
-    if (el.shadowRoot) {
-      // Check if theme already exists in this shadow root
-      if (!el.shadowRoot.getElementById('quantum-shadow-theme')) {
-        const style = document.createElement('style');
-        style.id = 'quantum-shadow-theme';
-        style.textContent = css;
-        el.shadowRoot.appendChild(style);
-        // Recursively pierce deeper in case of nested shadow DOMs
-        pierceShadowRoots(el.shadowRoot);
-      }
-    }
-  });
-};
-
-/**
- * INITIAL THEME INJECTION (LIGHT DOM)
- */
-const injectStyles = () => {
-  applyRootVariables();
-
-  const styleId = 'quantum-global-colors';
-  let style = document.getElementById(styleId);
   
-  if (!style) {
-    style = document.createElement('style');
-    style.id = styleId;
+  if (!document.getElementById('quantum-global-colors')) {
     document.head.appendChild(style);
   }
-  
-  style.textContent = getGlobalCSS();
 };
 
-/**
- * THE MUTATION BULLDOZER
- * This observer watches the body for any added nodes (like new Modals, 
- * Moments, or dynamically generated Chats) and instantly themes them.
- */
-const initBulldozerObserver = () => {
-  // Run initial theme pass
-  injectStyles();
-  pierceShadowRoots();
-
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.addedNodes.length > 0) {
-        // If nodes are added, re-inject and re-pierce shadow DOM
-        injectStyles();
-        pierceShadowRoots();
-      }
-    });
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-};
-
-/**
- * MOBILE TOOLBAR ENFORCEMENT
- */
 const injectMobileToolbarColor = () => {
   let metaTheme = document.querySelector('meta[name="theme-color"]');
   
@@ -374,25 +278,6 @@ const injectMobileToolbarColor = () => {
   metaTheme.content = theme.mobileToolbarColor;
 };
 
-/**
- * EXECUTION SEQUENCE
- * Starts the engine immediately upon file evaluation.
- */
-try {
-  // Execute immediately upon import
-  initBulldozerObserver();
-  injectMobileToolbarColor();
-  
-  // Secondary safety check for slow loading web components
-  window.addEventListener('load', () => {
-    pierceShadowRoots();
-  });
-  
-  console.log("🟢 Quantum Theme Engine: Active (Piercing Mode Enabled)");
-} catch (error) {
-  console.error("🔴 Quantum Theme Engine Error:", error);
-}
-
-// =========================================================
-// END OF THEME.JS - DO NOT REMOVE LINES
-// =========================================================
+// Execute immediately upon import
+injectStyles();
+injectMobileToolbarColor();
