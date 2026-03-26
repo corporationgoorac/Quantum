@@ -91,13 +91,18 @@ const injectStyles = () => {
     #group-modal,
     #add-members-modal,
     #edit-modal,
-    /* NEW: Aggressively target Note Scroll areas */
+    /* Aggressively target Note Scroll areas */
     .notes-scroll,
     .notes-list,
     .story-tray,
     .stories-wrapper,
     .horizontal-scroll,
-    .chats-body {
+    .chats-body,
+    /* MOMENTS TARGETING: Force immersive background */
+    .moment-wrapper,
+    .moment-fullscreen,
+    .moment-container,
+    .viewer-container {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
@@ -145,7 +150,7 @@ const injectStyles = () => {
     .action-button,
     .add-note-btn,
     .modal-card,
-    /* NEW: Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
+    /* Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
     .modal-content, 
     .modal-body, 
     .group-modal, 
@@ -160,21 +165,27 @@ const injectStyles = () => {
     .dropdown-content, 
     .popup, 
     .dialog,
-    .bottom-modal-intro {
+    .bottom-modal-intro,
+    /* MOMENTS TARGETING: Secondary UI elements */
+    .moment-card,
+    .comment-section,
+    .comment-input-area,
+    .reply-input-container,
+    .moment-options-menu {
       background-color: var(--surface) !important;
       border: none !important; /* Completely removes harsh borders */
       box-shadow: none !important;
     }
 
     /* FIX: Make the wrapper square completely transparent so the patch disappears */
-    .note-item {
+    .note-item, .story-item {
         background-color: transparent !important;
         background: transparent !important;
         border: none !important;
     }
     
     /* FIX: Force the profile picture border to match the background seamlessly */
-    .note-pfp {
+    .note-pfp, .story-avatar, .moment-pfp {
         border-color: var(--bg) !important;
     }
 
@@ -193,6 +204,7 @@ const injectStyles = () => {
     .start-btn-pulse,
     .action-btn.follow,
     .primary-btn,
+    .moment-btn,
     button[id*="submit"],
     button[id*="create"] {
       background-color: var(--accent) !important;
@@ -201,7 +213,7 @@ const injectStyles = () => {
     }
     
     /* Progress Bar */
-    #bite-progress-bar {
+    #bite-progress-bar, .moment-progress-bar-fill {
       background-color: var(--accent) !important;
       box-shadow: 0 0 12px var(--accent) !important;
     }
@@ -224,6 +236,8 @@ const injectStyles = () => {
     .time,
     .date,
     .note-text,
+    .moment-time,
+    .comment-text,
     p,
     .subtitle {
       color: var(--text-dim) !important;
@@ -233,13 +247,16 @@ const injectStyles = () => {
     .chat-name, 
     .caller-name, 
     .creator-name,
+    .moment-author,
+    .viewer-name,
     h1, h2, h3, h4,
     .title {
       color: var(--text-main) !important;
     }
 
     /* Keep the like button red when active, but match text colors */
-    .action-btn:not(.liked) .material-icons-round {
+    .action-btn:not(.liked) .material-icons-round,
+    .moment-action:not(.active) .material-icons-round {
       color: var(--text-main) !important;
     }
   `;
@@ -264,4 +281,3 @@ const injectMobileToolbarColor = () => {
 // Execute immediately upon import
 injectStyles();
 injectMobileToolbarColor();
-q
