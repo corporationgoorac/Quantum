@@ -25,16 +25,16 @@
         * { box-sizing: border-box !important; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
         :root {
-            --bg: #000000;
-            --bg-gradient: radial-gradient(circle at 50% 30%, #111111 0%, #000000 70%);
-            --header-bg: rgba(10, 10, 10, 0.90);
+            --bg: #121212;
+            --bg-gradient: radial-gradient(circle at 50% 30%, var(--surface) 0%, var(--bg) 70%);
+            --header-bg: var(--bg-transparent);
             --header-blur: blur(25px);
-            --accent: #FF6D00; 
-            --accent-dim: rgba(255, 109, 0, 0.15);
-            --border: #1c1c1c; 
-            --border-light: rgba(255,255,255,0.1);
-            --text: #ffffff; 
-            --text-secondary: #a1a1a1;
+            --accent: #0095F6; 
+            --accent-dim: rgba(0, 149, 246, 0.15);
+            --border: var(--border-color); 
+            --border-light: var(--border-color);
+            --text: var(--text-main); 
+            --text-secondary: var(--text-dim);
             --danger: #ff453a;
             --danger-dim: rgba(255, 69, 58, 0.1);
             --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -69,7 +69,7 @@
            ========================================= */
         .group-hero { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; border-bottom: 1px solid var(--border); text-align: center; }
         .group-pfp-wrapper { position: relative; margin-bottom: 16px; }
-        .group-pfp { width: 120px; height: 120px; border-radius: 40px; object-fit: cover; border: 2px solid var(--border-light); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #111; }
+        .group-pfp { width: 120px; height: 120px; border-radius: 40px; object-fit: cover; border: 2px solid var(--border-light); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: var(--surface); }
         .group-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; color: #fff; letter-spacing: -0.5px; }
         .group-desc { font-size: 0.95rem; color: var(--text-secondary); max-width: 90%; line-height: 1.5; }
         
@@ -77,22 +77,22 @@
            PARTICIPANTS LIST
            ========================================= */
         .section-header { padding: 20px 20px 10px 20px; font-size: 0.85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .participant-count { color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; background: #1a1a1a; padding: 2px 8px; border-radius: 10px; }
+        .participant-count { color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; background: var(--surface); padding: 2px 8px; border-radius: 10px; }
         
         .participant-list { display: flex; flex-direction: column; }
         .participant-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; transition: background 0.2s; position: relative; }
         .participant-item:active { background: rgba(255,255,255,0.05); }
-        .p-pfp { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; background: #222; margin-right: 15px; border: 1px solid var(--border-light); pointer-events: none; }
+        .p-pfp { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; background: var(--surface); margin-right: 15px; border: 1px solid var(--border-light); pointer-events: none; }
         .p-info { flex: 1; min-width: 0; pointer-events: none; }
         .p-name { font-weight: 700; font-size: 1.05rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
         .p-username { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .v-badge { width: 14px; height: 14px; flex-shrink: 0; }
-        .admin-badge { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(255, 109, 0, 0.3); font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .admin-badge { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0, 149, 246, 0.3); font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* =========================================
            BOTTOM ACTION MODAL (LONG PRESS)
            ========================================= */
-        #action-menu { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-top: 1px solid var(--border); z-index: 100000; border-radius: 30px 30px 0 0; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
+        #action-menu { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); z-index: 100000; border-radius: 30px 30px 0 0; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
         #action-menu.active { bottom: 0; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99999; display: none; backdrop-filter: blur(8px); }
         
@@ -104,14 +104,14 @@
         .action-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
         .btn-action { width: 100%; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; transition: transform 0.1s; }
         .btn-action:active { transform: scale(0.98); }
-        .primary-btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); }
+        .primary-btn { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); }
         .danger-btn { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255, 69, 58, 0.2); }
         .cancel-btn { background: transparent; color: #888; margin-top: 5px; }
 
         /* =========================================
            SIDE MODALS (EDIT & ADD MEMBERS)
            ========================================= */
-        .side-modal { position: fixed; top: 0; right: -100%; width: 100%; height: 100%; background: #000000; z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; overflow: hidden; }
+        .side-modal { position: fixed; top: 0; right: -100%; width: 100%; height: 100%; background: var(--bg); z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; overflow: hidden; }
         .side-modal.active { right: 0; }
         .modal-header-top { display: flex; align-items: center; padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); border-bottom: 1px solid var(--border); background: var(--header-bg); backdrop-filter: var(--header-blur); }
         .modal-back-btn { background: none; border: none; color: white; padding: 5px; cursor: pointer; margin-right: 15px; display: flex; align-items: center; }
@@ -119,40 +119,40 @@
         .save-btn { color: var(--accent); font-weight: 700; font-size: 1rem; background: none; border: none; cursor: pointer; }
         
         .form-container { padding: 25px 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex: 1; }
-        .group-pic-upload { width: 100px; height: 100px; border-radius: 30px; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; overflow: hidden; position: relative; margin: 0 auto 10px; }
+        .group-pic-upload { width: 100px; height: 100px; border-radius: 30px; background: var(--surface); border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; overflow: hidden; position: relative; margin: 0 auto 10px; }
         .group-pic-preview { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: block; }
         
-        .custom-input { width: 100%; background: #111; border: 1px solid #222; padding: 16px; border-radius: 16px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
-        .custom-input:focus { border-color: var(--accent); background: #161616; }
+        .custom-input { width: 100%; background: var(--surface); border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
+        .custom-input:focus { border-color: var(--accent); background: var(--surface); }
         textarea.custom-input { resize: none; min-height: 100px; }
         
-        .add-members-trigger { background: #1a1a1a; border: 1px solid var(--border); padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: white; font-weight: 600; margin-top: 10px;}
+        .add-members-trigger { background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: white; font-weight: 600; margin-top: 10px;}
         
         /* ADD MEMBERS LIST */
         .member-list-container { flex: 1; overflow-y: auto; padding-bottom: 100px; }
-        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
-        .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; border: 1px solid #222;}
+        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+        .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; border: 1px solid var(--border-color);}
         .sel-info { flex: 1; }
         .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
         .sel-handle { color: #888; font-size: 0.85rem; }
-        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
         .sel-checkbox.checked::after { content: "✓"; color: #000; font-weight: 900; }
         
-        .done-members-btn { position: absolute; bottom: 30px; left: 20px; right: 20px; background: #fff; color: #000; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
+        .done-members-btn { position: absolute; bottom: 30px; left: 20px; right: 20px; background: var(--text-main); color: var(--bg); border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
         .infinite-scroll-trigger { height: 40px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.9rem; }
 
         /* =========================================
            SECURITY BLOCK
            ========================================= */
-        #security-block { position: fixed; inset: 0; background: #000; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; display: none; }
+        #security-block { position: fixed; inset: 0; background: var(--bg); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; display: none; }
         #security-block svg { width: 80px; height: 80px; color: var(--danger); margin-bottom: 20px; }
         #security-block h2 { font-size: 1.5rem; margin-bottom: 10px; }
         #security-block p { color: #888; font-size: 0.95rem; margin-bottom: 30px; }
         #security-block button { background: var(--accent); color: #fff; border: none; padding: 14px 30px; border-radius: 20px; font-weight: 700; font-size: 1rem; cursor: pointer; }
 
         /* Skeleton Loading for Hero & Participants */
-        .shimmer { background: linear-gradient(90deg, #111 0%, #222 50%, #111 100%); background-size: 400% 100%; animation: shimmerAnim 1.5s infinite linear; }
+        .shimmer { background: linear-gradient(90deg, var(--surface) 0%, var(--border-color) 50%, var(--surface) 100%); background-size: 400% 100%; animation: shimmerAnim 1.5s infinite linear; }
         @keyframes shimmerAnim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     </style>
 </head>
@@ -233,7 +233,7 @@
         </button>
         <div class="modal-title-main">Add Members</div>
     </div>
-    <div style="padding: 10px 20px; background: #000; border-bottom: 1px solid var(--border);">
+    <div style="padding: 10px 20px; background: var(--bg); border-bottom: 1px solid var(--border);">
         <input type="text" id="member-search-input" class="custom-input" placeholder="Search mutual friends..." style="padding: 12px; border-radius: 12px;" oninput="handleMemberSearch(this.value)">
     </div>
     <div class="member-list-container" id="add-members-list">
@@ -491,7 +491,7 @@
 
         // Option 1: View Profile (Everyone gets this except for Self)
         if (!isMe) {
-            btnContainer.innerHTML += `<button class="btn-action primary-btn" onclick="window.location.href='userProfile.html?user=${actionTargetUser.username}'">View Profile</button>`;
+            btnContainer.innerHTML += `<button class="btn-action primary-btn" style="background:var(--surface); color:var(--text-main);" onclick="window.location.href='userProfile.html?user=${actionTargetUser.username}'">View Profile</button>`;
         }
 
         // Option 2: Admin Controls (Only visible if I am admin)
@@ -499,9 +499,9 @@
             if (!isMe) {
                 // Promote/Demote
                 if (isTargetAdmin) {
-                    btnContainer.innerHTML += `<button class="btn-action danger-btn" style="background:#1a1a1a; color:#fff;" onclick="modifyAdminStatus(false)">Remove as Admin</button>`;
+                    btnContainer.innerHTML += `<button class="btn-action danger-btn" style="background:var(--surface); color:var(--text-main);" onclick="modifyAdminStatus(false)">Remove as Admin</button>`;
                 } else {
-                    btnContainer.innerHTML += `<button class="btn-action primary-btn" style="border-color:var(--accent); color:var(--accent);" onclick="modifyAdminStatus(true)">Make Admin</button>`;
+                    btnContainer.innerHTML += `<button class="btn-action primary-btn" style="background:var(--surface); color:var(--text-main); border-color:var(--accent); color:var(--accent);" onclick="modifyAdminStatus(true)">Make Admin</button>`;
                 }
                 // Remove Participant
                 btnContainer.innerHTML += `<button class="btn-action danger-btn" onclick="removeParticipant()">Remove from Group</button>`;
