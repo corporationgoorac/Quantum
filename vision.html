@@ -643,10 +643,17 @@
             requestWakeLock();
             
             window.addEventListener('beforeunload', () => roomRef.update({ [myField]: 'offline' }));
-            document.addEventListener('visibilitychange', () => { if (document.hidden) roomRef.update({ [myField]: 'offline' }); });
+            // FIX: Prevent aggressive disconnects when mobile users switch tabs temporarily
+            document.addEventListener('visibilitychange', () => { 
+                if (!document.hidden) roomRef.update({ [myField]: 'online' }); 
+            });
 
             roomUnsub = roomRef.onSnapshot(snap => {
-                if (!snap.exists) return;
+                // FIX: If the document gets deleted by the other user exiting, close the room locally too
+                if (!snap.exists) {
+                    exitSession(true);
+                    return;
+                }
 
                 const data = snap.data();
                 
@@ -1325,9 +1332,13 @@
                     visionRdb.ref(`typing/vision_${roomId}`).remove().catch(()=>{});
                 }, 3000);
             }
-            if (player && typeof player.destroy === 'function') player.destroy();
-            if (wakeLock) wakeLock.release().catch(()=>{});
-            window.location.replace('visionLobby.html'); 
+            
+            // FIX: Added a brief delay before navigation so the Firebase write has time to transmit before the page unloads
+            setTimeout(() => {
+                if (player && typeof player.destroy === 'function') player.destroy();
+                if (wakeLock) wakeLock.release().catch(()=>{});
+                window.location.replace('visionLobby.html'); 
+            }, 300);
         }
 
     </script>
