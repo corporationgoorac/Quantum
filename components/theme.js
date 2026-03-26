@@ -1,10 +1,10 @@
 const theme = {
-  backgroundColor: '#000000', // Pure black for the main app background
-  surfaceColor: '#111111',    // Slightly lighter dark for navbars/modals
-  textColor: '#ffffff',       // White text
-  textDim: '#888888',         // Gray for inactive icons and subtitles
-  accentColor: '#007AFF',     // The vibrant blue from your toggle switches
-  mobileToolbarColor: '#000000'
+  backgroundColor: '#121212', // Instagram-style premium dark gray
+  surfaceColor: '#262626',    // Lighter gray for navbars, lines, and modals
+  textColor: '#FAFAFA',       // Soft white (easier on the eyes than pure #FFF)
+  textDim: '#A8A8A8',         // Muted gray for inactive icons and subtitles
+  accentColor: '#0095F6',     // Instagram's signature vibrant blue
+  mobileToolbarColor: '#121212' // Matches the background
 };
 
 const injectStyles = () => {
