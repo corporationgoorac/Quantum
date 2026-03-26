@@ -69,6 +69,13 @@
         @media (min-width: 1024px) {
             #desktop-spa.ready { display: flex; }
         }
+        
+        /* NEW STYLES FOR WELCOME SCREEN */
+        #welcome-screen-default {
+            width: 100%; height: 100%; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; background: var(--bg);
+            text-align: center; color: white;
+        }
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
@@ -87,7 +94,12 @@
             <iframe src="home.html" id="frame-sidebar"></iframe>
         </div>
         <div id="content-pane">
-            <iframe src="messages.html" id="frame-main" name="main_content"></iframe>
+            <div id="welcome-screen-default">
+                <img src="images/icon.png" style="width: 80px; opacity: 0.2; margin-bottom: 20px;">
+                <h1 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; margin-bottom: 10px;">Welcome to Quantum Desktop</h1>
+                <p style="color: var(--text-dim); max-width: 300px; line-height: 1.5;">Select a conversation or explore your network to get started.</p>
+            </div>
+            <iframe src="about:blank" id="frame-main" name="main_content" style="display:none;"></iframe>
         </div>
     </div>
 
@@ -97,6 +109,7 @@
         const spa = document.getElementById('desktop-spa');
         const frameMain = document.getElementById('frame-main');
         const frameSidebar = document.getElementById('frame-sidebar');
+        const welcomeScreen = document.getElementById('welcome-screen-default');
 
         function handleNavigation(user) {
             if (!user) {
@@ -121,6 +134,8 @@
             } else {
                 // DESKTOP: Reveal the SPA
                 if (requestedView) {
+                    welcomeScreen.style.display = 'none';
+                    frameMain.style.display = 'block';
                     frameMain.src = requestedView;
                 }
 
@@ -151,8 +166,22 @@
 
                             if (href && href !== '#' && !href.startsWith('http')) {
                                 e.preventDefault();
-                                // Route content to the main (right) pane
-                                frameMain.src = href; 
+                                
+                                // NEW NAVIGATION RULES:
+                                // 1. If clicking "Messages", change the SIDEBAR (Left side)
+                                if (href.includes('messages.html')) {
+                                    frameSidebar.src = 'messages.html';
+                                } 
+                                // 2. If clicking "Home", change the SIDEBAR (Left side)
+                                else if (href.includes('home.html')) {
+                                    frameSidebar.src = 'home.html';
+                                }
+                                // 3. All other links (Chats, Profiles, Bites, Explore) go to RIGHT PANE
+                                else {
+                                    welcomeScreen.style.display = 'none';
+                                    frameMain.style.display = 'block';
+                                    frameMain.src = href; 
+                                }
                                 
                                 // Update browser URL so refresh doesn't lose the page
                                 const newUrl = `index.html?view=${encodeURIComponent(href)}`;
