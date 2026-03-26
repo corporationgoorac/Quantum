@@ -76,6 +76,15 @@
             align-items: center; justify-content: center; background: var(--bg);
             text-align: center; color: white;
         }
+
+        /* INSTALL BUTTON STYLE */
+        #install-app-btn {
+            margin-top: 25px; background: white; color: black; border: none;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700;
+            cursor: pointer; display: none; align-items: center; gap: 8px;
+            transition: transform 0.2s;
+        }
+        #install-app-btn:active { transform: scale(0.95); }
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
@@ -98,6 +107,11 @@
                 <img src="images/icon.png" style="width: 80px; opacity: 0.2; margin-bottom: 20px;">
                 <h1 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; margin-bottom: 10px;">Welcome to Quantum Desktop</h1>
                 <p style="color: var(--text-dim); max-width: 300px; line-height: 1.5;">Select a conversation or explore your network to get started.</p>
+                
+                <button id="install-app-btn">
+                    <span class="material-icons-round">download</span>
+                    Install Quantum App
+                </button>
             </div>
             <iframe src="about:blank" id="frame-main" name="main_content" style="display:none;"></iframe>
         </div>
@@ -110,6 +124,32 @@
         const frameMain = document.getElementById('frame-main');
         const frameSidebar = document.getElementById('frame-sidebar');
         const welcomeScreen = document.getElementById('welcome-screen-default');
+
+        // PWA INSTALL LOGIC
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-app-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // REGISTER SERVICE WORKER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+            });
+        }
 
         function handleNavigation(user) {
             if (!user) {
