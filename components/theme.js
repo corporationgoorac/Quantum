@@ -135,7 +135,6 @@ const injectStyles = () => {
     .skel-shimmer,
     .note-bubble,
     .note-card,
-    .note-item,
     .action-button,
     .add-note-btn,
     .modal-card,
@@ -157,6 +156,18 @@ const injectStyles = () => {
       background-color: var(--surface) !important;
       border: none !important; /* Completely removes harsh borders */
       box-shadow: none !important;
+    }
+
+    /* FIX: Make the wrapper square completely transparent so the patch disappears */
+    .note-item {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    
+    /* FIX: Force the profile picture border to match the background seamlessly */
+    .note-pfp {
+        border-color: var(--bg) !important;
     }
 
     /* FIX: Force note bubble tails to inherit correctly without square patches */
