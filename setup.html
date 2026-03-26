@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#121212">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quantum | Profile Settings</title>
@@ -22,15 +22,15 @@
 
     <style>
         :root { 
-            --bg: #000000; 
-            --surface: #0a0a0a; 
-            --accent: #00d2ff; 
-            --text-main: #ffffff;
-            --text-dim: #777777;
-            --border: #1a1a1a;
+            --bg: #121212; 
+            --surface: #262626; 
+            --accent: #0095F6; 
+            --text-main: #FAFAFA;
+            --text-dim: #A8A8A8;
+            --border: #333333;
             --error: #ff453a;
             --success: #30d158;
-            --glass: rgba(0, 0, 0, 0.9);
+            --glass: rgba(18, 18, 18, 0.85);
         }
         
         body { 
@@ -61,7 +61,7 @@
         }
 
         .back-link {
-            background: transparent; border: none; color: white;
+            background: transparent; border: none; color: var(--text-main);
             width: 32px; height: 32px; display: flex; align-items: center; cursor: pointer;
         }
         .page-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase; }
@@ -76,11 +76,11 @@
         }
         .pfp-image {
             width: 100%; height: 100%; border-radius: 28px; /* Squircle style consistent with app */
-            object-fit: cover; border: 1px solid var(--border); background: #111;
+            object-fit: cover; border: 1px solid var(--border); background: var(--surface);
         }
         .pfp-edit-btn {
             position: absolute; bottom: -5px; right: -5px;
-            background: var(--accent); color: black; border-radius: 50%;
+            background: var(--accent); color: var(--bg); border-radius: 50%;
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
             border: 3px solid var(--bg);
         }
@@ -103,7 +103,7 @@
         }
         .input-box {
             width: 100%; background: var(--surface); border: 1px solid var(--border);
-            padding: 16px; border-radius: 12px; color: white;
+            padding: 16px; border-radius: 12px; color: var(--text-main);
             font-size: 0.9rem; outline: none; box-sizing: border-box;
             transition: 0.2s;
         }
@@ -114,13 +114,13 @@
         /* Fixed Bottom Action Dock */
         .action-dock {
             position: fixed; bottom: 0; width: 100%; max-width: 440px;
-            background: linear-gradient(to top, #000 70%, transparent);
+            background: linear-gradient(to top, var(--bg) 70%, transparent);
             padding: 20px 24px calc(30px + env(safe-area-inset-bottom)); 
             box-sizing: border-box; z-index: 100;
         }
 
         .btn-save {
-            background: #ffffff; color: #000; border: none;
+            background: var(--text-main); color: var(--bg); border: none;
             width: 100%; padding: 18px; border-radius: 14px;
             font-weight: 800; font-size: 1rem; cursor: pointer;
             box-shadow: 0 10px 20px rgba(255,255,255,0.05);
@@ -137,8 +137,8 @@
         .setting-desc { font-size: 0.65rem; color: var(--text-dim); line-height: 1.4; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #333; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: var(--border); transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text-main); transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
@@ -309,13 +309,13 @@
 
         if (val.length < 3) {
             statusMsg.innerHTML = "Username too short";
-            statusMsg.style.color = "#555";
+            statusMsg.style.color = "var(--text-dim)";
             return;
         }
 
         if (currentSavedUsername && val === currentSavedUsername) {
             statusMsg.innerHTML = "✓ Active Identity";
-            statusMsg.style.color = "#30d158";
+            statusMsg.style.color = "var(--success)";
             launchBtn.disabled = false;
             return;
         }
@@ -324,11 +324,11 @@
             const query = await db.collection("users").where("username", "==", val).get();
             if (query.empty) {
                 statusMsg.innerHTML = "✓ Available";
-                statusMsg.style.color = "#30d158";
+                statusMsg.style.color = "var(--success)";
                 launchBtn.disabled = false;
             } else {
                 statusMsg.innerHTML = "✕ Unavailable";
-                statusMsg.style.color = "#ff453a";
+                statusMsg.style.color = "var(--error)";
                 launchBtn.disabled = true;
             }
         } catch(e) { console.warn("Validation error"); }
@@ -370,4 +370,3 @@
 </script>
 </body>
 </html>
-
