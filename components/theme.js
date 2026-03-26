@@ -1,55 +1,38 @@
-// Define your global theme values here
 const theme = {
-  backgroundColor: '#000000', // Black for the immersive feed
-  textColor: '#ffffff',
-  accentColor: '#00d2ff', // Quantum's accent color
+  backgroundColor: '#000000', // Pure black for the main app background
+  surfaceColor: '#111111',    // Slightly lighter dark for navbars/modals
+  textColor: '#ffffff',       // White text
+  textDim: '#888888',         // Gray for inactive icons and subtitles
+  accentColor: '#007AFF',     // The vibrant blue from your toggle switches
   mobileToolbarColor: '#000000'
 };
 
 const injectStyles = () => {
   const style = document.createElement('style');
-  style.id = 'quantum-global-theme-styles';
+  style.id = 'quantum-global-colors';
   
   style.textContent = `
-    /* 1. Global Theme Variables */
+    /* 1. Define the color palette globally */
     :root {
-      --bg: ${theme.backgroundColor} !important;
-      --text-main: ${theme.textColor} !important;
-      --accent: ${theme.accentColor} !important;
-      /* Force nav height to 0 so CSS calculations resolve to full screen */
-      --nav-height: 0px !important; 
+      --bg: ${theme.backgroundColor};
+      --surface: ${theme.surfaceColor};
+      --text-main: ${theme.textColor};
+      --text-dim: ${theme.textDim};
+      --accent: ${theme.accentColor};
     }
 
-    /* 2. Forcefully assassinate the Header and Navbar */
-    header, 
-    main-navbar {
-      display: none !important;
-      pointer-events: none !important;
-      opacity: 0 !important;
-      height: 0 !important;
-      overflow: hidden !important;
-    }
-
-    /* 3. Force Full Screen 100vh overrides for the Bites Feed */
-    #bites-viewport {
-      height: 100vh !important;
-      padding-bottom: 0 !important; /* Removes the gap left by the navbar */
-    }
-
-    .bite-slide, 
-    .yt-player-container, 
-    .loader-slide {
-      height: 100vh !important;
+    /* 2. ONLY apply background and text colors. No layout changes. */
+    html, body {
+      background-color: var(--bg) !important;
+      color: var(--text-main) !important;
     }
   `;
   
-  // Append to head if it doesn't already exist
-  if (!document.getElementById('quantum-global-theme-styles')) {
+  if (!document.getElementById('quantum-global-colors')) {
     document.head.appendChild(style);
   }
 };
 
-// Force inject the mobile browser toolbar color
 const injectMobileToolbarColor = () => {
   let metaTheme = document.querySelector('meta[name="theme-color"]');
   
