@@ -1,48 +1,55 @@
 // Define your global theme values here
 const theme = {
-  backgroundColor: '#0f0f11', // Dark background
-  textColor: '#e0e0e0',
-  primaryColor: '#007bff',
-  fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-  mobileToolbarColor: '#0f0f11' // Changes the browser UI color on mobile
+  backgroundColor: '#000000', // Black for the immersive feed
+  textColor: '#ffffff',
+  accentColor: '#00d2ff', // Quantum's accent color
+  mobileToolbarColor: '#000000'
 };
 
-// 1. Force inject global CSS styles and variables
 const injectStyles = () => {
   const style = document.createElement('style');
-  style.id = 'global-theme-styles';
+  style.id = 'quantum-global-theme-styles';
   
   style.textContent = `
+    /* 1. Global Theme Variables */
     :root {
-      --bg-color: ${theme.backgroundColor};
-      --text-color: ${theme.textColor};
-      --primary-color: ${theme.primaryColor};
-      --font-family: ${theme.fontFamily};
+      --bg: ${theme.backgroundColor} !important;
+      --text-main: ${theme.textColor} !important;
+      --accent: ${theme.accentColor} !important;
+      /* Force nav height to 0 so CSS calculations resolve to full screen */
+      --nav-height: 0px !important; 
     }
 
-    /* Forcefully apply to body and html */
-    html, body {
-      background-color: var(--bg-color) !important;
-      color: var(--text-color) !important;
-      font-family: var(--font-family) !important;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
+    /* 2. Forcefully assassinate the Header and Navbar */
+    header, 
+    main-navbar {
+      display: none !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
     }
-    
-    /* Optional: Basic link styling */
-    a {
-      color: var(--primary-color);
+
+    /* 3. Force Full Screen 100vh overrides for the Bites Feed */
+    #bites-viewport {
+      height: 100vh !important;
+      padding-bottom: 0 !important; /* Removes the gap left by the navbar */
+    }
+
+    .bite-slide, 
+    .yt-player-container, 
+    .loader-slide {
+      height: 100vh !important;
     }
   `;
   
   // Append to head if it doesn't already exist
-  if (!document.getElementById('global-theme-styles')) {
+  if (!document.getElementById('quantum-global-theme-styles')) {
     document.head.appendChild(style);
   }
 };
 
-// 2. Force inject the mobile browser toolbar color (<meta name="theme-color">)
+// Force inject the mobile browser toolbar color
 const injectMobileToolbarColor = () => {
   let metaTheme = document.querySelector('meta[name="theme-color"]');
   
@@ -55,6 +62,6 @@ const injectMobileToolbarColor = () => {
   metaTheme.content = theme.mobileToolbarColor;
 };
 
-// Execute the injections immediately when this file is imported
+// Execute immediately upon import
 injectStyles();
 injectMobileToolbarColor();
