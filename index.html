@@ -2,108 +2,41 @@
 <html lang="en" style="overflow: hidden;">
 <head>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#121212">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <script src="components/theme.js"></script>
 
     <title>Quantum from Goorac</title>
-    <meta name="description" content="Login or create an account now to get started with Goorac.">
-    <meta property="og:title" content="Goorac">
-    <meta property="og:description" content="Login or create an account now.">
-    <meta property="og:image" content="images/icon.png"> 
-    <meta property="og:type" content="website">
-
+    
     <script src="config.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "Quantum",
-  "alternateName": "Quantum Web App",
-  "url": "https://www.goorac.biz",
-  "logo": "https://www.goorac.biz/logo.png",
-  "sameAs": [
-    "https://twitter.com/yourprofile",
-    "https://www.linkedin.com/company/yourprofile"
-  ]
-}
-</script>
-
-    
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Quantum",
-  "url": "https://www.goorac.biz/",
-  "hasPart": [
-    {
-      "@type": "WebPage",
-      "name": "Login",
-      "url": "https://www.goorac.biz/login"
-    },
-    {
-      "@type": "WebPage",
-      "name": "Download App",
-      "url": "https://www.goorac.biz/download"
-    },
-    {
-      "@type": "WebPage",
-      "name": "View Profile",
-      "url": "https://www.goorac.biz/profile"
-    }
-  ]
-}
-</script>
-
-    
     <style>
         :root {
-            --bg: #000000;
+            --bg: #121212;
+            --sidebar-width: 400px;
         }
 
         html, body {
             background-color: var(--bg);
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
-            -webkit-text-size-adjust: none;
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        /* --- SPLASH SCREEN (Visible during auth check) --- */
+        #splash-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: var(--bg);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease;
         }
 
-        .container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Splash Screen Image */
         .splash-logo {
-            width: 90px;
-            height: 90px;
-            object-fit: contain;
-            /* Subtle heartbeat scaling */
+            width: 90px; height: 90px; object-fit: contain;
             animation: splash-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
         }
 
@@ -112,80 +45,118 @@
             100% { transform: scale(1.05); opacity: 1; }
         }
 
-        /* Professional Bottom Branding */
-        .bottom-section {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            width: 100%;
+        .bottom-branding {
+            position: absolute; bottom: 50px; text-align: center;
         }
 
-        .from-text {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 400;
+        /* --- PC SPA LAYOUT (Hidden by default) --- */
+        #desktop-spa {
+            display: none; height: 100vh; width: 100vw;
         }
 
-        .company-text {
-            font-size: 1.2rem;
-            font-weight: 600;
-            letter-spacing: 0.15rem;
-            color: #ffffff;
-            /* Optional: You can change the color above to var(--primary) if you want it blue */
+        #sidebar-pane {
+            width: var(--sidebar-width); height: 100%;
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        #content-pane {
+            flex: 1; height: 100%; background: var(--bg);
+        }
+
+        iframe { width: 100%; height: 100%; border: none; background: var(--bg); display: block; }
+
+        @media (min-width: 1024px) {
+            #desktop-spa.ready { display: flex; }
         }
     </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
 <body oncontextmenu="return false;">
 
-    <div class="container">
+    <div id="splash-screen">
         <img src="images/icon.png" alt="Goorac" class="splash-logo" onerror="this.style.display='none'">
-        
-        <div class="bottom-section">
-            <div class="from-text">from</div>
-            <div class="company-text">GOORAC</div>
+        <div class="bottom-branding">
+            <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">from</div>
+            <div style="font-size: 1.2rem; font-weight: 600; letter-spacing: 0.15rem; color: #fff;">GOORAC</div>
+        </div>
+    </div>
+
+    <div id="desktop-spa">
+        <div id="sidebar-pane">
+            <iframe src="home.html" id="frame-sidebar"></iframe>
+        </div>
+        <div id="content-pane">
+            <iframe src="messages.html" id="frame-main" name="main_content"></iframe>
         </div>
     </div>
 
     <script>
+        const isPC = window.innerWidth >= 1024;
+        const splash = document.getElementById('splash-screen');
+        const spa = document.getElementById('desktop-spa');
+        const frameMain = document.getElementById('frame-main');
+        const frameSidebar = document.getElementById('frame-sidebar');
+
+        function handleNavigation(user) {
+            if (!user) {
+                // Not logged in: Always redirect to login (Mobile & PC)
+                window.location.replace("login.html");
+                return;
+            }
+
+            if (!isPC) {
+                // MOBILE: Perform standard window replacement
+                window.location.replace("home.html");
+            } else {
+                // DESKTOP: Reveal the SPA
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    spa.classList.add('ready');
+                }, 500);
+                initSPAInterceptors();
+            }
+        }
+
+        // Intercept clicks inside PC iframes to keep them in the SPA
+        function initSPAInterceptors() {
+            [frameMain, frameSidebar].forEach(frame => {
+                frame.onload = () => {
+                    try {
+                        const doc = frame.contentDocument || frame.contentWindow.document;
+                        doc.addEventListener('click', (e) => {
+                            const target = e.target.closest('a, .chat-item, .nav-item, .stat-card');
+                            if (!target) return;
+                            
+                            let href = target.getAttribute('href');
+                            if (!href && target.onclick) {
+                                const match = target.onclick.toString().match(/'(.*?)'/);
+                                if (match) href = match[1];
+                            }
+
+                            if (href && href !== '#' && !href.startsWith('http')) {
+                                e.preventDefault();
+                                frameMain.src = href; // Load all clicks into the right pane
+                            }
+                        }, true);
+                    } catch (e) {}
+                };
+            });
+        }
+
         function initializeApp() {
-            // 1. Initialize via config.js pattern
             if (typeof window.initFirebaseCore === 'function') {
                 window.initFirebaseCore();
             } else if (!firebase.apps.length && window.firebaseConfig) {
                 firebase.initializeApp(window.firebaseConfig);
             }
 
-            if (!firebase.apps.length) {
-                console.error("Firebase failed to load.");
-                return;
-            }
-
-            // 2. Auth state check and immediate redirection
-            const auth = firebase.auth();
-            
-            auth.onAuthStateChanged((user) => {
-                // Redirects instantly as soon as Firebase finishes checking the auth state.
-                if (user) {
-                    window.location.replace("home.html");
-                } else {
-                    window.location.replace("login.html");
-                }
-            });
+            firebase.auth().onAuthStateChanged(handleNavigation);
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
+        document.readyState === 'loading' ? 
+            document.addEventListener('DOMContentLoaded', initializeApp) : initializeApp();
     </script>
 </body>
 </html>
-
-
-
