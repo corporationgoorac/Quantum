@@ -554,7 +554,7 @@
         <script>
             if (preloadedData && preloadedData.photoURL) {
                 const pfp = document.getElementById('header-pfp');
-                pfp.src = preloadedData.photoURL;
+                if (pfp.src !== preloadedData.photoURL) pfp.src = preloadedData.photoURL;
                 pfp.classList.remove('skeleton');
             }
         </script>
@@ -587,7 +587,7 @@
     if (preloadedData && preloadedData.photoURL) {
         const dropPfp = document.getElementById('my-drop-pfp');
         if(dropPfp) {
-            dropPfp.src = preloadedData.photoURL;
+            if (dropPfp.src !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
             dropPfp.classList.remove('skeleton');
         }
     }
@@ -694,10 +694,10 @@
             if (preloadedData.photoURL) {
                 const headerPfp = document.getElementById('header-pfp');
                 const dropPfp = document.getElementById('my-drop-pfp'); // Sync to Add Drop icon
-                headerPfp.src = preloadedData.photoURL;
+                if (headerPfp.src !== preloadedData.photoURL) headerPfp.src = preloadedData.photoURL;
                 headerPfp.classList.remove('skeleton');
                 if(dropPfp) {
-                    dropPfp.src = preloadedData.photoURL;
+                    if (dropPfp.src !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
                     dropPfp.classList.remove('skeleton');
                 }
             }
@@ -1083,10 +1083,10 @@
         nameEl.innerText = `${greeting}, ` + (data.name.split(' ')[0] || "Agent");
         nameEl.classList.remove('skeleton');
         const src = data.photoURL || 'https://via.placeholder.com/150';
-        pfpEl.src = src; 
+        if (pfpEl.src !== src) pfpEl.src = src; 
         pfpEl.classList.remove('skeleton');
         if(dropPfp) {
-            dropPfp.src = src; 
+            if (dropPfp.src !== src) dropPfp.src = src; 
             dropPfp.classList.remove('skeleton');
         }
         textEl.innerText = "System operational. Connection secure.";
