@@ -34,13 +34,13 @@
         view-notes:not(:defined), chat-loader:not(:defined), call-notifier:not(:defined), image-picker:not(:defined) { display: none !important; }
 
         :root {
-            --bg: #000;
+            --bg: #121212;
             --accent: #00d2ff;
             --border: rgba(255, 255, 255, 0.1);
             --text-dim: #888;
             --danger: #ff4444;
             --glass: rgba(255, 255, 255, 0.03);
-            --sheet-bg: #121212;
+            --sheet-bg: var(--surface);
             --online: #00ff41;
             --text-main: #ffffff;
         }
@@ -56,7 +56,7 @@
 
         /* HEADER */
         header {
-            position: sticky; top: 0; background: rgba(0,0,0,0.9);
+            position: sticky; top: 0; background: var(--bg-transparent);
             padding: 15px 20px; display: flex; justify-content: space-between;
             align-items: center; border-bottom: 1px solid var(--border); z-index: 1000;
             backdrop-filter: blur(20px);
@@ -73,16 +73,16 @@
         /* SEARCH MODAL STYLES (Replaced old inline search) */
         .search-input-wrapper { flex: 1; margin-left: 10px; }
         .search-input {
-            width: 100%; background: #111; border: 1px solid var(--border);
+            width: 100%; background: var(--surface); border: 1px solid var(--border);
             padding: 10px 15px; border-radius: 14px; color: white; outline: none;
             font-size: 16px !important; transition: all 0.3s ease;
         }
-        .search-input:focus { border-color: var(--accent); background: #161616; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
+        .search-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
 
         /* NEW SORT/FILTER BOTTOM SHEET STYLES */
         .filter-options-column { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .filter-row {
-            padding: 18px 20px; border-radius: 16px; background: #1a1a1a;
+            padding: 18px 20px; border-radius: 16px; background: var(--surface);
             color: #fff; font-size: 1.05rem; font-weight: 700; cursor: pointer;
             display: flex; justify-content: space-between; align-items: center;
             border: 1px solid var(--border); transition: all 0.2s;
@@ -113,7 +113,7 @@
         .online-indicator {
             position: absolute; bottom: 2px; right: 2px;
             width: 12px; height: 12px; background: var(--online);
-            border-radius: 50%; border: 2px solid #000;
+            border-radius: 50%; border: 2px solid var(--bg);
             box-shadow: 0 0 8px var(--online);
             display: none; /* Hidden by default */
             z-index: 2;
@@ -156,7 +156,7 @@
             opacity: 1 !important;
             visibility: visible !important;
             background-color: var(--accent);
-            border: 2px solid #000 !important; 
+            border: 2px solid var(--bg) !important; 
             box-shadow: 0 0 10px rgba(255,255,255,0.3);
             z-index: 10;
             margin: 0 !important;
@@ -169,8 +169,8 @@
 
         /* SKELETON */
         .skeleton-item { display: flex; align-items: center; padding: 15px 20px; opacity: 0.5; animation: quantumPulse 1.5s infinite ease-in-out; width: 100%; height: 89px !important; box-sizing: border-box !important; }
-        .skeleton-circle { width: 58px; height: 58px; border-radius: 50%; background: #222; margin-right: 15px; flex-shrink: 0; }
-        .skeleton-line { height: 12px; background: #222; border-radius: 4px; margin-bottom: 8px; }
+        .skeleton-circle { width: 58px; height: 58px; border-radius: 50%; background: var(--surface); margin-right: 15px; flex-shrink: 0; }
+        .skeleton-line { height: 12px; background: var(--surface); border-radius: 4px; margin-bottom: 8px; }
         @keyframes quantumPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
         /* MODAL */
@@ -198,10 +198,10 @@
         .action-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
         .btn-action { width: 100%; padding: 18px; border-radius: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; }
         .del-btn-big { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(255, 68, 68, 0.2); }
-        .pin-btn-big { background: #1a1a1a; color: var(--accent); border: 1px solid var(--border); }
+        .pin-btn-big { background: var(--surface); color: var(--accent); border: 1px solid var(--border); }
         .cancel-btn { background: transparent; color: #666; font-size: 0.9rem; margin-top: 10px; }
 
-        #search-results { display: none; background: #000; min-height: 100vh; width: 100%; }
+        #search-results { display: none; background: var(--bg); min-height: 100vh; width: 100%; }
         .hide-nav { opacity: 0 !important; pointer-events: none !important; transform: translateY(100px) !important; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         
         /* 🚀 MAIN NAVBAR PRE-ALLOCATION TO FIX GLITCHING */
@@ -229,7 +229,7 @@
         /* --- NEW: INTRO BOTTOM MODAL --- */
         .modal-overlay-intro { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200000; display: none; opacity: 0; transition: opacity 0.3s ease; }
         .bottom-modal-intro { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--sheet-bg); border-radius: 32px 32px 0 0; z-index: 200001; padding: 24px 24px calc(40px + env(safe-area-inset-bottom)); transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid var(--border); box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.8); }
-        .modal-handle-intro { width: 48px; height: 5px; background: #333333; border-radius: 10px; margin: 0 auto 24px; cursor: pointer; }
+        .modal-handle-intro { width: 48px; height: 5px; background: var(--border-color); border-radius: 10px; margin: 0 auto 24px; cursor: pointer; }
         .modal-title-intro { font-size: 1.3rem; font-weight: 800; margin-bottom: 12px; color: #ffffff; letter-spacing: -0.5px; }
         .modal-desc-intro { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 28px; }
         .feature-list-intro { list-style: none; margin-bottom: 36px; padding: 0; }
@@ -244,24 +244,24 @@
         /* --- NEW GROUP MODAL STYLES (PURE BLACK/SLEEK) --- */
         .side-modal {
             position: fixed; top: 0; right: -100%; width: 100%; height: 100%;
-            background: #000000; z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            background: var(--bg); z-index: 100005; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column; overflow: hidden;
         }
         .side-modal.active { right: 0; }
-        .modal-header-top { display: flex; align-items: center; padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); border-bottom: 1px solid var(--border); background: #000; }
+        .modal-header-top { display: flex; align-items: center; padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); border-bottom: 1px solid var(--border); background: var(--bg-transparent); }
         .modal-back-btn { background: none; border: none; color: white; padding: 5px; cursor: pointer; margin-right: 15px; display: flex; align-items: center; }
         .modal-title-main { font-weight: 800; font-size: 1.2rem; flex: 1; color: #fff; }
         
         .group-form-container { padding: 25px 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex: 1; }
         .group-pic-wrapper { display: flex; justify-content: center; margin-bottom: 10px; }
-        .group-pic-upload { width: 100px; height: 100px; border-radius: 30px; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; overflow: hidden; position: relative; }
+        .group-pic-upload { width: 100px; height: 100px; border-radius: 30px; background: var(--surface); border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-dim); cursor: pointer; overflow: hidden; position: relative; }
         .group-pic-preview { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: none; }
         
-        .group-input { width: 100%; background: #111; border: 1px solid #222; padding: 16px; border-radius: 16px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
-        .group-input:focus { border-color: var(--accent); background: #161616; }
+        .group-input { width: 100%; background: var(--surface); border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
+        .group-input:focus { border-color: var(--accent); background: var(--surface); }
         textarea.group-input { resize: none; min-height: 100px; }
         
-        .add-members-trigger { background: #1a1a1a; border: 1px solid var(--border); padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: white; font-weight: 600; }
+        .add-members-trigger { background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: white; font-weight: 600; }
         .member-count-badge { background: var(--accent); color: #000; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; }
         
         .create-group-submit { background: white; color: black; border: none; padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem; cursor: pointer; margin-top: auto; margin-bottom: 20px; }
@@ -269,12 +269,12 @@
 
         /* MEMBERS MODAL LIST */
         .member-list-container { flex: 1; overflow-y: auto; padding-bottom: 100px; }
-        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer; }
+        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
         .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; }
         .sel-info { flex: 1; }
         .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; }
         .sel-handle { color: #888; font-size: 0.85rem; }
-        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
         .sel-checkbox.checked::after { content: "✓"; color: #000; font-weight: 900; }
         
@@ -283,7 +283,7 @@
 
         /* 🚀 NEW: NOTES & INBOX CONTROLS STYLES (TRUE 0MS NO-GLITCH) */
         #notes-wrapper {
-            background: #000; border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: var(--bg); border-bottom: 1px solid rgba(255,255,255,0.05);
             margin-top: -15px; min-height: 170px !important; height: 170px !important; box-sizing: border-box !important; overflow: hidden;
             display: block !important;
             contain: layout size;
@@ -317,16 +317,16 @@
         
         /* THE PLUS BADGE FIX */
         .add-note-badge {
-            position: absolute; bottom: 20px; right: 0px; background: #333; color: white;
+            position: absolute; bottom: 20px; right: 0px; background: var(--surface); color: white;
             width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 800; border: 2px solid #000; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 14px; font-weight: 800; border: 2px solid var(--bg); z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
         #my-note-btn.has-note .add-note-badge { display: none !important; }
 
         /* FIXED NON-STICKY INBOX CONTROLS */
         .inbox-controls {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 20px 10px 20px; background: #000; position: relative; z-index: 10;
+            padding: 20px 20px 10px 20px; background: var(--bg); position: relative; z-index: 10;
             height: 56px !important; box-sizing: border-box !important;
         }
         .inbox-controls-title { font-weight: 800; font-size: 1.15rem; color: #fff; }
@@ -621,7 +621,7 @@
         </button>
         <div class="modal-title-main">Add Members</div>
     </div>
-    <div style="padding: 10px 20px; background: #000; border-bottom: 1px solid var(--border);">
+    <div style="padding: 10px 20px; background: var(--bg); border-bottom: 1px solid var(--border);">
         <input type="text" id="member-search-input" class="group-input" placeholder="Search mutual friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
     </div>
     <div class="member-list-container" id="mutual-friends-list">
@@ -630,9 +630,9 @@
     <button class="done-members-btn" onclick="closeMembersModal(true)">Done</button>
 </div>
 
-<div id="ai-fab" onclick="window.location.href='ai.html'" style="display: none; position: fixed; bottom: 85px; right: 20px; width: 48px; height: 48px; border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 210, 255, 0.25); border: 2px solid var(--accent); background: #111; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); touch-action: manipulation;">
+<div id="ai-fab" onclick="window.location.href='ai.html'" style="display: none; position: fixed; bottom: 85px; right: 20px; width: 48px; height: 48px; border-radius: 50%; z-index: 999; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 210, 255, 0.25); border: 2px solid var(--accent); background: var(--surface); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); touch-action: manipulation;">
     <img id="ai-fab-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; overflow: hidden;">
-    <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #00ff41; border-radius: 50%; border: 2px solid #000; z-index: 2; animation: pulseOnlineFAB 2s infinite; box-shadow: 0 0 8px rgba(0,255,65,0.6);"></div>
+    <div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #00ff41; border-radius: 50%; border: 2px solid var(--bg); z-index: 2; animation: pulseOnlineFAB 2s infinite; box-shadow: 0 0 8px rgba(0,255,65,0.6);"></div>
 </div>
 
 <script src="components/call-notifier.js" defer></script>
