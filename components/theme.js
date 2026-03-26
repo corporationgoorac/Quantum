@@ -6,7 +6,7 @@ const theme = {
   textDim: '#A8A8A8',         // Muted gray
   accentColor: '#0095F6',     // Instagram's vibrant blue
   mobileToolbarColor: '#121212',
-  borderColor: '#333333'      // For subtle dividers
+  borderColor: '#333333'      // Retained, but overridden in CSS where borders are removed
 };
 
 const injectStyles = () => {
@@ -14,6 +14,19 @@ const injectStyles = () => {
   style.id = 'quantum-global-colors';
   
   style.textContent = `
+    /* =========================================================
+       0. HIDE SCROLLBARS GLOBALLY
+       ========================================================= */
+    ::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    * {
+      -ms-overflow-style: none !important;  /* IE and Edge */
+      scrollbar-width: none !important;     /* Firefox */
+    }
+
     /* 1. Define the color palette globally */
     :root {
       --bg: ${theme.backgroundColor} !important;
@@ -46,24 +59,35 @@ const injectStyles = () => {
     .chat-item,
     .notes-container,
     .chat-list-container,
-    .search-wrapper {
+    .search-wrapper,
+    /* Expanded targets for messages to guarantee no black */
+    .messages-container,
+    .messages-wrapper,
+    .chat-list,
+    .notes-wrapper,
+    .note-section,
+    .page-container,
+    #app,
+    main {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
 
-    /* Top Headers - Give them the transparent blur effect with new dark gray */
+    /* Top Headers - Give them the transparent blur effect with new dark gray AND REMOVE BORDERS */
     header, 
     .header, 
     .modal-header,
     .chats-header {
       background-color: var(--bg-transparent) !important;
       background: var(--bg-transparent) !important;
-      border-bottom: 1px solid var(--border-color) !important; /* Subtle divider */
+      border: none !important; /* Removed border as requested */
+      box-shadow: none !important;
     }
     
-    /* Bottom Navigation Bar Divider */
+    /* Bottom Navigation Bar - REMOVE BORDERS */
     main-navbar {
-      border-top: 1px solid var(--border-color) !important;
+      border: none !important; /* Removed border as requested */
+      box-shadow: none !important;
     }
 
     /* =========================================================
@@ -81,7 +105,8 @@ const injectStyles = () => {
     .note-bubble,
     .action-button {
       background-color: var(--surface) !important;
-      border: 1px solid transparent !important; /* Removes harsh borders */
+      border: none !important; /* Completely removes harsh borders */
+      box-shadow: none !important;
     }
 
     /* =========================================================
@@ -105,7 +130,7 @@ const injectStyles = () => {
     /* Search Bar Focus state */
     .search-input-box:focus,
     .search-container input:focus {
-      border-color: var(--accent) !important;
+      border: 1px solid var(--accent) !important; /* Keep focus border so it's visible when typing */
       box-shadow: 0 0 10px rgba(0, 149, 246, 0.2) !important;
     }
 
@@ -153,3 +178,4 @@ const injectMobileToolbarColor = () => {
 // Execute immediately upon import
 injectStyles();
 injectMobileToolbarColor();
+இல்
