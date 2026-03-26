@@ -9,18 +9,20 @@ const theme = {
   borderColor: '#333333'      // Retained, but overridden in CSS where borders are removed
 };
 
-const applyTheme = () => {
-  // 1. Force variables natively via JS inline styles (Bulletproof against CSS overrides)
-  const root = document.documentElement;
-  root.style.setProperty('--bg', theme.backgroundColor, 'important');
-  root.style.setProperty('--surface', theme.surfaceColor, 'important');
-  root.style.setProperty('--text-main', theme.textColor, 'important');
-  root.style.setProperty('--text-dim', theme.textDim, 'important');
-  root.style.setProperty('--accent', theme.accentColor, 'important');
-  root.style.setProperty('--border-color', theme.borderColor, 'important');
-  root.style.setProperty('--bg-transparent', theme.bgTransparent, 'important');
+const injectStyles = () => {
+  // --- FIX: Forcefully override variables directly on the HTML tag ---
+  // This guarantees they win against any page-level :root definitions
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--bg', theme.backgroundColor, 'important');
+  rootStyle.setProperty('--surface', theme.surfaceColor, 'important');
+  rootStyle.setProperty('--text-main', theme.textColor, 'important');
+  rootStyle.setProperty('--text', theme.textColor, 'important'); // Catch 'messages.html' specific var
+  rootStyle.setProperty('--text-dim', theme.textDim, 'important');
+  rootStyle.setProperty('--dim', theme.textDim, 'important'); // Catch 'messages.html' specific var
+  rootStyle.setProperty('--accent', theme.accentColor, 'important');
+  rootStyle.setProperty('--border-color', theme.borderColor, 'important');
+  rootStyle.setProperty('--border', theme.borderColor, 'important'); // Catch 'messages.html' specific var
 
-  // 2. Inject aggressive CSS
   const style = document.createElement('style');
   style.id = 'quantum-global-colors';
   
@@ -28,84 +30,185 @@ const applyTheme = () => {
     /* =========================================================
        0. HIDE SCROLLBARS GLOBALLY
        ========================================================= */
-    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-    * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+    ::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    * {
+      -ms-overflow-style: none !important;  /* IE and Edge */
+      scrollbar-width: none !important;     /* Firefox */
+    }
 
-    /* 1. DOM LEVEL OVERRIDES */
-    html, body, #app, main, .app-container, .main-content, .page-container {
+    /* 1. Define the color palette globally */
+    :root {
+      --bg: ${theme.backgroundColor} !important;
+      --bg-transparent: ${theme.bgTransparent} !important;
+      --surface: ${theme.surfaceColor} !important;
+      --text-main: ${theme.textColor} !important;
+      --text-dim: ${theme.textDim} !important;
+      --accent: ${theme.accentColor} !important;
+      --border-color: ${theme.borderColor} !important;
+    }
+
+    /* 2. BASE BODY THEME */
+    html, body {
       background-color: var(--bg) !important;
-      background: var(--bg) !important;
       color: var(--text-main) !important;
     }
 
-    /* 2. SPECIFIC WRAPPERS & CONTAINERS THAT HIDE BLACK */
-    .messages-container, .messages-wrapper, .chat-list, .chat-list-container,
-    .notes-container, .notes-wrapper, .notes-area, .note-section, .notes-scroll, .notes-list,
-    .search-wrapper, .story-tray, .stories-wrapper, .horizontal-scroll, .chats-body,
-    .bite-slide, .yt-player-container, #discover-modal, .grid-results, #bites-viewport {
+    /* =========================================================
+       3. OBLITERATE PURE BLACK (#000) ACROSS ALL PAGES
+       ========================================================= */
+    /* Targets the main wrappers, video feeds, navigation, and message sections */
+    .app-container,
+    .main-content,
+    .bite-slide, 
+    .yt-player-container, 
+    #discover-modal, 
+    .grid-results, 
+    #bites-viewport,
+    main-navbar,
+    .chat-item,
+    .notes-container,
+    .chat-list-container,
+    .search-wrapper,
+    /* Expanded targets for messages to guarantee no black */
+    .messages-container,
+    .messages-wrapper,
+    .chat-list,
+    .notes-wrapper,
+    .notes-area,
+    .note-section,
+    .page-container,
+    #app,
+    main,
+    /* Force Modals & Overlays to use the theme background */
+    .modal,
+    .modal-overlay,
+    #group-modal,
+    #add-members-modal,
+    #edit-modal,
+    /* NEW: Aggressively target Note Scroll areas */
+    .notes-scroll,
+    .notes-list,
+    .story-tray,
+    .stories-wrapper,
+    .horizontal-scroll,
+    .chats-body {
       background-color: var(--bg) !important;
-      background: var(--bg) !important;
+      background: var(--bg) !important; /* Overrides any gradients */
     }
 
-    /* 3. MODALS, SHEETS, & OVERLAYS */
-    .modal, .modal-overlay, #group-modal, #add-members-modal, #edit-modal,
-    .modal-body {
-      background-color: var(--bg) !important;
-      background: var(--bg) !important;
-    }
-
-    /* 4. BLURRY HEADERS */
-    header, .header, #header, .top-header, .modal-header, .chats-header {
+    /* Top Headers - Give them the transparent blur effect with new dark gray AND REMOVE BORDERS */
+    header, 
+    .header, 
+    #header,
+    .top-header,
+    .modal-header,
+    .chats-header {
       background-color: var(--bg-transparent) !important;
       background: var(--bg-transparent) !important;
-      border: none !important;
+      border: none !important; /* Removed border as requested */
       box-shadow: none !important;
-      backdrop-filter: blur(15px) !important;
-      -webkit-backdrop-filter: blur(15px) !important;
+      backdrop-filter: blur(12px) !important; /* Forces the beautiful frosted glass effect */
+      -webkit-backdrop-filter: blur(12px) !important;
     }
-
-    /* 5. SURFACE CARDS, MENUS, & INPUTS */
-    .call-card, .creator-card, .search-input-box, .search-container input, .search-input,
-    .grid-item, .creator-pfp, .skel-shimmer, .note-bubble, .note-card, .note-item,
-    .modal-content, .group-modal, #action-menu, .action-menu, .bottom-sheet, .sheet,
-    .menu-content, .menu-item, .action-item, .dropdown-menu, .dropdown-content, .popup, .dialog,
-    .add-note-btn, .modal-card, .chat-item {
-      background-color: var(--surface) !important;
-      background: var(--surface) !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-
-    /* Bottom Nav Fix */
+    
+    /* Bottom Navigation Bar - REMOVE BORDERS */
     main-navbar {
-      background-color: var(--bg) !important;
-      background: var(--bg) !important;
-      border: none !important;
+      border: none !important; /* Removed border as requested */
       box-shadow: none !important;
     }
 
-    /* 6. BUTTONS & ACCENTS */
-    .follow-badge, .start-btn-pulse, .action-btn.follow, .primary-btn, 
-    button[id*="submit"], button[id*="create"], .action-button, .btn {
+    /* =========================================================
+       4. APPLY SURFACE COLORS TO CARDS AND INPUTS (#111 -> #262626)
+       ========================================================= */
+    /* Calls cards, Following cards, Search inputs, Notes, and UI elements */
+    .call-card,
+    .creator-card,
+    .search-input-box,
+    .search-container input,
+    .search-input,
+    .grid-item,
+    .creator-pfp,
+    .skel-shimmer,
+    .note-bubble,
+    .note-card,
+    .note-item,
+    .action-button,
+    .add-note-btn,
+    .modal-card,
+    /* NEW: Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
+    .modal-content, 
+    .modal-body, 
+    .group-modal, 
+    #action-menu, 
+    .action-menu, 
+    .bottom-sheet, 
+    .sheet, 
+    .menu-content, 
+    .menu-item, 
+    .action-item, 
+    .dropdown-menu, 
+    .dropdown-content, 
+    .popup, 
+    .dialog {
+      background-color: var(--surface) !important;
+      border: none !important; /* Completely removes harsh borders */
+      box-shadow: none !important;
+    }
+
+    /* =========================================================
+       5. BUTTONS, ACCENTS, AND TEXT ALIGNMENT
+       ========================================================= */
+    /* Global Buttons & Badges */
+    .follow-badge, 
+    .start-btn-pulse,
+    .action-btn.follow,
+    .primary-btn,
+    button[id*="submit"],
+    button[id*="create"] {
       background-color: var(--accent) !important;
       color: #fff !important;
       border: none !important;
     }
-
-    #bite-progress-bar { background-color: var(--accent) !important; box-shadow: 0 0 12px var(--accent) !important; }
     
-    input:focus, textarea:focus, .search-input-box:focus, .search-container input:focus {
-      border: 1px solid var(--accent) !important;
+    /* Progress Bar */
+    #bite-progress-bar {
+      background-color: var(--accent) !important;
+      box-shadow: 0 0 12px var(--accent) !important;
+    }
+    
+    /* Search Bar Focus state */
+    .search-input-box:focus,
+    .search-container input:focus,
+    input:focus,
+    textarea:focus {
+      border: 1px solid var(--accent) !important; /* Keep focus border so it's visible when typing */
       box-shadow: 0 0 10px rgba(0, 149, 246, 0.2) !important;
       outline: none !important;
     }
 
-    /* 7. TEXT COLORS */
-    .chat-preview, .call-time, .call-type, .creator-stats, .time, .date, .note-text, p, .subtitle, .header-title span {
+    /* Ensure secondary text uses the dim gray color */
+    .chat-preview, 
+    .call-time, 
+    .call-type, 
+    .creator-stats,
+    .time,
+    .date,
+    .note-text,
+    p,
+    .subtitle {
       color: var(--text-dim) !important;
     }
 
-    .chat-name, .caller-name, .creator-name, h1, h2, h3, h4, .title, .header-title {
+    /* Ensure primary text is soft white */
+    .chat-name, 
+    .caller-name, 
+    .creator-name,
+    h1, h2, h3, h4,
+    .title {
       color: var(--text-main) !important;
     }
 
@@ -115,30 +218,23 @@ const applyTheme = () => {
     }
   `;
   
-  // Appends to documentElement ONLY after DOM is parsed, making it the very last stylesheet
-  const appendStyle = () => {
-    if (!document.getElementById('quantum-global-colors')) {
-      document.documentElement.appendChild(style);
-    }
-  };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', appendStyle);
-  } else {
-    appendStyle();
+  if (!document.getElementById('quantum-global-colors')) {
+    document.head.appendChild(style);
   }
 };
 
 const injectMobileToolbarColor = () => {
   let metaTheme = document.querySelector('meta[name="theme-color"]');
+  
   if (!metaTheme) {
     metaTheme = document.createElement('meta');
     metaTheme.name = 'theme-color';
     document.head.appendChild(metaTheme);
   }
+  
   metaTheme.content = theme.mobileToolbarColor;
 };
 
 // Execute immediately upon import
-applyTheme();
+injectStyles();
 injectMobileToolbarColor();
