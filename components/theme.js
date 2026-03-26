@@ -159,6 +159,13 @@ const injectStyles = () => {
       box-shadow: none !important;
     }
 
+    /* FIX: Force note bubble tails to inherit correctly without square patches */
+    .note-bubble::after, #my-note-preview::after {
+        background-color: inherit !important;
+        background: inherit !important;
+        border: none !important;
+    }
+
     /* =========================================================
        5. BUTTONS, ACCENTS, AND TEXT ALIGNMENT
        ========================================================= */
