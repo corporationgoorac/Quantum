@@ -177,6 +177,15 @@
                     welcomeScreen.style.display = 'none';
                     frameMain.style.display = 'block';
                     frameMain.src = requestedView;
+                    
+                    // --- ADVANCED CONTEXT SWITCHING (DEEP LINK) ---
+                    // If the requested view is a chat, automatically flip the sidebar to messages.html
+                    if (requestedView.includes('chat.html') || requestedView.includes('groupChat.html')) {
+                        const currentSidebarSrc = frameSidebar.contentWindow ? frameSidebar.contentWindow.location.href : frameSidebar.src;
+                        if (!currentSidebarSrc.includes('messages.html')) {
+                            frameSidebar.src = 'messages.html';
+                        }
+                    }
                 }
 
                 splash.style.opacity = '0';
@@ -230,6 +239,15 @@
                                     welcomeScreen.style.display = 'none';
                                     frameMain.style.display = 'block';
                                     frameMain.src = finalUrl; 
+                                    
+                                    // --- ADVANCED CONTEXT SWITCHING (USER CLICK) ---
+                                    // If a chat was clicked, automatically swap the sidebar to the inbox context
+                                    if (finalUrl.includes('chat.html') || finalUrl.includes('groupChat.html')) {
+                                        const currentSidebarSrc = frameSidebar.contentWindow ? frameSidebar.contentWindow.location.href : frameSidebar.src;
+                                        if (!currentSidebarSrc.includes('messages.html')) {
+                                            frameSidebar.src = 'messages.html';
+                                        }
+                                    }
                                 }
                                 
                                 // Update browser URL so refresh doesn't lose the page
