@@ -42,7 +42,7 @@
             const currentParams = window.location.search;
             
             // Redirect to index.html with the 'view' parameter so the SPA loads this page
-            const redirectUrl = `index.html?view=${encodeURIComponent(currentPath + currentParams)}`;
+            const redirectUrl = `index.html`;
             window.location.replace(redirectUrl);
         }
     })();
