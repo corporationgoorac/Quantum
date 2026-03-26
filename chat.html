@@ -32,6 +32,29 @@
     <script src="components/filePicker.js" defer></script>
     <script src="components/viewMedia.js" defer></script>
 
+
+<script>
+    /**
+     * SHELL ENFORCEMENT ENGINE
+     * Redirects desktop users to the SPA shell if they open this file directly.
+     */
+    (function enforceShell() {
+        const isPC = window.innerWidth >= 1024;
+        const isFramed = window.self !== window.top;
+
+        if (isPC && !isFramed) {
+            // Get current file name and parameters (e.g., chat.html?user=siva)
+            const currentPath = window.location.pathname.split('/').pop();
+            const currentParams = window.location.search;
+            
+            // Redirect to index.html with the 'view' parameter so the SPA loads this page
+            const redirectUrl = `index.html?view=${encodeURIComponent(currentPath + currentParams)}`;
+            window.location.replace(redirectUrl);
+        }
+    })();
+</script>
+
+    
     <style>
         /* =========================================
            1. CORE VARIABLES & THEME DEFINITIONS
