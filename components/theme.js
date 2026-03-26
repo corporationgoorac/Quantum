@@ -34,7 +34,7 @@ const injectStyles = () => {
     /* =========================================================
        3. OBLITERATE PURE BLACK (#000) ACROSS ALL PAGES
        ========================================================= */
-    /* Targets the main wrappers, video feeds, and navigation */
+    /* Targets the main wrappers, video feeds, navigation, and message sections */
     .app-container,
     .main-content,
     .bite-slide, 
@@ -43,7 +43,10 @@ const injectStyles = () => {
     .grid-results, 
     #bites-viewport,
     main-navbar,
-    .chat-item {
+    .chat-item,
+    .notes-container,
+    .chat-list-container,
+    .search-wrapper {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
@@ -51,7 +54,8 @@ const injectStyles = () => {
     /* Top Headers - Give them the transparent blur effect with new dark gray */
     header, 
     .header, 
-    .modal-header {
+    .modal-header,
+    .chats-header {
       background-color: var(--bg-transparent) !important;
       background: var(--bg-transparent) !important;
       border-bottom: 1px solid var(--border-color) !important; /* Subtle divider */
@@ -65,7 +69,7 @@ const injectStyles = () => {
     /* =========================================================
        4. APPLY SURFACE COLORS TO CARDS AND INPUTS (#111 -> #262626)
        ========================================================= */
-    /* Calls cards, Following cards, Search inputs, and UI elements */
+    /* Calls cards, Following cards, Search inputs, Notes, and UI elements */
     .call-card,
     .creator-card,
     .search-input-box,
@@ -73,7 +77,9 @@ const injectStyles = () => {
     .search-input,
     .grid-item,
     .creator-pfp,
-    .skel-shimmer {
+    .skel-shimmer,
+    .note-bubble,
+    .action-button {
       background-color: var(--surface) !important;
       border: 1px solid transparent !important; /* Removes harsh borders */
     }
@@ -109,7 +115,8 @@ const injectStyles = () => {
     .call-type, 
     .creator-stats,
     .time,
-    .date {
+    .date,
+    .note-text {
       color: var(--text-dim) !important;
     }
 
