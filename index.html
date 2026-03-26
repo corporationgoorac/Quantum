@@ -165,8 +165,10 @@
                             }
 
                             if (href && href !== '#' && !href.startsWith('http')) {
+                                // CRITICAL FIX: Stop the current frame from navigating if it's the sidebar
                                 e.preventDefault();
-                                
+                                e.stopPropagation();
+
                                 // NEW NAVIGATION RULES:
                                 // 1. If clicking "Messages", change the SIDEBAR (Left side)
                                 if (href.includes('messages.html')) {
