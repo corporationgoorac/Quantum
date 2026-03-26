@@ -65,10 +65,20 @@ const injectStyles = () => {
     .messages-wrapper,
     .chat-list,
     .notes-wrapper,
+    .notes-area,
     .note-section,
     .page-container,
     #app,
-    main {
+    main,
+    /* Force Modals & Overlays to use the theme background */
+    .modal,
+    .modal-content,
+    .modal-body,
+    .group-modal,
+    .modal-overlay,
+    #group-modal,
+    #add-members-modal,
+    #edit-modal {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
@@ -76,12 +86,16 @@ const injectStyles = () => {
     /* Top Headers - Give them the transparent blur effect with new dark gray AND REMOVE BORDERS */
     header, 
     .header, 
+    #header,
+    .top-header,
     .modal-header,
     .chats-header {
       background-color: var(--bg-transparent) !important;
       background: var(--bg-transparent) !important;
       border: none !important; /* Removed border as requested */
       box-shadow: none !important;
+      backdrop-filter: blur(12px) !important; /* Forces the beautiful frosted glass effect */
+      -webkit-backdrop-filter: blur(12px) !important;
     }
     
     /* Bottom Navigation Bar - REMOVE BORDERS */
@@ -103,7 +117,11 @@ const injectStyles = () => {
     .creator-pfp,
     .skel-shimmer,
     .note-bubble,
-    .action-button {
+    .note-card,
+    .note-item,
+    .action-button,
+    .add-note-btn,
+    .modal-card {
       background-color: var(--surface) !important;
       border: none !important; /* Completely removes harsh borders */
       box-shadow: none !important;
@@ -115,7 +133,10 @@ const injectStyles = () => {
     /* Global Buttons & Badges */
     .follow-badge, 
     .start-btn-pulse,
-    .action-btn.follow {
+    .action-btn.follow,
+    .primary-btn,
+    button[id*="submit"],
+    button[id*="create"] {
       background-color: var(--accent) !important;
       color: #fff !important;
       border: none !important;
@@ -129,9 +150,12 @@ const injectStyles = () => {
     
     /* Search Bar Focus state */
     .search-input-box:focus,
-    .search-container input:focus {
+    .search-container input:focus,
+    input:focus,
+    textarea:focus {
       border: 1px solid var(--accent) !important; /* Keep focus border so it's visible when typing */
       box-shadow: 0 0 10px rgba(0, 149, 246, 0.2) !important;
+      outline: none !important;
     }
 
     /* Ensure secondary text uses the dim gray color */
@@ -141,14 +165,18 @@ const injectStyles = () => {
     .creator-stats,
     .time,
     .date,
-    .note-text {
+    .note-text,
+    p,
+    .subtitle {
       color: var(--text-dim) !important;
     }
 
     /* Ensure primary text is soft white */
     .chat-name, 
     .caller-name, 
-    .creator-name {
+    .creator-name,
+    h1, h2, h3, h4,
+    .title {
       color: var(--text-main) !important;
     }
 
@@ -178,4 +206,3 @@ const injectMobileToolbarColor = () => {
 // Execute immediately upon import
 injectStyles();
 injectMobileToolbarColor();
-இல்
