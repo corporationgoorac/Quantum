@@ -105,11 +105,25 @@
                 return;
             }
 
+            // FIXED ROUTING LOGIC: Check for dynamic view parameter
+            const params = new URLSearchParams(window.location.search);
+            let requestedView = params.get('view');
+            
+            // Fix for 404: Ensure extension exists
+            if (requestedView && !requestedView.includes('.html')) {
+                requestedView += '.html';
+            }
+
             if (!isPC) {
                 // MOBILE: Perform standard window replacement
-                window.location.replace("home.html");
+                // If a specific view was requested, go there, otherwise go home.
+                window.location.replace(requestedView || "home.html");
             } else {
                 // DESKTOP: Reveal the SPA
+                if (requestedView) {
+                    frameMain.src = requestedView;
+                }
+
                 splash.style.opacity = '0';
                 setTimeout(() => {
                     splash.style.display = 'none';
@@ -126,7 +140,7 @@
                     try {
                         const doc = frame.contentDocument || frame.contentWindow.document;
                         doc.addEventListener('click', (e) => {
-                            const target = e.target.closest('a, .chat-item, .nav-item, .stat-card');
+                            const target = e.target.closest('a, .chat-item, .nav-item, .stat-card, .btn-msg, .btn-view');
                             if (!target) return;
                             
                             let href = target.getAttribute('href');
@@ -137,7 +151,12 @@
 
                             if (href && href !== '#' && !href.startsWith('http')) {
                                 e.preventDefault();
-                                frameMain.src = href; // Load all clicks into the right pane
+                                // Route content to the main (right) pane
+                                frameMain.src = href; 
+                                
+                                // Update browser URL so refresh doesn't lose the page
+                                const newUrl = `index.html?view=${encodeURIComponent(href)}`;
+                                window.history.pushState({ path: href }, '', newUrl);
                             }
                         }, true);
                     } catch (e) {}
