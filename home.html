@@ -554,8 +554,8 @@
         <script>
             if (preloadedData && preloadedData.photoURL) {
                 const pfp = document.getElementById('header-pfp');
-                if (pfp.src !== preloadedData.photoURL) pfp.src = preloadedData.photoURL;
-                pfp.classList.remove('skeleton');
+                if (pfp && pfp.getAttribute('src') !== preloadedData.photoURL) pfp.src = preloadedData.photoURL;
+                if (pfp) pfp.classList.remove('skeleton');
             }
         </script>
     </div>
@@ -587,7 +587,7 @@
     if (preloadedData && preloadedData.photoURL) {
         const dropPfp = document.getElementById('my-drop-pfp');
         if(dropPfp) {
-            if (dropPfp.src !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
+            if (dropPfp.getAttribute('src') !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
             dropPfp.classList.remove('skeleton');
         }
     }
@@ -694,10 +694,10 @@
             if (preloadedData.photoURL) {
                 const headerPfp = document.getElementById('header-pfp');
                 const dropPfp = document.getElementById('my-drop-pfp'); // Sync to Add Drop icon
-                if (headerPfp.src !== preloadedData.photoURL) headerPfp.src = preloadedData.photoURL;
-                headerPfp.classList.remove('skeleton');
+                if (headerPfp && headerPfp.getAttribute('src') !== preloadedData.photoURL) headerPfp.src = preloadedData.photoURL;
+                if (headerPfp) headerPfp.classList.remove('skeleton');
                 if(dropPfp) {
-                    if (dropPfp.src !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
+                    if (dropPfp.getAttribute('src') !== preloadedData.photoURL) dropPfp.src = preloadedData.photoURL;
                     dropPfp.classList.remove('skeleton');
                 }
             }
@@ -1083,10 +1083,10 @@
         nameEl.innerText = `${greeting}, ` + (data.name.split(' ')[0] || "Agent");
         nameEl.classList.remove('skeleton');
         const src = data.photoURL || 'https://via.placeholder.com/150';
-        if (pfpEl.src !== src) pfpEl.src = src; 
-        pfpEl.classList.remove('skeleton');
+        if (pfpEl && pfpEl.getAttribute('src') !== src) pfpEl.src = src; 
+        if (pfpEl) pfpEl.classList.remove('skeleton');
         if(dropPfp) {
-            if (dropPfp.src !== src) dropPfp.src = src; 
+            if (dropPfp.getAttribute('src') !== src) dropPfp.src = src; 
             dropPfp.classList.remove('skeleton');
         }
         textEl.innerText = "System operational. Connection secure.";
