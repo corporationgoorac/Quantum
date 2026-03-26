@@ -4,8 +4,10 @@
     <link rel="manifest" href="/manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#121212">
     <title>Pulse Lobby | Quantum</title>
+
+    <script src="components/theme.js"></script>
 
     <script>
         window.onerror = function(msg, url, line, col, error) {
@@ -13,7 +15,7 @@
             if (msg && msg.includes("ResizeObserver")) return;
             
             const box = document.createElement('div');
-            box.style.cssText = "position:fixed; top:10px; left:10px; right:10px; z-index:99999; background:#330000; color:#ffcccc; padding:15px; border:1px solid #ff0000; border-radius:8px; font-family:monospace; font-size:12px; box-shadow:0 10px 40px #000;";
+            box.style.cssText = "position:fixed; top:10px; left:10px; right:10px; z-index:99999; background:var(--surface); color:var(--text); padding:15px; border:1px solid var(--accent); border-radius:8px; font-family:monospace; font-size:12px; box-shadow:0 10px 40px var(--bg);";
             box.innerHTML = `<strong>System Error:</strong><br>${msg}<br><br><em>Line: ${line}</em>`;
             document.body.appendChild(box);
             console.error("Global Error Caught:", error);
@@ -50,16 +52,16 @@
 
     <style>
         :root {
-            --bg: #000000;
-            --surface: #0a0a0a;
-            --surface-light: #161616;
-            --border: #222;
-            --accent: #ff3b30;
-            --accent-glow: rgba(255, 59, 48, 0.4);
-            --text: #ffffff;
-            --text-dim: #888;
+            --bg: #121212;
+            --surface: #262626;
+            --surface-light: #262626;
+            --border: #333333;
+            --accent: #0095F6;
+            --accent-glow: rgba(0, 149, 246, 0.4);
+            --text: #FAFAFA;
+            --text-dim: #A8A8A8;
             --safe-top: env(safe-area-inset-top);
-            --verified-color: #0095f6;
+            --verified-color: #0095F6;
             --live-color: #00ff88;
         }
 
@@ -90,7 +92,7 @@
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
             width: 40px; height: 40px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            color: var(--text); cursor: pointer; backdrop-filter: blur(10px);
             transition: 0.2s;
         }
         .back-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
@@ -103,7 +105,7 @@
 
         .lobby-hero {
             padding: calc(70px + var(--safe-top)) 20px 30px;
-            background: radial-gradient(circle at 50% 0%, #1a0505 0%, #000 70%);
+            background: radial-gradient(circle at 50% 0%, var(--surface) 0%, var(--bg) 70%);
             border-bottom: 1px solid var(--border);
             display: flex; flex-direction: column; align-items: center;
         }
@@ -117,21 +119,21 @@
             width: 70px; height: 70px; border-radius: 50%;
             position: relative; z-index: 2;
             display: flex; align-items: center; justify-content: center;
-            background: #111; border: 2px solid #222;
+            background: var(--surface); border: 2px solid var(--border);
         }
         .pfp-node.me img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .pfp-node.me::after {
             content: 'YOU'; position: absolute; bottom: -20px;
-            font-size: 10px; font-weight: 700; color: #555; letter-spacing: 1px;
+            font-size: 10px; font-weight: 700; color: var(--text-dim); letter-spacing: 1px;
         }
-        .pfp-node.target { border: 2px dashed #444; color: #444; }
+        .pfp-node.target { border: 2px dashed var(--border); color: var(--text-dim); }
         .pfp-node.target::after {
             content: 'PICK'; position: absolute; bottom: -20px;
-            font-size: 10px; font-weight: 700; color: #555; letter-spacing: 1px;
+            font-size: 10px; font-weight: 700; color: var(--text-dim); letter-spacing: 1px;
         }
 
         .data-stream {
-            flex: 1; height: 2px; background: #222; margin: 0 10px;
+            flex: 1; height: 2px; background: var(--border); margin: 0 10px;
             position: relative; overflow: hidden;
         }
         .data-stream::after {
@@ -147,7 +149,7 @@
             padding: 12px 16px; display: flex; align-items: center; gap: 10px;
         }
         .search-inp {
-            background: transparent; border: none; color: white; width: 100%;
+            background: transparent; border: none; color: var(--text); width: 100%;
             font-size: 14px; font-weight: 500; outline: none;
         }
 
@@ -170,15 +172,15 @@
         }
         .m-card:active { background: var(--surface-light); transform: scale(0.98); }
         
-        .m-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #222; border: 2px solid transparent; transition:0.3s;}
+        .m-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--border); border: 2px solid transparent; transition:0.3s;}
         .m-details { flex: 1; display: flex; flex-direction: column; gap: 2px; }
         
         .m-name { 
-            font-size: 14px; font-weight: 700; color: #fff; 
+            font-size: 14px; font-weight: 700; color: var(--text); 
             display: flex; align-items: center; gap: 4px;
         }
         .verified-badge { font-size: 14px; color: var(--verified-color); }
-        .m-handle { font-size: 12px; color: #666; font-weight: 500; }
+        .m-handle { font-size: 12px; color: var(--text-dim); font-weight: 500; }
         
         .m-btn {
             width: 32px; height: 32px; border-radius: 50%;
@@ -192,7 +194,7 @@
         
         .m-card.is-active .m-btn {
             background: var(--live-color); 
-            color: #000;
+            color: var(--bg);
             border-color: var(--live-color);
             box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
             animation: pulse-btn 1.5s infinite;
@@ -200,7 +202,7 @@
 
         .live-tag {
             display: none;
-            font-size: 9px; font-weight: 800; color: #000;
+            font-size: 9px; font-weight: 800; color: var(--bg);
             background: var(--live-color); padding: 2px 6px;
             border-radius: 4px; margin-left: 6px; letter-spacing: 0.5px;
         }
@@ -215,14 +217,14 @@
         /* --- PROFESSIONAL INVITE MODAL --- */
         #invite-modal {
             position: fixed; inset: 0; z-index: 1000;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            background: var(--bg-transparent, rgba(18, 18, 18, 0.85)); backdrop-filter: blur(8px);
             display: flex; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: 0.3s;
         }
         #invite-modal.active { opacity: 1; pointer-events: auto; }
 
         .invite-card {
-            background: #111; border: 1px solid #222;
+            background: var(--surface); border: 1px solid var(--border);
             width: 90%; max-width: 320px; border-radius: 30px;
             padding: 35px 25px; text-align: center;
             transform: scale(0.9); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -238,7 +240,7 @@
         }
         .invite-ring img { 
             width: 100%; height: 100%; border-radius: 50%; 
-            object-fit: cover; border: 4px solid #000; display: block;
+            object-fit: cover; border: 4px solid var(--bg); display: block;
         }
         
         /* Ring Animation */
@@ -249,21 +251,21 @@
         }
         @keyframes pulse-out { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
-        .invite-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
-        .invite-name { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .invite-sub { font-size: 14px; color: #666; margin-bottom: 30px; }
+        .invite-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+        .invite-name { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .invite-sub { font-size: 14px; color: var(--text-dim); margin-bottom: 30px; }
 
         .invite-actions { display: flex; gap: 15px; justify-content: center; }
         
         .btn-decline {
             width: 50px; height: 50px; border-radius: 50%;
-            background: #222; color: #fff; border: none;
+            background: var(--surface-light); color: var(--text); border: none;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
         }
         .btn-accept {
             height: 50px; padding: 0 30px; border-radius: 50px;
-            background: #fff; color: #000; border: none;
+            background: var(--text); color: var(--bg); border: none;
             font-weight: 800; font-size: 14px; letter-spacing: 0.5px;
             display: flex; align-items: center; gap: 8px; cursor: pointer;
             box-shadow: 0 5px 20px rgba(255,255,255,0.2);
@@ -282,19 +284,19 @@
         #onboarding-sheet.active { pointer-events: auto; opacity: 1; }
         
         .sheet-content {
-            background: #111; border-radius: 24px 24px 0 0;
+            background: var(--surface); border-radius: 24px 24px 0 0;
             padding: 30px 24px 40px; transform: translateY(100%);
             transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border);
         }
         #onboarding-sheet.active .sheet-content { transform: translateY(0); }
 
         .sheet-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
         .sheet-h1 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
-        .sheet-p { font-size: 14px; color: #999; line-height: 1.5; margin-bottom: 25px; }
+        .sheet-p { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 25px; }
         .sheet-btn {
             width: 100%; padding: 16px; border-radius: 12px;
-            background: #fff; color: #000; font-weight: 700; border: none;
+            background: var(--text); color: var(--bg); font-weight: 700; border: none;
             font-size: 14px; cursor: pointer;
         }
 
@@ -322,7 +324,7 @@
             <div class="back-btn" onclick="window.location.href='home.html'">
                 <span class="material-icons-round">west</span>
             </div>
-            <div style="font-weight:800; font-size:12px; letter-spacing:1px; color:#666;">PULSE NETWORK</div>
+            <div style="font-weight:800; font-size:12px; letter-spacing:1px; color:var(--text-dim);">PULSE NETWORK</div>
             <div style="width:40px;"></div>
         </div>
 
@@ -338,10 +340,10 @@
             </div>
             
             <h1 style="font-size:24px; font-weight:900; letter-spacing:-0.5px;">Start a Pulse</h1>
-            <p style="font-size:14px; color:#888; margin-top:5px; margin-bottom:25px;">Connect & Listen together in real-time.</p>
+            <p style="font-size:14px; color:var(--text-dim); margin-top:5px; margin-bottom:25px;">Connect & Listen together in real-time.</p>
 
             <div class="search-container">
-                <span class="material-icons-round" style="color:#666;">search</span>
+                <span class="material-icons-round" style="color:var(--text-dim);">search</span>
                 <input type="text" id="mutual-search" class="search-inp" placeholder="Search mutual friends...">
             </div>
         </div>
@@ -352,7 +354,7 @@
         </div>
         
         <div class="mutuals-scroll" id="mutuals-container"></div>
-        <div class="loader-pill" id="scroll-loader" style="display:none; text-align:center; padding:20px; font-size:12px; color:#444;">SYNCING...</div>
+        <div class="loader-pill" id="scroll-loader" style="display:none; text-align:center; padding:20px; font-size:12px; color:var(--text-dim);">SYNCING...</div>
     </div>
 
     <div id="invite-modal">
@@ -363,7 +365,7 @@
             </div>
             <div class="invite-name">
                 <span id="inviter-name">User</span>
-                <span id="inviter-badge" class="material-icons-round" style="color:#0095f6; font-size:20px; display:none;">verified</span>
+                <span id="inviter-badge" class="material-icons-round" style="color:var(--accent); font-size:20px; display:none;">verified</span>
             </div>
             <div class="invite-sub">Is waiting for you in session...</div>
             
@@ -518,7 +520,7 @@
                 
                 if (mutualList.length === 0) {
                     document.getElementById('mutuals-container').innerHTML = 
-                        `<div style="text-align:center; padding:50px; color:#555; font-size:13px;">No mutual connections found.</div>`;
+                        `<div style="text-align:center; padding:50px; color:var(--text-dim); font-size:13px;">No mutual connections found.</div>`;
                     return;
                 }
 
