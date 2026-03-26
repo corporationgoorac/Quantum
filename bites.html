@@ -60,6 +60,16 @@
             touch-action: none; /* Prevents pull-to-refresh on mobile */
             overscroll-behavior-y: none; /* Smooth scrolling upgrade: Prevents overscroll bounce */
         }
+        
+        /* FIX: Lock background scrolling perfectly when modal is open */
+        body.modal-open {
+            overflow: hidden !important;
+            touch-action: none !important;
+        }
+        body.modal-open #bites-viewport {
+            overflow: hidden !important;
+            pointer-events: none;
+        }
 
         /* ==========================================================================
            TOP PROGRESS BAR (REAL-TIME TRACKING)
@@ -104,21 +114,23 @@
            THE VIRTUAL SWIPER ENGINE (CSS SNAP)
            ========================================================================== */
         #bites-viewport {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; /* UPGRADE: dynamic viewport height */
             overflow-y: scroll; scroll-snap-type: y mandatory;
             scrollbar-width: none; -webkit-overflow-scrolling: touch;
             z-index: 10; padding-bottom: var(--nav-height);
-            scroll-behavior: smooth; /* Controlled dynamically in JS for search jumps */
+            scroll-behavior: auto; /* FIX LAG: changed from smooth to auto to prevent conflict with scroll-snap */
             overscroll-behavior-y: none; /* Smooth scrolling upgrade: Lock scrolling purely to snap */
-            will-change: scroll-position; /* Smooth scrolling upgrade: Hardware acceleration for scrolling */
+            will-change: scroll-position, transform; /* Smooth scrolling upgrade: Hardware acceleration for scrolling */
+            transform: translateZ(0); /* Hardware acceleration */
         }
         #bites-viewport::-webkit-scrollbar { display: none; }
 
         .bite-slide {
-            width: 100vw; height: calc(100vh - var(--nav-height));
+            width: 100vw; height: calc(100dvh - var(--nav-height)); /* UPGRADE: dynamic viewport height for perfect full size */
             scroll-snap-align: start; scroll-snap-stop: always;
             position: relative; touch-action: pan-y; 
             background: #000;
+            transform: translateZ(0); /* Hardware acceleration */
         }
 
         /* THE SEAMLESS COVER IMAGE FIX (NO YOUTUBE FLASH) */
@@ -131,8 +143,9 @@
         /* THE HARDWARE PLAYERS (LEAPFROG SCROLLING) */
         .yt-player-container {
             position: absolute; top: 0; left: 0; width: 100vw; 
-            height: calc(100vh - var(--nav-height));
+            height: calc(100dvh - var(--nav-height)); /* UPGRADE: full size fix */
             z-index: 1; opacity: 1; pointer-events: none; background: #000;
+            transform: translateZ(0); /* Hardware acceleration */
         }
         .yt-player-container.active { z-index: 2; }
         
@@ -232,15 +245,18 @@
            SEARCH DISCOVER MODAL
            ========================================================================== */
         #discover-modal {
-            position: fixed; top: 0; right: -100%; width: 100vw; height: 100vh;
-            background: #000; z-index: 2000; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: fixed; top: 0; right: -100%; width: 100vw; height: 100dvh; /* FIX: upgraded to dvh for layout bounds */
+            background: #000; z-index: 3000; /* FIX: ensures it is strictly above everything */
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column;
+            overscroll-behavior: none; /* FIX: proper modal containment */
         }
         #discover-modal.active { right: 0; }
 
         .modal-header {
             padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top));
             display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            z-index: 2;
         }
         .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; }
         .search-input-box {
@@ -250,15 +266,17 @@
         .search-input-box:focus { border-color: var(--accent); background: #222; box-shadow: 0 0 10px rgba(0,210,255,0.1); }
 
         .grid-results {
-            flex: 1; overflow-y: auto; padding: 2px;
+            flex: 1; overflow-y: auto; padding: 2px; padding-bottom: calc(var(--nav-height) + 20px); /* FIX: scrolling padding */
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
             align-content: start; background: #000;
+            -webkit-overflow-scrolling: touch; /* FIX: smooth scrolling natively */
+            overscroll-behavior-y: contain; /* FIX: contain scroll in modal */
         }
 
         .grid-item {
-            aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden;
+            aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden; /* FIX: strict overlap control */
         }
-        .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.3s; } /* FIX: display block to prevent gaps */
         .grid-item:active img { transform: scale(1.05); filter: brightness(0.8); }
         .grid-item .views-overlay {
             position: absolute; bottom: 5px; left: 5px; font-size: 0.75rem; font-weight: 800; color: #fff;
@@ -1433,6 +1451,7 @@
     // INSTAGRAM-STYLE DISCOVER MODAL
     // ==========================================================================
     window.openDiscoverModal = function() {
+        document.body.classList.add('modal-open'); /* FIX: Lock body scrolling */
         document.getElementById('discover-modal').classList.add('active');
         history.pushState({ modal: 'discover' }, "", "#discover");
         
@@ -1445,6 +1464,7 @@
     }
 
     window.closeDiscoverModal = function(shouldGoBack) {
+        document.body.classList.remove('modal-open'); /* FIX: Unlock body scrolling */
         document.getElementById('discover-modal').classList.remove('active');
         if(shouldGoBack && window.location.hash === "#discover") history.back();
         
@@ -1459,6 +1479,7 @@
         const hash = window.location.hash;
 
         if (isSearchPlaying && hash === '#discover') {
+            document.body.classList.add('modal-open'); /* FIX: ensure modal lock */
             isSearchPlaying = false;
             
             bitesQueue = [...backupQueue];
@@ -1495,6 +1516,7 @@
         }
 
         if(document.getElementById('discover-modal').classList.contains('active') && hash !== '#discover') {
+            document.body.classList.remove('modal-open'); /* FIX: ensure modal unlock */
             closeDiscoverModal(false);
         }
     };
@@ -1565,6 +1587,7 @@
     }
 
     function launchSearchResultFeed(clickedBite, allResults) {
+        document.body.classList.remove('modal-open'); /* FIX: Unlock body scrolling when entering feed */
         const searchInputBox = document.getElementById('search-input');
         if (searchInputBox && searchInputBox.value.trim()) {
             trackExplicitAction(searchInputBox.value.trim(), 'searched');
@@ -1583,7 +1606,7 @@
         const viewport = document.getElementById('bites-viewport');
         
         // TEMPORARY FIX: Disable smooth scroll so it jumps instantly without animated visual scroll 20 to 1
-        viewport.style.scrollBehavior = 'auto';
+        viewport.style.scrollBehavior = 'auto'; /* FIX: Keep auto to prevent lag */
         
         // FIX: Prevent YouTube API breakdown and extreme lag
         // Instead of destroying and recreating the iframes (which breaks the YT API reference and blocks the main thread), 
@@ -1606,7 +1629,7 @@
 
         // Restore smooth behavior after the jump completes
         setTimeout(() => {
-            viewport.style.scrollBehavior = 'smooth';
+            viewport.style.scrollBehavior = 'auto'; /* FIX: keep auto to avoid snap lag */
         }, 50);
     }
 
