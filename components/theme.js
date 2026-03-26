@@ -72,13 +72,17 @@ const injectStyles = () => {
     main,
     /* Force Modals & Overlays to use the theme background */
     .modal,
-    .modal-content,
-    .modal-body,
-    .group-modal,
     .modal-overlay,
     #group-modal,
     #add-members-modal,
-    #edit-modal {
+    #edit-modal,
+    /* NEW: Aggressively target Note Scroll areas */
+    .notes-scroll,
+    .notes-list,
+    .story-tray,
+    .stories-wrapper,
+    .horizontal-scroll,
+    .chats-body {
       background-color: var(--bg) !important;
       background: var(--bg) !important; /* Overrides any gradients */
     }
@@ -121,7 +125,22 @@ const injectStyles = () => {
     .note-item,
     .action-button,
     .add-note-btn,
-    .modal-card {
+    .modal-card,
+    /* NEW: Force Bottom Sheets, Menus, and Modal Contents to be Surface Color */
+    .modal-content, 
+    .modal-body, 
+    .group-modal, 
+    #action-menu, 
+    .action-menu, 
+    .bottom-sheet, 
+    .sheet, 
+    .menu-content, 
+    .menu-item, 
+    .action-item, 
+    .dropdown-menu, 
+    .dropdown-content, 
+    .popup, 
+    .dialog {
       background-color: var(--surface) !important;
       border: none !important; /* Completely removes harsh borders */
       box-shadow: none !important;
