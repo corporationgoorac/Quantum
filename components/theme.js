@@ -85,6 +85,8 @@ const injectStyles = () => {
     main,
     /* Force Modals & Overlays to use the theme background */
     .modal,
+    .side-modal,
+    .fullscreen-modal,
     .modal-overlay,
     #group-modal,
     #add-members-modal,
@@ -106,7 +108,12 @@ const injectStyles = () => {
     #header,
     .top-header,
     .modal-header,
-    .chats-header {
+    .modal-header-top,
+    .chats-header,
+    .notes-header,
+    .moment-header,
+    .view-header,
+    .inbox-controls {
       background-color: var(--bg-transparent) !important;
       background: var(--bg-transparent) !important;
       border: none !important; /* Removed border as requested */
@@ -152,7 +159,8 @@ const injectStyles = () => {
     .dropdown-menu, 
     .dropdown-content, 
     .popup, 
-    .dialog {
+    .dialog,
+    .bottom-modal-intro {
       background-color: var(--surface) !important;
       border: none !important; /* Completely removes harsh borders */
       box-shadow: none !important;
@@ -256,3 +264,4 @@ const injectMobileToolbarColor = () => {
 // Execute immediately upon import
 injectStyles();
 injectMobileToolbarColor();
+q
