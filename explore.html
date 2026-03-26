@@ -6,7 +6,7 @@
     
     <title>Explore People | Quantum</title>
     <meta name="description" content="Search and discover people on the Goorac network.">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#121212">
     <link rel="manifest" href="/manifest.json">
     
     <script src="config.js"></script>
@@ -36,25 +36,25 @@
 
         :root {
             /* Core Colors */
-            --bg: #000000;
-            --accent: #00d2ff;
+            --bg: #121212;
+            --accent: #0095F6;
             --danger: #ff4444;
             
             /* Surface & Card Colors for Sleek Look */
-            --surface: #0a0a0a;
-            --surface-hover: #121212;
-            --sheet-bg: #121212;
-            --card-bg: #0c0c0c;
+            --surface: #262626;
+            --surface-hover: #333333;
+            --sheet-bg: #262626;
+            --card-bg: var(--bg);
             
             /* Borders & Dividers */
-            --border: #1a1a1a;
-            --border-focus: #2a2a2a;
-            --glass: rgba(255, 255, 255, 0.02);
+            --border: var(--border-color);
+            --border-focus: var(--accent);
+            --glass: var(--bg-transparent);
             
             /* Text Colors */
-            --text-main: #ffffff;
-            --text-dim: #888888;
-            --text-muted: #555555;
+            --text-main: #FAFAFA;
+            --text-dim: #A8A8A8;
+            --text-muted: #777777;
             
             /* Safe Area */
             --safe-top: env(safe-area-inset-top);
@@ -83,7 +83,7 @@
             position: sticky; 
             top: 0; 
             z-index: 50;
-            background: rgba(0, 0, 0, 0.85); 
+            background: var(--bg-transparent); 
             backdrop-filter: blur(24px); 
             -webkit-backdrop-filter: blur(24px);
             padding: calc(15px + var(--safe-top)) 20px 15px;
@@ -123,7 +123,7 @@
         }
 
         .search-wrapper {
-            background: #111111; 
+            background: var(--surface); 
             border: 1px solid var(--border); 
             border-radius: 14px;
             display: flex; 
@@ -135,7 +135,7 @@
 
         /* NO GLOW ON FOCUS: Just a subtle border and background shift */
         .search-wrapper:focus-within { 
-            background: #161616; 
+            background: var(--surface-hover); 
             border-color: var(--border-focus); 
             box-shadow: none; /* Explicitly removing any glow */
         }
@@ -209,7 +209,7 @@
         }
 
         .user-card {
-            background: var(--card-bg); 
+            background: var(--surface); 
             border: 1px solid var(--border);
             border-radius: 18px; 
             padding: 16px;
@@ -220,7 +220,7 @@
         }
         
         .user-card:active {
-            background: #141414;
+            background: var(--surface-hover);
             transform: scale(0.98);
         }
 
@@ -235,7 +235,7 @@
             height: 56px; 
             border-radius: 18px; 
             object-fit: cover; 
-            background: #111; 
+            background: var(--bg); 
             border: 1px solid var(--border); 
             flex-shrink: 0; 
         }
@@ -254,7 +254,7 @@
             gap: 6px; 
             font-weight: 700; 
             font-size: 1.05rem; 
-            color: #ffffff; 
+            color: var(--text-main); 
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis;
@@ -303,18 +303,18 @@
         }
 
         .btn-view { 
-            background: #181818; 
+            background: var(--surface-hover); 
             color: var(--text-main); 
             border: 1px solid var(--border); 
         }
 
         .btn-view:hover {
-            background: #222222;
+            background: var(--border);
         }
 
         .btn-msg { 
             background: var(--text-main); 
-            color: #000000; 
+            color: var(--bg); 
         }
 
         .btn-msg:hover {
@@ -353,7 +353,7 @@
             padding: 16px; 
             border: 1px solid var(--border); 
             border-radius: 18px; 
-            background: var(--card-bg); 
+            background: var(--surface); 
             position: relative;
             overflow: hidden;
         }
@@ -369,7 +369,7 @@
             width: 56px; 
             height: 56px; 
             border-radius: 18px; 
-            background: #161616; 
+            background: var(--bg); 
             flex-shrink: 0; 
             position: relative;
             overflow: hidden;
@@ -377,7 +377,7 @@
 
         .skeleton-line { 
             height: 14px; 
-            background: #161616; 
+            background: var(--bg); 
             border-radius: 6px; 
             margin-bottom: 8px; 
             position: relative;
@@ -393,7 +393,7 @@
             flex: 1; 
             height: 42px; 
             border-radius: 12px; 
-            background: #161616; 
+            background: var(--bg); 
             position: relative;
             overflow: hidden;
         }
@@ -475,7 +475,7 @@
         .modal-handle { 
             width: 48px; 
             height: 5px; 
-            background: #333333; 
+            background: var(--surface-hover); 
             border-radius: 10px; 
             margin: 0 auto 24px; 
         }
@@ -484,7 +484,7 @@
             font-size: 1.3rem; 
             font-weight: 800; 
             margin-bottom: 12px; 
-            color: #ffffff; 
+            color: var(--text-main); 
             letter-spacing: -0.5px;
         }
 
@@ -522,7 +522,7 @@
         .modal-btn {
             width: 100%; 
             background: var(--text-main); 
-            color: #000000; 
+            color: var(--bg); 
             border: none; 
             padding: 18px;
             border-radius: 16px; 
@@ -562,7 +562,7 @@
     </script>
 
     <header>
-        <img src="images/icon.png" class="header-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/000000/fff?text=G'">
+        <img src="images/icon.png" class="header-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/121212/fff?text=G'">
         <div class="header-title">Explore People</div>
     </header>
 
@@ -1142,7 +1142,7 @@
                 
                 // SVG Verified Badge if applicable
                 const isVer = user.verified ? `
-                    <svg class="v-badge" viewBox="0 0 24 24" fill="#00d2ff">
+                    <svg class="v-badge" viewBox="0 0 24 24" fill="#0095F6">
                         <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.1 14.6l-4.2-4.2 1.4-1.4 2.8 2.8 6.4-6.4 1.4 1.4-7.8 7.8z"/>
                     </svg>` : '';
                 
@@ -1188,4 +1188,3 @@
 
 </body>
 </html>
-
