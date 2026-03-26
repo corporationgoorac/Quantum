@@ -176,11 +176,18 @@
                                 else if (href.includes('home.html')) {
                                     frameSidebar.src = 'home.html';
                                 }
-                                // 3. All other links (Chats, Profiles, Bites, Explore) go to RIGHT PANE
+                                // 3. Fix 404 and Sidebar hijacking:
+                                // If navigation is a raw username or specific chat/profile link, send to RIGHT PANE
                                 else {
+                                    let finalUrl = href;
+                                    // Detect if it's a raw username (no .html and no parameters)
+                                    if (!href.includes('.html') && !href.includes('?')) {
+                                        finalUrl = `userProfile.html?user=${href}`;
+                                    }
+
                                     welcomeScreen.style.display = 'none';
                                     frameMain.style.display = 'block';
-                                    frameMain.src = href; 
+                                    frameMain.src = finalUrl; 
                                 }
                                 
                                 // Update browser URL so refresh doesn't lose the page
