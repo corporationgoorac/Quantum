@@ -2,11 +2,11 @@
 (function() {
     window.chatTheme = {
         // App Core Backgrounds
-        bg: "#0A0504", // The absolute base background color of the entire app behind everything.
-        bgGradient: "radial-gradient(circle at 50% 30%, #150A07 0%, #0A0504 70%)", // The immersive gradient overlay for depth.
+        bg: "#150C0A", // Matched exactly to the top status bar color from the screenshot.
+        bgGradient: "radial-gradient(circle at 50% 30%, #150C0A 0%, #150C0A 70%)", // Flattened to solid to prevent any gradient lines breaking the illusion.
         
         // Header
-        headerBg: "#150A07", // Lighter rich brown to match the top loader and blend seamlessly.
+        headerBg: "#150C0A", // Matched to the top line to blend seamlessly.
         headerBlur: "blur(25px)", // The intensity of the glassmorphism blur effect on the header.
         
         // Primary Brand Colors (Buttons, Highlights, Icons)
@@ -25,7 +25,7 @@
         sentShadow: "0 4px 15px rgba(0, 0, 0, 0.4)", // The drop shadow beneath your sent bubbles.
         
         // Incoming (Received) Message Bubbles & Media Pills
-        receivedBg: "#140A07", // The background color of messages others send you, as well as audio and file pills.
+        receivedBg: "#1E120F", // Slightly lighter than the background to ensure message bubbles are visible.
         receivedText: "#EADCD8", // The text color of incoming messages.
         receivedShadow: "0 2px 5px rgba(0,0,0,0.5)", // The drop shadow beneath incoming bubbles.
         
@@ -35,7 +35,7 @@
         textMuted: "#6B5953", // Highly muted text color used for placeholders (e.g., "Message...").
         
         // Modals & Bottom Areas
-        mobileToolbarBg: "#150A07", // Matched to the top header color to lighten the menus and keep symmetry.
+        mobileToolbarBg: "#150C0A", // Matched exactly to keep symmetry and the full-screen vibe.
         
         // Text Capsule Aura Glow (Dynamically linked to your accent color)
         capsuleGlowUnfocused: "0 -2px 18px color-mix(in srgb, var(--accent) 15%, transparent), 0 8px 25px rgba(0,0,0,0.4)", // Softened slightly for a cleaner professional look
@@ -43,7 +43,7 @@
         
         // System UI
         // SOLID HEX for Android Status Bar to remove the top border line
-        statusBarColor: "#150A07" // Changes the color of the physical phone's top notification bar to match perfectly.
+        statusBarColor: "#150C0A" // Matched to the exact hex extracted from the image.
     };
 
     // Apply the theme directly to the root CSS variables
