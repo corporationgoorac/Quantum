@@ -347,8 +347,8 @@
            -- UPGRADED FOR ADVANCED CHAT DISPLAY --
            ========================================= */
         /* In Full Mode, shrink album art and allocate massive space for chat */
-        .mode-full .bottom-cluster { height: 65vh; justify-content: flex-start; padding-top: 20px; }
-        .mode-full .player-main-area { max-height: 25vh; transform: scale(0.80); margin-top: 5vh; flex-shrink: 0; }
+        .mode-full .bottom-cluster { flex: 1; height: auto; min-height: 0; justify-content: flex-start; padding-top: 20px; }
+        .mode-full .player-main-area { max-height: 25%; transform: scale(0.80); margin-top: 5%; flex-shrink: 0; }
         .mode-full .duo-header { display: none; }
         .mode-full .controls-area { display: none; }
         .mode-full #chat-container { display: flex; flex: 1; min-height: 0; }
