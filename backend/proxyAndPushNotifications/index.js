@@ -1,4 +1,4 @@
-const express = require('express'); 
+const express = require('express'); // 🔧 FIXED: Capital 'Const' changed to lowercase 'const' 
 const cors = require('cors');
 const dotenv = require('dotenv');
 
@@ -20,6 +20,7 @@ const visionRoutes = require('./visionScrapper');
 const bitesScrapper = require('./bitesScrapper');
 const pushNotifications = require('./pushNotifications');
 const startScheduledPushes = require('./scheduledPush'); 
+const startPulseVisionCleanup = require('./pulseAndVision'); // <-- INJECTED NEW MODULE
 
 // ============================================================================
 // 2. MOUNT YOUR ROUTERS
@@ -37,6 +38,7 @@ pushNotifications(app);
 // 4. START YOUR BACKGROUND CRON JOBS
 // ============================================================================
 startScheduledPushes(); 
+startPulseVisionCleanup(); // <-- INJECTED CRON START
 
 // ============================================================================
 // 5. GLOBAL HEALTH CHECK & SERVER START
@@ -45,10 +47,10 @@ app.get('/', (req, res) => {
     res.send('🚀 Quantum Master Backend is ONLINE and running all services (AI, Vision, Bites, Push)!');
 });
 
-// Render dynamically injects process.env.PORT. The 10000 fallback is standard for Render.
-const PORT = process.env.PORT || 10000; 
+// 🔧 FIXED: Hugging Face Spaces specifically route external traffic to port 7860.
+const PORT = process.env.PORT || 7860; 
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => { // 🔧 FIXED: Added '0.0.0.0' to ensure Hugging Face Docker binds correctly
     console.log(`🚀 Quantum Master Server is running and listening on port ${PORT}`);
     console.log(`✅ All modules loaded successfully.`);
 });
