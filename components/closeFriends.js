@@ -47,12 +47,13 @@ class CloseFriendsSelector extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             :host {
-                --bg-color: #000000;
-                --surface-color: #121212;
-                --accent-color: #00d2ff;
-                --text-primary: #ffffff;
-                --text-secondary: #888888;
-                --border-color: #2a2a2a;
+                /* --- INTEGRATED WITH THEME.JS --- */
+                --bg-color: var(--bg, #000000);
+                --surface-color: var(--surface, #121212);
+                --accent-color: var(--accent, #00d2ff);
+                --text-primary: var(--text-main, #ffffff);
+                --text-secondary: var(--text-dim, #888888);
+                --border-color: var(--border-color, #2a2a2a);
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
 
@@ -66,10 +67,12 @@ class CloseFriendsSelector extends HTMLElement {
             }
             .cf-overlay.open { transform: translateX(0); }
 
-            /* --- HEADER (PURE BLACK) --- */
+            /* --- HEADER (THEMED) --- */
             .cf-header {
                 padding: 15px 15px 10px;
-                background: #000000; /* PURE BLACK REQUESTED */
+                background: var(--bg-transparent, var(--bg-color)); /* PURE BLACK OVERRIDDEN BY THEME */
+                backdrop-filter: blur(12px); /* ADDED FOR THEME FROSTED GLASS */
+                -webkit-backdrop-filter: blur(12px);
                 border-bottom: 1px solid var(--border-color);
                 z-index: 10; display: flex; flex-direction: column; gap: 15px;
                 padding-top: max(15px, env(safe-area-inset-top));
@@ -87,10 +90,10 @@ class CloseFriendsSelector extends HTMLElement {
             .cf-btn-icon:active { background: rgba(255,255,255,0.1); }
             
             .cf-save-btn {
-                background: var(--accent-color); color: #000;
+                background: var(--accent-color); color: #fff; /* Updated to white to match theme */
                 border: none; padding: 8px 18px; border-radius: 100px;
                 font-weight: 700; font-size: 0.9rem; cursor: pointer;
-                transition: transform 0.1s, opacity 0.2s; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
+                transition: transform 0.1s, opacity 0.2s; box-shadow: 0 4px 15px rgba(0, 149, 246, 0.2);
             }
             .cf-save-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
             .cf-save-btn:active { transform: scale(0.95); }
@@ -109,7 +112,7 @@ class CloseFriendsSelector extends HTMLElement {
                 padding: 12px 8px; color: var(--text-primary);
                 font-size: 1rem; outline: none;
             }
-            .cf-search-input::placeholder { color: #555; }
+            .cf-search-input::placeholder { color: var(--text-secondary); }
 
             /* --- LIST --- */
             .cf-list {
@@ -126,7 +129,7 @@ class CloseFriendsSelector extends HTMLElement {
 
             .cf-pfp {
                 width: 48px; height: 48px; border-radius: 50%;
-                background: #222; object-fit: cover;
+                background: var(--surface-color); object-fit: cover;
                 border: 1px solid rgba(255,255,255,0.1);
             }
             
@@ -146,7 +149,7 @@ class CloseFriendsSelector extends HTMLElement {
             /* --- CHECKBOX (Custom) --- */
             .cf-checkbox {
                 width: 24px; height: 24px; border-radius: 50%;
-                border: 2px solid #444; display: flex;
+                border: 2px solid var(--border-color); display: flex;
                 align-items: center; justify-content: center;
                 transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             }
@@ -158,12 +161,12 @@ class CloseFriendsSelector extends HTMLElement {
             .cf-item.selected .cf-checkbox svg { opacity: 1; transform: scale(1); }
 
             /* --- UTILS --- */
-            .cf-msg { padding: 40px 20px; text-align: center; color: #666; font-size: 0.9rem; font-weight: 500; }
+            .cf-msg { padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; }
             .hidden { display: none !important; }
             svg { width: 24px; height: 24px; fill: currentColor; }
             
             /* Loading Spinner */
-            .loader { width: 24px; height: 24px; border: 3px solid #333; border-top-color: var(--accent-color); border-radius: 50%; margin: 20px auto; animation: spin 1s infinite linear; }
+            .loader { width: 24px; height: 24px; border: 3px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; margin: 20px auto; animation: spin 1s infinite linear; }
             @keyframes spin { to { transform: rotate(360deg); } }
         </style>
 
@@ -177,7 +180,7 @@ class CloseFriendsSelector extends HTMLElement {
                     <button class="cf-save-btn" id="btn-save">Done</button>
                 </div>
                 <div class="cf-search-box">
-                    <svg viewBox="0 0 24 24" style="width:20px; color:#666;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <svg viewBox="0 0 24 24" style="width:20px; color:var(--text-secondary);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                     <input type="text" class="cf-search-input" id="search-input" placeholder="Search mutual friends..." autocomplete="off" autocapitalize="off">
                 </div>
             </div>
