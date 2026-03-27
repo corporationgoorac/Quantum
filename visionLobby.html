@@ -322,7 +322,7 @@
 
     <div id="lobby-view">
         <div class="top-nav">
-            <div class="back-btn" onclick="window.location.href='home.html'">
+            <div class="back-btn" onclick="cleanupLobbyAndExit()">
                 <span class="material-icons-round">west</span>
             </div>
             <div style="font-weight:800; font-size:12px; letter-spacing:1px; color:var(--accent);">VISION NETWORK</div>
@@ -430,6 +430,12 @@
                 // 2. Set "Vision" Presence
                 setMyPresence(true);
                 window.addEventListener('beforeunload', () => setMyPresence(false));
+                
+                // --- NEW: Bulletproof lifecycles and Ghost Room Cleanup ---
+                window.addEventListener('pagehide', () => setMyPresence(false));
+                window.addEventListener('unload', () => setMyPresence(false));
+                cleanupGhostRooms(user.uid);
+                
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) setMyPresence(false);
                     else setMyPresence(true);
@@ -600,6 +606,16 @@
             const badgeEl = document.getElementById('inviter-badge');
             badgeEl.style.display = user.verified ? 'inline-block' : 'none';
             
+            // --- NEW: Remove Logic to kill pending room if declined ---
+            const declineBtn = document.querySelector('.btn-decline');
+            declineBtn.onclick = () => {
+                closeInviteModalWithBack();
+                const r1 = `${myUid}_${user.uid}`;
+                const r2 = `${user.uid}_${myUid}`;
+                visionDb.collection('vision_rooms').doc(r1).delete().catch(()=>{});
+                visionDb.collection('vision_rooms').doc(r2).delete().catch(()=>{});
+            };
+
             const btn = document.getElementById('btn-accept-vision');
             // Redirect straight into the Vision room when accepted
             btn.onclick = () => {
@@ -735,6 +751,22 @@
                 window.location.assign(`vision.html?user=${uData.username}`); 
             };
             return div;
+        }
+
+        // --- NEW: Bulletproof Ghost Room Cleanup ---
+        function cleanupGhostRooms(uid) {
+            try {
+                visionDb.collection('vision_rooms').where('userA', '==', uid).get().then(snap => snap.forEach(doc => doc.ref.update({userA: 'offline'})));
+                visionDb.collection('vision_rooms').where('userB', '==', uid).get().then(snap => snap.forEach(doc => doc.ref.update({userB: 'offline'})));
+            } catch(e) {}
+        }
+
+        // --- NEW: Exit Cleanup to prevent memory leaks and unbind listeners ---
+        function cleanupLobbyAndExit() {
+            setMyPresence(false);
+            if (activePresenceListener) activePresenceListener();
+            if (inviteListener) inviteListener();
+            window.location.href = 'home.html';
         }
     </script>
 </body>
