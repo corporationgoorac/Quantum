@@ -2,7 +2,7 @@
   "rules": {
     
     // =========================================================================
-    // 1. PRESENCE SYSTEM (Online / Offline Status)
+    // 1. PRESENCE SYSTEM (Global Online / Offline Status)
     // =========================================================================
     "status": {
       "$userId": {
@@ -14,7 +14,7 @@
     },
     
     // =========================================================================
-    // 2. TYPING INDICATORS (Standard Chats & Vision Rooms)
+    // 2. TYPING INDICATORS (Standard Chats, Vision Rooms & Pulse Rooms)
     // =========================================================================
     "typing": {
       "$chatId": {
@@ -35,7 +35,6 @@
         // Users need to read their own incoming calls, and callers need to read the answer/decline status
         ".read": "auth != null",
         // Anyone logged in can write here to "ring" another user or respond to a call
-        // (This MUST be open to all authenticated users so User A can reach User B)
         ".write": "auth != null"
       }
     },
@@ -48,6 +47,38 @@
         // Only the two users whose UIDs make up the Room ID can read/write the live chat
         ".read": "auth != null && $roomId.contains(auth.uid)",
         ".write": "auth != null && $roomId.contains(auth.uid)"
+      }
+    },
+
+    // =========================================================================
+    // 5. TRANSIENT PULSE CHAT (Live Music Rooms)
+    // =========================================================================
+    "pulse_chat": {
+      "$roomId": {
+        // Only the two users whose UIDs make up the Room ID can read/write the live chat
+        ".read": "auth != null && $roomId.contains(auth.uid)",
+        ".write": "auth != null && $roomId.contains(auth.uid)"
+      }
+    },
+
+    // =========================================================================
+    // 6. ROOM PRESENCE (Instant Disconnect & Crash Detection)
+    // =========================================================================
+    "pulse_presence": {
+      "$roomId": {
+        "$userId": {
+          ".read": "auth != null && $roomId.contains(auth.uid)",
+          ".write": "auth != null && auth.uid === $userId && $roomId.contains(auth.uid)"
+        }
+      }
+    },
+    
+    "vision_presence": {
+      "$roomId": {
+        "$userId": {
+          ".read": "auth != null && $roomId.contains(auth.uid)",
+          ".write": "auth != null && auth.uid === $userId && $roomId.contains(auth.uid)"
+        }
       }
     }
 
