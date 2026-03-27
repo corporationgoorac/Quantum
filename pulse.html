@@ -13,6 +13,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
+    <script>
+        if (typeof window.initFirebaseCore === 'function') {
+            window.initFirebaseCore();
+        } else if (typeof firebase !== 'undefined' && !firebase.apps.length && window.firebaseConfig) {
+            firebase.initializeApp(window.firebaseConfig);
+        }
+    </script>
+    
     <script src="components/songPicker.js"></script>
     <script src="components/fullSongPicker.js"></script> 
     <script src="components/emojiPicker.js"></script>
@@ -885,19 +893,28 @@
         // UI HELPERS
         // -----------------------------------------------------------------
         function updateTargetUI(data) {
+            if (!data) return;
             const pfp = data.photoURL || 'https://via.placeholder.com/150';
-            const name = data.name.split(' ')[0].toUpperCase();
+            const name = (data.name || 'User').split(' ')[0].toUpperCase();
             const badge = data.verified ? `<span class="material-icons-round verified-badge" style="font-size:14px; color:var(--verified-color);">verified</span>` : '';
 
             const tImg = document.getElementById('target-avatar');
             if(tImg) { tImg.src = pfp; tImg.classList.add('loaded'); }
             
-            document.getElementById('status-text').innerText = `WAITING FOR ${name}`;
-            document.getElementById('target-name-display').innerHTML = `${name} ${badge}`;
+            const statusTxt = document.getElementById('status-text');
+            if(statusTxt) statusTxt.innerText = `WAITING FOR ${name}`;
+            
+            const nameDisp = document.getElementById('target-name-display');
+            if(nameDisp) nameDisp.innerHTML = `${name} ${badge}`;
 
-            document.getElementById('duo-them-img').src = pfp;
-            document.getElementById('duo-them-name').innerHTML = `${name}`;
-            document.getElementById('typing-pfp').src = pfp;
+            const duoThemImg = document.getElementById('duo-them-img');
+            if(duoThemImg) duoThemImg.src = pfp;
+            
+            const duoThemName = document.getElementById('duo-them-name');
+            if(duoThemName) duoThemName.innerHTML = `${name}`;
+            
+            const typingPfp = document.getElementById('typing-pfp');
+            if(typingPfp) typingPfp.src = pfp;
         }
 
         async function verifyMutuals(me, them) {
@@ -1826,4 +1843,10 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function showError(
+        function showError(msg) {
+            document.getElementById('error-msg').innerText = msg;
+            showScreen('screen-error');
+        }
+    </script>
+</body>
+</html>
