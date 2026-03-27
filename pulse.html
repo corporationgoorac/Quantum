@@ -1548,7 +1548,7 @@
         // ==========================================================================
         function initChatListener() {
             if (chatUnsub && roomId) pulseRdb.ref(`pulse_chat/${roomId}`).off('child_added', chatUnsub);
-            msgContainer.innerHTML = ''; 
+            if (msgContainer) msgContainer.innerHTML = ''; 
 
             if(!roomId) return;
 
@@ -1558,8 +1558,11 @@
             });
 
             pulseRdb.ref(`typing/pulse_${roomId}/${targetUid}`).on('value', snap => {
-                document.getElementById('typing-row').style.display = snap.val() ? 'flex' : 'none';
-                scrollToBottom();
+                const typingRow = document.getElementById('typing-row');
+                if (typingRow) {
+                    typingRow.style.display = snap.val() ? 'flex' : 'none';
+                    scrollToBottom();
+                }
             });
         }
 
@@ -1599,7 +1602,7 @@
         }
 
         function renderChatMessage(msg) {
-            if (!msg || typeof msg.text !== 'string') return; 
+            if (!msg || typeof msg.text !== 'string' || !msgContainer) return; 
             const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
             
             const d = new Date(msg.ts || Date.now());
@@ -1651,12 +1654,14 @@
 
             // NEW: Advanced Double-tap to heart feature on chat bubbles
             const bubbleEl = div.querySelector('.bubble');
-            bubbleEl.addEventListener('dblclick', (e) => {
-                e.preventDefault();
-                particleEngine.spawn('❤️');
-                if(navigator.vibrate) navigator.vibrate(50);
-                if (!isMine) sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} loved a message ❤️`);
-            });
+            if (bubbleEl) {
+                bubbleEl.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    particleEngine.spawn('❤️');
+                    if(navigator.vibrate) navigator.vibrate(50);
+                    if (!isMine) sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} loved a message ❤️`);
+                });
+            }
 
             msgContainer.appendChild(div);
             scrollToBottom();
@@ -1720,17 +1725,18 @@
         }
 
         // =================================================================
-        // CLEANUP & EXIT
+        // CLEANUP & EXIT (ENHANCED BULLETPROOF LOGIC)
         // =================================================================
         let isLeaving = false;
 
         function cleanupSessionData() {
             try {
-                // Instantly notify RTDB for fast remote disconnect
+                // 1. Instantly notify RTDB for fast remote disconnect
                 if(roomId && pulseRdb && myUid) {
                     pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set('offline');
                 }
                 
+                // 2. End the room in Firestore
                 if(roomRef) {
                     roomRef.update({ 
                         sessionStatus: 'ended',
@@ -1738,8 +1744,18 @@
                         [`userB`]: 'offline' 
                     }).catch(e => console.log("Offline update skipped"));
                 }
+
+                // 3. DELETE CHAT AND TYPING DATA FROM DATABASE
+                if (roomId && pulseRdb) {
+                    setTimeout(() => {
+                        pulseRdb.ref(`pulse_chat/${roomId}`).remove().catch(()=>{});
+                        pulseRdb.ref(`typing/pulse_${roomId}`).remove().catch(()=>{});
+                        sessionDb.collection('pulse_rooms').doc(roomId).delete().catch(()=>{}); 
+                    }, 2000); // 2 second delay to ensure the other user sees the "ended" status first
+                }
+
                 if(audio) audio.pause();
-                if(wakeLock) wakeLock.release();
+                if(wakeLock) wakeLock.release().catch(()=>{});
             } catch(e) { console.error("Cleanup error", e); }
         }
 
@@ -1748,12 +1764,14 @@
             isLeaving = true;
             cleanupSessionData();
 
-            if (mode === 'back') {
-                if (window.history.length > 1) window.history.back();
-                else window.location.replace("pulseLobby.html");
-            } else {
-                window.location.replace("pulseLobby.html");
-            }
+            setTimeout(() => {
+                if (mode === 'back') {
+                    if (window.history.length > 1) window.history.back();
+                    else window.location.replace("pulseLobby.html");
+                } else {
+                    window.location.replace("pulseLobby.html");
+                }
+            }, 300); // Slight delay ensures Firebase deletion commands fire before page unloads
         }
 
         function showScreen(id) {
