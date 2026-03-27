@@ -14,7 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script src="components/songPicker.js"></script>
-    <script src="components/fullSongPicker.js"></script> <script src="components/emojiPicker.js"></script>
+    <script src="components/fullSongPicker.js"></script> 
+    <script src="components/emojiPicker.js"></script>
     <script src="components/presence.js"></script>
     <script src="components/call-notifier.js"></script>
     <script src="components/chatLoader.js"></script>
@@ -334,16 +335,18 @@
         @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
 
         /* =========================================
-           MODE SWITCHING (FULL vs PREVIEW)
+           MODE SWITCHING (FULL vs PREVIEW) 
+           -- UPGRADED FOR ADVANCED CHAT DISPLAY --
            ========================================= */
-        /* In Full Mode, shrink album art and show chat */
-        .mode-full .player-main-area { max-height: 25vh; transform: scale(0.85); margin-top: 10vh; }
+        /* In Full Mode, shrink album art and allocate massive space for chat */
+        .mode-full .bottom-cluster { height: 65vh; justify-content: flex-start; padding-top: 20px; }
+        .mode-full .player-main-area { max-height: 25vh; transform: scale(0.80); margin-top: 5vh; flex-shrink: 0; }
         .mode-full .duo-header { display: none; }
         .mode-full .controls-area { display: none; }
-        .mode-full #chat-container { display: flex; }
+        .mode-full #chat-container { display: flex; flex: 1; min-height: 0; }
         
         #chat-container {
-            display: none; flex: 1; width: 100%; flex-direction: column; 
+            display: none; width: 100%; flex-direction: column; 
             background: transparent; overflow: hidden; position: relative; z-index: 30;
             animation: fadeIn 0.4s ease forwards;
         }
@@ -355,37 +358,41 @@
         }
         #chat-flow::-webkit-scrollbar { display: none; }
 
-        .msg-row { display: flex; width: 100%; margin-bottom: 8px; flex-direction: column; }
+        .msg-row { display: flex; width: 100%; margin-bottom: 12px; flex-direction: column; }
         .msg-row.sent { align-items: flex-end; }
         .msg-row.received { align-items: flex-start; }
         .received-inner-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
-        .msg-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-bottom: 2px; border: 1px solid rgba(255,255,255,0.1); }
-        .msg-bubble-box { max-width: 75vw; display: flex; flex-direction: column; }
+        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        .msg-bubble-box { max-width: 75vw; display: flex; flex-direction: column; position: relative; }
         .sent .msg-bubble-box { align-items: flex-end; }
         .received .msg-bubble-box { align-items: flex-start; }
 
-        .bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .bubble { padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.1s; cursor: pointer; user-select: none;}
+        .bubble:active { transform: scale(0.98); }
         .sent .bubble { background: var(--sent-bg); color: var(--sent-text); border-bottom-right-radius: 4px; }
         .received .bubble { background: var(--received-bg); color: var(--received-text); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* NEW: Chat Timestamps */
+        .msg-ts { font-size: 10px; color: #777; margin-top: 4px; padding: 0 4px; font-weight: 500; letter-spacing: 0.5px; }
 
         .system-msg {
             align-self: center; font-size: 11px; font-weight: 700; color: #666;
-            background: #111; padding: 4px 12px; border-radius: 12px; margin: 10px 0;
+            background: #111; padding: 6px 16px; border-radius: 12px; margin: 15px 0;
             border: 1px solid #222; text-transform: uppercase; letter-spacing: 1px; text-align: center;
         }
 
         .typing-row { display: none; align-items: flex-end; margin-bottom: 8px; gap: 8px; }
-        .typing-bubble { background: var(--received-bg); padding: 10px 14px; border-radius: 18px; border-bottom-left-radius: 4px; display: flex; gap: 4px; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .typing-bubble { background: var(--received-bg); padding: 12px 16px; border-radius: 20px; border-bottom-left-radius: 4px; display: flex; gap: 4px; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
         .typing-dot { width: 5px; height: 5px; background: #888; border-radius: 50%; animation: typingWave 1.4s ease-in-out infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-        .input-area-container { flex: 0 0 auto; padding: 5px 15px 5px; background: transparent; z-index: 50; width: 100%; }
-        .input-capsule { display: flex; align-items: flex-end; gap: 8px; background: rgba(20,20,20,0.8); backdrop-filter: blur(10px); border-radius: 24px; padding: 4px 6px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
-        .input-capsule:focus-within { border-color: var(--radio-color); background: rgba(30,30,30,0.9); }
-        .msg-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 8px; font-size: 15px; resize: none; max-height: 100px; font-family: inherit; line-height: 1.4; }
+        .input-area-container { flex: 0 0 auto; padding: 8px 15px calc(12px + var(--safe-bottom)); background: transparent; z-index: 50; width: 100%; }
+        .input-capsule { display: flex; align-items: flex-end; gap: 8px; background: rgba(20,20,20,0.85); backdrop-filter: blur(15px); border-radius: 24px; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
+        .input-capsule:focus-within { border-color: var(--radio-color); background: rgba(30,30,30,0.95); }
+        .msg-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 10px; font-size: 15px; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; }
         .msg-input::placeholder { color: #666; }
-        .send-btn { background: var(--radio-color); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer; flex-shrink: 0; align-self: flex-end; margin-bottom: 2px; transform: scale(0); opacity: 0; transition: 0.2s var(--ease-out-back); }
+        .send-btn { background: var(--radio-color); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer; flex-shrink: 0; align-self: flex-end; margin-bottom: 2px; transform: scale(0); opacity: 0; transition: 0.2s var(--ease-out-back); }
         .send-btn.show { transform: scale(1); opacity: 1; }
         .send-btn span { font-size: 18px; margin-left: 2px; }
 
@@ -614,7 +621,9 @@
     </div>
 
     <song-picker id="song-picker"></song-picker>
-    <full-song-picker id="full-song-picker"></full-song-picker> <div id="emoji-modal">
+    <full-song-picker id="full-song-picker"></full-song-picker> 
+    
+    <div id="emoji-modal">
         <div class="modal-handle"></div>
         <emoji-picker id="cycle-emoji-picker"></emoji-picker>
     </div>
@@ -842,7 +851,7 @@
         });
 
         // -----------------------------------------------------------------
-        // WAKE LOCK & BACKGROUND PRESENCE ENGINE (MODIFIED)
+        // WAKE LOCK, LIFECYCLE & DISCONNECT ENGINE
         // -----------------------------------------------------------------
         async function requestWakeLock() {
             if ('wakeLock' in navigator && document.visibilityState === 'visible') {
@@ -853,7 +862,6 @@
             }
         }
         
-        // MODIFIED: Do not kill room on background/minimize. Keep alive & sync screen state.
         document.addEventListener('visibilitychange', () => { 
             const state = document.hidden ? 'background' : 'active';
             if (roomRef) roomRef.update({ [`screen_${myUid}`]: state }).catch(()=>{});
@@ -866,8 +874,10 @@
             }
         });
 
+        // NEW: Strict app closing/crashing safety handlers
         window.addEventListener('beforeunload', cleanupSessionData); 
-        // Note: Removed 'pagehide' killing to allow backgrounding to continue without wiping the DB
+        window.addEventListener('pagehide', cleanupSessionData);
+        window.addEventListener('unload', cleanupSessionData);
 
         // -----------------------------------------------------------------
         // UI HELPERS
@@ -911,6 +921,24 @@
             const myField = (myUid < targetUid) ? 'userA' : 'userB';
             const otherField = (myUid < targetUid) ? 'userB' : 'userA';
             
+            // NEW: Set up RTDB onDisconnect to ensure safe crash exits
+            const myPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`);
+            pulseRdb.ref('.info/connected').on('value', snap => {
+                if (snap.val() === true) {
+                    myPresenceRef.onDisconnect().set('offline');
+                    myPresenceRef.set('online');
+                }
+            });
+
+            // NEW: Listen for remote user disconnects instantly
+            pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`).on('value', snap => {
+                if (snap.val() === 'offline') {
+                    deactivatePulse();
+                    showError("Partner disconnected.");
+                    setTimeout(() => handleExit('back'), 3000);
+                }
+            });
+
             roomRef.set({ 
                 [myField]: 'online',
                 [`screen_${myUid}`]: 'active',
@@ -1516,7 +1544,7 @@
         }
 
         // ==========================================================================
-        // CHAT ENGINE (Full Song Mode)
+        // CHAT ENGINE (Full Song Mode) - ADVANCED ENHANCEMENTS
         // ==========================================================================
         function initChatListener() {
             if (chatUnsub && roomId) pulseRdb.ref(`pulse_chat/${roomId}`).off('child_added', chatUnsub);
@@ -1553,6 +1581,8 @@
             if (!text) return;
             checkKeywords(text);
             popSound.play().catch(()=>{});
+            
+            if(navigator.vibrate) navigator.vibrate(10); // Haptic tick
 
             chatInput.value = ''; chatInput.style.height = 'auto';
             sendBtn.classList.remove('show');
@@ -1571,6 +1601,9 @@
         function renderChatMessage(msg) {
             if (!msg || typeof msg.text !== 'string') return; 
             const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            
+            const d = new Date(msg.ts || Date.now());
+            const timeString = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             if (msg.type === 'sys') {
                 const div = document.createElement('div');
@@ -1603,6 +1636,7 @@
                         <img src="${targetProfile ? targetProfile.photoURL : ''}" class="msg-avatar">
                         <div class="msg-bubble-box">
                             <div class="bubble" style="${bubbleStyle}">${safeText}</div>
+                            <div class="msg-ts">${timeString}</div>
                         </div>
                     </div>
                 `;
@@ -1610,9 +1644,19 @@
                 div.innerHTML = `
                     <div class="msg-bubble-box">
                         <div class="bubble" style="${bubbleStyle}">${safeText}</div>
+                        <div class="msg-ts">${timeString}</div>
                     </div>
                 `;
             }
+
+            // NEW: Advanced Double-tap to heart feature on chat bubbles
+            const bubbleEl = div.querySelector('.bubble');
+            bubbleEl.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                particleEngine.spawn('❤️');
+                if(navigator.vibrate) navigator.vibrate(50);
+                if (!isMine) sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} loved a message ❤️`);
+            });
 
             msgContainer.appendChild(div);
             scrollToBottom();
@@ -1682,6 +1726,11 @@
 
         function cleanupSessionData() {
             try {
+                // Instantly notify RTDB for fast remote disconnect
+                if(roomId && pulseRdb && myUid) {
+                    pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set('offline');
+                }
+                
                 if(roomRef) {
                     roomRef.update({ 
                         sessionStatus: 'ended',
