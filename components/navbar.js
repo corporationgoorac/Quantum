@@ -139,7 +139,7 @@ class MainNavbar extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: center;
+                justify-content: center; /* Flexbox natively centers the icon here now that text is hidden */
                 flex: 1;
                 height: 100%;
                 -webkit-tap-highlight-color: transparent; 
@@ -157,13 +157,9 @@ class MainNavbar extends HTMLElement {
                             font-variation-settings 0.3s ease;
             }
 
+            /* Hiding the text labels visually so we don't have to delete the lines of code */
             .nav-item span:not(.material-icons-round) {
-                font-size: 10px;
-                font-weight: 600;
-                margin-top: 4px;
-                opacity: 0;
-                transform: translateY(4px);
-                transition: all 0.3s ease;
+                display: none; 
             }
 
             /* ACTIVE STATE - Refined Scaling and Glow */
@@ -173,7 +169,7 @@ class MainNavbar extends HTMLElement {
 
             .nav-item.active .material-icons-round {
                 font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; /* Makes icon filled when active */
-                transform: translateY(-2px) scale(1.1); 
+                transform: scale(1.1); /* Removed translateY(-2px) to keep icon perfectly centered */
                 filter: drop-shadow(0px 2px 4px rgba(0,122,255,0.3)); 
             }
 
@@ -183,9 +179,9 @@ class MainNavbar extends HTMLElement {
                 opacity: 0.6;
             }
 
+            /* Ensuring text stays hidden on active state */
             .nav-item.active span:not(.material-icons-round) {
-                opacity: 1;
-                transform: translateY(0);
+                display: none; 
             }
 
             /* ==========================================================================
@@ -237,7 +233,7 @@ class MainNavbar extends HTMLElement {
             .nav-item.active::after {
                 opacity: 1;
                 transform: scale(1);
-                bottom: 6px;
+                bottom: 10px; /* Moved up slightly from 6px to frame the newly centered icon better */
             }
 
             /* ==========================================================================
