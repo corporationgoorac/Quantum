@@ -1035,7 +1035,10 @@
             // Apply Song Type Mode (Full vs Preview UI layout toggles)
             currentSongType = data.songType || 'preview';
             const screenEl = document.getElementById('screen-active');
-            if (currentSongType === 'full') {
+            
+            // BUG FIX: Only activate full chat mode if we are actively playing/buffering a full song!
+            // If status is 'picking', we remove mode-full so the DJ buttons appear.
+            if (currentSongType === 'full' && status !== 'picking') {
                 screenEl.classList.add('mode-full');
             } else {
                 screenEl.classList.remove('mode-full');
@@ -1227,7 +1230,8 @@
                 cycleStatus: 'picking',
                 currentSong: firebase.firestore.FieldValue.delete(), 
                 emojis: {},
-                ready: {}
+                ready: {},
+                songType: 'preview' // BUG FIX: Reset state to properly unhide buttons
             });
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} passed the turn.`);
         }
@@ -1237,7 +1241,8 @@
                 cycleStatus: 'picking',
                 currentSong: firebase.firestore.FieldValue.delete(), 
                 emojis: {},
-                ready: {}
+                ready: {},
+                songType: 'preview' // BUG FIX: Reset state to properly unhide buttons
             });
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} cleared the track.`);
         }
@@ -1367,7 +1372,7 @@
             let nextIndex = index;
             if (nextIndex >= queue.length) nextIndex = 0;
             const song = queue[nextIndex];
-            roomRef.update({ currentSong: song, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, emojis: {}, radioIndex: nextIndex + 1 });
+            roomRef.update({ currentSong: song, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, emojis: {}, radioIndex: nextIndex + 1, songType: 'preview' });
         }
 
         // AUTO ADVANCE
