@@ -321,7 +321,7 @@
 
     <div id="lobby-view">
         <div class="top-nav">
-            <div class="back-btn" onclick="window.location.href='home.html'">
+            <div class="back-btn" onclick="cleanupLobbyAndExit()">
                 <span class="material-icons-round">west</span>
             </div>
             <div style="font-weight:800; font-size:12px; letter-spacing:1px; color:var(--text-dim);">PULSE NETWORK</div>
@@ -438,6 +438,12 @@
                 // 2. SET MY PRESENCE (I am waiting for pulse)
                 setMyPresence(true);
                 window.addEventListener('beforeunload', () => setMyPresence(false));
+
+                // --- NEW: Bulletproof lifecycles and Ghost Room Cleanup ---
+                window.addEventListener('pagehide', () => setMyPresence(false));
+                window.addEventListener('unload', () => setMyPresence(false));
+                cleanupGhostRooms(user.uid);
+
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) setMyPresence(false);
                     else setMyPresence(true);
@@ -625,6 +631,16 @@
                 badgeEl.style.display = 'none';
             }
             
+            // --- NEW: Remove Logic to kill pending room if declined ---
+            const declineBtn = document.querySelector('.btn-decline');
+            declineBtn.onclick = () => {
+                closeInviteModalWithBack();
+                const r1 = `${myUid}_${user.uid}`;
+                const r2 = `${user.uid}_${myUid}`;
+                lobbyDb.collection('pulse_rooms').doc(r1).delete().catch(()=>{});
+                lobbyDb.collection('pulse_rooms').doc(r2).delete().catch(()=>{});
+            };
+
             const btn = document.getElementById('btn-accept-pulse');
             btn.onclick = () => {
                 window.location.assign(`pulse.html?user=${user.username}`);
@@ -761,6 +777,22 @@
                 window.location.assign(`pulse.html?user=${uData.username}`); 
             };
             return div;
+        }
+
+        // --- NEW: Bulletproof Ghost Room Cleanup ---
+        function cleanupGhostRooms(uid) {
+            try {
+                lobbyDb.collection('pulse_rooms').where('userA', '==', uid).get().then(snap => snap.forEach(doc => doc.ref.update({userA: 'offline'})));
+                lobbyDb.collection('pulse_rooms').where('userB', '==', uid).get().then(snap => snap.forEach(doc => doc.ref.update({userB: 'offline'})));
+            } catch(e) {}
+        }
+
+        // --- NEW: Exit Cleanup to prevent memory leaks and unbind listeners ---
+        function cleanupLobbyAndExit() {
+            setMyPresence(false);
+            if (activePresenceListener) activePresenceListener();
+            if (inviteListener) inviteListener();
+            window.location.href = 'home.html';
         }
     </script>
 </body>
