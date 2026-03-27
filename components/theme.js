@@ -223,8 +223,8 @@ const injectStyles = () => {
     .search-container input:focus,
     input:focus,
     textarea:focus {
-      border: 1px solid var(--accent) !important; /* Keep focus border so it's visible when typing */
-      box-shadow: 0 0 10px rgba(0, 149, 246, 0.2) !important;
+      border: none !important; /* Removed focus border as requested */
+      box-shadow: none !important; /* Removed focus shadow to ensure no border glow */
       outline: none !important;
     }
 
