@@ -392,6 +392,7 @@
         .input-capsule:focus-within { border-color: var(--radio-color); background: rgba(30,30,30,0.95); }
         .msg-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 10px; font-size: 15px; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; }
         .msg-input::placeholder { color: #666; }
+        /* --- NEW CHAT JUMP FIX: ADDED TOUCH/MOUSE HANDLERS DIRECTLY TO BUTTON --- */
         .send-btn { background: var(--radio-color); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer; flex-shrink: 0; align-self: flex-end; margin-bottom: 2px; transform: scale(0); opacity: 0; transition: 0.2s var(--ease-out-back); }
         .send-btn.show { transform: scale(1); opacity: 1; }
         .send-btn span { font-size: 18px; margin-left: 2px; }
@@ -602,7 +603,7 @@
                     <div class="input-area-container">
                         <div class="input-capsule">
                             <textarea id="chat-input" class="msg-input" placeholder="Type to chat..." rows="1"></textarea>
-                            <button class="send-btn" id="send-btn" onclick="sendChat()">
+                            <button class="send-btn" id="send-btn" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault(); this.click();" onclick="sendChat()">
                                 <span class="material-icons-round">send</span>
                             </button>
                         </div>
@@ -787,6 +788,7 @@
         // Chat Logic
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
+        
         const chatFlow = document.getElementById('chat-flow');
         const msgContainer = document.getElementById('messages-container');
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
@@ -930,24 +932,31 @@
                 }
             });
 
-            // NEW: Listen for remote user disconnects instantly
+            // --- NEW KICKOUT FIX: Check if they were actually online this session before kicking ---
+            let hasConnectedOnce = false;
             pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`).on('value', snap => {
-                if (snap.val() === 'offline') {
+                if (snap.val() === 'online') {
+                    hasConnectedOnce = true;
+                }
+                if (snap.val() === 'offline' && hasConnectedOnce) {
                     deactivatePulse();
                     showError("Partner disconnected.");
                     setTimeout(() => handleExit('back'), 3000);
                 }
             });
 
+            // --- NEW STALE ROOM FIX: Recreate cleanly if it was dead or partner missing ---
+            let sessionInitialized = false;
             roomRef.set({ 
                 [myField]: 'online',
                 [`screen_${myUid}`]: 'active',
                 sessionStatus: 'active', 
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).then(() => {
+                sessionInitialized = true;
                 roomRef.get().then(doc => {
-                    const data = doc.data();
-                    if (!doc.exists || !data.cycleStatus) {
+                    const data = doc.data() || {};
+                    if (!doc.exists || !data.cycleStatus || data[otherField] !== 'online') {
                         cleanSessionStart();
                     }
                 });
@@ -975,7 +984,8 @@
                 if (!snapshot.exists) return;
                 const data = snapshot.data();
                 
-                if (data.sessionStatus === 'ended') {
+                // --- NEW FIX: Don't kick if the cache sent 'ended' before our .set() finished! ---
+                if (data.sessionStatus === 'ended' && sessionInitialized) {
                     audio.pause();
                     window.location.replace("pulseLobby.html");
                     return;
@@ -1127,9 +1137,24 @@
                         if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
                     };
                     
+                    // --- NEW FIX: AVOID DELAY ON FULL LONG SONGS ---
+                    audio.oncanplay = () => { 
+                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
+                    };
+                    audio.onloadeddata = () => { 
+                        if(currentSongType === 'full' && !readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
+                    };
+                    // -----------------------------------------------
+                    
                     if(audio.readyState >= 3 && !readyMap[myUid]) { 
                         roomRef.update({ [`ready.${myUid}`]: true }); 
                     }
+                    
+                    // --- NEW FIX: BYPASS STRICT READY STATE FOR FULL SONGS ---
+                    if(currentSongType === 'full' && audio.readyState >= 2 && !readyMap[myUid]) {
+                        roomRef.update({ [`ready.${myUid}`]: true }); 
+                    }
+                    // ---------------------------------------------------------
                 }
 
                 if (isMyTurn || isRadioHost) {
@@ -1584,15 +1609,28 @@
             }
         });
 
+        // --- NEW FIX: THROTTLE TO PREVENT DOUBLE FIRING ---
+        let isSendingChat = false;
         function sendChat() {
+            if (isSendingChat) return;
+            isSendingChat = true;
+            setTimeout(() => isSendingChat = false, 300);
+
             const text = chatInput.value.trim();
-            if (!text) return;
+            if (!text) {
+                isSendingChat = false;
+                return;
+            }
+            
             checkKeywords(text);
             popSound.play().catch(()=>{});
             
             if(navigator.vibrate) navigator.vibrate(10); // Haptic tick
 
-            chatInput.value = ''; chatInput.style.height = 'auto';
+            chatInput.value = ''; 
+            // --- NEW FIX: LOCK HEIGHT TO PREVENT JUMPING ---
+            chatInput.style.height = '41px';
+            // -----------------------------------------------
             sendBtn.classList.remove('show');
             pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
 
@@ -1600,6 +1638,10 @@
                 text: text, sender: myUid, ts: firebase.database.ServerValue.TIMESTAMP, type: 'msg'
             });
             chatInput.focus();
+            
+            // --- NEW FIX: FORCE SCROLL AFTER UI UPDATE ---
+            setTimeout(scrollToBottom, 50);
+            // ---------------------------------------------
         }
 
         function sendSystemMessage(text) {
@@ -1756,7 +1798,7 @@
                         pulseRdb.ref(`pulse_chat/${roomId}`).remove().catch(()=>{});
                         pulseRdb.ref(`typing/pulse_${roomId}`).remove().catch(()=>{});
                         sessionDb.collection('pulse_rooms').doc(roomId).delete().catch(()=>{}); 
-                    }, 2000); // 2 second delay to ensure the other user sees the "ended" status first
+                    }, 200); // --- NEW FIX: REDUCED TIMEOUT SO IT FIRES BEFORE REDIRECT ---
                 }
 
                 if(audio) audio.pause();
@@ -1784,10 +1826,4 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function showError(msg) {
-            document.getElementById('error-msg').innerText = msg;
-            showScreen('screen-error');
-        }
-    </script>
-</body>
-</html>
+        function showError(
