@@ -6,7 +6,7 @@
         bgGradient: "radial-gradient(circle at 50% 30%, #150A07 0%, #0A0504 70%)", // The immersive gradient overlay for depth.
         
         // Header
-        headerBg: "#0F0705", // Background color of the top sticky navigation bar.
+        headerBg: "#0A0504", // Background color of the top sticky navigation bar (matched to bg for a seamless full-screen feel).
         headerBlur: "blur(25px)", // The intensity of the glassmorphism blur effect on the header.
         
         // Primary Brand Colors (Buttons, Highlights, Icons)
@@ -15,9 +15,9 @@
         accentDim: "rgba(122, 62, 49, 0.2)", // Transparent variant of the accent color. Used for glows, reply previews, and soft backgrounds.
         
         // Borders and Dividers
-        glassBorder: "rgba(255, 240, 235, 0.05)", // Extremely subtle transparent white. Used for the edges of the input capsule, popups, and bubbles to give a glass look.
-        border: "#21120D", // Solid border color used for distinct separation lines (like in menus or dividers).
-        borderLight: "rgba(255, 240, 235, 0.06)", // Slightly brighter solid border for inner elements.
+        glassBorder: "transparent", // Set to transparent to remove the harsh line and create a full-screen vibe.
+        border: "transparent", // Set to transparent to remove all separation lines between toolbars and headers.
+        borderLight: "transparent", // Set to transparent.
         
         // Outgoing (Sent) Message Bubbles
         sentBg: "linear-gradient(135deg, #4A221A 0%, #7A3E31 100%)", // The background gradient of the messages you send.
@@ -35,15 +35,15 @@
         textMuted: "#6B5953", // Highly muted text color used for placeholders (e.g., "Message...").
         
         // Modals & Bottom Areas
-        mobileToolbarBg: "#0F0705", // The background color of the input text capsule, the attachment menu, emoji tray, and long-press popups.
+        mobileToolbarBg: "#0A0504", // Matched to bg to completely hide the line above the input area.
         
         // Text Capsule Aura Glow (Dynamically linked to your accent color)
-        capsuleGlowUnfocused: "0 -2px 18px color-mix(in srgb, var(--accent) 25%, transparent), 0 8px 25px rgba(0,0,0,0.4)", // Brightened from 15% to 25%
-        capsuleGlowFocused: "0 -4px 30px color-mix(in srgb, var(--accent) 55%, transparent), 0 8px 25px color-mix(in srgb, var(--accent) 30%, transparent)", // Brightened from 35% to 55%
+        capsuleGlowUnfocused: "0 -2px 18px color-mix(in srgb, var(--accent) 15%, transparent), 0 8px 25px rgba(0,0,0,0.4)", // Softened slightly for a cleaner professional look
+        capsuleGlowFocused: "0 -4px 30px color-mix(in srgb, var(--accent) 40%, transparent), 0 8px 25px color-mix(in srgb, var(--accent) 20%, transparent)", // Softened slightly
         
         // System UI
         // SOLID HEX for Android Status Bar to remove the top border line
-        statusBarColor: "#0F0705" // Changes the color of the physical phone's top notification bar (battery, wifi, time).
+        statusBarColor: "#0A0504" // Changes the color of the physical phone's top notification bar to match perfectly.
     };
 
     // Apply the theme directly to the root CSS variables
