@@ -63,8 +63,8 @@ class MainNavbar extends HTMLElement {
                 --nav-height: 68px;
                 --safe-area-bottom: env(safe-area-inset-bottom, 0px);
                 
-                transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                            transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                            transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
             /* Dark Mode Variables */
@@ -78,11 +78,11 @@ class MainNavbar extends HTMLElement {
                 }
             }
 
-            /* Visibility Logic */
+            /* Visibility Logic (Premium Exit) */
             .nav-hidden {
                 opacity: 0 !important;
                 pointer-events: none !important;
-                transform: translate(-50%, 40px) scale(0.95) !important; 
+                transform: translate(-50%, 40px) scale(0.96) !important; 
             }
 
             /* ==========================================================================
@@ -103,16 +103,16 @@ class MainNavbar extends HTMLElement {
                 padding-bottom: var(--safe-area-bottom); 
                 
                 background: var(--nav-bg);
-                backdrop-filter: blur(24px) saturate(200%);
-                -webkit-backdrop-filter: blur(24px) saturate(200%);
+                backdrop-filter: blur(24px) saturate(210%);
+                -webkit-backdrop-filter: blur(24px) saturate(210%);
                 
                 border-top: 0.5px solid var(--nav-border);
-                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.04);
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.03);
                 
-                z-index: 9999; /* Ensure priority */
+                z-index: 9999; 
                 
-                transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-                            opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                            opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
                             background-color 0.4s ease;
             }
 
@@ -124,7 +124,7 @@ class MainNavbar extends HTMLElement {
                     border: 1px solid var(--nav-border);
                     height: 72px;
                     padding-bottom: 0;
-                    width: 90%;
+                    width: 92%;
                     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16);
                 }
             }
@@ -144,13 +144,13 @@ class MainNavbar extends HTMLElement {
                 height: 100%;
                 -webkit-tap-highlight-color: transparent; 
                 cursor: pointer;
-                transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: color 0.3s ease;
                 gap: 2px;
             }
 
             .nav-item .material-icons-round {
                 font-family: 'Material Symbols Rounded', sans-serif;
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; /* Makes all icons outlined by default */
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; 
                 font-size: 26px; 
                 transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
                             color 0.3s ease,
@@ -161,11 +161,11 @@ class MainNavbar extends HTMLElement {
             .nav-item span:not(.material-icons-round) {
                 font-size: 11px;
                 font-weight: 500;
-                letter-spacing: -0.2px;
+                letter-spacing: -0.1px;
                 margin-top: 2px;
-                opacity: 0.8;
+                opacity: 0.7;
                 transform: translateY(0);
-                transition: all 0.3s ease;
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
             /* ACTIVE STATE - Refined Scaling and Glow */
@@ -174,7 +174,7 @@ class MainNavbar extends HTMLElement {
             }
 
             .nav-item.active .material-icons-round {
-                font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 24; /* Makes icon filled when active */
+                font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 24; 
                 transform: translateY(-4px) scale(1.1); 
                 filter: drop-shadow(0px 4px 8px rgba(0,122,255,0.25)); 
             }
@@ -182,7 +182,7 @@ class MainNavbar extends HTMLElement {
             /* Micro-Interaction on Tap */
             .nav-item:active .material-icons-round {
                 transform: scale(0.9) translateY(0);
-                opacity: 0.8;
+                opacity: 0.7;
             }
 
             .nav-item.active span:not(.material-icons-round) {
@@ -229,7 +229,7 @@ class MainNavbar extends HTMLElement {
                 content: '';
                 position: absolute;
                 bottom: 10px;
-                width: 12px;
+                width: 14px;
                 height: 3px;
                 background: var(--icon-active);
                 border-radius: 10px;
@@ -244,7 +244,7 @@ class MainNavbar extends HTMLElement {
             }
 
             /* ==========================================================================
-               NEW INLINE SVG ICON STYLES
+               INLINE SVG ICON STYLES (Person Search Support)
                ========================================================================== */
             svg.material-icons-round {
                 width: 26px;
@@ -275,8 +275,15 @@ class MainNavbar extends HTMLElement {
                 <span>Chats</span>
             </a>
             <a href="explore.html" class="nav-item" aria-label="Explore">
-                <span class="material-icons-round" style="display:none;">explore</span>
-                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24"><g class="icon-outline"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></g><g class="icon-filled"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2 14.19L6 18l3.81-8.19L18 6l-3.81 8.19zM12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1z"/></g></svg>
+                <span class="material-icons-round" style="display:none;">person_search</span>
+                <svg class="material-icons-round svg-icon" viewBox="0 0 24 24">
+                    <g class="icon-outline">
+                        <path d="M10,12c2.21,0,4-1.79,4-4s-1.79-4-4-4S6,5.79,6,8S7.79,12,10,12z M10,6c1.1,0,2,0.9,2,2s-0.9,2-2,2S8,9.1,8,8S8.9,6,10,6z M10,14c-2.67,0-8,1.34-8,4v2h8.52c-0.33-0.62-0.52-1.32-0.52-2.06c0-0.67,0.15-1.31,0.42-1.88C10.15,14.7,7.84,14,10,14z M20.71,19.29l-1.42-1.42c0.45-0.54,0.71-1.23,0.71-1.99c0-1.72-1.4-3.12-3.12-3.12s-3.12,1.4-3.12,3.12s1.4,3.12,3.12,3.12c0.75,0,1.44-0.27,1.99-0.71l1.42,1.42L20.71,19.29z M16.88,17.25c-0.76,0-1.38-0.62-1.38-1.38s0.62-1.38,1.38-1.38s1.38,0.62,1.38,1.38S17.63,17.25,16.88,17.25z"/>
+                    </g>
+                    <g class="icon-filled">
+                        <path d="M10,12c2.21,0,4-1.79,4-4s-1.79-4-4-4S6,5.79,6,8S7.79,12,10,12z M10,14c-2.67,0-8,1.34-8,4v2h8.52c-0.33-0.62-0.52-1.32-0.52-2.06c0-0.67,0.15-1.31,0.42-1.88C10.15,14.7,7.84,14,10,14z M20.71,19.29l-1.42-1.42c0.45-0.54,0.71-1.23,0.71-1.99c0-1.72-1.4-3.12-3.12-3.12s-3.12,1.4-3.12,3.12s1.4,3.12,3.12,3.12c0.75,0,1.44-0.27,1.99-0.71l1.42,1.42L20.71,19.29z M16.88,17.25c-0.76,0-1.38-0.62-1.38-1.38s0.62-1.38,1.38-1.38s1.38,0.62,1.38,1.38S17.63,17.25,16.88,17.25z"/>
+                    </g>
+                </svg>
                 <span>Explore</span>
             </a>
             <a href="visionLobby.html" class="nav-item" aria-label="Vision">
