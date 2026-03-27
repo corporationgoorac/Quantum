@@ -55,12 +55,12 @@ class MainNavbar extends HTMLElement {
             :host {
                 display: block;
                 /* Light Mode (Refined) */
-                --nav-bg: rgba(255, 255, 255, 0.75);
-                --nav-border: rgba(0, 0, 0, 0.08);
+                --nav-bg: rgba(255, 255, 255, 0.72);
+                --nav-border: rgba(0, 0, 0, 0.05);
                 --icon-inactive: #8e8e93; 
                 --icon-active: #007aff;   
                 --vision-color: #00d2ff;   
-                --nav-height: 64px;
+                --nav-height: 68px;
                 --safe-area-bottom: env(safe-area-inset-bottom, 0px);
                 
                 transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
@@ -70,8 +70,8 @@ class MainNavbar extends HTMLElement {
             /* Dark Mode Variables */
             @media (prefers-color-scheme: dark) {
                 :host {
-                    --nav-bg: rgba(20, 20, 20, 0.80);
-                    --nav-border: rgba(255, 255, 255, 0.12);
+                    --nav-bg: rgba(28, 28, 30, 0.75);
+                    --nav-border: rgba(255, 255, 255, 0.08);
                     --icon-inactive: #98989d; 
                     --icon-active: #0a84ff;   
                     --vision-color: #00d2ff;
@@ -82,7 +82,7 @@ class MainNavbar extends HTMLElement {
             .nav-hidden {
                 opacity: 0 !important;
                 pointer-events: none !important;
-                transform: translate(-50%, 100px) !important; 
+                transform: translate(-50%, 40px) scale(0.95) !important; 
             }
 
             /* ==========================================================================
@@ -103,11 +103,11 @@ class MainNavbar extends HTMLElement {
                 padding-bottom: var(--safe-area-bottom); 
                 
                 background: var(--nav-bg);
-                backdrop-filter: blur(28px) saturate(180%) contrast(100%);
-                -webkit-backdrop-filter: blur(28px) saturate(180%) contrast(100%);
+                backdrop-filter: blur(24px) saturate(200%);
+                -webkit-backdrop-filter: blur(24px) saturate(200%);
                 
                 border-top: 0.5px solid var(--nav-border);
-                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.04);
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.04);
                 
                 z-index: 9999; /* Ensure priority */
                 
@@ -120,12 +120,12 @@ class MainNavbar extends HTMLElement {
             @media (min-width: 601px) {
                 .bottom-nav {
                     bottom: 24px;
-                    border-radius: 40px;
+                    border-radius: 32px;
                     border: 1px solid var(--nav-border);
-                    height: var(--nav-height);
+                    height: 72px;
                     padding-bottom: 0;
                     width: 90%;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+                    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16);
                 }
             }
 
@@ -139,27 +139,33 @@ class MainNavbar extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: center; /* Flexbox natively centers the icon here now that text is hidden */
+                justify-content: center;
                 flex: 1;
                 height: 100%;
                 -webkit-tap-highlight-color: transparent; 
                 cursor: pointer;
-                transition: color 0.3s ease;
+                transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                gap: 2px;
             }
 
             .nav-item .material-icons-round {
                 font-family: 'Material Symbols Rounded', sans-serif;
                 font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; /* Makes all icons outlined by default */
-                font-size: 28px; 
-                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                font-size: 26px; 
+                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
                             color 0.3s ease,
                             filter 0.3s ease,
-                            font-variation-settings 0.3s ease;
+                            font-variation-settings 0.4s ease;
             }
 
-            /* Hiding the text labels visually so we don't have to delete the lines of code */
             .nav-item span:not(.material-icons-round) {
-                display: none; 
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: -0.2px;
+                margin-top: 2px;
+                opacity: 0.8;
+                transform: translateY(0);
+                transition: all 0.3s ease;
             }
 
             /* ACTIVE STATE - Refined Scaling and Glow */
@@ -168,20 +174,21 @@ class MainNavbar extends HTMLElement {
             }
 
             .nav-item.active .material-icons-round {
-                font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; /* Makes icon filled when active */
-                transform: scale(1.1); /* Removed translateY(-2px) to keep icon perfectly centered */
-                filter: drop-shadow(0px 2px 4px rgba(0,122,255,0.3)); 
+                font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 24; /* Makes icon filled when active */
+                transform: translateY(-4px) scale(1.1); 
+                filter: drop-shadow(0px 4px 8px rgba(0,122,255,0.25)); 
             }
 
             /* Micro-Interaction on Tap */
             .nav-item:active .material-icons-round {
-                transform: scale(0.85);
-                opacity: 0.6;
+                transform: scale(0.9) translateY(0);
+                opacity: 0.8;
             }
 
-            /* Ensuring text stays hidden on active state */
             .nav-item.active span:not(.material-icons-round) {
-                display: none; 
+                opacity: 1;
+                font-weight: 700;
+                transform: translateY(-2px);
             }
 
             /* ==========================================================================
@@ -198,50 +205,50 @@ class MainNavbar extends HTMLElement {
 
             .nav-item .vision-graphic {
                 color: var(--vision-color);
-                animation: vision-skel 2.5s infinite ease-in-out;
+                animation: vision-skel 3s infinite ease-in-out;
             }
 
             .nav-item.active .vision-graphic {
-                filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
-                animation: vision-skel-active 1.5s infinite ease-in-out;
+                filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.6));
+                animation: vision-skel-active 2s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
             }
 
             @keyframes vision-skel {
-                0%, 100% { opacity: 0.5; transform: scale(1); }
-                50% { opacity: 0.9; transform: scale(1.05); }
+                0%, 100% { opacity: 0.6; transform: scale(1); }
+                50% { opacity: 0.8; transform: scale(1.03); }
             }
 
             @keyframes vision-skel-active {
-                0% { transform: scale(1.1); filter: brightness(1); }
-                50% { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 15px rgba(0, 210, 255, 0.8)); }
-                100% { transform: scale(1.1); filter: brightness(1); }
+                0% { transform: scale(1.1); filter: brightness(1) drop-shadow(0 0 5px rgba(0, 210, 255, 0.4)); }
+                50% { transform: scale(1.25); filter: brightness(1.2) drop-shadow(0 0 18px rgba(0, 210, 255, 0.9)); }
+                100% { transform: scale(1.1); filter: brightness(1) drop-shadow(0 0 5px rgba(0, 210, 255, 0.4)); }
             }
 
-            /* Subtle Active Indicator Dot */
+            /* Subtle Active Indicator Dot (Floating Pill Style) */
             .nav-item::after {
                 content: '';
                 position: absolute;
-                bottom: 8px;
-                width: 4px;
-                height: 4px;
+                bottom: 10px;
+                width: 12px;
+                height: 3px;
                 background: var(--icon-active);
-                border-radius: 50%;
+                border-radius: 10px;
                 opacity: 0;
-                transform: scale(0);
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transform: scaleX(0);
+                transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             }
             .nav-item.active::after {
                 opacity: 1;
-                transform: scale(1);
-                bottom: 10px; /* Moved up slightly from 6px to frame the newly centered icon better */
+                transform: scaleX(1);
+                bottom: 4px;
             }
 
             /* ==========================================================================
                NEW INLINE SVG ICON STYLES
                ========================================================================== */
             svg.material-icons-round {
-                width: 28px;
-                height: 28px;
+                width: 26px;
+                height: 26px;
                 fill: currentColor;
             }
             .icon-filled { display: none; }
