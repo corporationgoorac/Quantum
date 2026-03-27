@@ -6,9 +6,7 @@
     // =========================================================================
     "status": {
       "$userId": {
-        // Anyone logged in can see if another user is online
         ".read": "auth != null",
-        // A user can ONLY update their own status
         ".write": "auth != null && auth.uid === $userId"
       }
     },
@@ -18,10 +16,12 @@
     // =========================================================================
     "typing": {
       "$chatId": {
+        ".read": "auth != null",
+        // NEW FIX: Allow users to delete the whole typing node for Pulse/Vision rooms 
+        // to prevent Permission Denied errors during cleanup
+        ".write": "auth != null && (newData.val() == null && $chatId.contains(auth.uid))",
+        
         "$userId": {
-          // Anyone logged in can read typing statuses
-          ".read": "auth != null",
-          // You can only set the typing indicator for your own UID
           ".write": "auth != null && auth.uid === $userId"
         }
       }
@@ -32,9 +32,7 @@
     // =========================================================================
     "calls_status": {
       "$userId": {
-        // Users need to read their own incoming calls, and callers need to read the answer/decline status
         ".read": "auth != null",
-        // Anyone logged in can write here to "ring" another user or respond to a call
         ".write": "auth != null"
       }
     },
@@ -44,7 +42,6 @@
     // =========================================================================
     "vision_chat": {
       "$roomId": {
-        // Only the two users whose UIDs make up the Room ID can read/write the live chat
         ".read": "auth != null && $roomId.contains(auth.uid)",
         ".write": "auth != null && $roomId.contains(auth.uid)"
       }
@@ -55,7 +52,6 @@
     // =========================================================================
     "pulse_chat": {
       "$roomId": {
-        // Only the two users whose UIDs make up the Room ID can read/write the live chat
         ".read": "auth != null && $roomId.contains(auth.uid)",
         ".write": "auth != null && $roomId.contains(auth.uid)"
       }
