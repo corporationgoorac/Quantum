@@ -1014,31 +1014,45 @@
                     // Text query: Search against both 'username' and 'name'
                     const userRef = db.collection('users');
                     
-                    // The '\uf8ff' character trick acts as a "startsWith" query in Firestore
-                    const userSnap = await userRef
-                        .where('username', '>=', query)
-                        .where('username', '<=', query + '\uf8ff')
-                        .limit(currentLimit)
-                        .get();
-                    
-                    const nameSnap = await userRef
-                        .where('name', '>=', query)
-                        .where('name', '<=', query + '\uf8ff')
-                        .limit(currentLimit)
-                        .get();
+                    // Handle Case Sensitivity in Firestore by checking common casing (Lowercase, Title Case, Upper Case)
+                    const queryLower = query.toLowerCase();
+                    const queryTitle = query.charAt(0).toUpperCase() + query.slice(1).toLowerCase();
+                    const queryUpper = query.toUpperCase();
 
-                    // Apply filters to both sets of results
-                    userSnap.forEach(doc => filterAndAddUser(doc, resultsMap, false));
-                    nameSnap.forEach(doc => filterAndAddUser(doc, resultsMap, false));
+                    // The '\uf8ff' character trick acts as a "startsWith" query in Firestore
+                    // We run multiple queries concurrently to catch variations like "al", "Al", "AL"
+                    const snapshots = await Promise.all([
+                        userRef.where('username', '>=', queryLower).where('username', '<=', queryLower + '\uf8ff').limit(currentLimit).get(),
+                        userRef.where('username', '>=', queryTitle).where('username', '<=', queryTitle + '\uf8ff').limit(currentLimit).get(),
+                        userRef.where('username', '>=', queryUpper).where('username', '<=', queryUpper + '\uf8ff').limit(currentLimit).get(),
+                        userRef.where('name', '>=', queryLower).where('name', '<=', queryLower + '\uf8ff').limit(currentLimit).get(),
+                        userRef.where('name', '>=', queryTitle).where('name', '<=', queryTitle + '\uf8ff').limit(currentLimit).get(),
+                        userRef.where('name', '>=', queryUpper).where('name', '<=', queryUpper + '\uf8ff').limit(currentLimit).get()
+                    ]);
+
+                    // Apply filters to all sets of results and mix them together
+                    // resultsMap automatically deduplicates by doc.id
+                    snapshots.forEach(snap => {
+                        snap.forEach(doc => filterAndAddUser(doc, resultsMap, false));
+                    });
                 }
 
                 // Convert deduplicated Map back to a standard Array for sorting
                 let finalResults = Array.from(resultsMap.values());
 
                 // Machine Learning / Priority Sorting Simulation:
-                // 1. Verified users take priority
-                // 2. Tie-breakers are settled by follower count
+                // 1. Exact match to the search query takes top priority
+                // 2. Verified users take secondary priority
+                // 3. Tie-breakers are settled by follower count
                 finalResults.sort((a, b) => {
+                    // Exact match prioritization (case-insensitive)
+                    const aExact = (a.username && a.username.toLowerCase() === query.toLowerCase()) || (a.name && a.name.toLowerCase() === query.toLowerCase()) ? 1 : 0;
+                    const bExact = (b.username && b.username.toLowerCase() === query.toLowerCase()) || (b.name && b.name.toLowerCase() === query.toLowerCase()) ? 1 : 0;
+                    
+                    if (aExact !== bExact) {
+                        return bExact - aExact; // exact match gets sorted higher
+                    }
+
                     const aVerified = a.verified ? 1 : 0;
                     const bVerified = b.verified ? 1 : 0;
                     
