@@ -31,7 +31,9 @@ module.exports = function(app) {
         try {
             const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(serviceAccount),
+                // 👇 THIS IS THE ONLY LINE ADDED TO FIX THE DATABASE CRASH 👇
+                databaseURL: "https://goorac-quantum-default-rtdb.asia-southeast1.firebasedatabase.app"
             });
             console.log("✅ Firebase Admin initialized successfully");
         } catch (error) {
@@ -60,8 +62,18 @@ module.exports = function(app) {
     // ============================================================================
     function startMessageListener() {
         console.log("🎧 Listening for Chat Messages, Group Chats & Reactions...");
+        
+        // 🚀 THE PERFECT COLD START FIX: Ignore the initial historical data payload
+        let isFirstRun = true; 
 
         db.collectionGroup('messages').onSnapshot((snapshot) => {
+            
+            // Mathematically guarantees zero spam on reboot
+            if (isFirstRun) {
+                isFirstRun = false;
+                return;
+            }
+
             snapshot.docChanges().forEach(async (change) => {
                 
                 // STRICT FIX: Ignore all historical snapshot data during the first 2 seconds
@@ -144,9 +156,10 @@ module.exports = function(app) {
                             else if (messageData.fileMeta?.type?.includes('audio')) bodyText = "🎵 Sent a voice message";
                             else if (messageData.fileUrl) bodyText = "📎 Sent an attachment";
 
+                            // 🛡️ URI FIX: Safely encode parameters to prevent Pusher 422 Crashes
                             const deepLink = isGroup 
-                                ? `https://www.goorac.biz/groupChat.html?id=${chatDocId}` 
-                                : `https://www.goorac.biz/chat.html?user=${senderUsername}`;
+                                ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
+                                : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(senderUsername)}`;
 
                             // SPEED OPTIMIZATION: Fire all target push notifications in parallel
                             await Promise.all(targetUids.map(targetUid => 
@@ -218,9 +231,10 @@ module.exports = function(app) {
                                 const title = isGroup ? reactorName : `New Reaction`;
                                 const body = `${isGroup ? reactorName.split(' ')[0] : reactorName} reacted ${reactionData.emoji} to your message.`;
 
+                                // 🛡️ URI FIX: Safely encode parameters to prevent Pusher 422 Crashes
                                 const deepLink = isGroup 
-                                    ? `https://www.goorac.biz/groupChat.html?id=${chatDocId}` 
-                                    : `https://www.goorac.biz/chat.html?user=${reactorUsername}`;
+                                    ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
+                                    : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(reactorUsername)}`;
 
                                 await beamsClient.publishToInterests([messageOwner], {
                                     web: { notification: { title: title, body: body, icon: reactorPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true }, time_to_live: 3600 },
@@ -240,8 +254,17 @@ module.exports = function(app) {
     // ============================================================================
     function startNotificationListener() {
         console.log("🎧 Listening for ALL Database Notifications (Drops, Notes, Moments, Likes)...");
+        
+        // 🚀 THE PERFECT COLD START FIX
+        let isFirstRun = true; 
 
         db.collection('notifications').onSnapshot((snapshot) => {
+            
+            if (isFirstRun) {
+                isFirstRun = false;
+                return;
+            }
+
             snapshot.docChanges().forEach(async (change) => {
                 
                 // STRICT FIX: Ignore all historical snapshot data during the first 2 seconds
@@ -296,7 +319,9 @@ module.exports = function(app) {
                         const senderName = senderData.name || senderData.username || notifData.senderName || notifData.fromName || "Someone";
                         const senderPhoto = senderData.photoURL || notifData.senderPfp || notifData.fromPfp || "https://www.goorac.biz/icon.png";
                         
-                        const deepLink = notifData.link || notifData.targetUrl || `https://www.goorac.biz/notifications.html`;
+                        // 🛡️ URI FIX: Safely encode the entire raw link to prevent 422 Crashes
+                        let rawLink = notifData.link || notifData.targetUrl || `https://www.goorac.biz/notifications.html`;
+                        const deepLink = rawLink.startsWith('http') ? encodeURI(rawLink) : `https://www.goorac.biz/${encodeURI(rawLink.replace(/^\//, ''))}`;
 
                         let title = "New Notification";
                         let body = ""; 
@@ -428,8 +453,18 @@ module.exports = function(app) {
     function startCallListener() {
         console.log("🎧 Listening for Incoming and Missed Calls...");
 
+        // 🚀 THE PERFECT COLD START FIX FOR CALLS
+        let isFirstRunIncoming = true; 
+        let isFirstRunMissed = true;
+
         // 1. INCOMING CALLS (Watches the 'calls' signaling collection)
         db.collection('calls').onSnapshot((snapshot) => {
+            
+            if (isFirstRunIncoming) {
+                isFirstRunIncoming = false;
+                return;
+            }
+
             snapshot.docChanges().forEach(async (change) => {
                 
                 if (isBooting) return;
@@ -482,6 +517,12 @@ module.exports = function(app) {
 
         // 2. MISSED CALLS (Watches the 'call_logs' collection)
         db.collection('call_logs').onSnapshot((snapshot) => {
+            
+            if (isFirstRunMissed) {
+                isFirstRunMissed = false;
+                return;
+            }
+
             snapshot.docChanges().forEach(async (change) => {
                 
                 let msgTime = SERVER_START_TIME;

@@ -1,9 +1,39 @@
 const express = require('express'); // 🔧 FIXED: Capital 'Const' changed to lowercase 'const' 
 const cors = require('cors');
 const dotenv = require('dotenv');
+const admin = require('firebase-admin'); // <-- UNCOMMENTED TO ALLOW DATABASE CONNECTION
 
 // Load environment variables
 dotenv.config();
+
+// ============================================================================
+// ⚠️ DISABLED: FIREBASE MASTER INITIALIZATION
+// ============================================================================
+// I have safely commented this out because it was causing your "Container loading" loop.
+// Since you already initialize Firebase somewhere else, this duplicate initialization crashed the server.
+/*
+if (admin.apps.length === 0) {
+    admin.initializeApp({
+        // Note: If you authenticate using a specific serviceAccount.json file in your project, 
+        // you'll need to require it above and replace applicationDefault() with: admin.credential.cert(serviceAccount)
+        credential: admin.credential.applicationDefault(), 
+        databaseURL: "https://goorac-quantum-default-rtdb.asia-southeast1.firebasedatabase.app"
+    });
+}
+*/
+
+// ============================================================================
+// 🔥 DISABLED: SAFE FIREBASE INITIALIZATION 
+// ============================================================================
+// Now that we fixed pushNotifications.js, we MUST comment this out too! 
+// If we leave this here, it steals the initialization and causes a crash.
+/*
+if (admin.apps.length === 0) {
+    admin.initializeApp({
+        databaseURL: "https://goorac-quantum-default-rtdb.asia-southeast1.firebasedatabase.app"
+    });
+}
+*/
 
 // Initialize the Master App
 const app = express();

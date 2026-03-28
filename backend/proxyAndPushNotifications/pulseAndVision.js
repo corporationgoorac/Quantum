@@ -37,11 +37,11 @@ async function deleteQueryBatch(db, query, resolve) {
 }
 
 module.exports = function startPulseVisionCleanup() {
-    console.log("🕒 Scheduled Job: Pulse & Vision Room deep-clean scheduled for 2:00 PM IST everyday.");
+    console.log("🕒 Scheduled Job: Pulse & Vision Room deep-clean scheduled for 2:00 AM IST everyday.");
 
-    // Cron expression '0 14 * * *' means minute 0, hour 14 (2:00 PM), every day
-    cron.schedule('0 14 * * *', async () => {
-        console.log("🧹 [CRON] 2:00 PM IST - Starting daily deep-clean of Pulse and Vision data...");
+    // We wrap the cleanup logic in a function so it can run on boot AND on schedule
+    const performCleanup = async () => {
+        console.log("🧹 [CLEAN] Starting deep-clean of Pulse and Vision data...");
 
         try {
             // Ensure Firebase Admin is initialized in your master file first
@@ -87,11 +87,20 @@ module.exports = function startPulseVisionCleanup() {
                 await typingRef.update(typingUpdates);
             }
 
-            console.log("✅ [CRON] Daily Pulse & Vision deep-clean completed successfully.");
+            console.log("✅ [CLEAN] Pulse & Vision deep-clean completed successfully.");
 
         } catch (error) {
-            console.error("❌ [CRON] Fatal error during daily cleanup:", error);
+            console.error("❌ [CLEAN] Fatal error during cleanup:", error);
         }
+    };
+
+    // 🚀 EXECUTE IMMEDIATELY ON SERVER BOOT
+    performCleanup();
+
+    // Cron expression '0 2 * * *' means minute 0, hour 2 (2:00 AM), every day
+    cron.schedule('0 2 * * *', async () => {
+        console.log("⏰ [CRON] 2:00 AM IST Triggered...");
+        await performCleanup();
     }, {
         scheduled: true,
         timezone: "Asia/Kolkata" // Forces the cron job to strictly follow Indian Standard Time
