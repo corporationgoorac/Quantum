@@ -959,11 +959,11 @@ box-shadow: var(--received-shadow);
             gap: 8px; 
             background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75));
             border-radius: 40px; /* Fully rounded Capsule shape */
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Lighter border */
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            /* ENHANCED: Deep Smooth Unfocused Glow */
-            box-shadow: 0 -2px 20px var(--accent-dim), 0 8px 30px rgba(0,0,0,0.5); 
+            /* ENHANCED: Deep Professional Smooth Glow */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 109, 0, 0.05); 
             transform: scale(0.96);
             transform-origin: bottom center;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Enhanced Smooth Professional expansion */
@@ -978,9 +978,9 @@ box-shadow: var(--received-shadow);
             transform: scale(1);
             border-radius: 26px; /* Slightly less round when active */
             background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); /* Darken on focus */
-            border-color: var(--accent);
-            /* ENHANCED: Deep Themed Focused Glow */
-            box-shadow: 0 -2px 30px rgba(255, 109, 0, 0.5), 0 10px 40px rgba(255, 109, 0, 0.4), 0 0 15px rgba(255, 109, 0, 0.2) inset; 
+            border-color: rgba(255, 109, 0, 0.4);
+            /* ENHANCED: Deep Thematic Glowing Aura */
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 109, 0, 0.3), 0 0 20px rgba(255, 109, 0, 0.15); 
         }
         
         .input-box { 
@@ -1247,7 +1247,7 @@ box-shadow: var(--received-shadow);
         .attach-opt:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .attach-opt svg { width: 24px; height: 24px; fill: #eee; }
 
-        /* OVERLAYS */
+        /* OVERLAYS & REDESIGNED INSTAGRAM STYLE MENU */
         #menu-overlay, #reaction-details-overlay { 
             display: none; position: fixed; inset: 0; 
             background: rgba(0, 0, 0, 0.7); z-index: 2000; 
@@ -1258,12 +1258,14 @@ box-shadow: var(--received-shadow);
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
         .menu-card { 
-            background: #1c1c1c; 
-            border-radius: 20px; 
+            background: rgba(25, 25, 25, 0.85); /* Sleek translucent */
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 24px; 
             width: 280px; 
             overflow: hidden; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7); 
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1); 
+            border: none;
             transform: scale(0.9);
             animation: scaleIn 0.3s var(--ease-spring) forwards;
         }
@@ -1272,15 +1274,15 @@ box-shadow: var(--received-shadow);
         .reaction-bar { 
             display: flex; 
             justify-content: space-evenly; 
-            padding: 18px 10px; 
-            border-bottom: 1px solid #333; 
-            background: #222;
+            padding: 16px 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.08); 
+            background: transparent;
         }
         .reaction-bar span { font-size: 2rem; cursor: pointer; transition: transform 0.2s var(--ease-spring); }
         .reaction-bar span:active { transform: scale(1.4); }
         
         .more-emoji-trigger { 
-            background: #333; 
+            background: rgba(255, 255, 255, 0.1); 
             border-radius: 50%; 
             width: 38px; height: 38px; 
             display: flex; 
@@ -1291,18 +1293,26 @@ box-shadow: var(--received-shadow);
             cursor: pointer; 
             transition: transform 0.2s, background 0.2s;
         }
-        .more-emoji-trigger:active { transform: scale(0.9); background: #444; }
+        .more-emoji-trigger:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
 
         .menu-opt { 
-            padding: 16px; 
-            text-align: center; 
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px; 
+            text-align: left; 
             font-size: 1rem; 
-            border-bottom: 1px solid #2a2a2a; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
             color: #fff; 
             font-weight: 500;
             transition: background 0.2s;
+            cursor: pointer;
         }
-        .menu-opt:active { background: #333; }
+        .menu-opt span.material-icons-round {
+            font-size: 22px;
+            opacity: 0.8;
+        }
+        .menu-opt:active { background: rgba(255, 255, 255, 0.1); }
         
         #reply-dock { 
             display: none; 
@@ -1607,11 +1617,11 @@ box-shadow: var(--received-shadow);
         </div>
         <div id="menu-emoji-grid"></div>
         
-        <div class="menu-opt" onclick="copyMessageText()">Copy Text</div>
-        <div class="menu-opt" onclick="initReplyFromActive()">Reply</div>
-        <div id="edit-btn" class="menu-opt" onclick="initEdit()">Edit</div>
-        <div id="unsend-btn" class="menu-opt" style="color:#ff453a; font-weight: 600;" onclick="unsendMsg()">Unsend</div>
-        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888">Cancel</div>
+        <div class="menu-opt" onclick="copyMessageText()"><span class="material-icons-round">content_copy</span> Copy Text</div>
+        <div class="menu-opt" onclick="initReplyFromActive()"><span class="material-icons-round">reply</span> Reply</div>
+        <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span class="material-icons-round">edit</span> Edit</div>
+        <div id="unsend-btn" class="menu-opt" style="color:#ff453a; font-weight: 600;" onclick="unsendMsg()"><span class="material-icons-round">delete_outline</span> Unsend</div>
+        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span class="material-icons-round">close</span> Cancel</div>
     </div>
 </div>
 
@@ -2016,7 +2026,8 @@ box-shadow: var(--received-shadow);
     setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
     const msgResizeObserver = new ResizeObserver(() => {
-        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 450))) {
+        // FIXED: Lowered threshold so it doesn't auto-scroll aggressively when you are reading up top
+        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 50))) {
             window.scrollToBottom();
         }
     });
@@ -2095,7 +2106,7 @@ box-shadow: var(--received-shadow);
         document.body.scrollTop = 0;
         document.body.style.top = '0px'; 
         
-        window.scrollToBottom();
+        // FIXED: Removed window.scrollToBottom(); to stop the aggressive random auto-scrolling
     }
 
     if (window.visualViewport) {
@@ -3439,10 +3450,10 @@ box-shadow: var(--received-shadow);
                 const tapLength = currentTime - lastTap;
                 if (tapLength < 300 && tapLength > 0) {
                     window.cancelBiteClick(id); // Prevent video navigation on double tap
-                    e.preventDefault(); // STOP KEYBOARD CLOSING
-                    e.stopPropagation(); // ENHANCED: PREVENT BODY BLURRING
-
+                    
                     if (document.activeElement === mInput || mInput.matches(':focus')) {
+                        e.preventDefault(); // STOP KEYBOARD CLOSING ONLY WHEN FOCUSED
+                        e.stopPropagation(); // ENHANCED: PREVENT BODY BLURRING
                         // ENHANCED: Robust re-focus logic identical to swipe keyboard protection
                         mInput.focus({preventScroll: true});
                         setTimeout(() => { mInput.click(); }, 10);
