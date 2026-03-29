@@ -779,13 +779,13 @@ box-shadow: var(--received-shadow);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            z-index: 0;
+            z-index: -1; /* Placed behind the bubble */
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .swipe-reply-icon svg { width: 16px; height: 16px; fill: #fff; }
         
-        .received .swipe-reply-icon { left: -45px; } 
-        .sent .swipe-reply-icon { right: -45px; }
+        .received .swipe-reply-icon { left: 15px; } 
+        .sent .swipe-reply-icon { right: 15px; }
 
         /* PROFESSIONAL REPLY PREVIEW DESIGN - REDESIGNED FOR SMOOTHER UI */
         .reply-box-ui { 
@@ -959,11 +959,11 @@ box-shadow: var(--received-shadow);
             gap: 8px; 
             background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75));
             border-radius: 40px; /* Fully rounded Capsule shape */
-            border: 1px solid rgba(255, 255, 255, 0.1); /* Lighter border */
+            border: 1px solid transparent;
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            /* ENHANCED: Deep Professional Smooth Glow */
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 109, 0, 0.05); 
+            /* ENHANCED: Professional Sleek Glow */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05); 
             transform: scale(0.96);
             transform-origin: bottom center;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Enhanced Smooth Professional expansion */
@@ -978,9 +978,9 @@ box-shadow: var(--received-shadow);
             transform: scale(1);
             border-radius: 26px; /* Slightly less round when active */
             background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); /* Darken on focus */
-            border-color: rgba(255, 109, 0, 0.4);
-            /* ENHANCED: Deep Thematic Glowing Aura */
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 109, 0, 0.3), 0 0 20px rgba(255, 109, 0, 0.15); 
+            border-color: transparent;
+            /* ENHANCED: Deep Themed Focused Glow replacing muddy shadow */
+            box-shadow: 0 4px 25px rgba(255, 109, 0, 0.15), inset 0 0 0 1px rgba(255, 109, 0, 0.5); 
         }
         
         .input-box { 
@@ -1247,7 +1247,7 @@ box-shadow: var(--received-shadow);
         .attach-opt:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .attach-opt svg { width: 24px; height: 24px; fill: #eee; }
 
-        /* OVERLAYS & REDESIGNED INSTAGRAM STYLE MENU */
+        /* OVERLAYS & REDESIGNED MENU (INSTAGRAM STYLE) */
         #menu-overlay, #reaction-details-overlay { 
             display: none; position: fixed; inset: 0; 
             background: rgba(0, 0, 0, 0.7); z-index: 2000; 
@@ -1258,14 +1258,14 @@ box-shadow: var(--received-shadow);
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
         .menu-card { 
-            background: rgba(25, 25, 25, 0.85); /* Sleek translucent */
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 24px; 
+            background: rgba(30, 30, 30, 0.85); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px; 
             width: 280px; 
             overflow: hidden; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1); 
-            border: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7); 
+            border: 1px solid rgba(255,255,255,0.1);
             transform: scale(0.9);
             animation: scaleIn 0.3s var(--ease-spring) forwards;
         }
@@ -1274,15 +1274,15 @@ box-shadow: var(--received-shadow);
         .reaction-bar { 
             display: flex; 
             justify-content: space-evenly; 
-            padding: 16px 10px; 
-            border-bottom: 1px solid rgba(255,255,255,0.08); 
-            background: transparent;
+            padding: 18px 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            background: rgba(255,255,255,0.02);
         }
         .reaction-bar span { font-size: 2rem; cursor: pointer; transition: transform 0.2s var(--ease-spring); }
         .reaction-bar span:active { transform: scale(1.4); }
         
         .more-emoji-trigger { 
-            background: rgba(255, 255, 255, 0.1); 
+            background: rgba(255,255,255,0.1); 
             border-radius: 50%; 
             width: 38px; height: 38px; 
             display: flex; 
@@ -1293,26 +1293,22 @@ box-shadow: var(--received-shadow);
             cursor: pointer; 
             transition: transform 0.2s, background 0.2s;
         }
-        .more-emoji-trigger:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
+        .more-emoji-trigger:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
 
         .menu-opt { 
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 16px;
-            padding: 16px 20px; 
-            text-align: left; 
-            font-size: 1rem; 
+            padding: 14px 20px; 
+            font-size: 0.95rem; 
             border-bottom: 1px solid rgba(255,255,255,0.05); 
             color: #fff; 
             font-weight: 500;
             transition: background 0.2s;
             cursor: pointer;
         }
-        .menu-opt span.material-icons-round {
-            font-size: 22px;
-            opacity: 0.8;
-        }
-        .menu-opt:active { background: rgba(255, 255, 255, 0.1); }
+        .menu-opt span.material-icons-round { font-size: 20px; opacity: 0.8; }
+        .menu-opt:active { background: rgba(255,255,255,0.1); }
         
         #reply-dock { 
             display: none; 
@@ -1617,11 +1613,11 @@ box-shadow: var(--received-shadow);
         </div>
         <div id="menu-emoji-grid"></div>
         
-        <div class="menu-opt" onclick="copyMessageText()"><span class="material-icons-round">content_copy</span> Copy Text</div>
-        <div class="menu-opt" onclick="initReplyFromActive()"><span class="material-icons-round">reply</span> Reply</div>
-        <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span class="material-icons-round">edit</span> Edit</div>
-        <div id="unsend-btn" class="menu-opt" style="color:#ff453a; font-weight: 600;" onclick="unsendMsg()"><span class="material-icons-round">delete_outline</span> Unsend</div>
-        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span class="material-icons-round">close</span> Cancel</div>
+        <div class="menu-opt" onclick="copyMessageText()"><span>Copy Text</span><span class="material-icons-round">content_copy</span></div>
+        <div class="menu-opt" onclick="initReplyFromActive()"><span>Reply</span><span class="material-icons-round">reply</span></div>
+        <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span>Edit</span><span class="material-icons-round">edit</span></div>
+        <div id="unsend-btn" class="menu-opt" style="color:#ff453a;" onclick="unsendMsg()"><span>Unsend</span><span class="material-icons-round">delete_outline</span></div>
+        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span>Cancel</span><span class="material-icons-round">close</span></div>
     </div>
 </div>
 
@@ -1794,7 +1790,7 @@ box-shadow: var(--received-shadow);
             setTimeout(() => {
                 emojiTray.style.display = 'none';
                 if(history.state && history.state.modal === 'emoji') history.back();
-                window.scrollToBottom();
+                if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             }, 150); 
             
         } else {
@@ -1822,7 +1818,7 @@ box-shadow: var(--received-shadow);
                 mInput.blur(); 
             }
             
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('emoji');
         }
     };
@@ -1846,7 +1842,7 @@ box-shadow: var(--received-shadow);
             setTimeout(() => {
                 gifTray.style.display = 'none';
                 if(history.state && history.state.modal === 'gif') history.back();
-                window.scrollToBottom();
+                if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             }, 150); 
             
         } else {
@@ -1869,7 +1865,7 @@ box-shadow: var(--received-shadow);
                 mInput.blur(); 
             }
             
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('gif');
         }
     };
@@ -2026,8 +2022,7 @@ box-shadow: var(--received-shadow);
     setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
     const msgResizeObserver = new ResizeObserver(() => {
-        // FIXED: Lowered threshold so it doesn't auto-scroll aggressively when you are reading up top
-        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 50))) {
+        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150))) {
             window.scrollToBottom();
         }
     });
@@ -2105,8 +2100,6 @@ box-shadow: var(--received-shadow);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
         document.body.style.top = '0px'; 
-        
-        // FIXED: Removed window.scrollToBottom(); to stop the aggressive random auto-scrolling
     }
 
     if (window.visualViewport) {
@@ -2221,7 +2214,7 @@ box-shadow: var(--received-shadow);
             rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         }
         
-        // Auto-Scroll on Typing
+        // Auto-Scroll on Typing ONLY if already near bottom
         if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 120) {
              window.scrollToBottom();
         }
@@ -2329,7 +2322,7 @@ box-shadow: var(--received-shadow);
             if(history.state && history.state.modal === 'emoji') history.back();
         } else {
             emojiTray.style.display = 'block';
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('emoji');
         }
     }
@@ -2380,10 +2373,14 @@ box-shadow: var(--received-shadow);
         if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); // Auto swap icon logic internally
         if(window.isGifTrayOpen) toggleGifKeyboard();
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
-        // FIX: Aggressively lock header and scroll when keyboard opens
+        // FIX: Aggressively lock header and scroll when keyboard opens without aggressive window jump
         lockViewportAndHeader();
         setTimeout(lockViewportAndHeader, 50);
         setTimeout(lockViewportAndHeader, 300); // Double fallback for slower animations
+        // Only scroll if already near bottom
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) {
+            window.scrollToBottom();
+        }
     });
     
     mInput.addEventListener("blur", () => {
@@ -2965,65 +2962,6 @@ box-shadow: var(--received-shadow);
     }
 
     function renderAll() {
-        /*
-        ========================================================================================
-        ORIGINAL RENDER LOOP PRESERVED IN COMMENTS (DO NOT REMOVE LINES REQUIREMENT)
-        ========================================================================================
-        container.innerHTML = '';
-        const sorted = Array.from(messagesMap.entries())
-            .filter(([id, data]) => data.timestamp) 
-            .sort((a, b) => {
-                const tA = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
-                const tB = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
-                return tA(a[1]) - tB(b[1]);
-            });
-
-        let lastDateLabel = "";
-        let lastSeenMsgId = null;
-        let lastMsgTime = 0;
-
-        for (let i = sorted.length - 1; i >= 0; i--) {
-            const [id, data] = sorted[i];
-            if (data.sender === myUid && data.seen === true) {
-                lastSeenMsgId = id;
-                break; 
-            }
-        }
-        
-        sorted.forEach(([id, data], index) => { 
-            const msgDate = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestampIso);
-            const msgTime = msgDate.getTime();
-            
-            const dateLabel = getDateDivider(msgDate);
-            if (dateLabel !== lastDateLabel) {
-                const div = document.createElement('div');
-                div.className = "date-divider";
-                div.innerText = dateLabel;
-                container.appendChild(div);
-                lastDateLabel = dateLabel;
-                lastMsgTime = msgTime;
-            } else {
-                if (lastMsgTime > 0 && (msgTime - lastMsgTime) > 3600000) {
-                    const tDiv = document.createElement('div');
-                    tDiv.className = "time-divider";
-                    tDiv.innerText = formatTime12(msgDate);
-                    container.appendChild(tDiv);
-                }
-            }
-            
-            lastMsgTime = msgTime; 
-
-            const prevMsg = index > 0 ? sorted[index - 1][1] : null;
-            const nextMsg = index + 1 < sorted.length ? sorted[index + 1][1] : null;
-
-            const isFirstInGroup = !prevMsg || prevMsg.sender !== data.sender || (msgDate - (prevMsg.timestamp.toDate ? prevMsg.timestamp.toDate() : new Date(prevMsg.timestampIso))) > 300000;
-            const isLastInGroup = !nextMsg || nextMsg.sender !== data.sender || ((nextMsg.timestamp.toDate ? nextMsg.timestamp.toDate() : new Date(nextMsg.timestampIso)) - msgDate) > 300000;
-
-            renderMessage(data, id, id === lastSeenMsgId, isFirstInGroup, isLastInGroup); 
-        });
-        ========================================================================================
-        */
-
         // ========================================================================================
         // NEW SMART VIRTUAL DOM DIFFING (Fixes "Render all messages every time" and flickering)
         // ========================================================================================
@@ -3451,12 +3389,13 @@ box-shadow: var(--received-shadow);
                 if (tapLength < 300 && tapLength > 0) {
                     window.cancelBiteClick(id); // Prevent video navigation on double tap
                     
-                    if (document.activeElement === mInput || mInput.matches(':focus')) {
-                        e.preventDefault(); // STOP KEYBOARD CLOSING ONLY WHEN FOCUSED
-                        e.stopPropagation(); // ENHANCED: PREVENT BODY BLURRING
-                        // ENHANCED: Robust re-focus logic identical to swipe keyboard protection
-                        mInput.focus({preventScroll: true});
-                        setTimeout(() => { mInput.click(); }, 10);
+                    // FIX: Stop keyboard blur reliably when double tapping message bubbles!
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+
+                    // If keyboard was open, keep it open securely without causing a jump
+                    if (document.activeElement === mInput || mInput.matches(':focus') || document.querySelector('.input-area').classList.contains('force-expand')) {
+                        setTimeout(() => { mInput.focus({preventScroll: true}); }, 10);
                     }
                     
                     if (m.sender === myUid) {
@@ -3508,7 +3447,7 @@ box-shadow: var(--received-shadow);
                       window.isScrollingNow = true;
                 }
                 
-                // Logic: 
+                // Logic Fix for flawless native swipe feeling
                 // Received (Left) -> Swipe Right (diff > 0)
                 // Sent (Right) -> Swipe Left (diff < 0)
                 
@@ -3516,14 +3455,16 @@ box-shadow: var(--received-shadow);
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, diff / 60);
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // Translate exact opposite of container to freeze icon in place
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 } 
                 else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, Math.abs(diff) / 60);
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // Translate exact opposite of container to freeze icon in place
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 }
                 
@@ -4118,8 +4059,8 @@ box-shadow: var(--received-shadow);
         activeMenuId = id;
         vibrate(30); // Vibrate on menu open
         const isMine = sender === myUid;
-        document.getElementById('edit-btn').style.display = (isMine && text) ? 'block' : 'none'; 
-        document.getElementById('unsend-btn').style.display = isMine ? 'block' : 'none';
+        document.getElementById('edit-btn').style.display = (isMine && text) ? 'flex' : 'none'; 
+        document.getElementById('unsend-btn').style.display = isMine ? 'flex' : 'none';
         document.getElementById('menu-emoji-grid').style.display = 'none';
         document.getElementById('menu-overlay').style.display = 'flex';
         pushModalState('menu');
