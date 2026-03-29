@@ -265,6 +265,7 @@
         .fs-chat-box {
             position: absolute; bottom: 210px; left: 20px; z-index: 50;
             display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+            width: calc(100% - 40px);
         }
         .fs-chat-msg {
             background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); padding: 8px 12px;
@@ -1130,11 +1131,11 @@
             setTimeout(() => { if(!isFullscreen) ctrls.style.display = 'none'; }, 300);
 
             // NEW: Lock back to portrait when exiting fullscreen
-            if (screen && screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('portrait').catch(function(error) {
-                    console.log("Orientation lock failed: ", error);
-                });
-            }
+            try {
+                if (screen && screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('portrait').catch(e => {});
+                }
+            } catch(e) {}
 
             // Force the history back seamlessly without triggering popstate bugs
             if (!fromPopState && history.state && history.state.modal === 'fullscreen') {
@@ -1161,9 +1162,11 @@
                 resetFsTimeout();
 
                 // NEW: Unlock orientation or force landscape when entering fullscreen
-                if (screen && screen.orientation && screen.orientation.unlock) {
-                    try { screen.orientation.unlock(); } catch(e) {}
-                }
+                try {
+                    if (screen && screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock(); 
+                    }
+                } catch(e) {}
             } else {
                 closeFullscreen(false);
             }
@@ -1566,12 +1569,32 @@
             // FIX: CRITICAL XSS SANITIZATION
             const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
-            // NEW FULLSCREEN CHAT OVERLAY LOGIC
-            if (isFullscreen && msg.sender !== myUid && msg.type !== 'sys') {
+            const textNoSpaces = safeText.replace(/\s/g, '');
+            const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
+            const isJumbo = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 4 && emojiRegex.test(textNoSpaces);
+
+            // FIX: NEW FULLSCREEN CHAT OVERLAY LOGIC (Now perfectly supports Jumbo Emojis and Sender's own messages)
+            if (isFullscreen && msg.type !== 'sys') {
                 const fsBox = document.getElementById('fs-chat-box');
                 const pop = document.createElement('div');
-                pop.className = 'fs-chat-msg';
-                pop.innerHTML = `<img src="${targetProfile ? targetProfile.photoURL : ''}" class="msg-avatar" style="width:20px;height:20px;margin-bottom:0;border:none;"> <span>${safeText}</span>`;
+                
+                if (isJumbo) {
+                    pop.className = 'fs-chat-msg';
+                    pop.style.background = 'transparent';
+                    pop.style.border = 'none';
+                    pop.style.boxShadow = 'none';
+                    pop.style.fontSize = '3.5rem';
+                    pop.style.padding = '0';
+                    pop.style.justifyContent = msg.sender === myUid ? 'flex-end' : 'flex-start';
+                    pop.style.width = '100%';
+                    pop.style.maxWidth = '100%';
+                    pop.innerHTML = `<span style="animation: skipPop 0.4s ease-out;">${safeText}</span>`;
+                } else {
+                    pop.className = 'fs-chat-msg';
+                    const pfpSrc = msg.sender === myUid ? (myProfile ? myProfile.photoURL : '') : (targetProfile ? targetProfile.photoURL : '');
+                    pop.innerHTML = `<img src="${pfpSrc}" class="msg-avatar" style="width:20px;height:20px;margin-bottom:0;border:none;"> <span>${safeText}</span>`;
+                }
+                
                 fsBox.appendChild(pop);
                 setTimeout(() => { pop.style.opacity = '0'; setTimeout(() => pop.remove(), 500); }, 3500);
             }
@@ -1594,10 +1617,6 @@
                     if (navigator.vibrate) navigator.vibrate([100]); 
                 } catch(e){}
             }
-            
-            const textNoSpaces = msg.text.replace(/\s/g, '');
-            const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
-            const isJumbo = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 4 && emojiRegex.test(textNoSpaces);
             
             let bubbleStyle = isJumbo ? 'background:transparent; border:none; box-shadow:none; font-size:3rem; padding:0;' : '';
 
@@ -1693,6 +1712,12 @@
         }
 
         async function exitSession(isAlreadyEnded = false) {
+            // FIX: HARD VISUAL RESET - Instantly hide video to prevent it from floating on screen
+            document.getElementById('video-zone').style.display = 'none';
+
+            // FIX: Instantly lock back to portrait mode if closing app from fullscreen
+            try { if (screen && screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(e=>{}); } catch(e){}
+
             // FIX: Exit fullscreen before destroying the room so the redirect isn't blocked by the browser
             if (isFullscreen) {
                 closeFullscreen(true);
@@ -1715,12 +1740,14 @@
                 }
             }
             
-            // Clean up hardware
-            if (player && typeof player.destroy === 'function') player.destroy();
+            // Clean up hardware safely
+            if (player && typeof player.destroy === 'function') { player.destroy(); player = null; }
             if (wakeLock) wakeLock.release().catch(()=>{});
             
-            // Navigate away safely
-            window.location.replace('visionLobby.html'); 
+            // Navigate away safely with a tiny delay to ensure browser DOM state catches up
+            setTimeout(() => {
+                window.location.replace('visionLobby.html'); 
+            }, 100);
         }
 
     </script>
