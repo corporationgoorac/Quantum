@@ -111,14 +111,34 @@
                 .file-icon { background: var(--mobileToolbarBg) !important; }
 
                 /* Modals, Menus, Emoji Tray - Forced to Mobile Toolbar Background */
-                #attachment-menu, .menu-card, .react-list-container, .picker-modal-content {
+                /* NOTE: Removed .menu-card to fix the Instagram L-Shape box issue */
+                #attachment-menu, .menu-options-container, .react-list-container, .picker-modal-content {
                     background: var(--mobileToolbarBg) !important;
                     border: 1px solid var(--glass-border) !important;
                 }
-                .reaction-bar {
-                    background: var(--bg) !important;
-                    border-bottom: 1px solid var(--border) !important;
+                
+                /* Fix for Instagram L-Shape Menu - Removing the unwanted box wrapper */
+                .menu-card {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    backdrop-filter: none !important;
+                    -webkit-backdrop-filter: none !important;
                 }
+
+                /* Subtle transparent backdrop for the menu overlay (Insta-style) */
+                #menu-overlay {
+                    background: rgba(0, 0, 0, 0.35) !important;
+                    backdrop-filter: blur(2px) !important;
+                    -webkit-backdrop-filter: blur(2px) !important;
+                }
+
+                .reaction-bar {
+                    background: color-mix(in srgb, var(--mobileToolbarBg) 95%, transparent) !important;
+                    border: 1px solid var(--glass-border) !important;
+                    border-radius: 30px !important;
+                }
+
                 .menu-opt {
                     border-bottom: 1px solid var(--border) !important;
                     color: var(--text) !important;
