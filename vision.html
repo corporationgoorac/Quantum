@@ -223,21 +223,31 @@
         .fs-controls {
             display: none; position: absolute; inset: 0; z-index: 45;
             background: rgba(0,0,0,0.6); flex-direction: column; 
-            transition: opacity 0.3s;
+            transition: opacity 0.3s; pointer-events: none;
         }
         .fs-controls.hide { opacity: 0; pointer-events: none; }
-        .fs-top-bar { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; z-index: 46; }
+        .fs-top-bar { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; z-index: 46; pointer-events: auto; }
         .fs-center-btn {
             margin: auto; width: 80px; height: 80px; border-radius: 50%;
             background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center;
             color: #fff; cursor: pointer; transition: 0.2s; border: 1px solid rgba(255,255,255,0.3);
+            pointer-events: auto;
         }
         .fs-center-btn:active { transform: scale(0.9); }
         .fs-center-btn span { font-size: 48px; }
 
+        .fs-bottom-bar {
+            position: absolute; bottom: 80px; left: 20px; right: 20px;
+            background: rgba(0,0,0,0.6); padding: 12px 20px; border-radius: 20px; 
+            color: #ddd; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); 
+            display: flex; align-items: center; gap: 8px; font-size: 14px; z-index: 50;
+            pointer-events: auto; cursor: pointer; transition: 0.2s;
+        }
+        .fs-bottom-bar:active { transform: scale(0.98); background: rgba(0,0,0,0.8); }
+
         .fs-chat-box {
-            position: absolute; bottom: 60px; left: 20px; z-index: 50;
+            position: absolute; bottom: 140px; left: 20px; z-index: 50;
             display: flex; flex-direction: column; gap: 8px; pointer-events: none;
         }
         .fs-chat-msg {
@@ -493,11 +503,15 @@
                         <span style="font-size:12px; font-weight:700; margin-top:4px;">10s</span>
                     </div>
 
-                    <div class="fs-controls hide" id="fs-controls" onclick="event.stopPropagation()">
-                        <div class="fs-top-bar">
+                    <div class="fs-controls hide" id="fs-controls">
+                        <div class="fs-top-bar" onclick="event.stopPropagation()">
                             <div class="nav-btn exit" onclick="toggleFullscreen()"><span class="material-icons-round">fullscreen_exit</span></div>
                         </div>
-                        <div class="fs-center-btn" onclick="togglePlayPause(event)"><span class="material-icons-round" id="fs-play-icon">pause</span></div>
+                        <div class="fs-center-btn" onclick="togglePlayPause(event); event.stopPropagation();"><span class="material-icons-round" id="fs-play-icon">pause</span></div>
+                        
+                        <div class="fs-bottom-bar" onclick="exitFsAndChat(event); event.stopPropagation();">
+                            <span class="material-icons-round" style="font-size:20px;">chat</span> Type a message...
+                        </div>
                     </div>
                     
                     <div class="fs-chat-box" id="fs-chat-box"></div>
@@ -860,7 +874,7 @@
                 if(!data.videoData) {
                     document.getElementById('video-placeholder').style.display = 'flex';
                     document.getElementById('video-touch-overlay').style.display = 'none';
-                    if (isFullscreen) toggleFullscreen(); // Exit fs if cleared
+                    if (isFullscreen) closeFullscreen(); // Exit fs if cleared
                     if (player && typeof player.stopVideo === 'function') player.stopVideo(); 
                 } else {
                     document.getElementById('video-touch-overlay').style.background = 'rgba(0,0,0,0.8)';
@@ -958,8 +972,8 @@
         function handleVideoTap(event) {
             if (!isPlayerReady || !currentVideoId) return;
 
-            // Ignore inner control clicks to prevent misfires
-            if (event.target.closest('.fs-center-btn') || event.target.closest('.fs-top-bar')) return;
+            // Ensure we don't misfire on inner controls
+            if (event.target.closest('.fs-center-btn') || event.target.closest('.fs-top-bar') || event.target.closest('.fs-bottom-bar')) return;
 
             tapCount++;
             const rect = event.currentTarget.getBoundingClientRect();
@@ -1014,26 +1028,59 @@
             if (isFullscreen) resetFsTimeout();
         }
 
+        function closeFullscreen() {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+            isFullscreen = false;
+            document.getElementById('video-zone').classList.remove('fullscreen-mode');
+            
+            const ctrls = document.getElementById('fs-controls');
+            ctrls.classList.add('hide');
+            setTimeout(() => { if(!isFullscreen) ctrls.style.display = 'none'; }, 300);
+        }
+
         function toggleFullscreen() {
             const vz = document.getElementById('video-zone');
-            isFullscreen = !isFullscreen;
-            if (isFullscreen) {
+            if (!isFullscreen) {
+                if (vz.requestFullscreen) vz.requestFullscreen().catch(()=>{});
+                else if (vz.webkitRequestFullscreen) vz.webkitRequestFullscreen();
+                
+                isFullscreen = true;
                 vz.classList.add('fullscreen-mode');
-                document.getElementById('fs-controls').classList.remove('hide');
+                
+                const ctrls = document.getElementById('fs-controls');
+                ctrls.style.display = 'flex';
+                setTimeout(() => ctrls.classList.remove('hide'), 10);
+                
+                history.pushState({modal: 'fullscreen'}, "");
                 resetFsTimeout();
             } else {
-                vz.classList.remove('fullscreen-mode');
-                document.getElementById('fs-controls').classList.add('hide');
+                closeFullscreen();
+                if (history.state && history.state.modal === 'fullscreen') {
+                    history.back();
+                }
             }
         }
+
+        // Sync state when exiting fullscreen natively
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && isFullscreen) closeFullscreen();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement && isFullscreen) closeFullscreen();
+        });
 
         function toggleFsControls() {
             const ctrls = document.getElementById('fs-controls');
             if (ctrls.classList.contains('hide')) {
-                ctrls.classList.remove('hide');
+                ctrls.style.display = 'flex';
+                setTimeout(() => ctrls.classList.remove('hide'), 10);
                 resetFsTimeout();
             } else {
                 ctrls.classList.add('hide');
+                setTimeout(() => { if(ctrls.classList.contains('hide')) ctrls.style.display = 'none'; }, 300);
             }
         }
 
@@ -1041,8 +1088,25 @@
             if (fsTimeout) clearTimeout(fsTimeout);
             fsTimeout = setTimeout(() => {
                 const ctrls = document.getElementById('fs-controls');
-                if(ctrls && !ctrls.classList.contains('hide')) ctrls.classList.add('hide');
+                if(ctrls && !ctrls.classList.contains('hide')) {
+                    ctrls.classList.add('hide');
+                    setTimeout(() => { if(ctrls.classList.contains('hide')) ctrls.style.display = 'none'; }, 300);
+                }
             }, 3000);
+        }
+
+        function exitFsAndChat(event) {
+            if(event) event.stopPropagation();
+            if(isFullscreen) closeFullscreen();
+            
+            // Return back in history state so the hardware back button logic stays clean
+            if (history.state && history.state.modal === 'fullscreen') {
+                history.back();
+            }
+
+            setTimeout(() => {
+                document.getElementById('chat-input').focus();
+            }, 300);
         }
 
         function seekTimeline(event) {
@@ -1333,7 +1397,7 @@
 
         // NEW: EXIT FULLSCREEN ON TYPING
         chatInput.addEventListener('focus', function() {
-            if (isFullscreen) toggleFullscreen();
+            if (isFullscreen) closeFullscreen();
         });
 
         chatInput.addEventListener('input', function() {
@@ -1487,6 +1551,10 @@
                     closed = true;
                 }
             });
+            if (isFullscreen) {
+                closeFullscreen();
+                closed = true;
+            }
             if(!closed && !e.state) exitSession();
         });
 
