@@ -310,10 +310,22 @@
         .received .reaction-badge { left: 0; }
         .sent .reaction-badge { background: #333; color: white; border-color: #000; }
 
-        .swipe-reply-icon { position: absolute; top: 50%; transform: translateY(-50%) scale(0); width: 30px; height: 30px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 0; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        /* FIXED SWIPE ANIMATION CLASSES */
+        .swipe-reply-icon { 
+            position: absolute; 
+            top: 50%; 
+            transform: translateY(-50%) scale(0); 
+            width: 30px; height: 30px; 
+            background: #333; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+            z-index: -1; 
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
         .swipe-reply-icon svg { width: 16px; height: 16px; fill: #fff; }
-        .received .swipe-reply-icon { left: -45px; } 
-        .sent .swipe-reply-icon { right: -45px; }
+        .received .swipe-reply-icon { left: 15px; } 
+        .sent .swipe-reply-icon { right: 15px; }
 
         .reply-box-ui { background: linear-gradient(90deg, var(--accent-dim) 0%, rgba(255, 255, 255, 0.05) 100%); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 0.85rem; border-left: 4px solid var(--accent); color: rgba(255,255,255,0.95); max-width: 100%; cursor: pointer; position: relative; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; text-overflow: ellipsis; white-space: normal; line-height: 1.4; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: all 0.25s var(--ease-spring); box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); }
         .reply-box-ui::before { content: 'Replying to'; display: block; font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; opacity: 0.9; }
@@ -335,11 +347,25 @@
         #effect-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4000; }
 
         /* =========================================
-           9. INPUT AREA
+           9. INPUT AREA (PROFESSIONAL REDESIGN)
            ========================================= */
         .input-area-container { background: transparent; border-top: 1px solid transparent; padding-bottom: calc(1px + env(safe-area-inset-bottom)) !important; flex-shrink: 0; width: 100%; z-index: 1000; position: relative; margin-top: auto; touch-action: pan-y !important; }
-        .input-area { margin: 12px 24px; padding: 4px 8px; display: flex; align-items: flex-end; gap: 8px; background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75)); border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); box-shadow: 0 -2px 20px var(--accent-dim), 0 8px 30px rgba(0,0,0,0.5); transform: scale(0.96); transform-origin: bottom center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); touch-action: none !important; position: relative; will-change: transform, box-shadow, border-radius; }
-        .input-area:focus-within, .input-area.force-expand { margin: 8px 12px; transform: scale(1); border-radius: 26px; background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); border-color: var(--accent); box-shadow: 0 -2px 30px rgba(255, 109, 0, 0.5), 0 10px 40px rgba(255, 109, 0, 0.4), 0 0 15px rgba(255, 109, 0, 0.2) inset; }
+        
+        .input-area { 
+            margin: 12px 24px; padding: 4px 8px; display: flex; align-items: flex-end; gap: 8px; 
+            background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75)); border-radius: 40px; 
+            border: 1px solid transparent; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05); 
+            transform: scale(0.96); transform-origin: bottom center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            touch-action: none !important; position: relative; will-change: transform, box-shadow, border-radius; 
+        }
+        
+        .input-area:focus-within, .input-area.force-expand { 
+            margin: 8px 12px; transform: scale(1); border-radius: 26px; 
+            background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); border-color: transparent; 
+            box-shadow: 0 4px 25px rgba(255, 109, 0, 0.15), inset 0 0 0 1px rgba(255, 109, 0, 0.5); 
+        }
+        
         .input-box { flex: 1; background: transparent !important; border-radius: 0; padding: 0; border: none !important; display: flex; align-items: center; min-height: 40px; box-shadow: none !important; }
         .msg-input { width: 100%; background: transparent; border: none; color: white; padding: 8px 4px; font-size: 15px; resize: none; max-height: 140px; overflow-y: auto; line-height: 1.4; touch-action: pan-y; overscroll-behavior-y: contain; transition: height 0.2s ease; }
         
@@ -395,18 +421,20 @@
         .attach-opt:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .attach-opt svg { width: 24px; height: 24px; fill: #eee; }
 
+        /* OVERLAYS & REDESIGNED MENU (INSTAGRAM STYLE) */
         #menu-overlay, #reaction-details-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: fadeInOverlay 0.2s ease; }
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
-        .menu-card { background: #1c1c1c; border-radius: 20px; width: 280px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); transform: scale(0.9); animation: scaleIn 0.3s var(--ease-spring) forwards; }
+        .menu-card { background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 16px; width: 280px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); transform: scale(0.9); animation: scaleIn 0.3s var(--ease-spring) forwards; }
         @keyframes scaleIn { to { transform: scale(1); } }
-        .reaction-bar { display: flex; justify-content: space-evenly; padding: 18px 10px; border-bottom: 1px solid #333; background: #222; }
+        .reaction-bar { display: flex; justify-content: space-evenly; padding: 18px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); }
         .reaction-bar span { font-size: 2rem; cursor: pointer; transition: transform 0.2s var(--ease-spring); }
         .reaction-bar span:active { transform: scale(1.4); }
-        .more-emoji-trigger { background: #333; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; cursor: pointer; transition: transform 0.2s, background 0.2s; }
-        .more-emoji-trigger:active { transform: scale(0.9); background: #444; }
-        .menu-opt { padding: 16px; text-align: center; font-size: 1rem; border-bottom: 1px solid #2a2a2a; color: #fff; font-weight: 500; transition: background 0.2s; }
-        .menu-opt:active { background: #333; }
+        .more-emoji-trigger { background: rgba(255,255,255,0.1); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+        .more-emoji-trigger:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+        .menu-opt { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; font-weight: 500; transition: background 0.2s; cursor: pointer; }
+        .menu-opt span.material-icons-round { font-size: 20px; opacity: 0.8; }
+        .menu-opt:active { background: rgba(255,255,255,0.1); }
         
         #reply-dock { display: none; background: #161616; padding: 12px 16px; border-top: 1px solid var(--border); justify-content: space-between; align-items: center; animation: slideUp 0.3s var(--ease-spring); }
 
@@ -543,11 +571,11 @@
         </div>
         <div id="menu-emoji-grid"></div>
         
-        <div class="menu-opt" onclick="copyMessageText()">Copy Text</div>
-        <div class="menu-opt" onclick="initReplyFromActive()">Reply</div>
-        <div id="edit-btn" class="menu-opt" onclick="initEdit()">Edit</div>
-        <div id="unsend-btn" class="menu-opt" style="color:#ff453a; font-weight: 600;" onclick="unsendMsg()">Unsend</div>
-        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888">Cancel</div>
+        <div class="menu-opt" onclick="copyMessageText()"><span>Copy Text</span><span class="material-icons-round">content_copy</span></div>
+        <div class="menu-opt" onclick="initReplyFromActive()"><span>Reply</span><span class="material-icons-round">reply</span></div>
+        <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span>Edit</span><span class="material-icons-round">edit</span></div>
+        <div id="unsend-btn" class="menu-opt" style="color:#ff453a;" onclick="unsendMsg()"><span>Unsend</span><span class="material-icons-round">delete_outline</span></div>
+        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span>Cancel</span><span class="material-icons-round">close</span></div>
     </div>
 </div>
 
@@ -707,7 +735,7 @@
             setTimeout(() => {
                 emojiTray.style.display = 'none';
                 if(history.state && history.state.modal === 'emoji') history.back();
-                window.scrollToBottom();
+                if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             }, 150); 
             
         } else {
@@ -728,7 +756,7 @@
             
             if (wasFocused) mInput.blur(); 
             
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('emoji');
         }
     };
@@ -752,7 +780,7 @@
             setTimeout(() => {
                 gifTray.style.display = 'none';
                 if(history.state && history.state.modal === 'gif') history.back();
-                window.scrollToBottom();
+                if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             }, 150); 
             
         } else {
@@ -773,7 +801,7 @@
             
             if (wasFocused) mInput.blur(); 
             
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('gif');
         }
     };
@@ -953,7 +981,6 @@
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
         document.body.style.top = '0px'; 
-        window.scrollToBottom();
     }
 
     if (window.visualViewport) {
@@ -1134,7 +1161,7 @@
             if(history.state && history.state.modal === 'emoji') history.back();
         } else {
             emojiTray.style.display = 'block';
-            window.scrollToBottom();
+            if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('emoji');
         }
     }
@@ -1184,6 +1211,9 @@
         lockViewportAndHeader();
         setTimeout(lockViewportAndHeader, 50);
         setTimeout(lockViewportAndHeader, 300); 
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) {
+            window.scrollToBottom();
+        }
     });
     
     mInput.addEventListener("blur", () => {
@@ -1849,13 +1879,12 @@
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 if (tapLength < 300 && tapLength > 0) {
-                    window.cancelBiteClick(id); // Prevent video navigation on double tap
+                    window.cancelBiteClick(id); 
                     e.preventDefault(); 
-                    e.stopPropagation(); // DOUBLE TAP KEYBOARD DISMISS FIX
+                    e.stopPropagation(); 
                     
-                    if (document.activeElement === mInput || mInput.matches(':focus')) {
-                        mInput.focus({preventScroll: true});
-                        setTimeout(() => { mInput.click(); }, 10);
+                    if (document.activeElement === mInput || mInput.matches(':focus') || document.querySelector('.input-area').classList.contains('force-expand')) {
+                        setTimeout(() => { mInput.focus({preventScroll: true}); }, 10);
                     }
                     
                     if (m.sender === myUid) { vibrate(40); activeMenuId = id; initEdit(); } 
@@ -1880,12 +1909,19 @@
                 currentX = e.touches[0].clientX;
                 let diff = currentX - startX;
                 if (Math.abs(diff) > 10) { clearTimeout(menuTimer); isScrolling = true; window.isScrollingNow = true; }
+                
                 if (side === 'received' && diff > 0 && diff < 150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
-                    if(swipeIcon) { let scale = Math.min(1, diff / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; }
+                    if(swipeIcon) { 
+                        let scale = Math.min(1, diff / 60); 
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
+                    }
                 } else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
-                    if(swipeIcon) { let scale = Math.min(1, Math.abs(diff) / 60); swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; }
+                    if(swipeIcon) { 
+                        let scale = Math.min(1, Math.abs(diff) / 60); 
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
+                    }
                 }
             }, {passive: true});
 
@@ -1905,10 +1941,13 @@
                     mInput.focus({preventScroll: true}); setTimeout(() => { mInput.click(); }, 10);
                     triggerReply(replyText);
                 }
-                swipeBubbleBox.style.transition = "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                swipeBubbleBox.style.transition = "transform 0.3s var(--ease-spring)";
                 swipeBubbleBox.style.transform = `translateX(0px)`;
-                if(swipeIcon) { swipeIcon.style.transition = "transform 0.2s"; swipeIcon.style.transform = `translateY(-50%) scale(0)`; }
-                setTimeout(() => { swipeBubbleBox.style.transition = ""; if(swipeIcon) swipeIcon.style.transition = ""; }, 200);
+                if(swipeIcon) { 
+                    swipeIcon.style.transition = "transform 0.3s"; 
+                    swipeIcon.style.transform = `translateY(-50%) scale(0)`; 
+                }
+                setTimeout(() => { swipeBubbleBox.style.transition = ""; if(swipeIcon) swipeIcon.style.transition = ""; }, 300);
                 startX = 0; currentX = 0; isScrolling = false;
             });
     }
@@ -2152,20 +2191,6 @@
         const deepLink = `https://www.goorac.biz/groupChat.html?id=${groupId}`;
 
         console.log("Push Notification system bypassed successfully.", { messageText });
-        
-        /*
-        groupData.participants.forEach(uid => {
-            if(uid === myUid) return;
-            try {
-                const backendUrl = "https://pish-uigm.onrender.com/send-push";
-                fetch(backendUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ targetUid: uid, title: `${senderName} in ${groupName}`, body: messageText, icon: senderPhoto, click_action: deepLink })
-                }).catch(err => {});
-            } catch (error) {}
-        });
-        */
     };
     
     async function sendImageMessage(imageUrl) {
@@ -2232,8 +2257,8 @@
 
     function openMenu(id, sender, text) {
         activeMenuId = id; vibrate(30); const isMine = sender === myUid;
-        document.getElementById('edit-btn').style.display = (isMine && text) ? 'block' : 'none'; 
-        document.getElementById('unsend-btn').style.display = isMine ? 'block' : 'none';
+        document.getElementById('edit-btn').style.display = (isMine && text) ? 'flex' : 'none'; 
+        document.getElementById('unsend-btn').style.display = isMine ? 'flex' : 'none';
         document.getElementById('menu-emoji-grid').style.display = 'none';
         document.getElementById('menu-overlay').style.display = 'flex';
         pushModalState('menu');
@@ -2409,7 +2434,6 @@
     //  PERSISTENT AI CHAT MOOD ENGINE (SLEEK ICONS)
     // =========================================
     (function initAIEngine() {
-        // Updated mood map to use sleek material design icons instead of emojis
         const moodMap = { 
             happy: 'sentiment_very_satisfied', 
             sad: 'sentiment_very_dissatisfied', 
@@ -2456,7 +2480,6 @@
             if(iconSpan && iconContainer) {
                 const detectedMood = calculateEmotion();
                 
-                // Animate smoothly when changing mood icon
                 if (iconSpan.innerText !== detectedMood) {
                     iconContainer.style.transform = 'scale(0.8)';
                     iconContainer.style.opacity = '0.5';
