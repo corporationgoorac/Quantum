@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v34'; // Bumped to v13 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v35'; // Bumped to v34 to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -91,7 +91,8 @@ self.addEventListener('fetch', (e) => {
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
-        caches.match(e.request).then((cachedResponse) => {
+        // ADDED { ignoreSearch: true } HERE to ignore query parameters that break caching
+        caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
             
             // 1. Kick off a background network request to fetch the freshest data
             const fetchPromise = fetch(e.request).then((networkResponse) => {
