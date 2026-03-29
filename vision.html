@@ -246,8 +246,24 @@
         }
         .fs-bottom-bar:active { transform: scale(0.98); background: rgba(0,0,0,0.8); }
 
+        /* NEW: EMOJI QUICK REACT BAR */
+        .fs-emoji-bar {
+            position: absolute; bottom: 140px; left: 20px; right: 20px;
+            display: flex; gap: 16px; overflow-x: auto; padding: 12px 16px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
+            pointer-events: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            z-index: 55;
+        }
+        .fs-emoji-bar::-webkit-scrollbar { display: none; }
+        .fs-emoji-btn {
+            font-size: 26px; cursor: pointer; transition: transform 0.2s;
+            flex-shrink: 0; padding: 2px;
+        }
+        .fs-emoji-btn:active { transform: scale(1.3); }
+
         .fs-chat-box {
-            position: absolute; bottom: 140px; left: 20px; z-index: 50;
+            position: absolute; bottom: 210px; left: 20px; z-index: 50;
             display: flex; flex-direction: column; gap: 8px; pointer-events: none;
         }
         .fs-chat-msg {
@@ -505,10 +521,74 @@
 
                     <div class="fs-controls hide" id="fs-controls">
                         <div class="fs-top-bar" onclick="event.stopPropagation()">
-                            <div class="nav-btn exit" onclick="toggleFullscreen()"><span class="material-icons-round">fullscreen_exit</span></div>
+                            <div class="nav-btn exit" onclick="closeFullscreen(false)"><span class="material-icons-round">fullscreen_exit</span></div>
                         </div>
                         <div class="fs-center-btn" onclick="togglePlayPause(event); event.stopPropagation();"><span class="material-icons-round" id="fs-play-icon">pause</span></div>
                         
+                        <div class="fs-emoji-bar" onclick="event.stopPropagation()">
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😂')">😂</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤣')">🤣</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😍')">😍</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🙃')">🙃</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😔')">😔</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🧐')">🧐</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😱')">😱</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🥱')">🥱</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😮‍💨')">😮‍💨</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😟')">😟</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😥')">😥</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😢')">😢</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🙁')">🙁</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🫤')">🫤</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😕')">😕</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😰')">😰</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😨')">😨</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😧')">😧</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😮')">😮</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😯')">😯</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😲')">😲</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😳')">😳</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😖')">😖</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😣')">😣</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😩')">😩</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😫')">😫</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😵')">😵</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😵‍💫')">😵‍💫</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🫨')">🫨</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🥴')">🥴</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤧')">🤧</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😴')">😴</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🫩')">🫩</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤮')">🤮</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤢')">🤢</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🥶')">🥶</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🥵')">🥵</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤒')">🤒</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😷')">😷</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤥')">🤥</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤠')">🤠</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤑')">🤑</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤓')">🤓</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😎')">😎</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🥸')">🥸</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😈')">😈</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('👻')">👻</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('💀')">💀</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('👽')">👽</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('☃️')">☃️</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('👹')">👹</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🤖')">🤖</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌚')">🌚</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌞')">🌞</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌜')">🌜</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😸')">😸</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('😾')">😾</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌛')">🌛</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌝')">🌝</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🌙')">🌙</span>
+                            <span class="fs-emoji-btn" onclick="sendQuickEmoji('🖤')">🖤</span>
+                        </div>
+
                         <div class="fs-bottom-bar" onclick="exitFsAndChat(event); event.stopPropagation();">
                             <span class="material-icons-round" style="font-size:20px;">chat</span> Type a message...
                         </div>
@@ -567,7 +647,7 @@
 
     <div id="picker-modal">
         <div class="picker-header">
-            <span class="material-icons-round" style="font-size:32px; color:#fff; cursor:pointer;" onclick="closePicker()">expand_more</span>
+            <span class="material-icons-round" style="font-size:32px; color:#fff; cursor:pointer;" onclick="closePicker(false)">expand_more</span>
             <input type="text" id="vid-search-input" class="search-box" placeholder="Search or paste YouTube link...">
         </div>
         <div id="picker-results">
@@ -583,6 +663,9 @@
         let currentSearchQuery = "";
         let isFetchingMore = false;
         let pipedNextPageToken = "";
+
+        // FIX: ROBUST HISTORY MANAGEMENT STATE
+        let isProgrammaticBack = false;
 
         // NEW HELPER: Format Time Duration
         function formatDuration(seconds) {
@@ -874,7 +957,7 @@
                 if(!data.videoData) {
                     document.getElementById('video-placeholder').style.display = 'flex';
                     document.getElementById('video-touch-overlay').style.display = 'none';
-                    if (isFullscreen) closeFullscreen(); // Exit fs if cleared
+                    if (isFullscreen) closeFullscreen(false); // Exit fs if cleared
                     if (player && typeof player.stopVideo === 'function') player.stopVideo(); 
                 } else {
                     document.getElementById('video-touch-overlay').style.background = 'rgba(0,0,0,0.8)';
@@ -973,7 +1056,7 @@
             if (!isPlayerReady || !currentVideoId) return;
 
             // Ensure we don't misfire on inner controls
-            if (event.target.closest('.fs-center-btn') || event.target.closest('.fs-top-bar') || event.target.closest('.fs-bottom-bar')) return;
+            if (event.target.closest('.fs-center-btn') || event.target.closest('.fs-top-bar') || event.target.closest('.fs-bottom-bar') || event.target.closest('.fs-emoji-bar')) return;
 
             tapCount++;
             const rect = event.currentTarget.getBoundingClientRect();
@@ -1028,7 +1111,8 @@
             if (isFullscreen) resetFsTimeout();
         }
 
-        function closeFullscreen() {
+        // FIX: ROBUST FULLSCREEN EXIT LOGIC
+        function closeFullscreen(fromPopState = false) {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -1039,6 +1123,13 @@
             const ctrls = document.getElementById('fs-controls');
             ctrls.classList.add('hide');
             setTimeout(() => { if(!isFullscreen) ctrls.style.display = 'none'; }, 300);
+
+            // Force the history back seamlessly without triggering popstate bugs
+            if (!fromPopState && history.state && history.state.modal === 'fullscreen') {
+                isProgrammaticBack = true;
+                history.back();
+                setTimeout(() => isProgrammaticBack = false, 100);
+            }
         }
 
         function toggleFullscreen() {
@@ -1057,19 +1148,16 @@
                 history.pushState({modal: 'fullscreen'}, "");
                 resetFsTimeout();
             } else {
-                closeFullscreen();
-                if (history.state && history.state.modal === 'fullscreen') {
-                    history.back();
-                }
+                closeFullscreen(false);
             }
         }
 
         // Sync state when exiting fullscreen natively
         document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement && isFullscreen) closeFullscreen();
+            if (!document.fullscreenElement && isFullscreen) closeFullscreen(false);
         });
         document.addEventListener('webkitfullscreenchange', () => {
-            if (!document.webkitFullscreenElement && isFullscreen) closeFullscreen();
+            if (!document.webkitFullscreenElement && isFullscreen) closeFullscreen(false);
         });
 
         function toggleFsControls() {
@@ -1097,16 +1185,27 @@
 
         function exitFsAndChat(event) {
             if(event) event.stopPropagation();
-            if(isFullscreen) closeFullscreen();
+            if(isFullscreen) closeFullscreen(false);
             
-            // Return back in history state so the hardware back button logic stays clean
-            if (history.state && history.state.modal === 'fullscreen') {
-                history.back();
-            }
-
             setTimeout(() => {
                 document.getElementById('chat-input').focus();
             }, 300);
+        }
+
+        // NEW: Quick Emoji Sender Logic
+        function sendQuickEmoji(emoji) {
+            if (!roomId) return;
+            
+            checkKeywords(emoji);
+            popSound.play().catch(()=>{});
+
+            visionRdb.ref(`vision_chat/${roomId}`).push({
+                text: emoji,
+                sender: myUid,
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'msg'
+            });
+            resetFsTimeout(); // Keep UI open
         }
 
         function seekTimeline(event) {
@@ -1207,11 +1306,12 @@
             history.pushState({modal: 'picker'}, "");
         }
         
-        function closePicker() {
-            if (history.state && history.state.modal === 'picker') {
+        function closePicker(fromPopState = false) {
+            document.getElementById('picker-modal').classList.remove('active');
+            if (!fromPopState && history.state && history.state.modal === 'picker') {
+                isProgrammaticBack = true;
                 history.back();
-            } else {
-                document.getElementById('picker-modal').classList.remove('active');
+                setTimeout(() => isProgrammaticBack = false, 100);
             }
         }
 
@@ -1365,7 +1465,7 @@
         });
 
         function selectVideo(vidObj) {
-            closePicker();
+            closePicker(false);
             visionDb.collection('vision_rooms').doc(roomId).update({
                 status: 'playing',
                 videoData: vidObj,
@@ -1397,7 +1497,7 @@
 
         // NEW: EXIT FULLSCREEN ON TYPING
         chatInput.addEventListener('focus', function() {
-            if (isFullscreen) closeFullscreen();
+            if (isFullscreen) closeFullscreen(false);
         });
 
         chatInput.addEventListener('input', function() {
@@ -1541,21 +1641,28 @@
             }
         }
 
+        // FIX: ROBUST HISTORY MANAGEMENT EVENT LISTENER
         window.addEventListener('popstate', (e) => {
-            const modals = [ { id: 'picker-modal', activeClass: 'active' } ];
-            let closed = false;
-            modals.forEach(m => {
-                const el = document.getElementById(m.id);
-                if(el && el.classList.contains(m.activeClass)) {
-                    el.classList.remove(m.activeClass);
-                    closed = true;
-                }
-            });
-            if (isFullscreen) {
-                closeFullscreen();
-                closed = true;
+            if (isProgrammaticBack) return; // Prevent double-firing from UI exits
+
+            let handled = false;
+
+            // 1. Check if Picker is open
+            if (document.getElementById('picker-modal').classList.contains('active')) {
+                closePicker(true);
+                handled = true;
             }
-            if(!closed && !e.state) exitSession();
+
+            // 2. Check if Fullscreen is active
+            if (isFullscreen) {
+                closeFullscreen(true);
+                handled = true;
+            }
+
+            // 3. If neither were open, and the state is null, user hit back button to leave room
+            if (!handled && !e.state) {
+                exitSession();
+            }
         });
 
         function showScreen(id) {
