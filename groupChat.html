@@ -324,8 +324,8 @@
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
         .swipe-reply-icon svg { width: 16px; height: 16px; fill: #fff; }
-        .received .swipe-reply-icon { left: 15px; } 
-        .sent .swipe-reply-icon { right: 15px; }
+        .received .swipe-reply-icon { left: -45px; } 
+        .sent .swipe-reply-icon { right: -45px; }
 
         .reply-box-ui { background: linear-gradient(90deg, var(--accent-dim) 0%, rgba(255, 255, 255, 0.05) 100%); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 0.85rem; border-left: 4px solid var(--accent); color: rgba(255,255,255,0.95); max-width: 100%; cursor: pointer; position: relative; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; text-overflow: ellipsis; white-space: normal; line-height: 1.4; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: all 0.25s var(--ease-spring); box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); }
         .reply-box-ui::before { content: 'Replying to'; display: block; font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; opacity: 0.9; }
@@ -421,18 +421,88 @@
         .attach-opt:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .attach-opt svg { width: 24px; height: 24px; fill: #eee; }
 
-        /* OVERLAYS & REDESIGNED MENU (INSTAGRAM STYLE) */
-        #menu-overlay, #reaction-details-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: fadeInOverlay 0.2s ease; }
+        /* OVERLAYS & REDESIGNED MENU (INSTAGRAM STYLE L-SHAPE) */
+        #menu-overlay, #reaction-details-overlay { 
+            display: none; position: fixed; inset: 0; 
+            background: rgba(0, 0, 0, 0.7); z-index: 2000; 
+            justify-content: center; align-items: center; 
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            animation: fadeInOverlay 0.2s ease;
+        }
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
-        .menu-card { background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 16px; width: 280px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); transform: scale(0.9); animation: scaleIn 0.3s var(--ease-spring) forwards; }
+        /* Instagram L-Shape Menu Structure */
+        .menu-card { 
+            background: transparent !important; 
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 0 !important; 
+            width: 100% !important; 
+            max-width: 320px;
+            overflow: visible !important; 
+            box-shadow: none !important; 
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end; /* Dynamically changed in JS */
+            transform: scale(0.9);
+            animation: scaleIn 0.3s var(--ease-spring) forwards;
+        }
         @keyframes scaleIn { to { transform: scale(1); } }
-        .reaction-bar { display: flex; justify-content: space-evenly; padding: 18px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); }
+        
+        .reaction-bar { 
+            display: flex; 
+            justify-content: space-evenly; 
+            padding: 12px 16px !important; 
+            border-bottom: none !important; 
+            background: rgba(30, 30, 30, 0.9) !important; 
+            border-radius: 30px !important;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            width: 100%;
+        }
         .reaction-bar span { font-size: 2rem; cursor: pointer; transition: transform 0.2s var(--ease-spring); }
         .reaction-bar span:active { transform: scale(1.4); }
-        .more-emoji-trigger { background: rgba(255,255,255,0.1); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+        
+        .more-emoji-trigger { 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 50%; 
+            width: 38px; height: 38px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 20px; 
+            color: #fff; 
+            cursor: pointer; 
+            transition: transform 0.2s, background 0.2s;
+        }
         .more-emoji-trigger:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
-        .menu-opt { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; font-weight: 500; transition: background 0.2s; cursor: pointer; }
+
+        .menu-options-container {
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            width: 250px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-opt { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px; 
+            font-size: 0.95rem; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            color: #fff; 
+            font-weight: 500;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
         .menu-opt span.material-icons-round { font-size: 20px; opacity: 0.8; }
         .menu-opt:active { background: rgba(255,255,255,0.1); }
         
@@ -569,13 +639,14 @@
             <span onclick="applyReaction('👍')">👍</span>
             <div class="more-emoji-trigger" onclick="expandEmojiMenu()">+</div>
         </div>
-        <div id="menu-emoji-grid"></div>
-        
-        <div class="menu-opt" onclick="copyMessageText()"><span>Copy Text</span><span class="material-icons-round">content_copy</span></div>
-        <div class="menu-opt" onclick="initReplyFromActive()"><span>Reply</span><span class="material-icons-round">reply</span></div>
-        <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span>Edit</span><span class="material-icons-round">edit</span></div>
-        <div id="unsend-btn" class="menu-opt" style="color:#ff453a;" onclick="unsendMsg()"><span>Unsend</span><span class="material-icons-round">delete_outline</span></div>
-        <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span>Cancel</span><span class="material-icons-round">close</span></div>
+        <div class="menu-options-container">
+            <div id="menu-emoji-grid"></div>
+            <div class="menu-opt" onclick="copyMessageText()"><span>Copy Text</span><span class="material-icons-round">content_copy</span></div>
+            <div class="menu-opt" onclick="initReplyFromActive()"><span>Reply</span><span class="material-icons-round">reply</span></div>
+            <div id="edit-btn" class="menu-opt" onclick="initEdit()"><span>Edit</span><span class="material-icons-round">edit</span></div>
+            <div id="unsend-btn" class="menu-opt" style="color:#ff453a;" onclick="unsendMsg()"><span>Unsend</span><span class="material-icons-round">delete_outline</span></div>
+            <div class="menu-opt" onclick="closeMenu()" style="border-bottom:none; color: #888"><span>Cancel</span><span class="material-icons-round">close</span></div>
+        </div>
     </div>
 </div>
 
@@ -1211,8 +1282,12 @@
         lockViewportAndHeader();
         setTimeout(lockViewportAndHeader, 50);
         setTimeout(lockViewportAndHeader, 300); 
-        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) {
-            window.scrollToBottom();
+        
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 350) {
+            window.scrollToBottom(true);
+            setTimeout(() => window.scrollToBottom(true), 100);
+            setTimeout(() => window.scrollToBottom(true), 300);
+            setTimeout(() => window.scrollToBottom(true), 500);
         }
     });
     
@@ -1885,6 +1960,7 @@
                     
                     if (document.activeElement === mInput || mInput.matches(':focus') || document.querySelector('.input-area').classList.contains('force-expand')) {
                         setTimeout(() => { mInput.focus({preventScroll: true}); }, 10);
+                        setTimeout(() => { mInput.click(); }, 50);
                     }
                     
                     if (m.sender === myUid) { vibrate(40); activeMenuId = id; initEdit(); } 
@@ -1914,13 +1990,13 @@
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) { 
                         let scale = Math.min(1, diff / 60); 
-                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
+                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; 
                     }
                 } else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) { 
                         let scale = Math.min(1, Math.abs(diff) / 60); 
-                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
+                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; 
                     }
                 }
             }, {passive: true});
@@ -2257,6 +2333,10 @@
 
     function openMenu(id, sender, text) {
         activeMenuId = id; vibrate(30); const isMine = sender === myUid;
+        
+        const menuCard = document.getElementById('main-menu-card');
+        menuCard.style.alignItems = isMine ? 'flex-end' : 'flex-start';
+
         document.getElementById('edit-btn').style.display = (isMine && text) ? 'flex' : 'none'; 
         document.getElementById('unsend-btn').style.display = isMine ? 'flex' : 'none';
         document.getElementById('menu-emoji-grid').style.display = 'none';
