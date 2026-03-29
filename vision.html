@@ -659,6 +659,11 @@
     </div>
 
     <script>
+        // Unlock orientation for this specific page (Overrides Manifest on Android)
+        if (screen && screen.orientation && screen.orientation.unlock) {
+            try { screen.orientation.unlock(); } catch(e) {}
+        }
+        
         // NEW STATE VARIABLES FOR INFINITE SCROLL
         let currentSearchQuery = "";
         let isFetchingMore = false;
@@ -1124,6 +1129,13 @@
             ctrls.classList.add('hide');
             setTimeout(() => { if(!isFullscreen) ctrls.style.display = 'none'; }, 300);
 
+            // NEW: Lock back to portrait when exiting fullscreen
+            if (screen && screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait').catch(function(error) {
+                    console.log("Orientation lock failed: ", error);
+                });
+            }
+
             // Force the history back seamlessly without triggering popstate bugs
             if (!fromPopState && history.state && history.state.modal === 'fullscreen') {
                 isProgrammaticBack = true;
@@ -1147,6 +1159,11 @@
                 
                 history.pushState({modal: 'fullscreen'}, "");
                 resetFsTimeout();
+
+                // NEW: Unlock orientation or force landscape when entering fullscreen
+                if (screen && screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch(e) {}
+                }
             } else {
                 closeFullscreen(false);
             }
@@ -1676,6 +1693,11 @@
         }
 
         async function exitSession(isAlreadyEnded = false) {
+            // FIX: Exit fullscreen before destroying the room so the redirect isn't blocked by the browser
+            if (isFullscreen) {
+                closeFullscreen(true);
+            }
+            
             if (roomId && !isAlreadyEnded) {
                 try {
                     // Visual cue so the app doesn't feel frozen on slow WiFi
