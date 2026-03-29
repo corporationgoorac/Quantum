@@ -170,6 +170,13 @@
             transition: flex 0.3s ease, min-height 0.3s ease; 
         }
 
+        /* NEW FULLSCREEN CSS */
+        .video-zone.fullscreen-mode {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 9999; flex: none; border: none; padding-top: 0;
+            max-height: none; min-height: none; border-radius: 0;
+        }
+
         body.keyboard-open .video-zone {
             flex: 0 0 22vh;
             min-height: 160px; 
@@ -200,6 +207,47 @@
         .v-state-icon.paused { box-shadow: 0 0 30px rgba(255, 69, 58, 0.4); color: #ff453a; }
         .v-state-icon.playing { box-shadow: 0 0 30px var(--accent-glow); color: var(--accent); }
 
+        /* NEW FULLSCREEN AND SKIP CONTROLS */
+        .skip-anim {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(0,0,0,0.6); color: #fff; padding: 15px;
+            border-radius: 50%; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 40;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);
+        }
+        .skip-anim.show { opacity: 1; animation: skipPop 0.4s ease-out; }
+        .skip-anim.left { left: 15%; }
+        .skip-anim.right { right: 15%; }
+        @keyframes skipPop { 0% { transform: translateY(-50%) scale(0.8); } 50% { transform: translateY(-50%) scale(1.2); } 100% { transform: translateY(-50%) scale(1); } }
+
+        .fs-controls {
+            display: none; position: absolute; inset: 0; z-index: 45;
+            background: rgba(0,0,0,0.6); flex-direction: column; 
+            transition: opacity 0.3s;
+        }
+        .fs-controls.hide { opacity: 0; pointer-events: none; }
+        .fs-top-bar { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; z-index: 46; }
+        .fs-center-btn {
+            margin: auto; width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; transition: 0.2s; border: 1px solid rgba(255,255,255,0.3);
+        }
+        .fs-center-btn:active { transform: scale(0.9); }
+        .fs-center-btn span { font-size: 48px; }
+
+        .fs-chat-box {
+            position: absolute; bottom: 60px; left: 20px; z-index: 50;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+        }
+        .fs-chat-msg {
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); padding: 8px 12px;
+            border-radius: 20px; color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px;
+            transition: opacity 0.5s; border: 1px solid rgba(255,255,255,0.1); width: max-content;
+            max-width: 80vw; word-wrap: break-word; line-height: 1.3; font-weight: 500;
+        }
+        /* END NEW FULLSCREEN UI */
+
         .v-spinner {
             position: absolute; width: 50px; height: 50px; border-radius: 50%;
             border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent);
@@ -211,6 +259,10 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 25px;
             z-index: 40; cursor: pointer; display: flex; align-items: flex-end;
             background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+        }
+        .video-zone.fullscreen-mode #video-progress-container {
+            bottom: env(safe-area-inset-bottom, 20px);
+            height: 40px; padding: 0 10px; z-index: 60;
         }
         #video-progress-bar {
             height: 3px; background: var(--accent); width: 0%;
@@ -428,9 +480,27 @@
                     <div id="video-progress-bar"></div>
                 </div>
 
-                <div class="video-touch-overlay" id="video-touch-overlay" onclick="handleVideoTap()" style="display:none;">
+                <div class="video-touch-overlay" id="video-touch-overlay" onclick="handleVideoTap(event)" style="display:none;">
                     <div class="v-spinner" id="v-spinner"></div>
                     <div class="v-state-icon" id="v-state-icon"><span class="material-icons-round">play_arrow</span></div>
+
+                    <div class="skip-anim left" id="skip-left">
+                        <span class="material-icons-round" style="font-size:32px;">fast_rewind</span>
+                        <span style="font-size:12px; font-weight:700; margin-top:4px;">10s</span>
+                    </div>
+                    <div class="skip-anim right" id="skip-right">
+                        <span class="material-icons-round" style="font-size:32px;">fast_forward</span>
+                        <span style="font-size:12px; font-weight:700; margin-top:4px;">10s</span>
+                    </div>
+
+                    <div class="fs-controls hide" id="fs-controls" onclick="event.stopPropagation()">
+                        <div class="fs-top-bar">
+                            <div class="nav-btn exit" onclick="toggleFullscreen()"><span class="material-icons-round">fullscreen_exit</span></div>
+                        </div>
+                        <div class="fs-center-btn" onclick="togglePlayPause(event)"><span class="material-icons-round" id="fs-play-icon">pause</span></div>
+                    </div>
+                    
+                    <div class="fs-chat-box" id="fs-chat-box"></div>
                 </div>
             </div>
 
@@ -441,6 +511,9 @@
                 </div>
                 
                 <div class="action-controls">
+                    <button class="icon-action-btn" id="fs-btn" onclick="toggleFullscreen()" style="display:none;" title="Full Screen">
+                        <span class="material-icons-round">fullscreen</span>
+                    </button>
                     <button class="icon-action-btn" id="delete-vid-btn" onclick="clearVideo()" style="display:none;" title="Clear Video">
                         <span class="material-icons-round">delete_outline</span>
                     </button>
@@ -533,6 +606,12 @@
         let ignoreSyncEvent = false; 
         let lastKnownState = -1; 
         let syncInterval = null; 
+
+        // Fullscreen & Tap State
+        let isFullscreen = false;
+        let fsTimeout = null;
+        let tapTimer = null;
+        let tapCount = 0;
 
         // Chat State
         const chatInput = document.getElementById('chat-input');
@@ -642,6 +721,10 @@
 
             requestWakeLock();
             
+            // NEW: HARD-CLOSE FAILSAFE
+            visionRdb.ref(`vision_chat/${roomId}`).onDisconnect().remove();
+            visionRdb.ref(`typing/vision_${roomId}`).onDisconnect().remove();
+
             window.addEventListener('beforeunload', () => roomRef.update({ [myField]: 'offline' }));
             // FIX: Prevent aggressive disconnects when mobile users switch tabs temporarily
             document.addEventListener('visibilitychange', () => { 
@@ -741,6 +824,7 @@
             const btn = document.getElementById('action-btn');
             const swapBtn = document.getElementById('swap-turn-btn');
             const deleteBtn = document.getElementById('delete-vid-btn');
+            const fsBtn = document.getElementById('fs-btn'); // FULLSCREEN
             
             if (isMyTurn) {
                 btn.className = "dj-btn";
@@ -757,15 +841,17 @@
 
             if (data.videoData && data.videoData.id) {
                 deleteBtn.style.display = 'flex';
+                fsBtn.style.display = 'flex'; // Show fullscreen when loaded
             } else {
                 deleteBtn.style.display = 'none';
+                fsBtn.style.display = 'none';
             }
 
             if (data.status === 'playing') {
                 btn.style.display = 'none';
             } else {
                 btn.style.display = 'flex';
-                document.getElementById('video-progress-bar').style.width = '0%'; 
+                document.getElementById('video-progress-bar').style.width = '0%'; // FIX FOR PROGRESS BAR RESET
             }
 
             if (data.status === 'picking') {
@@ -774,6 +860,7 @@
                 if(!data.videoData) {
                     document.getElementById('video-placeholder').style.display = 'flex';
                     document.getElementById('video-touch-overlay').style.display = 'none';
+                    if (isFullscreen) toggleFullscreen(); // Exit fs if cleared
                     if (player && typeof player.stopVideo === 'function') player.stopVideo(); 
                 } else {
                     document.getElementById('video-touch-overlay').style.background = 'rgba(0,0,0,0.8)';
@@ -867,15 +954,95 @@
             }
         }
 
-        function handleVideoTap() {
+        // NEW: DOUBLE TAP AND FULLSCREEN TOUCH LOGIC
+        function handleVideoTap(event) {
             if (!isPlayerReady || !currentVideoId) return;
-            
+
+            // Ignore inner control clicks to prevent misfires
+            if (event.target.closest('.fs-center-btn') || event.target.closest('.fs-top-bar')) return;
+
+            tapCount++;
+            const rect = event.currentTarget.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const isLeft = clickX < (rect.width / 2);
+
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => {
+                    tapCount = 0; 
+                    if (isFullscreen) {
+                        toggleFsControls();
+                    } else {
+                        togglePlayPause();
+                    }
+                }, 300); // 300ms window to detect double tap
+            } else if (tapCount === 2) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                skipVideo(isLeft ? -10 : 10);
+            }
+        }
+
+        function togglePlayPause(event) {
+            if (event) event.stopPropagation();
             const state = player.getPlayerState();
             if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) { 
                 player.pauseVideo(); 
             } else {
                 player.playVideo();
             }
+            if (isFullscreen) resetFsTimeout();
+        }
+
+        function skipVideo(seconds) {
+            if (!isMyTurn) return; // Only host can skip
+            const dur = player.getDuration();
+            if (!dur) return;
+
+            let newTime = player.getCurrentTime() + seconds;
+            if (newTime < 0) newTime = 0;
+            if (newTime > dur - 1.5) newTime = dur - 1.5;
+
+            player.seekTo(newTime, true);
+            
+            // Show Skip Animation
+            const anim = document.getElementById(seconds > 0 ? 'skip-right' : 'skip-left');
+            anim.classList.add('show');
+            setTimeout(() => anim.classList.remove('show'), 500);
+
+            lastKnownState = player.getPlayerState();
+            broadcastState(lastKnownState === YT.PlayerState.PLAYING ? 'playing' : 'paused');
+            if (isFullscreen) resetFsTimeout();
+        }
+
+        function toggleFullscreen() {
+            const vz = document.getElementById('video-zone');
+            isFullscreen = !isFullscreen;
+            if (isFullscreen) {
+                vz.classList.add('fullscreen-mode');
+                document.getElementById('fs-controls').classList.remove('hide');
+                resetFsTimeout();
+            } else {
+                vz.classList.remove('fullscreen-mode');
+                document.getElementById('fs-controls').classList.add('hide');
+            }
+        }
+
+        function toggleFsControls() {
+            const ctrls = document.getElementById('fs-controls');
+            if (ctrls.classList.contains('hide')) {
+                ctrls.classList.remove('hide');
+                resetFsTimeout();
+            } else {
+                ctrls.classList.add('hide');
+            }
+        }
+
+        function resetFsTimeout() {
+            if (fsTimeout) clearTimeout(fsTimeout);
+            fsTimeout = setTimeout(() => {
+                const ctrls = document.getElementById('fs-controls');
+                if(ctrls && !ctrls.classList.contains('hide')) ctrls.classList.add('hide');
+            }, 3000);
         }
 
         function seekTimeline(event) {
@@ -908,22 +1075,26 @@
                 updatedBy: myUid,
                 ts: Date.now()
             });
+            if (isFullscreen) resetFsTimeout();
         }
 
         function updateOverlayUI(state) {
             const overlay = document.getElementById('video-touch-overlay');
             const icon = document.getElementById('v-state-icon');
+            const fsIcon = document.getElementById('fs-play-icon'); // FULLSCREEN ICON
             
             icon.className = "v-state-icon show";
             if (state === 'playing') {
                 overlay.style.background = 'transparent';
                 icon.classList.add('playing');
                 icon.innerHTML = '<span class="material-icons-round">play_arrow</span>';
+                if (fsIcon) fsIcon.innerText = 'pause';
                 setTimeout(() => icon.classList.remove('show', 'playing'), 1000);
             } else {
                 overlay.style.background = 'rgba(0,0,0,0.5)';
                 icon.classList.add('paused');
                 icon.innerHTML = '<span class="material-icons-round">pause</span>';
+                if (fsIcon) fsIcon.innerText = 'play_arrow';
             }
         }
 
@@ -1071,7 +1242,6 @@
                 let results = [];
 
                 try {
-                    // NEW: Updated to point to your new Master Backend Proxy API Link
                     const res = await fetch(`https://corporationgoorac-quantumbackend.hf.space/api/feed?topics=${encodeURIComponent(query)}&mode=strict`);
                     const data = await res.json();
                     if (data.bites && data.bites.length > 0) results = data.bites;
@@ -1097,7 +1267,6 @@
                         console.error("All Search APIs Failed.");
                     }
                 } else {
-                    // NEW: Background fetch to just grab the nextPageToken for infinite scroll if our API succeeds
                     fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=all`)
                         .then(r => r.json())
                         .then(d => { if(d.nextpage) pipedNextPageToken = d.nextpage; })
@@ -1111,7 +1280,6 @@
                         card.className = 'vid-card';
                         card.onclick = () => selectVideo({ id: vid.videoId, title: vid.title, author: vid.author });
                         
-                        // NEW: HTML injection with formatting logic for lengthSeconds
                         const durationHtml = vid.lengthSeconds ? `<div class="vid-duration">${formatDuration(vid.lengthSeconds)}</div>` : '';
 
                         card.innerHTML = `
@@ -1163,6 +1331,11 @@
             });
         }
 
+        // NEW: EXIT FULLSCREEN ON TYPING
+        chatInput.addEventListener('focus', function() {
+            if (isFullscreen) toggleFullscreen();
+        });
+
         chatInput.addEventListener('input', function() {
             this.style.height = 'auto'; 
             this.style.height = (this.scrollHeight) + 'px';
@@ -1212,10 +1385,20 @@
             // FIX: CRITICAL XSS SANITIZATION
             const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
+            // NEW FULLSCREEN CHAT OVERLAY LOGIC
+            if (isFullscreen && msg.sender !== myUid && msg.type !== 'sys') {
+                const fsBox = document.getElementById('fs-chat-box');
+                const pop = document.createElement('div');
+                pop.className = 'fs-chat-msg';
+                pop.innerHTML = `<img src="${targetProfile ? targetProfile.photoURL : ''}" class="msg-avatar" style="width:20px;height:20px;margin-bottom:0;border:none;"> <span>${safeText}</span>`;
+                fsBox.appendChild(pop);
+                setTimeout(() => { pop.style.opacity = '0'; setTimeout(() => pop.remove(), 500); }, 3500);
+            }
+
             if (msg.type === 'sys') {
                 const div = document.createElement('div');
                 div.className = "system-msg";
-                div.innerText = msg.text; // innerText is natively safe from XSS
+                div.innerText = msg.text; 
                 msgContainer.appendChild(div);
                 scrollToBottom();
                 return;
@@ -1285,10 +1468,9 @@
         }
 
         // ==========================================================================
-        // 8. SYSTEM HARDWARE & EXIT LOGIC
+        // 8. SYSTEM HARDWARE & EXIT LOGIC (BULLETPROOF ASYNC CLEANUP)
         // ==========================================================================
         async function requestWakeLock() {
-            // FIX: Added visibilityState check to prevent unhandled DOM Exception on hidden tabs
             if ('wakeLock' in navigator && document.visibilityState === 'visible') {
                 try { wakeLock = await navigator.wakeLock.request('screen'); } 
                 catch (err) {}
@@ -1318,27 +1500,30 @@
             showScreen('screen-error');
         }
 
-        function exitSession(isAlreadyEnded = false) {
+        async function exitSession(isAlreadyEnded = false) {
             if (roomId && !isAlreadyEnded) {
-                const myField = (myUid < targetUid) ? 'userA' : 'userB';
-                visionDb.collection('vision_rooms').doc(roomId).update({
-                    [myField]: 'offline',
-                    sessionStatus: 'ended'
-                }).catch(()=>{});
+                try {
+                    // Visual cue so the app doesn't feel frozen on slow WiFi
+                    document.body.style.opacity = '0.6';
+                    document.getElementById('status-text').innerText = "DISCONNECTING...";
 
-                setTimeout(() => {
-                    visionDb.collection('vision_rooms').doc(roomId).delete().catch(()=>{});
-                    visionRdb.ref(`vision_chat/${roomId}`).remove().catch(()=>{});
-                    visionRdb.ref(`typing/vision_${roomId}`).remove().catch(()=>{});
-                }, 3000);
+                    // Fire all 3 delete commands simultaneously for maximum speed.
+                    await Promise.all([
+                        visionDb.collection('vision_rooms').doc(roomId).delete(),
+                        visionRdb.ref(`vision_chat/${roomId}`).remove(),
+                        visionRdb.ref(`typing/vision_${roomId}`).remove()
+                    ]);
+                } catch(e) {
+                    console.log("Cleanup error:", e);
+                }
             }
             
-            // FIX: Added a brief delay before navigation so the Firebase write has time to transmit before the page unloads
-            setTimeout(() => {
-                if (player && typeof player.destroy === 'function') player.destroy();
-                if (wakeLock) wakeLock.release().catch(()=>{});
-                window.location.replace('visionLobby.html'); 
-            }, 300);
+            // Clean up hardware
+            if (player && typeof player.destroy === 'function') player.destroy();
+            if (wakeLock) wakeLock.release().catch(()=>{});
+            
+            // Navigate away safely
+            window.location.replace('visionLobby.html'); 
         }
 
     </script>
