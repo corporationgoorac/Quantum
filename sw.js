@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v33'; // Bumped to v13 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v34'; // Bumped to v13 to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -32,7 +32,28 @@ const ASSETS = [
     '/visionLobby.html',
     '/notification-worker.js',
     'https://cdn-icons-png.flaticon.com/128/3067/3067451.png',
-    'https://cdn-icons-png.flaticon.com/512/3067/3067451.png'
+    'https://cdn-icons-png.flaticon.com/512/3067/3067451.png',
+    '/components/call-notifier.js',
+    '/components/chatLoader.js',
+    '/components/chatTheme.js',
+    '/components/closeFriends.js',
+    '/components/emojiPicker.js',
+    '/components/filePicker.js',
+    '/components/fullSongPicker.js',
+    '/components/gifPicker.js',
+    '/components/imagePicker.js',
+    '/components/keywords.js',
+    '/components/navbar.js',
+    '/components/presence.js',
+    '/components/profileMoments.js',
+    '/components/profileNotes.js',
+    '/components/shareBites.js',
+    '/components/songPicker.js',
+    '/components/theme.js',
+    '/components/viewDrops.js',
+    '/components/viewMedia.js',
+    '/components/viewMoments.js',
+    '/components/viewNotes.js'
 ];
 
 // 1. Install (Cache Files)
