@@ -155,7 +155,6 @@
         .status-bar {
             display: grid; grid-template-columns: repeat(3, 1fr);
             border-bottom: 1px solid var(--border-dim); background: var(--bg-panel);
-            cursor: pointer;
         }
         .stat { padding: 20px; border-right: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 4px; transition: background 0.2s; }
         .stat:hover { background: rgba(255,255,255,0.02); }
@@ -379,7 +378,7 @@
 
     <div id="dashboard">
         <header>
-            <div class="brand" onmousedown="handleBrandDown()" onmouseup="handleBrandUp()" onmouseleave="handleBrandCancel()" ontouchstart="handleBrandDown()" ontouchend="handleBrandUp()">
+            <div class="brand">
                 <span class="material-icons-round brand-icon" style="color:var(--accent-blue)">hub</span>
                 <div>
                     <div class="brand-text">Nexus</div>
@@ -387,6 +386,7 @@
                 </div>
             </div>
             <div class="actions">
+                <div class="act-btn" title="Delete Vision Rooms" onclick="nukeVisionRooms()" style="color:var(--accent-red); background:rgba(255,51,51,0.1);"><span class="material-icons-round">delete_sweep</span></div>
                 <div class="act-btn" title="Deploy System Popup" onclick="openPopupDeploy()" style="color:var(--accent-purple); background:rgba(157,0,255,0.1);"><span class="material-icons-round">call_to_action</span></div>
                 <div class="act-btn" title="Broadcast Verified" onclick="openCast('VERIFIED')" style="color:var(--accent-gold); background:rgba(255,215,0,0.1);"><span class="material-icons-round">verified</span></div>
                 <div class="act-btn highlight" title="Broadcast All" onclick="openCast('ALL')"><span class="material-icons-round">campaign</span></div>
@@ -395,7 +395,7 @@
             </div>
         </header>
 
-        <div class="status-bar" onclick="editDummy()">
+        <div class="status-bar">
             <div class="stat">
                 <div class="stat-val" id="st-total">--</div>
                 <div class="stat-lbl">Entities</div>
@@ -576,100 +576,13 @@
         let pin = "";
         let castMode = 'ALL';
 
-        // NEW CORE SYSTEM VARIABLES
-        const dummyUsers = [
-            {id: "sys_1", name: "Evelyn Reed", username: "ev_reed", photoURL: "https://via.placeholder.com/50/111/FFF?text=ER", verified: true, admin: false, suspended: false, bio: "System Architect", followers: [], following: []},
-            {id: "sys_2", name: "Marcus Thorne", username: "mthorne", photoURL: "https://via.placeholder.com/50/111/FFF?text=MT", verified: false, admin: true, suspended: false, bio: "Node Manager", followers: [], following: []},
-            {id: "sys_3", name: "Sophia Lin", username: "slin_99", photoURL: "https://via.placeholder.com/50/111/FFF?text=SL", verified: true, admin: false, suspended: false, bio: "Digital Analyst", followers: [], following: []},
-            {id: "sys_4", name: "Jackson Cole", username: "jcole", photoURL: "https://via.placeholder.com/50/111/FFF?text=JC", verified: false, admin: false, suspended: false, bio: "Just browsing", followers: [], following: []},
-            {id: "sys_5", name: "Olivia Vance", username: "oly_v", photoURL: "https://via.placeholder.com/50/111/FFF?text=OV", verified: false, admin: false, suspended: true, bio: "Restricted", followers: [], following: []},
-            {id: "sys_6", name: "Liam Hayes", username: "liam_h", photoURL: "https://via.placeholder.com/50/111/FFF?text=LH", verified: true, admin: false, suspended: false, bio: "Frontend Dev", followers: [], following: []},
-            {id: "sys_7", name: "Ava Monroe", username: "amonroe", photoURL: "https://via.placeholder.com/50/111/FFF?text=AM", verified: false, admin: false, suspended: false, bio: "", followers: [], following: []},
-            {id: "sys_8", name: "Noah Jensen", username: "njensen", photoURL: "https://via.placeholder.com/50/111/FFF?text=NJ", verified: false, admin: false, suspended: false, bio: "", followers: [], following: []},
-            {id: "sys_9", name: "Mia Cross", username: "mia_c", photoURL: "https://via.placeholder.com/50/111/FFF?text=MC", verified: true, admin: false, suspended: false, bio: "Creator", followers: [], following: []},
-            {id: "sys_10", name: "Ethan Blake", username: "ethanb", photoURL: "https://via.placeholder.com/50/111/FFF?text=EB", verified: false, admin: false, suspended: false, bio: "", followers: [], following: []}
-        ];
-        let isRealMode = false;
-        let brandTimer;
-        let isBrandLongPress = false;
-
-        function bootSequence() {
-            if(isRealMode) return;
-            const dT = localStorage.getItem('dummyTotal') || '14,240';
-            const dA = localStorage.getItem('dummyActive') || '341';
-            const dB = localStorage.getItem('dummyBan') || '18';
-            
-            document.getElementById('st-total').innerText = dT;
-            document.getElementById('st-active').innerText = dA;
-            document.getElementById('st-ban').innerText = dB;
-            
-            userList = [...dummyUsers]; // Ensures openEdit works for dummy rows
-            document.getElementById('list-render').innerHTML = '';
-            userList.forEach(u => renderRow(u));
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        function editDummy() {
-            if(isRealMode) return;
-            let t = prompt("Manual Override - Total Entities:", localStorage.getItem('dummyTotal') || '14,240');
-            let a = prompt("Manual Override - Active Users:", localStorage.getItem('dummyActive') || '341');
-            let b = prompt("Manual Override - Flagged:", localStorage.getItem('dummyBan') || '18');
-            
-            if(t !== null) { localStorage.setItem('dummyTotal', t); document.getElementById('st-total').innerText = t; }
-            if(a !== null) { localStorage.setItem('dummyActive', a); document.getElementById('st-active').innerText = a; }
-            if(b !== null) { localStorage.setItem('dummyBan', b); document.getElementById('st-ban').innerText = b; }
-        }
-
-        function handleBrandDown() {
-            isBrandLongPress = false;
-            brandTimer = setTimeout(() => {
-                isBrandLongPress = true;
-                revealRealTotals();
-            }, 800); // 800ms hold required
-        }
-
-        function handleBrandUp() {
-            clearTimeout(brandTimer);
-            if(!isBrandLongPress && !isRealMode) triggerRealData();
-        }
-
-        function handleBrandCancel() {
-            clearTimeout(brandTimer);
-        }
-
-        async function triggerRealData() {
-            isRealMode = true;
-            document.getElementById('st-total').innerText = "--";
-            document.getElementById('st-active').innerText = "--";
-            document.getElementById('st-ban').innerText = "--";
-            document.getElementById('loader').style.display = 'flex';
-            
-            // Skeleton Loader Effect
-            document.getElementById('list-render').innerHTML = `
-                <div class="skeleton-row"><div class="row-img skeleton"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="height:14px; width:40%; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:20%; border-radius:4px;"></div></div></div>
-                <div class="skeleton-row"><div class="row-img skeleton"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="height:14px; width:55%; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:30%; border-radius:4px;"></div></div></div>
-                <div class="skeleton-row"><div class="row-img skeleton"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="height:14px; width:35%; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:25%; border-radius:4px;"></div></div></div>
-                <div class="skeleton-row"><div class="row-img skeleton"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="height:14px; width:65%; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:45%; border-radius:4px;"></div></div></div>
-                <div class="skeleton-row"><div class="row-img skeleton"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="height:14px; width:45%; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:20%; border-radius:4px;"></div></div></div>
-            `;
-            
-            setTimeout(() => {
-                document.getElementById('list-render').innerHTML = '';
-                userList = [];
-                init(); // Call native system
-            }, 800);
-        }
-
-        async function revealRealTotals() {
-            if(!isRealMode) triggerRealData();
-            toast("Fetching Global Census...");
+        async function updateRealTotals() {
             try {
                 const s = await db.collection("users").get();
                 document.getElementById('st-total').innerText = s.size;
                 let bans = 0; s.forEach(d => { if(d.data().suspended) bans++; });
                 document.getElementById('st-ban').innerText = bans;
-                toast("Global Census Acquired");
-            } catch(e) { toast("Err: Census Failed"); }
+            } catch(e) { console.error("Stats Error:", e); }
         }
 
         // History Handling
@@ -714,7 +627,8 @@
                 document.getElementById('auth-gate').style.pointerEvents = 'none';
                 document.getElementById('dashboard').style.display = 'flex';
                 setTimeout(()=>document.getElementById('dashboard').style.opacity='1', 50);
-                bootSequence(); // Injected replacement logic while maintaining structure
+                init();
+                updateRealTotals();
             } else if(pin.length===4) {
                 document.querySelectorAll('.dot').forEach(x=>x.classList.add('error'));
                 setTimeout(()=>{ pin=""; kp('x'); }, 400);
@@ -764,7 +678,6 @@
                     userList.push(u);
                     renderRow(u);
                 });
-                document.getElementById('st-total').innerText = userList.length + "+";
             }
             isLoading = false;
         }
@@ -872,10 +785,8 @@
             };
 
             try {
-                if(isRealMode) {
-                    // 3. Write to Firestore
-                    await db.collection("users").doc(editId).update(data);
-                }
+                // 3. Write to Firestore
+                await db.collection("users").doc(editId).update(data);
                 
                 // 4. Update Memory IMMEDIATELY
                 userList[oldUserIndex] = { ...oldUser, ...data };
@@ -884,7 +795,7 @@
                 updateRowUI(editId, userList[oldUserIndex]);
                 
                 // 6. Handle Verification Event
-                if(!wasVer && isVer && isRealMode) {
+                if(!wasVer && isVer) {
                     await sendWelcomeMsg(editId, data.name);
                     toast("User Verified & Notified");
                 } else {
@@ -961,7 +872,6 @@
         }
 
         async function transmit() {
-            if(!isRealMode) return toast("Err: Real Mode Required");
             if(!gooracId) return toast("Err: Official ID Missing");
             const txt = document.getElementById('cast-msg').value;
             const img = document.getElementById('cast-img').value;
@@ -1060,7 +970,6 @@
         }
 
         async function deployPopup() {
-            if(!isRealMode) return toast("Err: Real Mode Required");
             const btn = document.getElementById('btn-deploy');
             const v = document.getElementById('pop-version').value;
             const t = document.getElementById('pop-title').value;
@@ -1102,6 +1011,39 @@
             }
             
             btn.innerText = "Deploy to Global Home";
+        }
+
+        async function nukeVisionRooms() {
+            if(!confirm("WARNING: This will delete ALL active Vision Rooms. Proceed?")) return;
+            toast("Initiating Vision Room wipe...");
+            try {
+                const snapshot = await db.collection("vision_rooms").get();
+                if (snapshot.empty) {
+                    return toast("No Vision Rooms to delete.");
+                }
+                
+                let batches = [db.batch()];
+                let currentBatch = 0;
+                let opCount = 0;
+
+                snapshot.forEach(doc => {
+                    batches[currentBatch].delete(doc.ref);
+                    opCount++;
+                    if (opCount >= 490) {
+                        batches.push(db.batch());
+                        currentBatch++;
+                        opCount = 0;
+                    }
+                });
+
+                for (const b of batches) {
+                    await b.commit();
+                }
+                toast(`Wiped ${snapshot.size} Vision Rooms successfully.`);
+            } catch (error) {
+                console.error("Error wiping vision rooms:", error);
+                toast("Wipe Failed: See Console");
+            }
         }
 
         // FIX: Toggles now correctly clean up classes
@@ -1156,12 +1098,11 @@
         function refreshData() { 
             userList=[]; lastCursor=null; hasMore=true; 
             document.getElementById('list-render').innerHTML=""; 
-            if(!isRealMode) { bootSequence(); toast("Refreshed"); return; }
             loadBatch(); toast("Refreshed"); 
         }
         async function nukeUser() {
             if(!confirm("Destroy Node?")) return;
-            if(isRealMode) await db.collection("users").doc(editId).delete();
+            await db.collection("users").doc(editId).delete();
             const idx = userList.findIndex(x => x.id === editId);
             if(idx > -1) userList.splice(idx, 1); // Remove from memory
             document.getElementById('row-'+editId).remove(); // Remove from UI
