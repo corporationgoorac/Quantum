@@ -369,10 +369,12 @@ class MainNavbar extends HTMLElement {
         const navItems = this.querySelectorAll('.nav-item');
         
         navItems.forEach(item => {
-            item.addEventListener('click', () => {
+            // Changed from 'click' to 'pointerdown' to trigger instantly upon touch
+            item.addEventListener('pointerdown', () => {
                 // Check if the browser supports the Vibration API
                 if (navigator.vibrate) {
-                    navigator.vibrate(15); 
+                    // Pushed to the end of the execution queue to completely unblock the page navigation
+                    setTimeout(() => { navigator.vibrate(15); }, 0); 
                 }
             });
         });
