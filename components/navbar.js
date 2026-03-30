@@ -41,6 +41,9 @@ class MainNavbar extends HTMLElement {
         
         // Initialize the logic to hide the nav when calls are active
         this._setupVisibilityToggle();
+
+        // Initialize haptic feedback for navigation items
+        this._setupHaptics();
     }
 
     /**
@@ -356,6 +359,23 @@ class MainNavbar extends HTMLElement {
             }
             checkVisibility();
         }, 1000);
+    }
+
+    /**
+     * Initializes haptic feedback (vibration) for navigation items.
+     * Fires a crisp 15ms pop when an icon is tapped.
+     */
+    _setupHaptics() {
+        const navItems = this.querySelectorAll('.nav-item');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Check if the browser supports the Vibration API
+                if (navigator.vibrate) {
+                    navigator.vibrate(15); 
+                }
+            });
+        });
     }
 }
 
