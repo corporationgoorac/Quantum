@@ -58,11 +58,14 @@
             width: var(--sidebar-width); height: 100%;
             border-right: 1px solid var(--border-color);
             flex-shrink: 0;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.2); /* Enhanced depth */
+            z-index: 5;
         }
 
         #content-pane {
             flex: 1; height: 100%; background: var(--bg);
             position: relative; /* ADDED FOR LOADER POSITIONING */
+            z-index: 1;
         }
 
         iframe { width: 100%; height: 100%; border: none; background: var(--bg); display: block; }
@@ -71,50 +74,54 @@
             #desktop-spa.ready { display: flex; }
         }
         
-        /* NEW STYLES FOR WELCOME SCREEN */
+        /* NEW STYLES FOR WELCOME SCREEN - UPGRADED PREMIUM GLOW */
         #welcome-screen-default {
             width: 100%; height: 100%; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; background: var(--bg);
+            align-items: center; justify-content: center; 
+            background: radial-gradient(circle at 50% 40%, rgba(255, 109, 0, 0.08) 0%, var(--bg) 60%);
             text-align: center; color: white;
         }
 
-        /* INSTALL BUTTON STYLE */
+        /* INSTALL BUTTON STYLE - UPGRADED PREMIUM PHYSICS */
         #install-app-btn {
-            margin-top: 25px; background: white; color: black; border: none;
-            padding: 12px 24px; border-radius: 12px; font-weight: 700;
-            cursor: pointer; display: none; align-items: center; gap: 8px;
-            transition: transform 0.2s;
+            margin-top: 30px; background: linear-gradient(135deg, #ffffff, #e0e0e0); color: #000; border: none;
+            padding: 14px 28px; border-radius: 16px; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; display: none; align-items: center; gap: 10px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 20px rgba(255, 109, 0, 0.15);
         }
-        #install-app-btn:active { transform: scale(0.95); }
+        #install-app-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(255, 109, 0, 0.25); }
+        #install-app-btn:active { transform: translateY(1px) scale(0.96); box-shadow: 0 4px 10px rgba(255, 109, 0, 0.1); }
 
         /* ==========================================
            ADVANCED UI INJECTIONS (ADDED)
            ========================================== */
         
-        /* Sleek Branded Spinner */
+        /* Sleek Branded Spinner - COMPLETELY DISABLED PER USER REQUEST */
         #iframe-loader {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 40px; height: 40px; border: 3px solid rgba(255, 109, 0, 0.1);
             border-top-color: #FF6D00; border-radius: 50%;
             animation: iframe-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
-            display: none; z-index: 10;
+            display: none !important; z-index: -10; opacity: 0 !important; /* Disabled */
         }
         @keyframes iframe-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
-        /* Native App-Style Network Toast */
+        /* Native App-Style Network Toast - UPGRADED GLASSMORPHISM */
         #network-toast {
-            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
-            background: rgba(30, 30, 30, 0.95); color: white; padding: 12px 24px;
-            border-radius: 30px; font-size: 0.9rem; font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            z-index: 10000; transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.85); color: white; padding: 12px 28px;
+            border-radius: 40px; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.3px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 10000; transition: top 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
         }
-        #network-toast.show { top: 24px; }
+        #network-toast.show { top: 30px; }
         
-        /* Smooth Iframe Fade-in to prevent flashing */
-        #frame-main { transition: opacity 0.4s ease; opacity: 0; }
+        /* Smooth Iframe Fade-in to prevent flashing - ACCELERATED */
+        #frame-main { transition: opacity 0.2s ease-in-out; opacity: 0; }
         #frame-main.loaded { opacity: 1; }
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -139,9 +146,9 @@
             <div id="iframe-loader"></div>
 
             <div id="welcome-screen-default">
-                <img src="images/icon.png" style="width: 80px; opacity: 0.2; margin-bottom: 20px;">
-                <h1 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; margin-bottom: 10px;">Welcome to Quantum Desktop</h1>
-                <p style="color: var(--text-dim); max-width: 300px; line-height: 1.5;">Select a conversation or explore your network to get started.</p>
+                <img src="images/icon.png" style="width: 80px; opacity: 0.9; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(255,109,0,0.3));">
+                <h1 style="font-weight: 800; font-size: 1.9rem; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">Welcome to Quantum Desktop</h1>
+                <p style="color: var(--text-secondary); max-width: 320px; line-height: 1.6; font-size: 1.05rem;">Select a conversation or explore your network to get started.</p>
                 
                 <button id="install-app-btn">
                     <span class="material-icons-round">download</span>
@@ -331,7 +338,7 @@
             }
         });
 
-        // 2. Smooth Loading State Management for Main Content
+        // 2. Smooth Loading State Management for Main Content (LOADER OPTION COMPLETELY REMOVED)
         const loaderUi = document.getElementById('iframe-loader');
         let loaderFailsafe; // ADDED: Fallback timer
 
@@ -339,8 +346,8 @@
         frameMain.addEventListener('load', () => {
             if(frameMain.src !== 'about:blank' && !frameMain.src.endsWith('about:blank')) {
                 clearTimeout(loaderFailsafe); // ADDED: Clear failsafe
-                loaderUi.style.display = 'none';
-                frameMain.classList.add('loaded'); // Triggers smooth CSS fade-in
+                loaderUi.style.display = 'none'; // Disabled Loader Option
+                frameMain.classList.add('loaded'); // Triggers smooth CSS fade-in instantly
             }
         });
 
@@ -350,14 +357,14 @@
             set: function(val) {
                 if(val !== 'about:blank' && !val.includes('about:blank')) {
                     this.classList.remove('loaded');
-                    loaderUi.style.display = 'block';
+                    loaderUi.style.display = 'none'; // Disabled Loader Option Completely
                     
-                    // ADDED: Failsafe to guarantee the loading circle never gets stuck indefinitely
+                    // ADDED: Failsafe to guarantee smooth entry without getting stuck
                     clearTimeout(loaderFailsafe);
                     loaderFailsafe = setTimeout(() => {
-                        loaderUi.style.display = 'none';
-                        this.classList.add('loaded');
-                    }, 1200); // Force reveal after 1.2s if iframe doesn't fire load event
+                        loaderUi.style.display = 'none'; // Disabled Loader Option Completely
+                        this.classList.add('loaded'); // Instantly force reveal
+                    }, 50); // Super fast 50ms bypass since loading circle is removed
                 }
                 return originalSetSrc.call(this, val);
             }
