@@ -787,35 +787,32 @@ box-shadow: var(--received-shadow);
         .received .swipe-reply-icon { left: 15px; right: auto; } 
         .sent .swipe-reply-icon { right: 15px; left: auto; }
 
-        /* DESKTOP 3-DOT MENU BUTTON */
-        .desktop-menu-btn {
+        /* THREE DOT MENU FOR PC */
+        .msg-options-btn {
+            display: none;
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            width: 32px;
-            height: 32px;
-            background: rgba(30, 30, 30, 0.85);
-            border-radius: 50%;
-            display: none; /* hidden by default */
+            width: 28px;
+            height: 28px;
             align-items: center;
             justify-content: center;
+            color: var(--text-muted);
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-            color: #fff;
-            z-index: 10;
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            border-radius: 50%;
+            transition: all 0.2s;
+            z-index: 50;
+            background: transparent;
         }
-        .desktop-menu-btn:hover { background: rgba(50, 50, 50, 0.95); }
-        .desktop-menu-btn .material-icons-round { font-size: 18px; }
+        .msg-options-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+        }
+        .sent .msg-options-btn { right: calc(100% + 5px); }
+        .received .msg-options-btn { left: calc(100% + 5px); }
         
-        .received .desktop-menu-btn { right: -40px; }
-        .sent .desktop-menu-btn { left: -40px; }
-        
-        /* ONLY show on PC using hover query */
         @media (hover: hover) and (pointer: fine) {
-            .msg-row:hover .desktop-menu-btn {
+            .msg-bubble-box:hover .msg-options-btn {
                 display: flex;
             }
         }
@@ -2459,15 +2456,6 @@ box-shadow: var(--received-shadow);
         if(history.state && history.state.modal === 'emoji') history.back();
     }
 
-    // NEW GLOBALLY DECLARED DESKTOP MENU HANDLER FOR PC USERS
-    window.handleDesktopMenu = function(event, id) {
-        event.stopPropagation();
-        const m = messagesMap.get(id);
-        if(m) {
-            openMenu(id, m.sender, m.text);
-        }
-    };
-
     // =========================================
     //  15. STATUS & PRESENCE LOGIC (INSTANT)
     // =========================================
@@ -3031,6 +3019,14 @@ box-shadow: var(--received-shadow);
             try { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(limitMsgs)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(msgsToSave.slice(-300))); }
         } catch (e) { console.error("Cache Save Error", e); }
     }
+    
+    // NEW PC MENU TRIGGER FUNCTION
+    window.triggerMenuFromClick = function(id) {
+        const msg = messagesMap.get(id);
+        if(msg) {
+            openMenu(id, msg.sender, msg.text || '');
+        }
+    };
 
     function renderAll() {
         // ========================================================================================
@@ -3181,7 +3177,7 @@ box-shadow: var(--received-shadow);
         
         // Styling Vars
         const boxStyle = reactionDisplay ? 'style="margin-bottom: 16px"' : '';
-        const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo.replace(/'/g, "\\'")}')">${m.replyTo}</div>` : '';
+        const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo}')">${m.replyTo}</div>` : '';
 
         // Note Reply - FULL UI RENDER (Updated Layout)
         const noteMeta = m.noteMetadata || {};
@@ -3354,11 +3350,11 @@ box-shadow: var(--received-shadow);
             bubbleClass += ' jumbo-emoji';
         }
         
-        // --- ADDED: Swipe Reply Icon & Timestamp Footer ---
+        // --- ADDED: Swipe Reply Icon, Desktop 3-dot Menu & Timestamp Footer ---
         let contentHTML = `
             <div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
-            <div class="desktop-menu-btn" onclick="handleDesktopMenu(event, '${id}')">
-                <span class="material-icons-round">more_vert</span>
+            <div class="msg-options-btn" onclick="event.stopPropagation(); window.triggerMenuFromClick('${id}')">
+                <span class="material-icons-round" style="font-size:20px;">more_vert</span>
             </div>
             ${noteReplyHtml}
             ${replyHtml}
@@ -3502,6 +3498,10 @@ box-shadow: var(--received-shadow);
                 isScrolling = false; 
                 window.isScrollingNow = false;
                 
+                // FIX: Remove transition lag on touch so the bubble firmly attaches to the finger swipe preventing the opposite-direction illusion
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
                 menuTimer = setTimeout(() => {
                     if (!isScrolling && Math.abs(currentX - startX) < 10) { 
                         vibrate(70); 
@@ -3523,6 +3523,10 @@ box-shadow: var(--received-shadow);
                       window.isScrollingNow = true;
                 }
                 
+                // FIX: Ensure no transition is active while dragging
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
                 // Logic: 
                 // Received (Left) -> Swipe Right (diff > 0)
                 // Sent (Right) -> Swipe Left (diff < 0)
@@ -3531,16 +3535,16 @@ box-shadow: var(--received-shadow);
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, diff / 60);
-                        // FIXED: Removed the -diff counter-translation so the icon naturally follows the bubble
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 } 
                 else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, Math.abs(diff) / 60);
-                        // FIXED: Removed the -diff counter-translation so the icon naturally follows the bubble
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 }
                 
@@ -4301,7 +4305,7 @@ box-shadow: var(--received-shadow);
     }
 
     // MODIFIED: Added smooth scroll parameter
-    window.scrollToBottom = function().smooth = false) { 
+    window.scrollToBottom = function(smooth = false) { 
         chatFlow.scrollTo({
             top: chatFlow.scrollHeight,
             behavior: smooth ? 'smooth' : 'auto'
