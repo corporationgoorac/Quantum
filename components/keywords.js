@@ -19,5 +19,8 @@ window.effectKeywords = {
     poop: ['poop', 'crap', 'shit', 'bullshit', '💩'],
     alien: ['alien', 'ufo', 'space', 'martian', '👽', '🛸'],
     ghost: ['ghost', 'boo', 'haunted', 'phantom', '👻'],
-    leaves: ['autumn', 'fall', 'leaves', 'leaf', '🍂', '🍁']
+    leaves: ['autumn', 'fall', 'leaves', 'leaf', '🍂', '🍁'],
+    
+    // Custom Black Heart & Diamond effect
+    blackHeart: ['siva', 'mani', 'manikandan', 'siva manikandan', 'shiva', '🖤', '💎']
 };
