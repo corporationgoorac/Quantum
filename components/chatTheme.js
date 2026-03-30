@@ -126,11 +126,11 @@
                     -webkit-backdrop-filter: none !important;
                 }
 
-                /* Subtle transparent backdrop for the menu overlay (Insta-style) */
+                /* Subtle transparent backdrop for the menu overlay (Insta-style) - Professional solid tint */
                 #menu-overlay {
-                    background: rgba(0, 0, 0, 0.35) !important;
-                    backdrop-filter: blur(2px) !important;
-                    -webkit-backdrop-filter: blur(2px) !important;
+                    background: rgba(15, 15, 15, 0.75) !important; /* Professional deep dark overlay */
+                    backdrop-filter: none !important; /* Removed blur */
+                    -webkit-backdrop-filter: none !important; /* Removed blur */
                 }
 
                 .reaction-bar {
