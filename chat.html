@@ -784,8 +784,8 @@ box-shadow: var(--received-shadow);
         }
         .swipe-reply-icon svg { width: 16px; height: 16px; fill: #fff; }
         
-        .received .swipe-reply-icon { left: 15px; } 
-        .sent .swipe-reply-icon { right: 15px; }
+        .received .swipe-reply-icon { left: 15px; right: auto; } 
+        .sent .swipe-reply-icon { right: 15px; left: auto; }
 
         /* PROFESSIONAL REPLY PREVIEW DESIGN - REDESIGNED FOR SMOOTHER UI */
         .reply-box-ui { 
@@ -2237,8 +2237,8 @@ box-shadow: var(--received-shadow);
             rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         }
         
-        // Auto-Scroll on Typing ONLY if already near bottom
-        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 120) {
+        // Auto-Scroll on Typing ONLY if already near bottom (Generous threshold of 800px added)
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800) {
              window.scrollToBottom();
         }
     });
@@ -2402,7 +2402,9 @@ box-shadow: var(--received-shadow);
         setTimeout(lockViewportAndHeader, 300); // Double fallback for slower animations
         
         // AGGRESSIVE SCROLL FIX FOR BOTTOM KEYBOARD POP
-        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 350) {
+        // Generous threshold added as requested (800px instead of absolutely bottom)
+        let distanceToBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
+        if(distanceToBottom < 800) { 
             window.scrollToBottom(true);
             setTimeout(() => window.scrollToBottom(true), 100);
             setTimeout(() => window.scrollToBottom(true), 300);
@@ -2848,14 +2850,14 @@ box-shadow: var(--received-shadow);
                             isFirstLoad = false;
                         }, 50);
                     } else {
-                        const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150; // Modified threshold
+                        // NEW FIX: Smarter auto-scroll. Only scroll if near bottom. 
+                        // Increased threshold to 800 to be very generous.
+                        const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800; 
                         const cfSH = chatFlow.scrollHeight;
                         const cfST = chatFlow.scrollTop;
                         
                         renderAll();
                         
-                        // NEW FIX: Smarter auto-scroll. Only scroll if near bottom. 
-                        // Prevents random jumping when reading older messages and a new one arrives.
                         if (isNearBottom) {
                             requestAnimationFrame(() => window.scrollToBottom(true));
                         } else {
@@ -3070,9 +3072,12 @@ box-shadow: var(--received-shadow);
                     // The IDs match. Only update if the content or classes actually changed
                     if (oldChild.innerHTML !== newChild.innerHTML || oldChild.className !== newChild.className) {
                         let audio = oldChild.querySelector('audio');
-                        // Never interrupt playing audio!
-                        if (audio && !audio.paused) {
-                            // Do nothing, let audio finish
+                        let video = oldChild.querySelector('video');
+                        // Never interrupt playing media!
+                        if ((audio && !audio.paused) || (video && !video.paused)) {
+                            // Media is playing. To prevent stale data, we manually update just the reaction badge
+                            let newMsgData = messagesMap.get(newChild.id);
+                            if (newMsgData) updateReactionDOM(newChild.id, newMsgData.reactions);
                         } else {
                             oldChild.innerHTML = newChild.innerHTML;
                             oldChild.className = newChild.className;
@@ -3481,14 +3486,16 @@ box-shadow: var(--received-shadow);
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, diff / 60);
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 } 
                 else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, Math.abs(diff) / 60);
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
                     }
                 }
                 
