@@ -285,8 +285,15 @@
                             
                             let href = target.getAttribute('href');
                             if (!href && target.onclick) {
-                                const match = target.onclick.toString().match(/'(.*?)'/);
-                                if (match) href = match[1];
+                                const oStr = target.onclick.toString();
+                                // NEW FIX: Precisely detect enterChat parameters to prevent group chats misrouting as normal chats
+                                if (oStr.includes('enterChat')) {
+                                    const match = oStr.match(/'(.*?)'/);
+                                    if (match) href = (oStr.includes(', true') || oStr.includes(',true')) ? `groupChat.html?id=${match[1]}` : `chat.html?user=${match[1]}`;
+                                } else {
+                                    const match = oStr.match(/'(.*?)'/);
+                                    if (match) href = match[1];
+                                }
                             }
 
                             if (href && href !== '#' && !href.startsWith('http')) {
