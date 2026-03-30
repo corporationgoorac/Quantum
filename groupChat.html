@@ -582,6 +582,35 @@
         .ripple { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none; }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
+        /* THREE DOT MENU FOR PC */
+        .msg-options-btn {
+            display: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s;
+            z-index: 50;
+            background: transparent;
+        }
+        .msg-options-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+        }
+        .sent .msg-options-btn { right: calc(100% + 5px); }
+        .received .msg-options-btn { left: calc(100% + 5px); }
+        
+        @media (hover: hover) and (pointer: fine) {
+            .msg-row:hover .msg-options-btn {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1704,6 +1733,13 @@
             try { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(limitMsgs)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${groupId}`, JSON.stringify(msgsToSave.slice(-300))); }
         } catch (e) { console.error("Cache Save Error", e); }
     }
+
+    window.triggerMenuFromClick = function(id) {
+        const msg = messagesMap.get(id);
+        if(msg) {
+            openMenu(id, msg.sender, msg.text || '');
+        }
+    };
 
     function renderAll() {
         let tempContainer = document.createElement('div');
