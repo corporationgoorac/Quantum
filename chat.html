@@ -43,9 +43,11 @@
         const isFramed = window.self !== window.top;
 
         if (isPC && !isFramed) {
+            // Get current file name and parameters (e.g., chat.html?user=siva)
             const currentPath = window.location.pathname.split('/').pop();
             const currentParams = window.location.search;
             
+            // Redirect to index.html with the 'view' parameter so the SPA loads this page
             const redirectUrl = `index.html?view=${encodeURIComponent(currentPath + currentParams)}`;
             window.location.replace(redirectUrl);
         }
@@ -58,39 +60,48 @@
            1. CORE VARIABLES & THEME DEFINITIONS
            ========================================= */
         :root { 
+            /* Deep, immersive dark mode background */
             --bg: #000000;
             --bg-gradient: radial-gradient(circle at 50% 30%, #111111 0%, #000000 70%);
             
+            /* External Theme Fallback */
             --mobileToolbarBg: rgba(20, 20, 20, 0.75);
 
+            /* Header transparency and blur */
             --header-bg: rgba(10, 10, 10, 0.90);
             --header-blur: blur(25px);
 
-            --accent: #FF6D00;
+            /* Brand Colors - THEME: PROFESSIONAL DARK ORANGE GRADE */
+            --accent: #FF6D00; /* Deep Professional Orange */
             --accent-dark: #E65100;
             --accent-dim: rgba(255, 109, 0, 0.2);
             --glass-border: rgba(255, 255, 255, 0.08);
             
+            /* Borders & Separators */
             --border: #1c1c1c; 
             --border-light: rgba(255,255,255,0.1);
             
+            /* Message Bubbles - SENT (Dark Orange Gradient) */
             --sent-bg: linear-gradient(135deg, #FF7B00 0%, #E65100 100%);
             --sent-text: #ffffff;
-            --sent-shadow: 0 6px 20px rgba(230, 81, 0, 0.4);
+            --sent-shadow: 0 6px 20px rgba(230, 81, 0, 0.4); /* Enhanced Shadow */
             
+            /* Message Bubbles - RECEIVED (Dark Grey) */
             --received-bg: #2A2A2A; 
             --received-text: #F0F0F0;
-            --received-shadow: 0 6px 18px rgba(0,0,0,0.6);
+            --received-shadow: 0 6px 18px rgba(0,0,0,0.6); /* Enhanced Shadow */
             
+            /* Typography */
             --text: #ffffff; 
             --text-secondary: #a1a1a1;
             --text-muted: #666666;
             
+            /* Animation Effects */
             --shimmer: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
             --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
             --ease-smooth: cubic-bezier(0.33, 1, 0.68, 1);
             --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* New Physics */
         }
 
         /* =========================================
@@ -107,21 +118,21 @@
         }
         
         html, body {
-            height: 100vh !important;
+            height: 100vh !important; /* STRICT LOCK FOR BACKGROUND RESIZING */
             width: 100vw !important;
-            overflow: hidden !important;
+            overflow: hidden !important; /* FORCED NO SCROLL TO PREVENT HEADER HIDING */
             background-color: var(--bg);
             background-image: var(--bg-gradient); 
             background-size: cover;
             background-position: center top;
             background-repeat: no-repeat;
-            position: fixed !important;
+            position: fixed !important; /* CRITICAL FIX FOR OLDER ANDROIDS/IOS */
             left: 0 !important; 
             top: 0 !important;
             overscroll-behavior: none;
             margin: 0;
             padding: 0;
-            touch-action: none;
+            touch-action: none; /* Prevent body swipe dragging */
         }
 
         body { 
@@ -132,6 +143,7 @@
             font-size: 16px;
         }
 
+        /* Strict Input Control */
         div, span, p, img, svg { -webkit-user-select: none; user-select: none; }
         
         input, textarea { 
@@ -190,6 +202,7 @@
             50% { transform: translateY(-6px); } 
         }
 
+        /* REACTION POP ANIMATION - PHYSICS IMPROVED */
         @keyframes popOut {
             0% { transform: scale(0); opacity: 0; }
             50% { transform: scale(1.5); opacity: 1; }
@@ -197,6 +210,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
+        /* BADGE POP UPDATE - SMOOTHER */
         @keyframes badgeUpdate {
             0% { transform: scale(1); }
             40% { transform: scale(1.35); background: #444; }
@@ -204,6 +218,7 @@
             100% { transform: scale(1); background: #2a2a2a; }
         }
 
+        /* LIVE FLOATING EMOJI */
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.5); opacity: 0; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
             10% { transform: translateY(-20px) scale(1.2); opacity: 1; filter: drop-shadow(0 0 20px rgba(255,255,255,0.3)); }
@@ -219,6 +234,7 @@
             animation: shimmer 2s linear infinite;
         }
 
+        /* INSTANT LOAD OVERRIDES */
         .instant-load .loading-shimmer { animation: none; background: transparent; }
         .instant-load .chat-media-img { animation: none; }
         .instant-load #chat-flow { opacity: 1 !important; transition: none !important; }
@@ -232,17 +248,17 @@
             height: 100vh; 
             height: 100dvh; 
             width: 100%; 
-            position: fixed !important;
+            position: fixed !important; /* CRITICAL FIX: FORCES APP TO IGNORE BROWSER SCROLL */
             top: 0 !important; 
             left: 0 !important; 
             overflow: hidden;
         }
 
         /* =========================================
-           5. HEADER STYLES
+           5. HEADER STYLES (Optimized for Mobile)
            ========================================= */
         header { 
-            position: absolute !important;
+            position: absolute !important; /* STRICT POSITIONING */
             top: 0 !important; 
             left: 0 !important; 
             right: 0 !important;
@@ -258,7 +274,7 @@
             backdrop-filter: var(--header-blur);
             -webkit-backdrop-filter: var(--header-blur);
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
+            transition: all 0.3s ease; /* Smooth header transitions */
         }
 
         .back-btn { 
@@ -271,9 +287,10 @@
             height: 44px; 
             width: 44px; 
             border-radius: 50%;
-            transition: background 0.2s, transform 0.2s;
+            transition: background 0.2s, transform 0.2s; /* Smooth back btn */
         }
         .back-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.9); }
+        /* Professional Chevron Icon Sizing */
         .back-btn span { font-size: 32px; font-weight: 500; }
 
         .h-profile-group { 
@@ -285,8 +302,8 @@
             overflow: hidden; 
             padding: 4px;
             border-radius: 12px;
-            transition: background 0.2s, transform 0.2s;
-            min-width: 0;
+            transition: background 0.2s, transform 0.2s; /* Smooth profile group */
+            min-width: 0; /* Critical for truncation fix */
             margin-right: 4px;
         }
         .h-profile-group:active { background: rgba(255,255,255,0.05); transform: scale(0.98); }
@@ -327,7 +344,7 @@
             flex-direction: column; 
             justify-content: center; 
             gap: 1px; 
-            min-width: 0; 
+            min-width: 0; /* Ensures container shrinks */
             flex: 1; 
         }
     
@@ -340,24 +357,24 @@
             overflow: hidden; 
             text-overflow: ellipsis; 
             letter-spacing: 0.2px;
-            flex: 1;
+            flex: 1; /* Allow name to take available space */
         }
  
         .h-name-wrapper {
             display: flex;
             align-items: center;
-            gap: 4px;
-            width: fit-content;
+            gap: 4px; /* Distance between Name and Tick */
+            width: fit-content; /* Keeps the tick attached to the name */
             max-width: 100%;
         }
 
         .v-badge { 
             width: 16px; 
             height: 16px; 
-            display: none;
+            display: none; /* Changed from block to none */
             flex-shrink: 0;
             position: relative; 
-            top: -1.7px;
+            top: -1.7px; /* Moves it up exactly 1 pixel */
         }
         
         .h-username-sub { 
@@ -369,11 +386,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        
+        
 
         .header-actions { 
             display: flex; 
             align-items: center; 
-            gap: 4px;
+            gap: 4px; /* Professional Gap */
             margin-left: auto; 
             padding-right: 2px;
             flex-shrink: 0;
@@ -385,7 +404,7 @@
             cursor: pointer; 
             color: #ffffff; 
             opacity: 0.9; 
-            transition: transform 0.2s var(--ease-spring), opacity 0.2s, background 0.2s;
+            transition: transform 0.2s var(--ease-spring), opacity 0.2s, background 0.2s; /* Enhanced icon transition */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -394,6 +413,7 @@
         .header-icon:active { opacity: 0.6; transform: scale(0.85); background: rgba(255,255,255,0.1); }
         .header-icon span { font-size: 24px; transition: transform 0.2s; } 
 
+        /* PULSE ICON STYLES */
         .pulse-icon { color: var(--accent); }
         .pulse-icon span { animation: breathe 2s infinite ease-in-out; }
         @keyframes breathe {
@@ -402,6 +422,7 @@
             100% { transform: scale(1); opacity: 0.8; }
         }
 
+        /* --- PULSE INVITE BANNER --- */
         #pulse-invite-banner {
             position: absolute;
             top: calc(62px + env(safe-area-inset-top));
@@ -410,7 +431,7 @@
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--accent);
             padding: 10px 16px;
-            display: none;
+            display: none; /* Hidden by default */
             align-items: center;
             justify-content: space-between;
             z-index: 1500;
@@ -434,7 +455,7 @@
         .btn-dismiss:active { transform: scale(0.9); }
 
         /* =========================================
-           6. CHAT AREA
+           6. CHAT AREA (SCROLLABLE)
            ========================================= */
         #chat-flow { 
             flex: 1; 
@@ -447,16 +468,20 @@
             background: transparent; 
             overscroll-behavior-y: contain; 
             position: relative;
-            touch-action: pan-y !important;
+            touch-action: pan-y !important; /* Enable scrolling inside chat */
             
+            /* KEY FIX FOR JUMPING: Anchor Scroll */
             overflow-anchor: auto;
 
+            /* PADDING TOP to clear absolute header & potentially banner */
             padding-top: calc(75px + env(safe-area-inset-top)); 
             padding-bottom: 20px;
             
+            /* Hide Scrollbar */
             -ms-overflow-style: none; 
             scrollbar-width: none;
             
+            /* Initial State */
             opacity: 0; 
             transition: opacity 0.3s ease-in;
         }
@@ -467,7 +492,9 @@
             flex-direction: column; 
             padding: 0 12px; 
             width: 100%; 
+            /* Added extra bottom padding so last msg timestamp isn't hidden */
             padding-bottom: 10px; 
+            /* Performance Optimization */
             will-change: transform;
             contain: content;
             touch-action: pan-y; 
@@ -482,7 +509,7 @@
             margin-bottom: 12px; 
             padding-left: 12px; 
             width: 100%;
-            animation: slideUpFade 0.3s var(--ease-spring);
+            animation: slideUpFade 0.3s var(--ease-spring); /* Smooth typing appear */
         }
         .typing-avatar { 
             width: 28px; height: 28px; 
@@ -521,6 +548,7 @@
             50% { transform: translateY(-4px); opacity: 1; background: var(--accent); } 
         }
 
+        /* FIX: Ensure scroll trigger is absolutely positioned at the top for proper intersection observation */
         #scroll-trigger { 
             position: absolute;
             top: 0;
@@ -532,6 +560,7 @@
             z-index: -1;
         }
         
+        /* DATE DIVIDER */
         .date-divider { 
             text-align: center; 
             margin: 24px 0 16px 0; 
@@ -554,6 +583,7 @@
             transition: background 0.3s;
         }
 
+        /* TIME DIVIDER (Same Style) */
         .time-divider {
             text-align: center; 
             margin: 20px 0 12px 0; 
@@ -574,9 +604,10 @@
             position: relative; 
             flex-direction: column; 
             overflow: visible; 
-            transform: translateZ(0);
+            transform: translateZ(0); /* Hardware Acceleration for smooth sliding */
         }
         
+        /* Spacing for groups - Smart Grouping Enhancements */
         .msg-row.group-bottom, .msg-row.single { margin-bottom: 18px; }
 
         .msg-row.sent { align-items: flex-end; padding-right: 0px; }
@@ -599,17 +630,17 @@
 
         .msg-bubble-box { 
             position: relative; 
-            max-width: 75vw; 
+            max-width: 75vw; /* Use viewport width so both sent and received have the exact same max width ignoring avatar */
             display: flex; 
             flex-direction: column; 
-            transition: transform 0.35s var(--ease-spring), padding-bottom 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: transform 0.35s var(--ease-spring), padding-bottom 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Enhanced smooth expand */
             will-change: transform, padding-bottom;
         }
         .sent .msg-bubble-box { align-items: flex-end; }
         .received .msg-bubble-box { align-items: flex-start; }
 
         .bubble { 
-            padding: 12px 18px;
+            padding: 12px 18px; /* Upgraded professional padding */
             border-radius: 22px; 
             font-size: 1.05rem; 
             line-height: 1.45; 
@@ -620,38 +651,42 @@
             letter-spacing: 0.3px;
         }
 
+        /* JUMBO EMOJI STYLING */
         .bubble.jumbo-emoji {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            font-size: 2.2rem !important;
+            font-size: 2.2rem !important; /* REDUCED FROM 3.5rem */
             padding: 0 !important;
             text-align: center;
         }
 
+        /* ACTIVE GLOW EFFECT */
         .bubble:active {
-            filter: brightness(1.15);
-            transform: scale(0.98);
+            filter: brightness(1.15); /* Slightly brighter pop */
+            transform: scale(0.98); /* Smooth compression on tap */
         }
         
+        /* SENT BUBBLES */
         .sent .bubble { 
-            background: var(--sent-bg); 
-            color: var(--sent-text); 
-            text-align: left; 
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            box-shadow: var(--sent-shadow);
+               background: var(--sent-bg); 
+color: var(--sent-text); 
+text-align: left; 
+border: 1px solid rgba(255, 255, 255, 0.2); 
+box-shadow: var(--sent-shadow);
         }
         .sent .bubble.single { border-radius: 22px; border-bottom-right-radius: 4px; }
         .sent .bubble.group-top { border-radius: 22px; border-bottom-right-radius: 4px; margin-bottom: 1px; }
         .sent .bubble.group-mid { border-radius: 22px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; margin-bottom: 1px; }
         .sent .bubble.group-bottom { border-radius: 22px; border-top-right-radius: 4px; border-bottom-right-radius: 22px; }
 
+        /* RECEIVED BUBBLES */
         .received .bubble { 
             background: var(--received-bg); 
-            color: var(--received-text); 
-            text-align: left; 
-            border: 1px solid var(--glass-border); 
-            box-shadow: var(--received-shadow);
+color: var(--received-text); 
+text-align: left; 
+border: 1px solid var(--glass-border); 
+box-shadow: var(--received-shadow);
         }
         .received .bubble.single { border-radius: 22px; border-bottom-left-radius: 4px; }
         .received .bubble.group-top { border-radius: 22px; border-bottom-left-radius: 4px; margin-bottom: 1px; }
@@ -662,6 +697,7 @@
         .received .bubble a { color: var(--accent); }
         .bubble a:active { color: var(--accent-dark); }
 
+        /* FIXED TIMESTAMP DISPLAY (Long Press) */
         .msg-timestamp-footer {
             font-size: 0.65rem;
             color: var(--text-secondary);
@@ -687,6 +723,9 @@
         .received .msg-timestamp-footer { text-align: left; left: 4px; }
         .sent .msg-timestamp-footer { text-align: right; right: 4px; }
 
+        .sliding-timestamp { display: none !important; }
+        
+        /* REACTION BADGE */
         .reaction-badge { 
             position: absolute; 
             bottom: -8px; 
@@ -730,7 +769,7 @@
             z-index: 1; 
         }
 
-        /* REPLY ICONS (For Swipe) - FIXED POSITIONING */
+        /* REPLY ICONS (For Swipe) */
         .swipe-reply-icon {
             position: absolute;
             top: 50%;
@@ -740,7 +779,7 @@
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            z-index: -1;
+            z-index: -1; /* Placed behind the bubble */
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .swipe-reply-icon svg { width: 16px; height: 16px; fill: #fff; }
@@ -748,6 +787,40 @@
         .received .swipe-reply-icon { left: 15px; right: auto; } 
         .sent .swipe-reply-icon { right: 15px; left: auto; }
 
+        /* DESKTOP 3-DOT MENU BUTTON */
+        .desktop-menu-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            background: rgba(30, 30, 30, 0.85);
+            border-radius: 50%;
+            display: none; /* hidden by default */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            color: #fff;
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .desktop-menu-btn:hover { background: rgba(50, 50, 50, 0.95); }
+        .desktop-menu-btn .material-icons-round { font-size: 18px; }
+        
+        .received .desktop-menu-btn { right: -40px; }
+        .sent .desktop-menu-btn { left: -40px; }
+        
+        /* ONLY show on PC using hover query */
+        @media (hover: hover) and (pointer: fine) {
+            .msg-row:hover .desktop-menu-btn {
+                display: flex;
+            }
+        }
+
+        /* PROFESSIONAL REPLY PREVIEW DESIGN - REDESIGNED FOR SMOOTHER UI */
         .reply-box-ui { 
             background: linear-gradient(90deg, var(--accent-dim) 0%, rgba(255, 255, 255, 0.05) 100%);
             padding: 10px 14px; 
@@ -790,6 +863,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
+        /* NOTE REPLY STYLE - UPDATED FROM NOTES.HTML */
         .note-reply-wrapper {
             margin-bottom: 8px;
             display: flex; flex-direction: column; align-items: center;
@@ -799,6 +873,7 @@
         .note-reply-wrapper:active { transform: scale(0.95); }
         
         .note-reply-pill { 
+            /* background, color set inline via JS */
             padding: 15px 20px; 
             border-radius: 48px; 
             display: flex; flex-direction: column;
@@ -836,6 +911,7 @@
             width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,255,255,0.2);
         }
 
+        /* Scroll Down Button */
         #scroll-down-btn { 
             position: fixed; 
             bottom: 85px; 
@@ -862,6 +938,7 @@
             box-shadow: 0 4px 20px var(--accent-dim);
         }
 
+        /* Heart Pop Animation */
         #heart-overlay { 
             position: fixed; 
             top: 50%; left: 50%; 
@@ -873,15 +950,17 @@
             will-change: transform;
         }
         
+        /* FLOATING EMOJI */
         .floating-emoji {
             position: fixed;
             font-size: 40px;
             pointer-events: none;
             z-index: 3001;
-            animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards; /* Improved physics drop shadow */
             will-change: transform, opacity, filter;
         }
 
+        /* === EFFECT LAYERS (CONFETTI / HEARTS) === */
         #effect-canvas {
             position: fixed;
             top: 0; left: 0;
@@ -891,52 +970,55 @@
         }
 
         /* =========================================
-           9. INPUT AREA
+           9. INPUT AREA (PROFESSIONAL REDESIGN)
            ========================================= */
         .input-area-container { 
-            background: transparent;
+            background: transparent; /* Remove old blocky background */
             border-top: 1px solid transparent; 
             padding-bottom: calc(1px + env(safe-area-inset-bottom)) !important;
             flex-shrink: 0; 
             width: 100%; 
             z-index: 1000; 
-            position: relative;
-            margin-top: auto;
-            touch-action: pan-y !important;
+            position: relative; /* Essential for overlay */
+            margin-top: auto; /* Fix for older mobiles hanging */
+            touch-action: pan-y !important; /* ALLOW EMOJI SCROLLING */
         }
         
         .input-area { 
-            margin: 12px 24px;
-            padding: 4px 8px;
+            margin: 12px 24px; /* Compact mode default */
+            padding: 4px 8px; /* Capsule padding */
             display: flex; 
-            align-items: flex-end;
+            align-items: flex-end; /* Bottom alignment */
             gap: 8px; 
             background: var(--mobileToolbarBg, rgba(30, 30, 30, 0.75));
-            border-radius: 40px;
+            border-radius: 40px; /* Fully rounded Capsule shape */
             border: 1px solid transparent;
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
+            /* ENHANCED: Professional Sleek Glow */
             box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05); 
             transform: scale(0.96);
             transform-origin: bottom center;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            touch-action: none !important;
-            position: relative;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Enhanced Smooth Professional expansion */
+            touch-action: none !important; /* Prevent accidental page scrolls when dragging capsule */
+            position: relative; /* Crucial for inner recording overlay alignment */
             will-change: transform, box-shadow, border-radius;
         }
         
+        /* EXPANDED CAPSULE STATE (Focused) */
         .input-area:focus-within, .input-area.force-expand {
-            margin: 8px 12px;
+            margin: 8px 12px; /* Expands to full width */
             transform: scale(1);
-            border-radius: 26px;
-            background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95));
+            border-radius: 26px; /* Slightly less round when active */
+            background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); /* Darken on focus */
             border-color: transparent;
+            /* ENHANCED: Deep Themed Focused Glow replacing muddy shadow */
             box-shadow: 0 4px 25px rgba(255, 109, 0, 0.15), inset 0 0 0 1px rgba(255, 109, 0, 0.5); 
         }
         
         .input-box { 
             flex: 1; 
-            background: transparent !important;
+            background: transparent !important; /* Remove inner pill background */
             border-radius: 0; 
             padding: 0; 
             border: none !important; 
@@ -957,13 +1039,13 @@
             max-height: 140px; 
             overflow-y: auto; 
             line-height: 1.4; 
-            touch-action: pan-y;
-            overscroll-behavior-y: contain;
+            touch-action: pan-y; /* Allow internal scrolling for long text */
+            overscroll-behavior-y: contain; /* ADDED FIX: prevent dragging whole page from text area */
             transition: height 0.2s ease;
         }
         
         .plus-btn { 
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.08); /* Solid subtle button inside capsule */
             border-radius: 50%;
             font-size: 24px; 
             color: var(--accent); 
@@ -979,6 +1061,7 @@
         }
         .plus-btn:active { transform: rotate(90deg) scale(0.9); background: rgba(255,255,255,0.2); }
         
+        /* NEW PROFESSIONAL SEND ICON BUTTON */
         .send-btn { 
             background: var(--accent); 
             border: none; 
@@ -1008,9 +1091,10 @@
         .send-btn:active { transform: scale(0.9); }
         .send-btn span {
             font-size: 20px;
-            margin-left: 3px;
+            margin-left: 3px; /* visual center for send icon */
         }
 
+        /* === MIC BUTTON & RECORDING UI === */
         .mic-btn-wrapper {
             width: 38px; height: 38px;
             display: flex; align-items: center; justify-content: center;
@@ -1024,7 +1108,7 @@
             width: 38px; height: 38px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
-            background: transparent; color: var(--accent);
+            background: transparent; color: var(--accent); /* Cleaner mic */
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             -webkit-user-select: none; user-select: none;
@@ -1033,20 +1117,21 @@
         .mic-btn:active { transform: scale(0.9); }
         .mic-btn svg { width: 26px; height: 26px; fill: currentColor; pointer-events: none; }
         
+        /* Updated Audio Rec to inherit UNIVERSAL CAPSULE THEME (var(--accent)) */
         .mic-btn.recording {
-            transform: scale(1.3);
+            transform: scale(1.3); /* better scale */
             background: var(--accent);
             color: white;
             box-shadow: 0 0 20px var(--accent-dim);
         }
         .mic-btn.locked {
-            transform: scale(1); background: var(--accent); color: white;
+             transform: scale(1); background: var(--accent); color: white;
         }
 
         .recording-ui-overlay {
             position: absolute; left: 0; bottom: 0; top: 0; width: 100%; height: 100%;
             background: var(--mobileToolbarBg, rgba(25, 25, 25, 0.95)); 
-            border-radius: inherit;
+            border-radius: inherit; /* Inherits the dynamic rounding of the capsule exactly */
             display: none; align-items: center; padding: 0 16px; z-index: 50;
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
@@ -1079,7 +1164,7 @@
             white-space: nowrap;
             background: rgba(0,0,0,0.6); 
             padding: 4px 8px; border-radius: 12px;
-            cursor: pointer;
+            cursor: pointer; /* Makes button-like when locked */
         }
         .rec-slide-cancel-text svg { width: 16px; height: 16px; fill: #888; }
         
@@ -1127,21 +1212,26 @@
         .rec-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 80%; }
         @keyframes recWaveBody { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
 
+
+        /* EMOJI & ATTACHMENT MENUS */
+        /* Modified height and layout for glitch-free smooth toggle */
         #emoji-tray, #gif-tray { 
             display: none; background: var(--bg); border-top: 1px solid var(--border); 
             height: 320px; padding: 0; width: 100%; flex-shrink: 0; 
             overflow-y: auto; touch-action: auto !important; z-index: 100;
         }
         
+        /* Apply touch fix specifically to emoji component */
         emoji-picker, gif-picker {
             touch-action: pan-y !important; 
         }
 
+        /* NEW DYNAMIC EMOJI TOGGLE BUTTON */
         .emoji-toggle-btn {
             background: transparent;
             border-radius: 50%;
             font-size: 24px;
-            color: var(--accent);
+            color: var(--accent); /* Uses universal theme */
             cursor: pointer;
             height: 38px;
             width: 38px;
@@ -1190,6 +1280,7 @@
         .attach-opt:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .attach-opt svg { width: 24px; height: 24px; fill: #eee; }
 
+        /* OVERLAYS & REDESIGNED MENU (INSTAGRAM STYLE L-SHAPE) */
         #menu-overlay, #reaction-details-overlay { 
             display: none; position: fixed; inset: 0; 
             background: rgba(0, 0, 0, 0.7); z-index: 2000; 
@@ -1199,9 +1290,11 @@
         }
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
+        /* Instagram L-Shape Menu Structure */
         .menu-card { 
             background: transparent !important; 
             backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
             border-radius: 0 !important; 
             width: 100% !important; 
             max-width: 320px;
@@ -1211,7 +1304,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            align-items: flex-end;
+            align-items: flex-end; /* Dynamically changed in JS */
             transform: scale(0.9);
             animation: scaleIn 0.3s var(--ease-spring) forwards;
         }
@@ -1221,6 +1314,7 @@
             display: flex; 
             justify-content: space-evenly; 
             padding: 12px 16px !important; 
+            border-bottom: none !important; 
             background: rgba(30, 30, 30, 0.9) !important; 
             border-radius: 30px !important;
             border: 1px solid rgba(255,255,255,0.1);
@@ -1281,6 +1375,7 @@
             animation: slideUp 0.3s var(--ease-spring);
         }
 
+        /* MEDIA MESSAGES */
         .msg-media-wrapper {
             position: relative;
             cursor: pointer; 
@@ -1303,6 +1398,7 @@
             background: #111;
         }
         
+        /* Media Corner Logic */
         .sent .msg-media-wrapper.group-top .chat-media-img { border-bottom-right-radius: 4px; }
         .sent .msg-media-wrapper.group-mid .chat-media-img { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
         .sent .msg-media-wrapper.group-bottom .chat-media-img { border-top-right-radius: 4px; border-bottom-right-radius: 18px; }
@@ -1311,11 +1407,13 @@
         .received .msg-media-wrapper.group-mid .chat-media-img { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
         .received .msg-media-wrapper.group-bottom .chat-media-img { border-top-left-radius: 4px; border-bottom-left-radius: 18px; }
 
+
         .bubble.has-media {
             border-top-left-radius: 4px; border-top-right-radius: 4px;
             margin-top: 2px;
         }
 
+        /* AUDIO & FILE STYLES */
         .msg-video-container {
             position: relative;
             max-width: 280px; border-radius: 18px;
@@ -1337,27 +1435,28 @@
             pointer-events: none;
         }
         
+        /* UPDATED AUDIO UI - BIGGER */
         .msg-audio-pill {
             display: flex; align-items: center; gap: 12px;
             padding: 4px 12px;
             background: linear-gradient(135deg, #2a2a2a, #333);
             border-radius: 24px;
-            min-width: 260px;
-            height: 60px;
+            min-width: 260px; /* Bigger */
+            height: 60px; /* Taller */
             border: 1px solid rgba(255,255,255,0.1);
             position: relative;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: transform 0.2s;
         }
         .audio-control-btn {
-            width: 42px; height: 42px;
+            width: 42px; height: 42px; /* Bigger button */
             background: var(--accent); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             color: #000; cursor: pointer; flex-shrink: 0;
             z-index: 5;
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             transition: transform 0.2s var(--ease-spring);
-            pointer-events: auto;
+            pointer-events: auto; /* Ensure clickable */
         }
         .audio-control-btn:active { transform: scale(0.85); }
         .audio-control-btn svg { width: 20px; height: 20px; fill: #fff; }
@@ -1376,6 +1475,7 @@
         }
         .audio-speed-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.25); }
         
+        /* VISUALIZER */
         .audio-wave-container {
             flex: 1; display: flex; align-items: center; gap: 3px; height: 30px; overflow: hidden;
             position: relative;
@@ -1414,6 +1514,7 @@
             font-size: 1.5rem; flex-shrink: 0;
         }
 
+        /* REACTION LIST MODAL */
         .react-list-container { width: 85%; max-width: 340px; background: #1c1c1c; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; max-height: 50vh; animation: scaleIn 0.3s var(--ease-spring); }
         .react-list-header { padding: 18px; text-align: center; font-weight: 600; font-size: 1.1rem; border-bottom: 1px solid #333; position: relative; color: white;}
         .react-list-close { position: absolute; right: 18px; top: 18px; cursor: pointer; color: #888; transition: transform 0.2s; }
@@ -1425,6 +1526,7 @@
         .reactor-time { font-size: 0.75rem; color: #888; margin-top: 2px; }
         .reactor-emoji { font-size: 1.6rem; }
 
+        /* REACTION HALF-SCREEN MODAL */
         #reaction-picker-modal {
             display: none; position: fixed; inset: 0; z-index: 3000;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
@@ -1447,6 +1549,7 @@
             width: 40px; height: 5px; background: #444; border-radius: 10px; margin: 0 auto;
         }
 
+        /* RIPPLE EFFECT */
         .ripple {
             position: absolute;
             border-radius: 50%;
@@ -1459,43 +1562,26 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* PC HOVER MENU */
-        @media (hover: hover) and (min-width: 1024px) {
-            .msg-bubble-box::after {
-                content: '⋯';
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                font-size: 18px;
-                color: rgba(255,255,255,0.6);
-                opacity: 0;
-                transition: opacity 0.2s;
-                cursor: pointer;
-                z-index: 10;
-            }
-            .msg-row:hover .msg-bubble-box::after {
-                opacity: 1;
-            }
-            .msg-row:hover .msg-bubble-box::after:active {
-                color: var(--accent);
-            }
-        }
-
     </style>
 </head>
 <body>
 <script>
+    // Prevent Chrome/Android from jumping the page on app resume
     if ('scrollRestoration' in history) {
         history.scrollRestoration = 'manual';
     }
 </script>
 
 <script>
+    // =========================================
+    //  NEW: GLOBALLY HANDLE BITE CLICKS
+    // =========================================
     window.biteClickTimers = {};
     window.handleBiteClick = function(event, biteId, msgId) {
         event.preventDefault();
         event.stopPropagation();
         
+        // If they are swiping/scrolling, don't trigger click
         if (window.isScrollingNow) return;
 
         if(window.biteClickTimers[msgId]) {
@@ -1549,8 +1635,7 @@
 <div id="heart-overlay">❤️</div>
 <canvas id="effect-canvas"></canvas>
 
-<div id="scroll-down-btn" onclick="window.scrollToBottom(true)">⬇</div> 
-<div id="reaction-details-overlay" onclick="closeReactionDetails()">
+<div id="scroll-down-btn" onclick="window.scrollToBottom(true)">⬇</div> <div id="reaction-details-overlay" onclick="closeReactionDetails()">
     <div class="react-list-container" onclick="event.stopPropagation()">
         <div class="react-list-header">
             Reactions
@@ -1734,6 +1819,7 @@
 </div>
 
 <script>
+
     // =========================================
     //  NEW: EMOJI KEYBOARD TOGGLE SYSTEM
     // =========================================
@@ -1744,14 +1830,19 @@
         const inputArea = document.querySelector('.input-area');
         
         if (window.isEmojiTrayOpen) {
+            // Switch back to text keyboard
             window.isEmojiTrayOpen = false;
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             
+            // Keep capsule expanded during transition so it doesn't glitch
             inputArea.classList.add('force-expand');
             
+            // Focus input to bring up native keyboard immediately
             mInput.focus(); 
             
+            // Wait slightly for the native keyboard to slide up before hiding tray
+            // This prevents the capsule from falling down and bouncing back up
             setTimeout(() => {
                 emojiTray.style.display = 'none';
                 if(history.state && history.state.modal === 'emoji') history.back();
@@ -1759,6 +1850,7 @@
             }, 150); 
             
         } else {
+            // Open Emoji Picker 
             const wasFocused = document.activeElement === mInput;
             window.isEmojiTrayOpen = true;
             
@@ -1771,11 +1863,14 @@
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
             
+            // Lock the capsule in its expanded state so it doesn't shrink on blur
             inputArea.classList.add('force-expand');
             
+            // Show tray instantly BEFORE blurring so it immediately fills the space the keyboard will leave behind
             emojiTray.style.display = 'block';
             
             if (wasFocused) {
+                // Now blur the input, native keyboard closes, but the tray is already holding the layout up securely
                 mInput.blur(); 
             }
             
@@ -1784,6 +1879,9 @@
         }
     };
 
+    // =========================================
+    //  NEW: GIF KEYBOARD TOGGLE SYSTEM
+    // =========================================
     window.isGifTrayOpen = false;
     window.toggleGifKeyboard = function() {
         const gifTray = document.getElementById('gif-tray');
@@ -1828,6 +1926,9 @@
         }
     };
 
+    // =========================================
+    //  NEW: BACKGROUND CACHE SYSTEM
+    // =========================================
     (function initBackground() {
         const bgUrl = 'images/chat/bg.png';
         const fallbackGradient = 'var(--bg-gradient)';
@@ -1837,12 +1938,14 @@
             document.body.style.backgroundImage = `url('${source}'), ${fallbackGradient}`;
         }
 
+        // Apply instant cache
         if (cachedBg) {
             applyBg(cachedBg);
         } else {
             document.body.style.backgroundImage = fallbackGradient;
         }
 
+        // Check online asynchronously
         fetch(bgUrl)
             .then(response => {
                 if(response.ok) return response.blob();
@@ -1864,6 +1967,10 @@
             });
     })();
 
+    // =========================================
+    //  NEW: INBOX CACHE UPDATER
+    // =========================================
+    // Keeps the inbox perfectly synced without loading
     function updateInboxCacheLocal(chatIdToUpdate, newText, senderId, isUnread) {
         try {
             let cachedInboxHTML = localStorage.getItem('goorac_inbox_html');
@@ -1901,7 +2008,14 @@
         } catch(e) { console.error("Inbox Cache Error", e); }
     }
 
-    let fbConfig = (typeof window.firebaseConfig !== 'undefined') ? window.firebaseConfig : {};
+    // =========================================
+    //  10. FIREBASE INITIALIZATION
+    // =========================================
+    
+    // Updated to use external config.js (window.firebaseConfig)
+    let fbConfig = (typeof window.firebaseConfig !== 'undefined') ? window.firebaseConfig : {
+        // Fallback or empty if config.js missing
+    };
 
     if (!firebase.apps.length && fbConfig.apiKey) {
         firebase.initializeApp(fbConfig);
@@ -1910,10 +2024,14 @@
     const rdb = firebase.database();
     const auth = firebase.auth();
     
+    // Attempt to enable offline persistence
     db.enablePersistence().catch(err => {
         console.log("Persistence disabled:", err.code);
     });
 
+    // =========================================
+    //  11. GLOBAL STATE VARIABLES
+    // =========================================
     const params = new URLSearchParams(window.location.search);
     const targetUsername = params.get('user');
     
@@ -1928,13 +2046,16 @@
     let pulseListener = null;
     let visionListener = null;
     
+    // Status Logic State
     let lastStatusData = null;
     let statusUpdateInterval = null;
     let isFirstStatusLoad = true; 
 
+    // Audio SFX
     const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
     const likeSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
 
+    // DOM References
     const mInput = document.getElementById('m-input');
     const inputBox = document.getElementById('msg-input-box');
     const chatFlow = document.getElementById('chat-flow');
@@ -1950,8 +2071,11 @@
     const micBtn = document.getElementById('mic-btn');
     const micWrapper = document.getElementById('mic-btn-wrapper');
 
+    // =========================================
+    //  NEW: GLOBAL MEDIA SCROLL FIX (ResizeObserver)
+    // =========================================
     window.isInitialLoadScroll = true;
-    setTimeout(() => { window.isInitialLoadScroll = false; }, 4000);
+    setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
     const msgResizeObserver = new ResizeObserver(() => {
         if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 450))) {
@@ -1960,6 +2084,9 @@
     });
     if (container) msgResizeObserver.observe(container);
 
+    // =========================================
+    //  12. INSTANT LOAD / 0ms RENDER
+    // =========================================
     (function instantRender() {
         const storedMyUid = localStorage.getItem('my_uid_cache');
         const userCacheKey = `chat_user_${targetUsername}`;
@@ -1967,12 +2094,14 @@
 
         if (storedUser && storedMyUid && targetUsername) {
             try {
+                // 1. Render Header Instantly (NAME & PFP Only - NOT Status)
                 chatTargetData = JSON.parse(storedUser);
                 const pfp = document.getElementById('h-pfp');
                 pfp.classList.remove('loading-shimmer');
                 pfp.src = (typeof chatTargetData.photoURL === 'string' && chatTargetData.photoURL !== 'true') ? chatTargetData.photoURL : 'https://via.placeholder.com/150';
                 document.getElementById('h-display-name').innerText = chatTargetData.name || chatTargetData.username;
                 
+                // Set default label to username initially (Prevents showing old status)
                 document.getElementById('h-username-label').innerText = `@${chatTargetData.username}`;
                 
                 if(chatTargetData.verified === true) {
@@ -1981,10 +2110,12 @@
                     document.getElementById('v-badge').style.display = 'none';
                 }
 
+                // 2. Setup IDs
                 myUid = storedMyUid; 
                 targetUid = chatTargetData.uid;
                 chatId = myUid < targetUid ? `${myUid}_${targetUid}` : `${targetUid}_${myUid}`;
 
+                // 3. Render Cached Messages
                 const msgCacheKey = `chat_msgs_${chatId}`;
                 const storedMsgs = localStorage.getItem(msgCacheKey);
                 
@@ -2007,13 +2138,20 @@
         }
     })();
 
+    // =========================================
+    //  13. EVENT LISTENERS & INTERACTION (WITH STRICT VIEWPORT FIX)
+    // =========================================
+    
+    // AGGRESSIVE VIEWPORT ANCHOR (Fixes header hiding and input hanging)
     function lockViewportAndHeader() {
         const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         const app = document.getElementById('main-app');
         if(app) app.style.height = vh + 'px';
         
+        // Keep body fixed at 100vh so background doesn't shrink
         document.body.style.height = '100vh'; 
         
+        // Force scroll positions to 0 instantly so header never disappears
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
@@ -2027,6 +2165,7 @@
     window.addEventListener('resize', lockViewportAndHeader);
     window.addEventListener('scroll', lockViewportAndHeader, { passive: true });
     
+    // Unyielding lock loop while input is active to fight older browser behavior
     setInterval(() => {
         if (document.activeElement === mInput || window.scrollY > 0 || document.body.scrollTop > 0) {
             window.scrollTo(0, 0);
@@ -2035,9 +2174,15 @@
         }
     }, 100);
 
+    // =========================================
+    // FIX FOR INPUT BOUNCE & MODAL BACK BUTTON
+    // =========================================
+
+    // BLOCK PAGE SCROLL WHEN DRAGGING THE CAPSULE UP (But allow scrolling for Emoji tray & TextArea)
     const inputContainerObj = document.querySelector('.input-area-container');
     if (inputContainerObj) {
         inputContainerObj.addEventListener('touchmove', (e) => {
+            // Strictly stop page scroll/drag when touching the capsule (unless scrolling the text inside or emoji picker)
             const path = e.composedPath ? e.composedPath() : [];
             const isEmojiPicker = path.some(el => el.tagName === 'EMOJI-PICKER') || e.target.closest('emoji-picker');
             const isGifPicker = path.some(el => el.tagName === 'GIF-PICKER') || e.target.closest('gif-picker');
@@ -2049,26 +2194,33 @@
         }, { passive: false });
     }
 
+    // Multifunctional Back Button Logic
     window.smartBack = function() {
         if (window !== window.parent && typeof window.parent.closeChatModal === 'function') {
+            // We are inside the iframe modal, tell the parent to close it
             window.parent.closeChatModal();
         } else {
+            // Normal direct page access
             history.back();
         }
     };
 
+    // Double Tap Background to Scroll
     document.addEventListener('dblclick', (e) => {
         if (e.target.id === 'chat-flow' || e.target.id === 'messages-container') {
-            window.scrollToBottom(true);
+            window.scrollToBottom(true); /* MODIFIED: Call smooth scroll */
             vibrate(30);
         }
     });
     
+    // Ripple Effect Logic
     document.addEventListener('click', function(e) {
+        // Auto-close attachment menu
         if (!e.target.closest('#attachment-menu') && !e.target.closest('.plus-btn')) {
             if (attachmentMenu.style.display === 'flex') closeAttachmentMenu();
         }
         
+        // Don't ripple on inputs or mic button
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('emoji-picker') || e.target.closest('gif-picker') || e.target.closest('.mic-btn')) return;
         
         const circle = document.createElement('div');
@@ -2082,6 +2234,7 @@
         setTimeout(() => circle.remove(), 600);
     });
     
+    // Send Button Touch Handling
     const handleSendClick = (e) => {
         e.preventDefault(); 
         sendMsg();
@@ -2089,22 +2242,27 @@
     sendBtnUI.addEventListener('mousedown', handleSendClick);
     sendBtnUI.addEventListener('touchstart', handleSendClick);
 
+    // Auto-Resize Textarea
     mInput.addEventListener('input', function() {
         this.style.height = 'auto'; 
         this.style.height = (this.scrollHeight) + 'px';
         if(this.value === '') this.style.height = 'auto';
         
+        // Toggle Send / Mic Button / Emoji positions
         if(this.value.trim().length > 0) {
             sendBtnUI.classList.add('active');
             micWrapper.style.display = 'none';
+            // Swap icons layout when typing starts
             document.querySelector('.plus-btn').style.display = 'none';
             document.getElementById('emoji-toggle-left').style.display = 'flex';
             document.getElementById('emoji-toggle-right').style.display = 'none';
             document.getElementById('gif-toggle-right').style.display = 'none';
+            // Send Typing Indicator
             rdb.ref(`typing/${chatId}/${myUid}`).set(true);
         } else {
             sendBtnUI.classList.remove('active');
             micWrapper.style.display = 'flex';
+            // Revert icons layout
             document.querySelector('.plus-btn').style.display = 'flex';
             document.getElementById('emoji-toggle-left').style.display = 'none';
             document.getElementById('emoji-toggle-right').style.display = 'flex';
@@ -2112,11 +2270,13 @@
             rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         }
         
+        // Auto-Scroll on Typing ONLY if already near bottom (Generous threshold of 800px added)
         if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800) {
              window.scrollToBottom();
         }
     });
 
+    // Scroll Observer for "New Message" Button & Load More Fix
     chatFlow.addEventListener('scroll', () => {
         const diff = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
         if (diff > 300) {
@@ -2126,17 +2286,23 @@
             scrollBtn.classList.remove('new-msg');
         }
         
+        // FIX: Reliable top scroll detection for older messages
+        // The Intersection Observer should catch this, but having this backup listener is good
         if (chatFlow.scrollTop <= 200 && !isLoadingMore && messagesMap.size > 0) {
             loadMoreMessages();
         }
     });
 
+    // Disable Context Menu (Right Click) but allow Paste
     window.oncontextmenu = (e) => { 
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
         e.preventDefault(); 
         return false; 
     };
     
+    // =========================================
+    //  14. COMPONENT INTEGRATION
+    // =========================================
     const mainPicker = document.getElementById('main-picker');
     const mainGifPicker = document.getElementById('main-gif-picker');
     const imagePickerComponent = document.getElementById('img-picker');
@@ -2146,6 +2312,7 @@
         mainPicker.addEventListener('emoji-click', event => {
             const emoji = event.detail.emoji || event.detail.unicode; 
             mInput.value += emoji;
+            // Kept blurred so keyboard does not pop up automatically 
             mInput.dispatchEvent(new Event('input'));
         });
     }
@@ -2174,6 +2341,7 @@
         });
     }
 
+    // UI Toggles with History State for Back Button
     function toggleAttachmentMenu() {
         if (attachmentMenu.style.display === 'flex') {
             closeAttachmentMenu();
@@ -2215,6 +2383,7 @@
         }
     }
     
+    // Reaction Picker (Half Screen)
     function expandEmojiMenu() {
         vibrate(30);
         const overlay = document.getElementById('menu-overlay');
@@ -2256,15 +2425,17 @@
     function goToPulse() { if(targetUsername) window.location.href = `pulse.html?user=${targetUsername}`; }
     
     mInput.addEventListener("focus", () => { 
-        document.querySelector('.input-area').classList.add('force-expand');
-        if(window.isEmojiTrayOpen) toggleEmojiKeyboard();
+        document.querySelector('.input-area').classList.add('force-expand'); // Expands the capsule smoothly
+        if(window.isEmojiTrayOpen) toggleEmojiKeyboard(); // Auto swap icon logic internally
         if(window.isGifTrayOpen) toggleGifKeyboard();
         if(attachmentMenu.style.display === 'flex') closeAttachmentMenu();
         
         lockViewportAndHeader();
         setTimeout(lockViewportAndHeader, 50);
-        setTimeout(lockViewportAndHeader, 300);
+        setTimeout(lockViewportAndHeader, 300); // Double fallback for slower animations
         
+        // AGGRESSIVE SCROLL FIX FOR BOTTOM KEYBOARD POP
+        // Generous threshold added as requested (800px instead of absolutely bottom)
         let distanceToBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
         if(distanceToBottom < 800) { 
             window.scrollToBottom(true);
@@ -2275,9 +2446,11 @@
     });
     
     mInput.addEventListener("blur", () => {
+        // FIXED: Only shrink the capsule if we are NOT holding the emoji tray open
         if (!window.isEmojiTrayOpen && !window.isGifTrayOpen) {
-            document.querySelector('.input-area').classList.remove('force-expand');
+            document.querySelector('.input-area').classList.remove('force-expand'); // Shrinks the capsule smoothly
         }
+        // Reset safely when keyboard closes
         setTimeout(lockViewportAndHeader, 100);
     });
 
@@ -2286,7 +2459,21 @@
         if(history.state && history.state.modal === 'emoji') history.back();
     }
 
+    // NEW GLOBALLY DECLARED DESKTOP MENU HANDLER FOR PC USERS
+    window.handleDesktopMenu = function(event, id) {
+        event.stopPropagation();
+        const m = messagesMap.get(id);
+        if(m) {
+            openMenu(id, m.sender, m.text);
+        }
+    };
+
+    // =========================================
+    //  15. STATUS & PRESENCE LOGIC (INSTANT)
+    // =========================================
+    
     function updateHeaderStatus() {
+        // Privacy Guard 1: Their Settings
         if (chatTargetData && chatTargetData.showActivityStatus === false) {
              onlineDot.style.display = 'none';
              headerSubLabel.innerText = `@${chatTargetData.username}`;
@@ -2294,6 +2481,7 @@
              return; 
         }
 
+        // Privacy Guard 2: My Settings (Reciprocity)
         if (myUserData && myUserData.showActivityStatus === false) {
              onlineDot.style.display = 'none';
              headerSubLabel.innerText = `@${chatTargetData.username}`;
@@ -2306,7 +2494,7 @@
         if (lastStatusData.state === 'online') {
             onlineDot.style.display = 'block';
             headerSubLabel.innerText = "Active now";
-            headerSubLabel.style.color = "#10b981";
+            headerSubLabel.style.color = "#10b981"; // Green
             headerSubLabel.style.fontWeight = "600";
         } else {
             onlineDot.style.display = 'none';
@@ -2319,6 +2507,7 @@
     function monitorTargetStatus() {
         if (!targetUid) return;
         
+        // Re-check privacy immediately
         if ((myUserData && myUserData.showActivityStatus === false) || 
             (chatTargetData && chatTargetData.showActivityStatus === false)) {
              onlineDot.style.display = 'none';
@@ -2328,6 +2517,7 @@
         
         if (statusUpdateInterval) clearInterval(statusUpdateInterval);
 
+        // Periodically refresh the text "5m ago" -> "6m ago"
         statusUpdateInterval = setInterval(() => {
             updateHeaderStatus();
         }, 60000);
@@ -2335,6 +2525,7 @@
         rdb.ref('/status/' + targetUid).on('value', (snapshot) => {
             lastStatusData = snapshot.val();
             
+            // Clear pending typing logic if status updates
             if (statusTimeout) clearTimeout(statusTimeout);
             
             if (!lastStatusData) {
@@ -2342,16 +2533,22 @@
                return;
             }
 
+            // NEW FIX: Smooth Opacity transition to avoid sudden harsh flicker 
             if(isFirstStatusLoad) {
                 headerSubLabel.style.opacity = '0';
                 setTimeout(() => headerSubLabel.style.opacity = '1', 150);
                 isFirstStatusLoad = false;
             }
 
+            // === INSTANT UPDATE LOGIC (CRITICAL FIX) ===
+            // Directly calculate timeAgo here immediately, do not wait for next tick.
             updateHeaderStatus();
         });
     }
 
+    // =========================================
+    //  16. AUTH & INIT
+    // =========================================
     auth.onAuthStateChanged(user => {
         if (user) { 
             myUid = user.uid; 
@@ -2360,9 +2557,10 @@
             db.collection('users').doc(myUid).get().then(doc => {
                  if (doc.exists) {
                       myUserData = doc.data();
+                      // Only start monitoring if privacy settings allow
                       if (targetUid) {
                           monitorTargetStatus();
-                          checkBlockingStatus();
+                          checkBlockingStatus(); // NEW: Check Blocking
                       }
                  }
             });
@@ -2374,8 +2572,10 @@
     async function initChat() {
         if(!targetUsername) return;
         
+        // NEW FIX: Wipe out typing status if user suddenly disconnects
         if(myUid) rdb.ref(`typing/${chatId}/${myUid}`).onDisconnect().set(false);
 
+        // Fetch Fresh User Data (Background)
         const snap = await db.collection("users").where("username", "==", targetUsername).get();
         if (snap.empty) return;
         
@@ -2383,12 +2583,15 @@
         chatTargetData = snap.docs[0].data();
         chatTargetData.uid = targetUid; 
         
+        // Update Cache
         localStorage.setItem(`chat_user_${targetUsername}`, JSON.stringify(chatTargetData));
 
         chatId = myUid < targetUid ? `${myUid}_${targetUid}` : `${targetUid}_${myUid}`;
         
+        // Ensure disconnect node properly registers now that we have chatId constructed
         rdb.ref(`typing/${chatId}/${myUid}`).onDisconnect().set(false);
         
+        // Update Header UI
         const pfp = document.getElementById('h-pfp');
         pfp.classList.remove('loading-shimmer');
         const pfpUrl = (typeof chatTargetData.photoURL === 'string' && chatTargetData.photoURL !== 'true') ? chatTargetData.photoURL : 'https://via.placeholder.com/150';
@@ -2402,24 +2605,32 @@
             document.getElementById('v-badge').style.display = 'none';
         }
 
+        // Start Monitoring Status
         if(myUserData) monitorTargetStatus();
         
+        // Run Blocking Check
         checkBlockingStatus();
         
+        // Start Pulse Check
         checkPulseInvitation();
+        // Start Vision Check
         checkVisionInvitation();
 
+        // Mark as Seen
         db.collection("chats").doc(chatId).update({ 
             [`unreadCount.${myUid}`]: 0, 
             seen: true 
         }).then(() => {
+            // INSTANT INBOX CACHE UPDATE FOR READ STATUS
             updateInboxCacheLocal(chatId, chatTargetData.lastMessage || "Message seen", chatTargetData.lastSender, false);
         }).catch(e => {});
 
+        // Typing Listener (UPDATED FOR RECORDING & OFFLINE FIX & SCROLL FIX)
         rdb.ref(`typing/${chatId}/${targetUid}`).on('value', (s) => {
             const val = s.val();
             const bubble = document.getElementById('typing-bubble-content');
             
+            // FIX: if offline, force hide typing
             if (lastStatusData && lastStatusData.state === 'offline') {
                  typingRow.style.display = 'none';
                  return;
@@ -2432,30 +2643,35 @@
                     <div class="rec-wave-icon"><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div></div>
                     Recording...
                 `;
-                inputBox.style.boxShadow = "0 0 15px rgba(255, 69, 58, 0.3)";
+                inputBox.style.boxShadow = "0 0 15px rgba(255, 69, 58, 0.3)"; // NEW FEATURE: Glow red when recording
                 if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom(true);
             } else if (val === true) {
                 typingRow.style.display = 'flex';
                 bubble.className = "typing-bubble";
                 bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)";
+                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)"; // NEW FEATURE: Glow orange when typing
                 if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom(true);
             } else {
                 typingRow.style.display = 'none';
-                inputBox.style.boxShadow = "none";
+                inputBox.style.boxShadow = "none"; // NEW FEATURE: Remove glow
             }
         });
 
         startListener(); 
         setupObserver();
         
+        // REPLACED GLOBAL SLIDE WITH NEW LONG-PRESS TIMESTAMPS
         setupGlobalTimestamps(); 
     }
     
+    // NEW: Check if blocked (by me or by them)
     function checkBlockingStatus() {
         if (!myUserData || !chatTargetData) return;
 
+        // Check if I blocked them
         const amIBlocking = (myUserData.blocked || []).some(u => (typeof u === 'string' ? u : u.uid) === targetUid);
+        
+        // Check if they blocked me
         const isBlockedBy = (chatTargetData.blocked || []).some(u => (typeof u === 'string' ? u : u.uid) === myUid);
 
         if (amIBlocking || isBlockedBy) {
@@ -2467,25 +2683,33 @@
         }
     }
 
+    // NEW: Pulse Invitation Logic
     function checkPulseInvitation() {
+        // We listen to the room document that matches our chatId (sorted UIDs)
+        // because Pulse logic uses same sorted UIDs for 1-on-1 rooms
         const roomRef = db.collection('pulse_rooms').doc(chatId);
         
         pulseListener = roomRef.onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
+                // Determine fields based on sort order
                 const isUserA = myUid < targetUid;
                 const otherField = isUserA ? 'userB' : 'userA';
                 const myField = isUserA ? 'userA' : 'userB';
                 
+                // If they are online/waiting AND I am not in yet
                 if ((data[otherField] === 'online' || data[otherField] === 'waiting') && 
                     (!data[myField] || data[myField] === 'offline')) {
                     
+                    // Check Cooldown
                     const dismissedAt = localStorage.getItem('pulse_dismiss_' + targetUid);
                     if (dismissedAt) {
                         const diff = Date.now() - parseInt(dismissedAt);
+                        // 1 hour = 3600000 ms
                         if (diff < 3600000) return; 
                     }
                     
+                    // Show Banner
                     document.getElementById('pulse-invite-banner').style.display = 'flex';
                 } else {
                     document.getElementById('pulse-invite-banner').style.display = 'none';
@@ -2498,6 +2722,7 @@
 
     window.dismissPulseInvite = function() {
         document.getElementById('pulse-invite-banner').style.display = 'none';
+        // Set 1 hr cooldown
         localStorage.setItem('pulse_dismiss_' + targetUid, Date.now().toString());
     }
 
@@ -2505,6 +2730,7 @@
         window.location.href = `pulse.html?user=${targetUsername}`;
     }
 
+    // NEW: Vision Invitation Logic
     function checkVisionInvitation() {
         const roomRef = db.collection('vision_rooms').doc(chatId);
         
@@ -2540,6 +2766,10 @@
         window.location.href = `vision.html?user=${targetUsername}`;
     }
 
+
+    // =========================================
+    //  17. MESSAGE LISTENER & LIVE REACTION LOGIC
+    // =========================================
     function startListener() {
         if (unsubscribe) unsubscribe();
         
@@ -2552,9 +2782,11 @@
                 if (!lastVisible) lastVisible = snapshot.docs[snapshot.docs.length - 1];
                 let isNewIncoming = false;
                 let hasVisualChanges = false;
-                let didRemoveMessage = false;
+                let reactionOnlyUpdates = false;
+                let didRemoveMessage = false; // NEW
 
                 snapshot.docChanges().forEach(change => {
+                    // FIX: Make optimistic sending blazingly fast by requesting an estimated timestamp locally
                     const msgData = change.doc.data({ serverTimestamps: 'estimate' });
                     const msgId = change.doc.id;
                     msgData.id = msgId; 
@@ -2566,8 +2798,9 @@
                             messagesMap.set(msgId, msgData);
                             if(msgData.sender !== myUid) {
                                 isNewIncoming = true;
-                                checkKeywords(msgData.text);
+                                checkKeywords(msgData.text); // <--- ADDED: Trigger effects for receiver
                                 
+                                // INBOX INSTANT CACHE UPDATE FOR NEW MESSAGE
                                 let displayTxt = msgData.text || "New message";
                                 if(msgData.isBite) displayTxt = "🎬 Bite";
                                 else if(msgData.isGif) displayTxt = "🎞️ GIF";
@@ -2577,30 +2810,47 @@
                             }
                             hasVisualChanges = true;
                         } else {
+                            // GLITCH FIX: If it exists in cache (instantRender), don't flag as visual change
+                            // unless critical data is different. This prevents the wipe/flicker.
                             if(existing.text !== msgData.text || 
+                               (existing.reactions && !msgData.reactions) || 
+                               (!existing.reactions && msgData.reactions) ||
                                JSON.stringify(existing.reactions) !== JSON.stringify(msgData.reactions) ||
                                existing.seen !== msgData.seen) {
                                 hasVisualChanges = true;
                             }
+                            // Always update the map to ensure we have the live objects (Timestamp vs ISO)
                             messagesMap.set(msgId, msgData);
                         }
                     } 
                     else if (change.type === "modified") {
+                        // === DETECT NEW REACTIONS HERE AND TRIGGER PHYSICS ===
                         const oldData = messagesMap.get(msgId);
+                        
+                        // Physics trigger: Fire floating emoji
                         detectNewReactions(oldData, msgData, msgId);
                         
+                        // GLITCH FIX: If ONLY reactions changed, perform a DOM surgical update
+                        // instead of flagging hasVisualChanges which wipes the list.
                         const oldReactionsStr = JSON.stringify(oldData ? oldData.reactions : {});
                         const newReactionsStr = JSON.stringify(msgData.reactions || {});
                         
                         if(oldData && oldData.text === msgData.text && oldReactionsStr !== newReactionsStr) {
+                            // It's a reaction-only update. 
+                            // 1. Update Map
                             messagesMap.set(msgId, msgData);
+                            // 2. Surgical DOM update
                             updateReactionDOM(msgId, msgData.reactions);
+                            // 3. Ensure we DO NOT re-render all
+                            // hasVisualChanges remains false for this loop
                         } else {
+                            // Text changed or something major, do full re-render
                             messagesMap.set(msgId, msgData);
                             hasVisualChanges = true;
                         }
                     } 
                     else if (change.type === "removed") {
+                        // FIX FOR DISAPPEARING MESSAGES: Safely and reliably clean up unsent messages
                         if (messagesMap.has(msgId)) {
                             messagesMap.delete(msgId);
                             const el = document.getElementById(msgId);
@@ -2610,11 +2860,13 @@
                         }
                     }
                     
+                    // Mark read logic
                     if(msgData.sender !== myUid && !msgData.seen) {
                         db.collection("chats").doc(chatId).collection("messages").doc(msgId).update({ 
                             seen: true,
                             seenAt: firebase.firestore.FieldValue.serverTimestamp() 
                         });
+                        // INBOX CACHE UPDATE FOR READ STATUS (BACKGROUND)
                         let displayTxt2 = msgData.text || "Message";
                         if(msgData.isBite) displayTxt2 = "🎬 Bite";
                         else if(msgData.isGif) displayTxt2 = "🎞️ GIF";
@@ -2625,7 +2877,7 @@
                 });
 
                 if(isNewIncoming) { 
-                    vibrate([50, 50, 50]);
+                    vibrate([50, 50, 50]); // UPGRADED NEW MESSAGE VIBRATION
                     if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight > 250) {
                         scrollBtn.classList.add('new-msg');
                     }
@@ -2640,13 +2892,18 @@
                             isFirstLoad = false;
                         }, 50);
                     } else {
-                        const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800;
+                        // NEW FIX: Smarter auto-scroll. Only scroll if near bottom. 
+                        // Increased threshold to 800 to be very generous.
+                        const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800; 
+                        const cfSH = chatFlow.scrollHeight;
+                        const cfST = chatFlow.scrollTop;
                         
                         renderAll();
                         
                         if (isNearBottom) {
                             requestAnimationFrame(() => window.scrollToBottom(true));
                         } else {
+                            // Maintain scroll position if up high
                             chatFlow.style.overflowAnchor = 'auto'; 
                             if (isNewIncoming) {
                                 scrollBtn.classList.add('new-msg');
@@ -2660,7 +2917,11 @@
             });
     }
 
+    // NEW FUNCTION: Surgical DOM update for reactions (prevents glitching)
     function updateReactionDOM(msgId, reactions) {
+        const bubble = document.getElementById(`bubble-${msgId}`) || document.getElementById(`media-${msgId}`);
+        // Find reaction badges in this row (text bubble or media wrapper)
+        // We look for ID react-{msgId}
         const badgeElements = document.querySelectorAll(`#react-${msgId}`);
         
         let reactionsList = [];
@@ -2668,41 +2929,50 @@
         const reactionDisplay = reactionsList.map(r => r.emoji).join(' ');
         
         badgeElements.forEach(el => {
+            // Only update DOM if the text is actually different (prevents loop glitch)
             if (el.innerText !== reactionDisplay) {
                 el.innerText = reactionDisplay;
                 el.style.display = reactionDisplay ? 'block' : 'none';
                 
+                // Add a small bounce animation ONLY if visible
                 if (reactionDisplay) {
                     el.classList.remove('updated');
-                    void el.offsetWidth;
+                    void el.offsetWidth; // Trigger reflow
                     el.classList.add('updated');
                 }
             }
         });
     }
 
+    // NEW FUNCTION: Detects if someone else added a reaction and triggers physics
     function detectNewReactions(oldData, newData, msgId) {
         if (!oldData || !newData) return;
         
         const oldReactions = oldData.reactions || {};
         const newReactions = newData.reactions || {};
         
+        // Iterate through new reactions to find added ones
         Object.keys(newReactions).forEach(uid => {
             const oldReaction = oldReactions[uid];
             const newReaction = newReactions[uid];
             
+            // If there was no reaction before, or the emoji changed
             if (!oldReaction || oldReaction.emoji !== newReaction.emoji) {
+                // Trigger Visual Pop for BOTH users (Sender sees it locally via click, receiver sees it here)
+                // We add a slight delay if it's the sender to avoid conflict with local click anim
                 if (uid !== myUid && newReaction.emoji) {
                     triggerReactionPop(msgId, newReaction.emoji);
-                    if(newReaction.emoji === '❤️') triggerHeartAnimation();
+                    if(newReaction.emoji === '❤️') triggerHeartAnimation(); // <--- ADDED: Trigger full screen heart for receiver
                 }
             }
         });
     }
 
+    // NEW FUNCTION: Spawns a floating emoji (FIXED MEDIA BOUNDS GLITCH)
     function triggerReactionPop(msgId, emoji) {
-        if (!emoji) return;
+        if (!emoji) return; // Prevent empty pops
 
+        // Try to find the bubble or the media container
         const bubble = document.getElementById(`bubble-${msgId}`) || 
                        document.getElementById(msgId)?.querySelector('.msg-media-wrapper') ||
                        document.getElementById(msgId)?.querySelector('.msg-video-container');
@@ -2712,9 +2982,13 @@
         const rect = bubble.getBoundingClientRect();
         const isMedia = bubble.classList.contains('msg-media-wrapper') || bubble.classList.contains('msg-video-container');
 
+        // Calculate start position
+        // For media (which can be tall), start near the bottom right where the reaction badge is.
+        // For text bubbles, center is fine.
         let startX = isMedia ? (rect.right - 40) : (rect.left + (rect.width / 2) - 20);
         let startY = isMedia ? (rect.bottom - 40) : (rect.top + (rect.height / 2));
 
+        // Clamp to screen bounds just in case element is partially scrolled out
         if (startY < 50) startY = 50;
         if (startY > window.innerHeight - 50) startY = window.innerHeight - 50;
         if (startX < 20) startX = 20;
@@ -2728,8 +3002,10 @@
         
         document.body.appendChild(floatEl);
         
+        // Play sound if desired
         likeSound.play().catch(()=>{});
 
+        // Remove from DOM after animation
         setTimeout(() => {
             floatEl.remove();
         }, 1500);
@@ -2751,14 +3027,18 @@
                 return savedM;
             });
             msgsToSave.sort((a, b) => new Date(a.timestampIso) - new Date(b.timestampIso));
-            try { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(msgsToSave)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(msgsToSave.slice(-300))); }
+            const limitMsgs = msgsToSave; // Changed from msgsToSave.slice(-50) to store all local
+            try { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(limitMsgs)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(msgsToSave.slice(-300))); }
         } catch (e) { console.error("Cache Save Error", e); }
     }
 
     function renderAll() {
+        // ========================================================================================
+        // NEW SMART VIRTUAL DOM DIFFING (Fixes "Render all messages every time" and flickering)
+        // ========================================================================================
         let tempContainer = document.createElement('div');
         let originalContainer = container;
-        container = tempContainer;
+        container = tempContainer; // Hijack DOM target so renderMessage goes to Temp
 
         const sorted = Array.from(messagesMap.entries())
             .filter(([id, data]) => data.timestamp)
@@ -2812,9 +3092,12 @@
             renderMessage(data, id, id === lastSeenMsgId, isFirstInGroup, isLastInGroup);
         });
 
+        // Restore original container reference
         container = originalContainer;
 
+        // Perform DOM Diff
         if (container.children.length === 0) {
+            // First load: just dump everything in
             while (tempContainer.firstChild) container.appendChild(tempContainer.firstChild);
         } else {
             let newChildren = Array.from(tempContainer.children);
@@ -2825,18 +3108,23 @@
                 let oldChild = oldChildren[i];
 
                 if (!oldChild) {
+                    // It's a brand new appended message
                     container.appendChild(newChild);
                 } else if (newChild.id && oldChild.id === newChild.id) {
+                    // The IDs match. Only update if the content or classes actually changed
                     if (oldChild.innerHTML !== newChild.innerHTML || oldChild.className !== newChild.className) {
                         let audio = oldChild.querySelector('audio');
                         let video = oldChild.querySelector('video');
+                        // Never interrupt playing media!
                         if ((audio && !audio.paused) || (video && !video.paused)) {
+                            // Media is playing. To prevent stale data, we manually update just the reaction badge
                             let newMsgData = messagesMap.get(newChild.id);
                             if (newMsgData) updateReactionDOM(newChild.id, newMsgData.reactions);
                         } else {
                             oldChild.innerHTML = newChild.innerHTML;
                             oldChild.className = newChild.className;
                             
+                            // Reattach Listeners for the updated node
                             let msgData = messagesMap.get(newChild.id);
                             let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`);
                             if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
@@ -2849,13 +3137,16 @@
                         }
                     }
                 } else {
+                    // Fallback for mismatch (e.g. dividers adjusting)
                     container.replaceChild(newChild, oldChild);
                 }
             }
+            // Remove any trailing messages that got deleted from DB
             while (container.children.length > newChildren.length) {
                 container.removeChild(container.lastChild);
             }
         }
+        // ========================================================================================
     }
 
     function renderMessage(m, id, isLastSeen, isFirstInGroup, isLastInGroup) {
@@ -2888,9 +3179,11 @@
             }
         }
         
+        // Styling Vars
         const boxStyle = reactionDisplay ? 'style="margin-bottom: 16px"' : '';
-        const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo}')">${m.replyTo}</div>` : '';
+        const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo.replace(/'/g, "\\'")}')">${m.replyTo}</div>` : '';
 
+        // Note Reply - FULL UI RENDER (Updated Layout)
         const noteMeta = m.noteMetadata || {};
         const noteReplyHtml = m.replyToNote ? `
             <div class="note-reply-wrapper">
@@ -2918,6 +3211,7 @@
                 <div class="note-connector"></div>
             </div>` : '';
         
+        // Group Logic for Borders
         let groupClass = '';
         if (isFirstInGroup && isLastInGroup) groupClass = 'single';
         else if (isFirstInGroup) groupClass = 'group-top';
@@ -2929,6 +3223,7 @@
         let renderFileMeta = m.fileMeta;
         let renderText = m.text || "";
 
+        // Auto-detect media links in text
         if (!renderImageUrl && !renderFileUrl && renderText) {
             const urlMatch = renderText.match(/(https?:\/\/[^\s]+)/);
             if (urlMatch) {
@@ -2948,6 +3243,7 @@
                     matchedMedia = true;
                 }
                 
+                // FIX: Hide link text if the message is exactly just the URL (so it only displays the media)
                 if (matchedMedia && renderText.trim() === url) {
                     renderText = ""; 
                 }
@@ -2958,6 +3254,7 @@
         let bubbleClass = `bubble ${groupClass}`;
         let bubbleStyle = '';
 
+        // NEW LOGIC FOR MEDIA DIMENSIONS AND SCROLL FIX
         let dynamicStyle = '';
         let storedRatio = localStorage.getItem('media_ratio_' + id);
         if (storedRatio) {
@@ -2966,6 +3263,7 @@
             dynamicStyle = `min-height: 200px;`;
         }
 
+        // Media Types Construction - LOAD EVENT ADDED TO FIX SCROLL HIDDEN BUG
         if (m.isBite) {
             mediaHtml = `
             <div class="msg-media-wrapper ${groupClass}" onclick="handleBiteClick(event, '${m.biteId}', '${id}')">
@@ -3009,6 +3307,7 @@
         }
         else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('audio')) {
             const safeId = 'audio-' + id;
+            // VOICE NOTE UI WITH SPEED - BIGGER UI
             mediaHtml = `
             <div class="msg-audio-pill" id="pill-${safeId}">
                 <div class="audio-control-btn" onclick="event.stopPropagation(); window.toggleAudio('${safeId}');">
@@ -3046,6 +3345,7 @@
 
         const safeText = linkify(renderText);
         
+        // ADVANCED EMOJI DETECTOR FOR JUMBO INSTAGRAM EMOJIS
         const textNoSpaces = (renderText || "").replace(/\s/g, '');
         const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
         const isOnlyEmoji = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 5 && emojiRegex.test(textNoSpaces);
@@ -3054,8 +3354,12 @@
             bubbleClass += ' jumbo-emoji';
         }
         
+        // --- ADDED: Swipe Reply Icon & Timestamp Footer ---
         let contentHTML = `
             <div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
+            <div class="desktop-menu-btn" onclick="handleDesktopMenu(event, '${id}')">
+                <span class="material-icons-round">more_vert</span>
+            </div>
             ${noteReplyHtml}
             ${replyHtml}
             ${mediaHtml}
@@ -3088,8 +3392,10 @@
             `;
         }
         
+        // This append gets caught and managed by the Virtual DOM diff if called inside renderAll
         container.appendChild(rowDiv);
         
+        // Attach Listeners
         const bubbleEl = rowDiv.querySelector(`#bubble-${id}`);
         if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, id, m);
         
@@ -3100,11 +3406,17 @@
         if(pill) attachMessageListeners(pill, id, m);
     }
     
+    // =========================================
+    //  18. INTERACTIONS & HELPERS
+    // =========================================
+    
+    // --- 1. GLOBAL LONG PRESS FOR TIMESTAMPS ---
     function setupGlobalTimestamps() {
         const bg = document.getElementById('chat-flow');
         let pressTimer;
         
         bg.addEventListener('touchstart', (e) => {
+            // Check if user is clicking on interactive elements or bubbles
             const isInteractive = e.target.closest('.msg-bubble-box') || 
                                   e.target.closest('.input-area-container') || 
                                   e.target.closest('#chat-header');
@@ -3114,15 +3426,18 @@
                     const containerObj = document.getElementById('messages-container');
                     const chatFlow = document.getElementById('chat-flow');
                     
+                    // FIXED: Calculate current scroll offset from bottom
                     const scrollBottomOffset = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
                     
+                    // Apply class
                     containerObj.classList.add('show-timestamps');
                     
+                    // FIXED: If user was near bottom, snap back to bottom instantly (prevent jump)
                     if(scrollBottomOffset < 50) {
                          chatFlow.scrollTop = chatFlow.scrollHeight;
                     }
                     
-                    vibrate([50, 50]);
+                    vibrate([50, 50]); // Vibrate twice
                 }, 500);
             }
         }, {passive: true});
@@ -3133,25 +3448,28 @@
         });
         
         bg.addEventListener('touchmove', () => {
-            clearTimeout(pressTimer);
+            clearTimeout(pressTimer); // Cancel if scrolling
         }, {passive: true});
     }
     
+    // --- 2. SWIPE TO REPLY (BIDIRECTIONAL) ---
     function attachMessageListeners(element, id, m) {
             let reactionsList = [];
             let myReaction = null;
             if (m.reactions && m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
 
+            // Double Tap logic fixed to not close mobile keyboard
             let lastTap = 0;
             element.addEventListener('touchend', (e) => {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 if (tapLength < 300 && tapLength > 0) {
-                    window.cancelBiteClick(id);
-                    e.preventDefault();
-                    e.stopPropagation();
+                    window.cancelBiteClick(id); // Prevent video navigation on double tap
+                    e.preventDefault(); // STOP KEYBOARD CLOSING
+                    e.stopPropagation(); // ENHANCED: PREVENT BODY BLURRING
 
                     if (document.activeElement === mInput || mInput.matches(':focus')) {
+                        // ENHANCED: Robust re-focus logic identical to swipe keyboard protection
                         mInput.focus({preventScroll: true});
                         setTimeout(() => { mInput.click(); }, 10);
                     }
@@ -3169,16 +3487,18 @@
                 lastTap = currentTime;
             }, { passive: false });
 
+            // Long Press Menu & Swipe Logic
             let startX = 0, currentX = 0, menuTimer = null, isScrolling = false;
-            let swipeBubbleBox = element.closest('.msg-bubble-box');
+            let swipeBubbleBox = element.closest('.msg-bubble-box'); // We animate the wrapper
             let swipeIcon = swipeBubbleBox.querySelector('.swipe-reply-icon');
             let side = m.sender === myUid ? 'sent' : 'received';
 
             element.addEventListener('touchstart', (e) => {
+                // FIX: Don't trigger swipe/menu if hitting audio controls
                 if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return;
 
                 startX = e.touches[0].clientX;
-                currentX = startX;
+                currentX = startX; // FIX: Initialize currentX to startX. Critical for long press detection without movement.
                 isScrolling = false; 
                 window.isScrollingNow = false;
                 
@@ -3196,17 +3516,22 @@
                 currentX = e.touches[0].clientX;
                 let diff = currentX - startX;
                 
+                // Detect scroll vs swipe
                 if (Math.abs(diff) > 10) { 
                       clearTimeout(menuTimer);
                       isScrolling = true;
                       window.isScrollingNow = true;
                 }
                 
-                // FIXED SWIPE DIRECTION: Bubble now follows finger direction correctly
+                // Logic: 
+                // Received (Left) -> Swipe Right (diff > 0)
+                // Sent (Right) -> Swipe Left (diff < 0)
+                
                 if (side === 'received' && diff > 0 && diff < 150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, diff / 60);
+                        // FIXED: Removed the -diff counter-translation so the icon naturally follows the bubble
                         swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
                     }
                 } 
@@ -3214,6 +3539,7 @@
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) {
                         let scale = Math.min(1, Math.abs(diff) / 60);
+                        // FIXED: Removed the -diff counter-translation so the icon naturally follows the bubble
                         swipeIcon.style.transform = `translateY(-50%) scale(${scale})`;
                     }
                 }
@@ -3242,11 +3568,13 @@
                         else if(m.fileMeta && m.fileMeta.type.includes('audio')) replyText = "🎵 Audio";
                         else replyText = "Attachment";
                     }
+                    // FIX: iOS Keyboard hack - strictly synchronous execution here
                     mInput.focus({preventScroll: true});
-                    setTimeout(() => { mInput.click(); }, 10);
+                    setTimeout(() => { mInput.click(); }, 10); // Fallback for mobile WebKit if strict synchronous blocks
                     triggerReply(replyText);
                 }
 
+                // Animate Back
                 swipeBubbleBox.style.transition = "transform 0.3s var(--ease-spring)";
                 swipeBubbleBox.style.transform = `translateX(0px)`;
                 if(swipeIcon) {
@@ -3263,14 +3591,17 @@
             });
     }
 
-    // Audio functions remain unchanged (kept as-is)
+    // Audio Player Logic with Speed
     window.toggleAudio = function(id) {
         console.log("Toggle audio called for ID:", id);
         const audio = document.getElementById(id);
         const icon = document.getElementById('icon-' + id);
         const wave = document.getElementById('wave-' + id);
         
-        if (!audio) return;
+        if (!audio) {
+            console.error("Audio element not found:", id);
+            return;
+        }
 
         const currentSrc = audio.getAttribute('src');
         if (!currentSrc || currentSrc === 'true' || currentSrc.trim() === '') {
@@ -3278,19 +3609,25 @@
             return;
         }
         
+        // Stop all other audio
         document.querySelectorAll('audio').forEach(a => {
             if(a.id !== id && !a.paused) { a.pause(); window.resetAudioUI(a.id); }
         });
 
         if (audio.paused) {
             audio.dataset.loading = 'true';
+            
+            // Add crossorigin property dynamically if needed (helps with some external domains)
+            // Note: If server blocks with 403, it will still fail, but this protects the code.
             audio.crossOrigin = "anonymous";
             
             var playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.then(_ => {
+                      // Play started
                       audio.dataset.loading = 'false';
-                      icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                      console.log("Playing audio");
+                      icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Pause
                       if(wave) wave.classList.add('audio-playing');
                 }).catch(error => {
                       audio.dataset.loading = 'false';
@@ -3300,7 +3637,8 @@
             }
         } else {
             audio.pause();
-            icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            console.log("Paused audio");
+            icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play
             if(wave) wave.classList.remove('audio-playing');
         }
     };
@@ -3318,23 +3656,26 @@
         
         audio.playbackRate = next;
         btn.innerText = next + "x";
+        // event propagation already stopped inline
     }
 
-    window.updateAudioUI = function(id) {};
+    window.updateAudioUI = function(id) {}; // Visualizer handles animation via CSS class
     window.resetAudioUI = function(id) {
         const icon = document.getElementById('icon-' + id);
         const wave = document.getElementById('wave-' + id);
         const audio = document.getElementById(id);
-        const speedBtn = document.getElementById('speed-' + id);
+        const speedBtn = document.getElementById('speed-' + id); // FIX: Get element safely
 
         if(icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
         if(wave) wave.classList.remove('audio-playing');
         if(audio) { 
             audio.playbackRate = 1.0; 
+            // FIX: Check if speedBtn exists before setting innerText
             if(speedBtn) speedBtn.innerText = "1x"; 
         }
     };
 
+    // Helper Functions
     function timeAgo(date) {
         const seconds = Math.floor((new Date() - date) / 1000);
         let interval = seconds / 31536000;
@@ -3358,6 +3699,7 @@
         return "Active " + timeAgo(new Date(timestamp)) + " ago";
     }
 
+    // FIXED: Robust time formatting
     function formatTime12(date) {
         if(!date || isNaN(date.getTime())) return "";
         let hours = date.getHours();
@@ -3384,8 +3726,12 @@
         h.offsetHeight; 
         h.style.animation = 'heartPop 0.8s ease-out';
         likeSound.play().catch(e => {}); 
+        
+        // MODIFICATION: Removed full-screen fireEffect('hearts') here so only the overlay pops
+        // fireEffect('hearts'); 
     }
 
+    // === UPGRADED NEW IMPROVED EFFECT SYSTEM (16 EFFECTS) WITH PHYSICS ===
     function fireEffect(type) {
         const canvas = document.getElementById('effect-canvas');
         const ctx = canvas.getContext('2d');
@@ -3394,8 +3740,9 @@
         
         let particles = [];
         
+        // Dynamic Configuration based on new types (ENHANCED DENSITIES)
         let particleCount = 200;
-        if(type === 'hearts') particleCount = 100;
+        if(type === 'hearts') particleCount = 100; // Increased
         if(type === 'balloons') particleCount = 45;
         if(type === 'snow') particleCount = 150;
         if(type === 'rain') particleCount = 300;
@@ -3409,6 +3756,7 @@
         const heartColors = ['#FF0000', '#FF1493', '#FF69B4', '#FFB6C1', '#FFFFFF'];
         const emojiMap = { money: '💵', thumbsup: '👍', bubbles: '🫧', skulls: '💀', clovers: '🍀', clapping: '👏', poop: '💩', alien: '👽', ghost: '👻', leaves: '🍂', stars: '⭐', balloons: '🎈' };
 
+        // Initialize particles
         for(let i=0; i < particleCount; i++) {
             let p = {
                 x: Math.random() * canvas.width,
@@ -3427,7 +3775,7 @@
 
             if (type === 'hearts' || type === 'balloons' || type === 'thumbsup' || type === 'bubbles' || type === 'ghost' || type === 'alien') {
                 p.y = canvas.height + Math.random() * 200;
-                p.speedY = -(Math.random() * 6 + 4);
+                p.speedY = -(Math.random() * 6 + 4); // Faster up, enhanced physics
                 if(type === 'hearts') p.color = heartColors[Math.floor(Math.random() * heartColors.length)];
                 if(emojiMap[type]) { p.size = Math.random() * 18 + 12; }
             }
@@ -3464,16 +3812,17 @@
                 p.y += p.speedY;
 
                 if (type === 'fireworks') {
-                    p.speedY += 0.2;
-                    p.speedX *= 0.98;
-                    p.opacity -= 0.008;
+                    p.speedY += 0.2; // gravity
+                    p.speedX *= 0.98; // air resistance
+                    p.opacity -= 0.008; // slightly slower fade
                 } else if (type === 'hearts' || type === 'thumbsup' || type === 'balloons' || emojiMap[type]) {
-                    p.opacity -= 0.002;
+                    p.opacity -= 0.002; // smoother slower fade
                 }
                 
                 ctx.save();
                 ctx.globalAlpha = Math.max(0, p.opacity);
 
+                // ENHANCED: Add Glow
                 if (type === 'snow' || type === 'fireworks' || type === 'hearts') {
                     ctx.shadowBlur = 15;
                     ctx.shadowColor = p.color;
@@ -3484,6 +3833,7 @@
                 ctx.fillStyle = p.color;
                 
                 if (type === 'hearts') {
+                    // FIX: Added dynamic pulse to the hearts for smoother feel
                     const pulse = 1 + Math.sin(Date.now() / 150 + p.wobble) * 0.15;
                     const scale = (p.size / 10) * pulse; 
                     ctx.scale(scale, scale);
@@ -3516,6 +3866,7 @@
         animate();
     }
     
+    // Use Centralized Keywords map from external file (Word Boundary Added)
     function checkKeywords(text) {
         const lower = text.toLowerCase();
         const hasMatch = (trigger) => {
@@ -3533,6 +3884,7 @@
                 }
             }
         } else {
+            // Fallbacks in case script fails to load
             if (hasMatch('love') || hasMatch('❤️')) fireEffect('hearts');
             else if (hasMatch('congratulations') || hasMatch('🎉')) fireEffect('confetti');
         }
@@ -3562,7 +3914,7 @@
                 const bubble = el.querySelector('.bubble') || el.closest('.bubble');
                 if(bubble) {
                     bubble.classList.remove('flash-active');
-                    void bubble.offsetWidth;
+                    void bubble.offsetWidth; // Trigger reflow
                     bubble.classList.add('flash-active');
                 }
             }
@@ -3586,21 +3938,57 @@
         document.getElementById('reply-dock').style.display = 'none'; 
     }
 
+    // =========================================
+    //  19. MESSAGING CORE ACTIONS
+    // =========================================
+
     const sendPushNotification = async (messageText) => {
+        // Only run if we have a person to send it to
         if (!targetUid) return;
         
+        // Get your name and photo to show in their notification banner
         const senderName = myUserData && myUserData.name ? myUserData.name : "Someone";
         const senderPhoto = myUserData && myUserData.photoURL ? myUserData.photoURL : "https://www.goorac.biz/icon.png";
         
+        // FIX: Ensure username is defined, fallback to uid if missing to prevent null deep link breaks
         const linkUserParam = (myUserData && myUserData.username) ? myUserData.username : myUid;
         const deepLink = `https://www.goorac.biz/chat.html?user=${linkUserParam}`;
 
         try {
+            // Your unique, permanent Render URL
+            const backendUrl = "https://pish-uigm.onrender.com/send-push";
+
+            // FETCH LOGIC COMMENTED OUT AS REQUESTED TO REMOVE PUSH NOTIFICATIONS
             console.log("Push Notification system bypassed successfully.", { targetUid, senderUid: myUid, body: messageText });
+            /*
+            // Make the fetch call non-blocking but track its resolution
+            fetch(backendUrl, {
+                method: "POST",
+                keepalive: true, // NEW FIX: Ensures request completes blazingly fast even during UI stutters
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    targetUid: targetUid,
+                    senderUid: myUid, // <--- ADDED SENDER UID FOR GROUPING
+                    title: `New message from ${senderName}`,
+                    body: messageText,
+                    icon: senderPhoto, // This sends your PFP to the notification
+                    click_action: deepLink // Tells the server where the notification should lead
+                })
+            }).then(res => {
+                if (!res.ok) console.error("Push failed with status:", res.status);
+                else console.log("✅ Push successfully triggered via Render!");
+            }).catch(err => {
+                console.error("❌ Error sending push:", err);
+            });
+            */
+            
         } catch (error) {
             console.error("❌ Error configuring push:", error);
         }
     };
+    
 
     async function sendImageMessage(imageUrl) {
         popSound.play().catch(e => {});
@@ -3617,6 +4005,7 @@
         };
         cancelInteraction();
         
+        // Removed blocking await for instant performance
         db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
         
         updateLastMsg("📷 Image");
@@ -3636,10 +4025,11 @@
             seen: false, 
             reactions: {},
             imageUrl: gifUrl,
-            isGif: true
+            isGif: true // Special flag for replies/inbox UI
         };
         cancelInteraction();
         
+        // Removed blocking await for instant performance
         db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
         
         updateLastMsg("🎞️ GIF");
@@ -3664,6 +4054,7 @@
         };
         cancelInteraction();
         
+        // Removed blocking await for instant performance
         db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
         
         let label = "📄 File";
@@ -3684,13 +4075,15 @@
         }
 
         popSound.play().catch(e => {});
-        vibrate(50);
+        vibrate(50); // NEW: Send message vibration
         
+        // Trigger Effects
         checkKeywords(text);
         
         mInput.value = "";
         mInput.style.height = 'auto'; 
         sendBtnUI.classList.remove('active'); 
+        // Re-show mic button and dynamic emoji UI if empty
         micWrapper.style.display = 'flex';
         document.querySelector('.plus-btn').style.display = 'flex';
         document.getElementById('emoji-toggle-left').style.display = 'none';
@@ -3707,7 +4100,7 @@
             const idToEdit = editModeId; editModeId = null;
             cancelInteraction(); 
             db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true }).catch(e=>console.error(e));
-            updateLastMsg(text);
+            updateLastMsg(text); // NEW FIX: Instantly updates inbox text for edits
         } else {
             const rText = replyingTo; cancelInteraction(); 
             window.scrollToBottom(true);
@@ -3716,6 +4109,7 @@
                 replyTo: rText, seen: false, reactions: {}
             };
             
+            // Removed await for immediate, non-blocking UI
             db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error("Send error:", e));
             
             updateLastMsg(text);
@@ -3733,14 +4127,16 @@
             [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
         }, { merge: true }).catch(e => console.error(e));
         
-        updateInboxCacheLocal(chatId, msgText, myUid, false);
+        updateInboxCacheLocal(chatId, msgText, myUid, false); // INBOX SYNC FALLBACK
     }
 
+    // Menu & Edit Actions
     function openMenu(id, sender, text) {
         activeMenuId = id;
-        vibrate(30);
+        vibrate(30); // Vibrate on menu open
         const isMine = sender === myUid;
         
+        // Dynamically align L-shape based on sender
         const menuCard = document.getElementById('main-menu-card');
         menuCard.style.alignItems = isMine ? 'flex-end' : 'flex-start';
         
@@ -3779,6 +4175,7 @@
     async function unsendMsg() { 
         const idToDelete = activeMenuId; closeMenu();
         
+        // Optimistic Remove ensuring local storage properly reflects immediately 
         if (messagesMap.has(idToDelete)) { 
             messagesMap.delete(idToDelete); 
             const el = document.getElementById(idToDelete);
@@ -3816,6 +4213,9 @@
         }
     }
 
+    // =======================================================================
+    // FIX: RELIABLE SCROLL LOADING FOR OLDER MESSAGES (REWRITTEN NO JUMP)
+    // =======================================================================
     async function loadMoreMessages() {
         if (isLoadingMore) return;
         isLoadingMore = true; window.isLoadingMore = true;
@@ -3825,6 +4225,7 @@
         if (lastVisible) {
             query = query.startAfter(lastVisible);
         } else {
+            // Safe fallback to find oldest if lastVisible was cleared/dropped
             let oldestMsg = null;
             messagesMap.forEach(msg => {
                 if (!oldestMsg) oldestMsg = msg;
@@ -3857,13 +4258,15 @@
                 });
                 lastVisible = snapshot.docs[snapshot.docs.length - 1];
                 
+                // --- NEW FAST JUMP-FREE LOGIC ---
+                // Identify the topmost element to anchor to before rendering
                 const containerEl = document.getElementById('messages-container');
                 const firstMsgEl = containerEl ? containerEl.querySelector('.msg-row') : null;
                 const anchorId = firstMsgEl ? firstMsgEl.id : null;
                 const anchorOffsetTop = firstMsgEl ? firstMsgEl.offsetTop : 0;
                 const currentScrollTop = chatFlow.scrollTop;
                 
-                chatFlow.style.overflowAnchor = 'none';
+                chatFlow.style.overflowAnchor = 'none'; // Temporarily disable native anchor
                 
                 renderAll();
 
@@ -3875,11 +4278,11 @@
                             chatFlow.scrollTop = currentScrollTop + offsetDifference;
                         }
                     }
-                    chatFlow.style.overflowAnchor = 'auto';
+                    chatFlow.style.overflowAnchor = 'auto'; // Restore native anchor
                     isLoadingMore = false; window.isLoadingMore = false;
                 });
             } else {
-                lastVisible = null;
+                lastVisible = null; // No more messages
                 isLoadingMore = false; window.isLoadingMore = false;
             }
         } catch (e) {
@@ -3897,21 +4300,24 @@
         observer.observe(document.getElementById('scroll-trigger'));
     }
 
-    window.scrollToBottom = function(smooth = false) { 
+    // MODIFIED: Added smooth scroll parameter
+    window.scrollToBottom = function(}.smooth = false) { 
         chatFlow.scrollTo({
             top: chatFlow.scrollHeight,
             behavior: smooth ? 'smooth' : 'auto'
         });
     }
 
+    // Reaction Logic
     async function applyReaction(emoji) {
         if (!activeMenuId) return;
         const msgId = activeMenuId; closeMenu(); 
-        vibrate(30);
+        vibrate(30); // Vibrate on manual emoji pick
         await applyReactionToId(msgId, emoji);
     }
 
     async function applyReactionToId(id, emoji) {
+        // 1. Optimistic Update (Visual Pop Instant)
         if (emoji !== '') {
             triggerReactionPop(id, emoji);
         }
@@ -3927,9 +4333,11 @@
                  msg.reactions[myUid] = { emoji: emoji, timestamp: Date.now() };
             }
             messagesMap.set(id, msg);
+            // Surgical Update
             updateReactionDOM(id, msg.reactions);
         }
 
+        // 2. Firebase Update
         const msgRef = db.collection("chats").doc(chatId).collection("messages").doc(id);
         const doc = await msgRef.get();
         const data = doc.data();
@@ -3940,6 +4348,7 @@
         } else {
             await msgRef.update({ [`reactions.${myUid}`]: { emoji: emoji, timestamp: Date.now() } });
             
+            // NEW FIX: Updates inbox text and pushes notification instantly if reacting to THEIR message
             if (data.sender !== myUid && emoji !== '') {
                 updateLastMsg(`Reacted ${emoji} to a message`);
                 sendPushNotification(`Reacted ${emoji} to your message`);
@@ -3989,6 +4398,7 @@
         const el = document.getElementById('text-'+activeMenuId);
         let text = el ? el.innerText.split('(edited)')[0].trim() : "Attachment";
         
+        // If there's no text (it's media only), grab the correct label
         if (!text || text === "Attachment") {
              const msgData = messagesMap.get(activeMenuId);
              if (msgData) {
@@ -4012,6 +4422,11 @@
         }
     }
 
+    // =========================================
+    //  20. AUDIO RECORDER LOGIC (INSTAGRAM STYLE)
+    // =========================================
+
+    // Variables for Recorder
     let mediaRecorder = null;
     let audioChunks = [];
     let recStartTime = 0;
@@ -4022,6 +4437,7 @@
     let recStartX = 0;
     let STORAGE_BUCKET = "public-files"; 
     
+    // NEW: Guard flag to prevent multiple sends
     let isAudioProcessing = false;
 
     const recOverlay = document.getElementById('recording-overlay');
@@ -4030,16 +4446,19 @@
     const lockPill = document.getElementById('lock-pill');
     const cancelText = document.getElementById('rec-cancel-text');
 
+    // -- HELPER: Upload to Supabase via FilePicker Component's Client --
     async function uploadAudioBlob(blob, duration, ext) {
         const fileName = `voice_${Date.now()}_${myUid}.${ext}`;
         const fpElement = document.getElementById('file-picker');
         
         let uploadedUrl = null;
 
+        // Ensure Supabase client is initialized if it exists
         if (fpElement && !fpElement.sbClient && typeof fpElement.initSupabaseClient === 'function') {
             fpElement.initSupabaseClient();
         }
 
+        // Try Supabase first
         if (fpElement && fpElement.sbClient) {
             try {
                 const sbClient = fpElement.sbClient; 
@@ -4054,6 +4473,7 @@
             }
         }
 
+        // Fallback to Firebase Storage if Supabase fails or is missing
         if (!uploadedUrl) {
             try {
                 const storageRef = firebase.storage().ref();
@@ -4062,11 +4482,13 @@
                 uploadedUrl = await snapshot.ref.getDownloadURL();
             } catch (fbErr) {
                 console.error("Firebase Audio Upload Failed:", fbErr);
+                // Fallback attempt: if storage is completely blocked, abort gracefully
                 isAudioProcessing = false;
                 return;
             }
         }
 
+        // Send the finalized message with whichever URL worked
         sendFileMessage(uploadedUrl, {
             type: `audio/${ext}`,
             name: 'Voice Message',
@@ -4078,9 +4500,11 @@
         isAudioProcessing = false; 
     }
 
+    // -- RECORDER FUNCTIONS --
+
     async function startRecording() {
         if (!navigator.mediaDevices) return;
-        if (isAudioProcessing) return;
+        if (isAudioProcessing) return; // Guard
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -4094,16 +4518,19 @@
             isLocked = false;
             recStartTime = Date.now();
             
-            mInput.blur();
+            // UI Update
+            mInput.blur(); // Prevent keyboard open
             micBtn.classList.add('recording');
             recOverlay.style.display = 'flex';
             lockPill.classList.add('visible');
             
+            // Reset sliding text properly
             cancelText.innerHTML = '<span class="material-icons-round" style="font-size:16px;">chevron_left</span> Slide to cancel';
             cancelText.style.pointerEvents = 'none';
             cancelText.onclick = null;
             cancelText.style.opacity = '1';
             
+            // Notify Other User
             rdb.ref(`typing/${chatId}/${myUid}`).set('recording');
             
             vibrate(50);
@@ -4126,12 +4553,13 @@
         if (!mediaRecorder || !isRecording) return;
         
         isRecording = false;
-        try { mediaRecorder.stop(); } catch(e){}
+        try { mediaRecorder.stop(); } catch(e){} // Catch invalid state
         mediaRecorder.stream.getTracks().forEach(t => t.stop());
         
         clearInterval(recInterval);
         recTimer.innerText = "0:00";
         
+        // Reset UI
         micBtn.classList.remove('recording');
         micBtn.classList.remove('locked');
         recOverlay.style.display = 'none';
@@ -4141,54 +4569,62 @@
         rdb.ref(`typing/${chatId}/${myUid}`).set(false);
 
         if (shouldSend) {
-            if(isAudioProcessing) return;
-            isAudioProcessing = true;
+            if(isAudioProcessing) return; // Guard double send
+            isAudioProcessing = true; // Lock
 
+            // Processing
             setTimeout(() => {
+                // Fix format for iOS Support
                 const mime = mediaRecorder.mimeType || 'audio/webm';
+                // iOS Safari sometimes produces empty mimeType but it's mp4/m4a
                 const ext = mime.includes('mp4') ? 'mp4' : (mime.includes('ogg') ? 'ogg' : 'webm');
                 const blob = new Blob(audioChunks, { type: mime || 'audio/mp4' });
                 
                 const duration = Math.ceil((Date.now() - recStartTime) / 1000);
                 
                 if (duration < 1) {
+                      // Too short
                       vibrate(50);
-                      isAudioProcessing = false;
+                      isAudioProcessing = false; // Reset lock
                 } else {
                       popSound.play().catch(()=>{}); 
                       uploadAudioBlob(blob, duration, ext);
                 }
             }, 200);
         } else {
-            vibrate([30,50,30]);
+            vibrate([30,50,30]); // Error vibe
         }
     }
 
     function lockRecording() {
         isLocked = true;
-        isRecording = true;
+        isRecording = true; // Ensure state
         micBtn.classList.remove('recording');
-        micBtn.classList.add('locked');
-        lockPill.classList.remove('visible');
+        micBtn.classList.add('locked'); // Turns red/stop icon style
+        lockPill.classList.remove('visible'); // Hide the hint
         
+        // Transform the slider text into a clickable cancel button
         cancelText.innerHTML = '<span class="material-icons-round" style="font-size:16px;">delete</span> Cancel';
         cancelText.style.opacity = '1'; 
-        cancelText.style.pointerEvents = 'auto';
+        cancelText.style.pointerEvents = 'auto'; // allow click
         cancelText.onclick = function() { stopRecording(false); };
         
         vibrate(100);
     }
 
+    // -- TOUCH HANDLERS --
+
     micBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
         
-        mInput.blur();
+        mInput.blur(); // Ensures keyboard is hidden securely
         
         if (isLocked) {
+            // If locked, tap stops and sends
             stopRecording(true);
             return;
         }
-        if (isRecording) return;
+        if (isRecording) return; // Prevent double trigger
         
         recStartY = e.touches[0].clientY;
         recStartX = e.touches[0].clientX;
@@ -4201,9 +4637,10 @@
         const currentY = e.touches[0].clientY;
         const currentX = e.touches[0].clientX;
         
-        const diffY = recStartY - currentY;
-        const diffX = recStartX - currentX;
+        const diffY = recStartY - currentY; // Up is positive
+        const diffX = recStartX - currentX; // Left is positive
         
+        // 1. LOCK LOGIC (Slide Up)
         if (diffY > 50) {
             lockPill.style.transform = `translateY(-${diffY}px)`;
             if (diffY > 100) {
@@ -4213,12 +4650,14 @@
             lockPill.style.transform = '';
         }
 
+        // 2. CANCEL LOGIC (Slide Left)
         if (diffX > 20) {
             cancelZone.classList.add('visible');
-            recOverlay.style.opacity = Math.max(0.3, 1 - (diffX / 200));
+            recOverlay.style.opacity = Math.max(0.3, 1 - (diffX / 200)); // Fade out overlay
             
+            // FIX: Made slide-to-cancel trigger faster and smoother (changed 150 to 100 threshold)
             if (diffX > 100) {
-                cancelZone.classList.add('active');
+                cancelZone.classList.add('active'); // Trash turns red
                 cancelText.innerHTML = "Release to Cancel";
                 vibrate(10);
             } else {
@@ -4234,23 +4673,29 @@
     micBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
         
-        if (isLocked) return;
+        if (isLocked) return; // Tap needed to stop if locked
 
         const endX = e.changedTouches[0].clientX;
         const diffX = recStartX - endX;
 
+        // FIX: Match the logic threshold above (100)
         if (diffX > 100) {
-            stopRecording(false);
+            stopRecording(false); // Cancelled
         } else {
-            stopRecording(true);
+            stopRecording(true); // Sent
         }
     });
 
+    // =========================================
+    //  21. MOBILE BACK BUTTON HANDLING (NEW)
+    // =========================================
     function pushModalState(modalName) {
         history.pushState({modal: modalName}, null, "");
     }
 
     window.addEventListener('popstate', (e) => {
+        // If state is null, user wants to go back or modals are closed
+        // We manually check if any modal is open and force close it (redundancy)
         const modals = [
             { id: 'emoji-tray', style: 'block' },
             { id: 'gif-tray', style: 'block' },
@@ -4276,13 +4721,21 @@
             }
         });
         
+        // If no modal was closed by popstate, and user intended to leave (e.state is null)
+        // We allow the browser to continue back
         if(!modalClosed && !e.state) {
+            // Browser handles navigation
         }
     });
 
+    // =========================================
+    //  22. REAL-TIME AI EMOTION FINDER (VADER-INSPIRED NLP MODEL)
+    // =========================================
+    
     (function initAIEngine() {
         const moodMap = { happy: '😊', sad: '😢', angry: '😠', love: '❤️', funny: '😂', surprised: '😮', neutral: '😐' };
         
+        // VADER-style dictionaries separated by language & type for strict weighted multipliers
         const lexicons = {
             emojis: {
                 happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍'],
@@ -4310,17 +4763,19 @@
             }
         };
 
+        // NLP Negation Heuristics (Flips polarity if spotted before a keyword)
         const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
 
         function calculateEmotion() {
             if (!targetUid || messagesMap.size === 0) return moodMap.neutral;
 
+            // Extract the last 10 messages from the opposite person
             const oppositeMsgs = Array.from(messagesMap.values())
                 .filter(m => m.sender === targetUid)
                 .sort((a, b) => {
                     const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestampIso || 0).getTime();
                     const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestampIso || 0).getTime();
-                    return tB - tA;
+                    return tB - tA; // Sort descending (newest first)
                 })
                 .slice(0, 10);
 
@@ -4328,11 +4783,14 @@
 
             const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
             
+            // Analyze with Time-Decay Weighting & Multipliers
             oppositeMsgs.forEach((msg, index) => {
                 const rawText = (msg.text || '').toLowerCase();
-                const tokens = rawText.split(/[\s,.\?!]+/);
-                const timeWeight = 1.0 - (index * 0.05);
+                const tokens = rawText.split(/[\s,.\?!]+/); // Tokenize
+                const timeWeight = 1.0 - (index * 0.05); // Top message is 1.0, 10th is 0.55
                 
+                // 1. Process Emojis globally (Highest Priority: x3.0)
+                // Emojis often sit without spaces, so string.includes() is safest
                 for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
                     emojiList.forEach(emoji => {
                         if (rawText.includes(emoji)) { 
@@ -4341,39 +4799,45 @@
                     });
                 }
 
+                // 2. Process Text Tokens (Tamil = x2.0, English = x1.0)
                 for (let i = 0; i < tokens.length; i++) {
                     let word = tokens[i];
                     if (!word) continue;
 
+                    // NLP Negation Check: Look at the preceding word
                     let isNegated = false;
                     if (i > 0 && negations.includes(tokens[i - 1])) {
                         isNegated = true;
                     }
 
+                    // Helper function to apply scores with heuristic polarity flipping
                     const applyScore = (emotion, value) => {
                         if (isNegated) {
                             if (emotion === 'happy' || emotion === 'love' || emotion === 'funny') {
-                                scores.sad += value * timeWeight;
+                                scores.sad += value * timeWeight; // "not happy" -> sad
                             } else if (emotion === 'sad' || emotion === 'angry') {
-                                scores.happy += value * timeWeight;
+                                scores.happy += value * timeWeight; // "not sad" -> happy
                             }
                         } else {
                             scores[emotion] += value * timeWeight;
                         }
                     };
 
+                    // Check Tamil lexicons (Medium Priority)
                     for (const [emotion, tamilList] of Object.entries(lexicons.tamil)) {
                         if (tamilList.includes(word)) applyScore(emotion, 2.0);
                     }
 
+                    // Check English lexicons (Lowest Text Priority)
                     for (const [emotion, engList] of Object.entries(lexicons.english)) {
                         if (engList.includes(word)) applyScore(emotion, 1.0);
                     }
                 }
             });
 
+            // Find dominant emotion mathematically
             let dominant = 'neutral';
-            let maxScore = 0.5;
+            let maxScore = 0.5; // Threshold to prevent random noise triggers
             
             for (const [emotion, score] of Object.entries(scores)) {
                 if (score > maxScore) {
@@ -4386,13 +4850,15 @@
         }
 
         function runMoodCycle() {
+            // Wait 15 seconds showing normal icon
             setTimeout(() => {
                 const headerIcons = document.querySelectorAll('.header-actions .header-icon');
                 let videoIconEl = null;
+                // Find the video icon dynamically without altering HTML structure
                 for(let icon of headerIcons) {
                     if(icon.innerHTML.includes('videocam') || icon.dataset.isVidIcon) {
                         videoIconEl = icon;
-                        icon.dataset.isVidIcon = "true";
+                        icon.dataset.isVidIcon = "true"; // Mark it for easy finding
                         break;
                     }
                 }
@@ -4401,14 +4867,17 @@
                     const iconSpan = videoIconEl.querySelector('span');
                     const detectedMood = calculateEmotion();
                     
+                    // Transform to Mood Emoji
                     iconSpan.classList.remove('material-icons-round');
-                    iconSpan.style.fontFamily = 'system-ui, sans-serif';
-                    iconSpan.style.fontSize = '24px';
+                    iconSpan.style.fontFamily = 'system-ui, sans-serif'; // Support native emoji
+                    iconSpan.style.fontSize = '24px'; // Fit standard icon size
                     iconSpan.innerText = detectedMood;
                     
+                    // Add smooth transition effect
                     videoIconEl.style.transform = 'scale(1.2)';
                     setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
 
+                    // Revert after 5 seconds
                     setTimeout(() => {
                         iconSpan.classList.add('material-icons-round');
                         iconSpan.style.fontFamily = '';
@@ -4417,14 +4886,17 @@
                         videoIconEl.style.transform = 'scale(1.2)';
                         setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
                         
+                        // Restart cycle
                         runMoodCycle();
                     }, 5000);
                 } else {
+                    // Try again if DOM wasn't ready or targetUid missing
                     runMoodCycle();
                 }
             }, 15000);
         }
 
+        // Start the continuous cycle
         runMoodCycle();
     })();
 
