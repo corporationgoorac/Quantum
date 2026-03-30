@@ -32,6 +32,29 @@
     <script src="components/filePicker.js" defer></script>
     <script src="components/viewMedia.js" defer></script>
 
+
+<script>
+    /**
+     * SHELL ENFORCEMENT ENGINE
+     * Redirects desktop users to the SPA shell if they open this file directly.
+     */
+    (function enforceShell() {
+        const isPC = window.innerWidth >= 1024;
+        const isFramed = window.self !== window.top;
+
+        if (isPC && !isFramed) {
+            // Get current file name and parameters (e.g., chat.html?user=siva)
+            const currentPath = window.location.pathname.split('/').pop();
+            const currentParams = window.location.search;
+            
+            // Redirect to index.html with the 'view' parameter so the SPA loads this page
+            const redirectUrl = `index.html?view=${encodeURIComponent(currentPath + currentParams)}`;
+            window.location.replace(redirectUrl);
+        }
+    })();
+</script>
+
+    
     <style>
         /* =========================================
            1. CORE VARIABLES & THEME DEFINITIONS
@@ -603,6 +626,32 @@
 <file-picker id="file-picker"></file-picker>
 <view-media id="media-viewer"></view-media>
 
+<div id="blocked-banner" style="display:none; position:fixed; bottom:0; width:100%; background:#1a1a1a; color:#888; text-align:center; padding:20px; font-weight:500; z-index:1001; border-top:1px solid #333;">
+    You cannot message this account.
+</div>
+
+<div id="pulse-invite-banner">
+    <div class="invite-content">
+        <span class="material-icons-round invite-pulse-icon">graphic_eq</span>
+        <span>Invited you to a Pulse Session</span>
+    </div>
+    <div class="invite-actions">
+        <button class="btn-dismiss" onclick="dismissPulseInvite()">✕</button>
+        <button class="btn-join" onclick="joinPulseSession()">JOIN</button>
+    </div>
+</div>
+
+<div id="vision-invite-banner" style="display:none; position:absolute; top:calc(62px + env(safe-area-inset-top)); left:0; right:0; background:linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(0, 0, 0, 0.8)); backdrop-filter:blur(10px); border-bottom:1px solid #00d2ff; padding:10px 16px; align-items:center; justify-content:space-between; z-index:1500; animation:slideDown 0.3s ease-out;">
+    <div class="invite-content">
+        <span class="material-icons-round invite-pulse-icon" style="color:#00d2ff; animation:pulseGreen 1.5s infinite;">live_tv</span>
+        <span style="color:#fff; font-size:0.85rem; font-weight:600;">Invited you to a Vision Session</span>
+    </div>
+    <div class="invite-actions">
+        <button class="btn-dismiss" onclick="dismissVisionInvite()">✕</button>
+        <button class="btn-join" style="background:#00d2ff; color:#000; border:none; padding:6px 12px; border-radius:20px; font-weight:700; font-size:0.75rem; cursor:pointer;" onclick="joinVisionSession()">JOIN</button>
+    </div>
+</div>
+
 <div id="heart-overlay">❤️</div>
 <canvas id="effect-canvas"></canvas>
 
@@ -796,13 +845,19 @@
         const inputArea = document.querySelector('.input-area');
         
         if (window.isEmojiTrayOpen) {
+            // Switch back to text keyboard
             window.isEmojiTrayOpen = false;
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
             
+            // Keep capsule expanded during transition so it doesn't glitch
             inputArea.classList.add('force-expand');
+            
+            // Focus input to bring up native keyboard immediately
             mInput.focus(); 
             
+            // Wait slightly for the native keyboard to slide up before hiding tray
+            // This prevents the capsule from falling down and bouncing back up
             setTimeout(() => {
                 emojiTray.style.display = 'none';
                 if(history.state && history.state.modal === 'emoji') history.back();
@@ -810,6 +865,7 @@
             }, 150); 
             
         } else {
+            // Open Emoji Picker 
             const wasFocused = document.activeElement === mInput;
             window.isEmojiTrayOpen = true;
             
@@ -822,10 +878,16 @@
             document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
             document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
             
+            // Lock the capsule in its expanded state so it doesn't shrink on blur
             inputArea.classList.add('force-expand');
+            
+            // Show tray instantly BEFORE blurring so it immediately fills the space the keyboard will leave behind
             emojiTray.style.display = 'block';
             
-            if (wasFocused) mInput.blur(); 
+            if (wasFocused) {
+                // Now blur the input, native keyboard closes, but the tray is already holding the layout up securely
+                mInput.blur(); 
+            }
             
             if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('emoji');
@@ -870,7 +932,9 @@
             inputArea.classList.add('force-expand');
             gifTray.style.display = 'block';
             
-            if (wasFocused) mInput.blur(); 
+            if (wasFocused) {
+                mInput.blur(); 
+            }
             
             if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom();
             pushModalState('gif');
@@ -1877,6 +1941,9 @@
         
         let contentHTML = `
             <div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
+            <div class="msg-options-btn" onclick="event.stopPropagation(); window.triggerMenuFromClick('${id}')">
+                <span class="material-icons-round" style="font-size:20px;">more_vert</span>
+            </div>
             ${noteReplyHtml}
             ${replyHtml}
             ${mediaHtml}
@@ -1977,6 +2044,10 @@
             element.addEventListener('touchstart', (e) => {
                 if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return;
                 startX = e.touches[0].clientX; currentX = startX; isScrolling = false; window.isScrollingNow = false;
+                
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
                 menuTimer = setTimeout(() => { if (!isScrolling && Math.abs(currentX - startX) < 10) { vibrate(70); openMenu(id, m.sender, m.text); } }, 500);
             }, {passive: true});
 
@@ -1986,17 +2057,20 @@
                 let diff = currentX - startX;
                 if (Math.abs(diff) > 10) { clearTimeout(menuTimer); isScrolling = true; window.isScrollingNow = true; }
                 
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
                 if (side === 'received' && diff > 0 && diff < 150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) { 
                         let scale = Math.min(1, diff / 60); 
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; 
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
                     }
                 } else if (side === 'sent' && diff < 0 && diff > -150) {
                     swipeBubbleBox.style.transform = `translateX(${diff}px)`;
                     if(swipeIcon) { 
                         let scale = Math.min(1, Math.abs(diff) / 60); 
-                        swipeIcon.style.transform = `translateY(-50%) scale(${scale})`; 
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`; 
                     }
                 }
             }, {passive: true});
