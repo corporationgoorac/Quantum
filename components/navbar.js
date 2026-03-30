@@ -363,18 +363,18 @@ class MainNavbar extends HTMLElement {
 
     /**
      * Initializes haptic feedback (vibration) for navigation items.
-     * Fires a crisp 15ms pop when an icon is tapped.
+     * Fires a crisp 20ms pop when an icon is tapped.
      */
     _setupHaptics() {
         const navItems = this.querySelectorAll('.nav-item');
         
         navItems.forEach(item => {
-            // Changed from 'click' to 'pointerdown' to trigger instantly upon touch
+            // Trigger synchronously on 'pointerdown' so the browser doesn't kill the task during page change
             item.addEventListener('pointerdown', () => {
                 // Check if the browser supports the Vibration API
                 if (navigator.vibrate) {
-                    // Pushed to the end of the execution queue to completely unblock the page navigation
-                    setTimeout(() => { navigator.vibrate(15); }, 0); 
+                    // Removed setTimeout, bumped to 20ms for stronger hardware registration
+                    navigator.vibrate(20); 
                 }
             });
         });
