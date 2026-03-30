@@ -333,10 +333,12 @@
 
         // 2. Smooth Loading State Management for Main Content
         const loaderUi = document.getElementById('iframe-loader');
+        let loaderFailsafe; // ADDED: Fallback timer
 
         // Remove spinner when iframe finishes loading
         frameMain.addEventListener('load', () => {
             if(frameMain.src !== 'about:blank' && !frameMain.src.endsWith('about:blank')) {
+                clearTimeout(loaderFailsafe); // ADDED: Clear failsafe
                 loaderUi.style.display = 'none';
                 frameMain.classList.add('loaded'); // Triggers smooth CSS fade-in
             }
@@ -349,6 +351,13 @@
                 if(val !== 'about:blank' && !val.includes('about:blank')) {
                     this.classList.remove('loaded');
                     loaderUi.style.display = 'block';
+                    
+                    // ADDED: Failsafe to guarantee the loading circle never gets stuck indefinitely
+                    clearTimeout(loaderFailsafe);
+                    loaderFailsafe = setTimeout(() => {
+                        loaderUi.style.display = 'none';
+                        this.classList.add('loaded');
+                    }, 1200); // Force reveal after 1.2s if iframe doesn't fire load event
                 }
                 return originalSetSrc.call(this, val);
             }
