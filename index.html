@@ -204,13 +204,42 @@
             const params = new URLSearchParams(window.location.search);
             let requestedView = params.get('view');
             
+            // >>> ADVANCED URL AUTO-CORRECTION ENGINE <<<
+            if (requestedView) {
+                // Safely decode to ensure we aren't dealing with URI encoded strings
+                requestedView = decodeURIComponent(requestedView);
+
+                // Strip out full absolute domains if they accidentally leak into the parameter
+                if (requestedView.startsWith('http')) {
+                    try {
+                        let urlObj = new URL(requestedView);
+                        requestedView = urlObj.pathname.substring(1) + urlObj.search; // converts https://site.com/chat.html?x=1 to chat.html?x=1
+                    } catch(e) {}
+                }
+
+                // Force groupChat to groupChat.html if missing extension but is clearly the group chat
+                if (requestedView.includes('groupChat') && !requestedView.includes('groupChat.html')) {
+                    requestedView = requestedView.replace('groupChat', 'groupChat.html');
+                } else if (requestedView.includes('chat') && !requestedView.includes('chat.html') && !requestedView.includes('groupChat')) {
+                    // Safe mapping for normal chat.html
+                    requestedView = requestedView.replace('chat', 'chat.html');
+                }
+            }
+
             // Fix for 404: Ensure extension exists
             if (requestedView && !requestedView.includes('.html')) {
                 // ADDED: Safe handling for URLs that have parameters but missed the .html extension (e.g. groupChat?id=123)
                 if (requestedView.includes('?')) {
                     requestedView = requestedView.replace('?', '.html?');
                 } else {
-                    requestedView += '.html';
+                    // Check if it's a known page, otherwise map to user
+                    const knownPages = ['home', 'messages', 'calls', 'pulse', 'vision', 'settings', 'userProfile', 'aboutGroup'];
+                    if (knownPages.includes(requestedView)) {
+                        requestedView += '.html';
+                    } else {
+                        // Raw username fallback
+                        requestedView = `chat.html?user=${requestedView}`;
+                    }
                 }
             }
 
@@ -278,9 +307,32 @@
                                 // If navigation is a raw username or specific chat/profile link, send to RIGHT PANE
                                 else {
                                     let finalUrl = href;
+
+                                    // Strip domain if present inside links
+                                    if (finalUrl.startsWith('http')) {
+                                        try {
+                                            let urlObj = new URL(finalUrl);
+                                            finalUrl = urlObj.pathname.substring(1) + urlObj.search;
+                                        } catch(e) {}
+                                    }
+                                    
+                                    // >>> ADVANCED URL AUTO-CORRECTION ENGINE FOR CLICKS <<<
+                                    if (finalUrl.includes('groupChat') && !finalUrl.includes('groupChat.html')) {
+                                        finalUrl = finalUrl.replace('groupChat', 'groupChat.html');
+                                    } else if (finalUrl.includes('chat') && !finalUrl.includes('chat.html') && !finalUrl.includes('groupChat')) {
+                                        finalUrl = finalUrl.replace('chat', 'chat.html');
+                                    }
+
                                     // Detect if it's a raw username (no .html and no parameters)
-                                    if (!href.includes('.html') && !href.includes('?')) {
-                                        finalUrl = `chat.html?user=${href}`;
+                                    if (!finalUrl.includes('.html') && !finalUrl.includes('?')) {
+                                        const stdPages = ['home', 'messages', 'calls', 'pulse', 'vision', 'userProfile', 'aboutGroup'];
+                                        if (stdPages.includes(finalUrl)) {
+                                            finalUrl += '.html';
+                                        } else {
+                                            finalUrl = `chat.html?user=${finalUrl}`;
+                                        }
+                                    } else if (!finalUrl.includes('.html') && finalUrl.includes('?')) {
+                                        finalUrl = finalUrl.replace('?', '.html?');
                                     }
 
                                     welcomeScreen.style.display = 'none';
@@ -333,16 +385,33 @@
             
             const data = event.data;
             if (data && data.type === 'QUANTUM_NAVIGATE') {
+                let safeUrl = data.url;
+
+                // Strip domain if present inside post messages
+                if (safeUrl && safeUrl.startsWith('http')) {
+                    try {
+                        let urlObj = new URL(safeUrl);
+                        safeUrl = urlObj.pathname.substring(1) + urlObj.search;
+                    } catch(e) {}
+                }
+
+                // >>> ADVANCED URL AUTO-CORRECTION ENGINE FOR POSTMESSAGE <<<
+                if (safeUrl && safeUrl.includes('groupChat') && !safeUrl.includes('groupChat.html')) {
+                    safeUrl = safeUrl.replace('groupChat', 'groupChat.html');
+                } else if (safeUrl && safeUrl.includes('chat') && !safeUrl.includes('chat.html') && !safeUrl.includes('groupChat')) {
+                    safeUrl = safeUrl.replace('chat', 'chat.html');
+                }
+
                 if (data.target === 'sidebar') {
-                    frameSidebar.src = data.url;
+                    frameSidebar.src = safeUrl;
                 } else if (data.target === 'main') {
                     welcomeScreen.style.display = 'none';
                     frameMain.style.display = 'block';
-                    frameMain.src = data.url;
+                    frameMain.src = safeUrl;
                     
                     // --- ADVANCED CONTEXT SWITCHING (POSTMESSAGE SYNC) ---
                     // Added explicit support for groupChat.html URL routing and history management
-                    if (data.url.includes('chat.html') || data.url.includes('groupChat.html')) {
+                    if (safeUrl.includes('chat.html') || safeUrl.includes('groupChat.html')) {
                         const currentSidebarSrc = frameSidebar.contentWindow ? frameSidebar.contentWindow.location.href : frameSidebar.src;
                         if (!currentSidebarSrc.includes('messages.html')) {
                             frameSidebar.src = 'messages.html';
@@ -350,8 +419,8 @@
                     }
                     
                     // Push state so back button works correctly for group chats triggered via code
-                    const newUrl = `index.html?view=${encodeURIComponent(data.url)}`;
-                    window.history.pushState({ path: data.url }, '', newUrl);
+                    const newUrl = `index.html?view=${encodeURIComponent(safeUrl)}`;
+                    window.history.pushState({ path: safeUrl }, '', newUrl);
                 }
             }
         });
