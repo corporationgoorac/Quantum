@@ -206,7 +206,12 @@
             
             // Fix for 404: Ensure extension exists
             if (requestedView && !requestedView.includes('.html')) {
-                requestedView += '.html';
+                // ADDED: Safe handling for URLs that have parameters but missed the .html extension (e.g. groupChat?id=123)
+                if (requestedView.includes('?')) {
+                    requestedView = requestedView.replace('?', '.html?');
+                } else {
+                    requestedView += '.html';
+                }
             }
 
             if (!isPC) {
@@ -334,6 +339,19 @@
                     welcomeScreen.style.display = 'none';
                     frameMain.style.display = 'block';
                     frameMain.src = data.url;
+                    
+                    // --- ADVANCED CONTEXT SWITCHING (POSTMESSAGE SYNC) ---
+                    // Added explicit support for groupChat.html URL routing and history management
+                    if (data.url.includes('chat.html') || data.url.includes('groupChat.html')) {
+                        const currentSidebarSrc = frameSidebar.contentWindow ? frameSidebar.contentWindow.location.href : frameSidebar.src;
+                        if (!currentSidebarSrc.includes('messages.html')) {
+                            frameSidebar.src = 'messages.html';
+                        }
+                    }
+                    
+                    // Push state so back button works correctly for group chats triggered via code
+                    const newUrl = `index.html?view=${encodeURIComponent(data.url)}`;
+                    window.history.pushState({ path: data.url }, '', newUrl);
                 }
             }
         });
