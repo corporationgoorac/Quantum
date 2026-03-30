@@ -62,6 +62,7 @@
 
         #content-pane {
             flex: 1; height: 100%; background: var(--bg);
+            position: relative; /* ADDED FOR LOADER POSITIONING */
         }
 
         iframe { width: 100%; height: 100%; border: none; background: var(--bg); display: block; }
@@ -85,10 +86,42 @@
             transition: transform 0.2s;
         }
         #install-app-btn:active { transform: scale(0.95); }
+
+        /* ==========================================
+           ADVANCED UI INJECTIONS (ADDED)
+           ========================================== */
+        
+        /* Sleek Branded Spinner */
+        #iframe-loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; border: 3px solid rgba(255, 109, 0, 0.1);
+            border-top-color: #FF6D00; border-radius: 50%;
+            animation: iframe-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+            display: none; z-index: 10;
+        }
+        @keyframes iframe-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Native App-Style Network Toast */
+        #network-toast {
+            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.95); color: white; padding: 12px 24px;
+            border-radius: 30px; font-size: 0.9rem; font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 10000; transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+        }
+        #network-toast.show { top: 24px; }
+        
+        /* Smooth Iframe Fade-in to prevent flashing */
+        #frame-main { transition: opacity 0.4s ease; opacity: 0; }
+        #frame-main.loaded { opacity: 1; }
     </style>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
 <body oncontextmenu="return false;">
+
+    <div id="network-toast">Network Status</div>
 
     <div id="splash-screen">
         <img src="images/icon.png" alt="Goorac" class="splash-logo" onerror="this.style.display='none'">
@@ -103,6 +136,8 @@
             <iframe src="home.html" id="frame-sidebar"></iframe>
         </div>
         <div id="content-pane">
+            <div id="iframe-loader"></div>
+
             <div id="welcome-screen-default">
                 <img src="images/icon.png" style="width: 80px; opacity: 0.2; margin-bottom: 20px;">
                 <h1 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; margin-bottom: 10px;">Welcome to Quantum Desktop</h1>
@@ -272,6 +307,79 @@
 
         document.readyState === 'loading' ? 
             document.addEventListener('DOMContentLoaded', initializeApp) : initializeApp();
+
+
+        // ==========================================
+        // ADVANCED SPA FEATURES & PERFORMANCE BOOSTS (ADDED)
+        // ==========================================
+
+        // 1. Cross-Frame Communication Bridge (PostMessage API)
+        // Allows internal sub-pages to safely send commands to the master shell without cross-origin errors
+        window.addEventListener('message', (event) => {
+            // Security guard to prevent cross-site scripting
+            if (event.origin !== window.location.origin) return;
+            
+            const data = event.data;
+            if (data && data.type === 'QUANTUM_NAVIGATE') {
+                if (data.target === 'sidebar') {
+                    frameSidebar.src = data.url;
+                } else if (data.target === 'main') {
+                    welcomeScreen.style.display = 'none';
+                    frameMain.style.display = 'block';
+                    frameMain.src = data.url;
+                }
+            }
+        });
+
+        // 2. Smooth Loading State Management for Main Content
+        const loaderUi = document.getElementById('iframe-loader');
+
+        // Remove spinner when iframe finishes loading
+        frameMain.addEventListener('load', () => {
+            if(frameMain.src !== 'about:blank' && !frameMain.src.endsWith('about:blank')) {
+                loaderUi.style.display = 'none';
+                frameMain.classList.add('loaded'); // Triggers smooth CSS fade-in
+            }
+        });
+
+        // Intercept native src changes to instantly show the spinner
+        const originalSetSrc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src').set;
+        Object.defineProperty(frameMain, 'src', {
+            set: function(val) {
+                if(val !== 'about:blank' && !val.includes('about:blank')) {
+                    this.classList.remove('loaded');
+                    loaderUi.style.display = 'block';
+                }
+                return originalSetSrc.call(this, val);
+            }
+        });
+
+        // 3. Native App-Style Network Status Detection
+        const networkToast = document.getElementById('network-toast');
+        let toastTimeout;
+        
+        function showNetworkToast(msg, isError = false) {
+            networkToast.innerText = msg;
+            networkToast.style.borderLeft = isError ? '4px solid #FF453A' : '4px solid #32D74B';
+            networkToast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => networkToast.classList.remove('show'), 3500);
+        }
+
+        window.addEventListener('online', () => showNetworkToast('Back online! Connection restored.'));
+        window.addEventListener('offline', () => showNetworkToast('You are currently offline.', true));
+
+        // 4. Global Error Boundary for SPA Stability
+        // Desktop SPAs often throw harmless resize errors that can clog the console or halt execution
+        window.addEventListener('error', (e) => {
+            if (e.message === 'ResizeObserver loop limit exceeded') {
+                // Safely swallow harmless Chromium rendering loop warnings to keep SPA smooth
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            } else {
+                console.warn("Quantum SPA Handled Error:", e.message);
+            }
+        });
     </script>
 </body>
 </html>
