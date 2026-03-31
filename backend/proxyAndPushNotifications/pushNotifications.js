@@ -11,6 +11,36 @@ const reactionThrottle = new Set(); // Specifically limits reaction spam
 // --- PERFORMANCE CACHES (Ultra-Fast 12-Hour RAM Cache) ---
 const userCache = new Map(); 
 
+// --- ADVANCED: MEMORY LEAK GUARD ---
+// Prevents the Node.js server from crashing due to heap overflow if the cache grows too large
+setInterval(() => {
+    if (userCache.size > 10000) {
+        console.warn("⚠️ [MEMORY GUARD] Cache exceeded 10,000 users. Pruning old entries...");
+        userCache.clear(); // Emergency flush to protect server RAM
+    }
+    if (processedMessages.size > 50000) processedMessages.clear();
+    if (processedNotifs.size > 50000) processedNotifs.clear();
+}, 3600000); // Checks every hour
+
+// --- ADVANCED: EXPONENTIAL BACKOFF RETRY SYSTEM ---
+// If the Pusher API throws a 429 (Rate Limit) or 503 (Server Error), this ensures the push isn't lost
+async function publishWithRetry(beamsClient, targetUids, payload, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            await beamsClient.publishToInterests(targetUids, payload);
+            return; // Success, exit the retry loop
+        } catch (error) {
+            if (attempt === maxRetries) {
+                console.error(`❌ [PUSH FAILED] after ${maxRetries} attempts for UIDs: ${targetUids}`, error);
+                throw error;
+            }
+            const delay = Math.pow(2, attempt) * 500; // 1s, 2s, 4s backoff
+            console.warn(`⚠️ [PUSH RETRY] Attempt ${attempt} failed. Retrying in ${delay}ms...`);
+            await new Promise(res => setTimeout(res, delay));
+        }
+    }
+}
+
 // --- NEW FIX: Boot Phase Lock ---
 // Prevents downloading and processing thousands of historical messages on server restart
 let isBooting = true;
@@ -162,11 +192,30 @@ module.exports = function(app) {
                                 : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(senderUsername)}`;
 
                             // SPEED OPTIMIZATION: Fire all target push notifications in parallel
+                            // --- ADVANCED: Using Custom publishWithRetry wrapper and 48-Hour TTL (172800) ---
                             await Promise.all(targetUids.map(targetUid => 
-                                beamsClient.publishToInterests([targetUid], {
-                                    web: { notification: { title: senderName, body: bodyText, icon: senderPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true }, time_to_live: 3600 },
-                                    fcm: { notification: { title: senderName, body: bodyText, icon: senderPhoto }, data: { click_action: deepLink }, priority: "high" },
-                                    apns: { aps: { alert: { title: senderName, body: bodyText }, "thread-id": chatDocId }, headers: { "apns-priority": "10", "apns-push-type": "alert" } }
+                                publishWithRetry(beamsClient, [targetUid], {
+                                    web: { 
+                                        notification: { 
+                                            title: senderName, 
+                                            body: bodyText, 
+                                            icon: senderPhoto, 
+                                            deep_link: deepLink, 
+                                            hide_notification_if_site_has_focus: true,
+                                            // ADVANCED: Add badge for Android taskbar compliance
+                                            badge: "https://www.goorac.biz/badge.png" 
+                                        }, 
+                                        time_to_live: 172800 // ADVANCED FIX: 48 Hours to beat Doze Mode
+                                    },
+                                    fcm: { 
+                                        notification: { title: senderName, body: bodyText, icon: senderPhoto }, 
+                                        data: { click_action: deepLink, type: "chat_message" }, 
+                                        priority: "high" 
+                                    },
+                                    apns: { 
+                                        aps: { alert: { title: senderName, body: bodyText }, "thread-id": chatDocId, sound: "default" }, 
+                                        headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } 
+                                    }
                                 })
                             ));
                         } catch (error) { console.error("❌ Message Push Error:", error); }
@@ -236,8 +285,9 @@ module.exports = function(app) {
                                     ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
                                     : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(reactorUsername)}`;
 
-                                await beamsClient.publishToInterests([messageOwner], {
-                                    web: { notification: { title: title, body: body, icon: reactorPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true }, time_to_live: 3600 },
+                                // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
+                                await publishWithRetry(beamsClient, [messageOwner], {
+                                    web: { notification: { title: title, body: body, icon: reactorPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, badge: "https://www.goorac.biz/badge.png" }, time_to_live: 172800 },
                                     fcm: { notification: { title: title, body: body, icon: reactorPhoto }, data: { click_action: deepLink }, priority: "high" },
                                     apns: { aps: { alert: { title: title, body: body }, "thread-id": chatDocId }, headers: { "apns-priority": "10", "apns-push-type": "alert" } }
                                 });
@@ -408,16 +458,18 @@ module.exports = function(app) {
                         }
 
                         // Publish the final constructed notification to Pusher Beams
-                        await beamsClient.publishToInterests([targetUid], {
+                        // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
+                        await publishWithRetry(beamsClient, [targetUid], {
                             web: { 
                                 notification: { 
                                     title: title, 
                                     body: body, 
                                     icon: senderPhoto, 
                                     deep_link: deepLink, 
-                                    hide_notification_if_site_has_focus: true 
+                                    hide_notification_if_site_has_focus: true,
+                                    badge: "https://www.goorac.biz/badge.png" // ADVANCED UI Polish
                                 }, 
-                                time_to_live: 3600 
+                                time_to_live: 172800 // ADVANCED FIX: 48 Hours 
                             },
                             fcm: { 
                                 notification: { 
@@ -425,7 +477,7 @@ module.exports = function(app) {
                                     body: body, 
                                     icon: senderPhoto 
                                 }, 
-                                data: { click_action: deepLink }, 
+                                data: { click_action: deepLink, type: "database_alert" }, 
                                 priority: "high" 
                             },
                             apns: { 
@@ -433,7 +485,7 @@ module.exports = function(app) {
                                     alert: { title: title, body: body }, 
                                     "thread-id": "notifications" 
                                 }, 
-                                headers: { "apns-priority": "10", "apns-push-type": "alert" } 
+                                headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } 
                             }
                         });
                         
@@ -504,10 +556,14 @@ module.exports = function(app) {
                         const body = `${callerName} is calling you... Tap to answer.`;
                         const deepLink = `https://www.goorac.biz/calls.html`;
 
-                        await beamsClient.publishToInterests([targetUid], {
-                            web: { notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true }, time_to_live: 60 }, // Expires quickly
-                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink }, priority: "high" },
-                            apns: { aps: { alert: { title, body }, "thread-id": "calls" }, headers: { "apns-priority": "10", "apns-push-type": "alert" } }
+                        // --- ADVANCED: Publish with Retry - KEEP TTL 60 to prevent phantom ringing later ---
+                        await publishWithRetry(beamsClient, [targetUid], {
+                            web: { 
+                                notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, requireInteraction: true }, // ADVANCED: Force user to interact 
+                                time_to_live: 60 // MUST STAY 60 FOR CALLS
+                            }, 
+                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "incoming_call" }, priority: "high" },
+                            apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60" } }
                         });
                         console.log(`✅ Incoming Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Call Push Error:", e); }
@@ -565,10 +621,11 @@ module.exports = function(app) {
                         const body = `You missed a ${isVideo ? 'video' : 'voice'} call from ${callerName}.`;
                         const deepLink = `https://www.goorac.biz/calls.html`;
 
-                        await beamsClient.publishToInterests([targetUid], {
-                            web: { notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true }, time_to_live: 3600 },
-                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink }, priority: "high" },
-                            apns: { aps: { alert: { title, body }, "thread-id": "calls" }, headers: { "apns-priority": "10", "apns-push-type": "alert" } }
+                        // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
+                        await publishWithRetry(beamsClient, [targetUid], {
+                            web: { notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, badge: "https://www.goorac.biz/badge.png" }, time_to_live: 172800 },
+                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "missed_call" }, priority: "high" },
+                            apns: { aps: { alert: { title, body }, "thread-id": "calls" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } }
                         });
                         console.log(`✅ Missed Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Missed Call Push Error:", e); }
@@ -586,4 +643,4 @@ module.exports = function(app) {
 
     // Start the Firebase background listeners when this module is required
     startPushListener();
-};
+}
