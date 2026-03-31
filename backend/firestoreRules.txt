@@ -34,13 +34,15 @@ service cloud.firestore {
         (
           request.auth.uid == userId && 
           // SECURITY FIX: Prevent normal users from making themselves admin, verified, or suspended
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admin', 'verified', 'suspended', 'searchResult', 'serverError'])
+          // FIX 1 APPLIED: Removed 'searchResult' from the forbidden list so users can toggle discoverability
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admin', 'verified', 'suspended', 'serverError'])
         )
         || 
         (
           request.auth.uid != userId &&
+          // FIX 4 APPLIED (Field): Added 'closeFriends' to the allowed update fields
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['followers', 'followerCount', 'following', 'followingCount', 'blocked', 'unreadCount', 'pinnedChats'])
+            .hasOnly(['followers', 'followerCount', 'following', 'followingCount', 'blocked', 'unreadCount', 'pinnedChats', 'closeFriends'])
         )
       );
 
@@ -52,6 +54,14 @@ service cloud.firestore {
         allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
         allow read, delete: if request.auth != null && 
           (request.auth.uid == userId || resource.data.fromUid == request.auth.uid);
+      }
+
+      // -----------------------------------------------------------------------
+      // 1B. CLOSE FRIENDS SUBCOLLECTION
+      // -----------------------------------------------------------------------
+      // FIX 4 APPLIED (Subcollection): Added explicit rules for close_friends in case your frontend uses a subcollection
+      match /close_friends/{cfId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
