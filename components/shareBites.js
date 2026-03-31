@@ -509,8 +509,6 @@ class ShareBites extends HTMLElement {
                 biteImgUrl: this.currentBite.imgUrl
             };
 
-            await this.db.collection("chats").doc(chat.id).collection("messages").add(biteMsg);
-
             let unreadUpdates = {};
             chat.participants.forEach(uid => {
                 if (uid !== this.myUid) unreadUpdates[`unreadCount.${uid}`] = firebase.firestore.FieldValue.increment(1);
@@ -525,6 +523,8 @@ class ShareBites extends HTMLElement {
                 participants: chat.participants, // ensures participants array exists on new docs
                 ...unreadUpdates
             }, { merge: true });
+
+            await this.db.collection("chats").doc(chat.id).collection("messages").add(biteMsg);
 
             const senderName = this.myUserData ? this.myUserData.name : "Someone";
             const senderPhoto = this.myUserData ? this.myUserData.photoURL : "https://www.goorac.biz/icon.png";
