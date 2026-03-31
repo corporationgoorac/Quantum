@@ -8,7 +8,7 @@ const processedMessages = new Set();
 const processedNotifs = new Set();
 const reactionThrottle = new Set(); // Specifically limits reaction spam
 
-// --- PERFORMANCE CACHES (Ultra-Fast 12-Hour RAM Cache) ---
+// --- PERFORMANCE CACHES (Ultra-Fast 24-Hour RAM Cache) ---
 const userCache = new Map(); 
 
 // --- ADVANCED: MEMORY LEAK GUARD ---
@@ -20,7 +20,7 @@ setInterval(() => {
     }
     if (processedMessages.size > 50000) processedMessages.clear();
     if (processedNotifs.size > 50000) processedNotifs.clear();
-}, 3600000); // Checks every hour
+}, 86400000); // UPDATED: Now checks and cleans every 24 hours instead of 1 hour to save Firebase reads!
 
 // --- ADVANCED: EXPONENTIAL BACKOFF RETRY SYSTEM ---
 // If the Pusher API throws a 429 (Rate Limit) or 503 (Server Error), this ensures the push isn't lost
@@ -80,7 +80,7 @@ module.exports = function(app) {
     });
 
     // --- BUG FIX: Cache Invalidator ---
-    // Listens for user profile changes so the 12-hour cache doesn't show old names/photos
+    // Listens for user profile changes so the 24-hour cache doesn't show old names/photos
     db.collection('users').onSnapshot((snap) => {
         snap.docChanges().forEach(change => {
             if (change.type === 'modified') userCache.delete(change.doc.id);
@@ -161,7 +161,7 @@ module.exports = function(app) {
 
                             if (targetUids.length === 0) return; // Abort if no target found
                             
-                            // HIGH-SPEED CACHE INJECTION (Upgraded to 12 Hours)
+                            // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
                             let senderData;
                             if (userCache.has(senderUid)) {
                                 senderData = userCache.get(senderUid);
@@ -169,7 +169,7 @@ module.exports = function(app) {
                                 const senderDoc = await db.collection('users').doc(senderUid).get();
                                 senderData = senderDoc.data() || {};
                                 userCache.set(senderUid, senderData);
-                                setTimeout(() => userCache.delete(senderUid), 43200000); // 12-hour TTL
+                                setTimeout(() => userCache.delete(senderUid), 86400000); // UPDATED: 24-hour TTL to save Firebase reads
                             }
 
                             let senderName = senderData.name || senderData.username || "Someone";
@@ -203,7 +203,14 @@ module.exports = function(app) {
                                             deep_link: deepLink, 
                                             hide_notification_if_site_has_focus: true,
                                             // ADVANCED: Add badge for Android taskbar compliance
-                                            badge: "https://www.goorac.biz/badge.png" 
+                                            badge: "https://www.goorac.biz/badge.png",
+                                            // 🚨 ADVANCED JACKPOT FEATURE: Collapse ID & Forced Ringing 🚨
+                                            tag: chatDocId, // Replaces previous notifications from the same chat so the tray doesn't flood!
+                                            renotify: true, // Guarantees the phone rings/vibrates even when stacking over an existing notification
+                                            vibrate: [200, 100, 200], // Explicitly forces hardware vibration to ensure it gets noticed
+                                            timestamp: msgTime, // Forces Android to treat this as a chronologically new event
+                                            dir: "auto" // Ensures text renders correctly regardless of the user's phone language
+                                            // actions: [{ action: "open", title: "Open App" }] // DISABLED: Removed interactive buttons per user request without deleting line
                                         }, 
                                         time_to_live: 172800 // ADVANCED FIX: 48 Hours to beat Doze Mode
                                     },
@@ -214,7 +221,12 @@ module.exports = function(app) {
                                     },
                                     apns: { 
                                         aps: { alert: { title: senderName, body: bodyText }, "thread-id": chatDocId, sound: "default" }, 
-                                        headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } 
+                                        headers: { 
+                                            "apns-priority": "10", 
+                                            "apns-push-type": "alert", 
+                                            "apns-expiration": "172800",
+                                            "apns-collapse-id": chatDocId // 🚨 JACKPOT: Stacks iOS notifications neatly
+                                        } 
                                     }
                                 })
                             ));
@@ -260,7 +272,7 @@ module.exports = function(app) {
                                 const chatData = chatDoc.exists ? chatDoc.data() : {};
                                 const isGroup = chatData.isGroup === true;
 
-                                // HIGH-SPEED CACHE INJECTION (Upgraded to 12 Hours)
+                                // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
                                 let reactorInfo;
                                 if (userCache.has(reactorUid)) {
                                     reactorInfo = userCache.get(reactorUid);
@@ -268,7 +280,7 @@ module.exports = function(app) {
                                     const reactorDoc = await db.collection('users').doc(reactorUid).get();
                                     reactorInfo = reactorDoc.data() || {};
                                     userCache.set(reactorUid, reactorInfo);
-                                    setTimeout(() => userCache.delete(reactorUid), 43200000); // 12-hour TTL
+                                    setTimeout(() => userCache.delete(reactorUid), 86400000); // UPDATED: 24-hour TTL
                                 }
 
                                 let reactorName = reactorInfo.name || reactorInfo.username || "Someone";
@@ -287,9 +299,28 @@ module.exports = function(app) {
 
                                 // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
                                 await publishWithRetry(beamsClient, [messageOwner], {
-                                    web: { notification: { title: title, body: body, icon: reactorPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, badge: "https://www.goorac.biz/badge.png" }, time_to_live: 172800 },
+                                    web: { 
+                                        notification: { 
+                                            title: title, 
+                                            body: body, 
+                                            icon: reactorPhoto, 
+                                            deep_link: deepLink, 
+                                            hide_notification_if_site_has_focus: true, 
+                                            badge: "https://www.goorac.biz/badge.png",
+                                            // 🚨 ADVANCED JACKPOT FEATURE 🚨
+                                            tag: `reaction_${chatDocId}`, // Neatly stacks multiple reactions on the same chat!
+                                            renotify: true, // Forces ringing on collapse update
+                                            vibrate: [100, 50, 100], // Lighter vibration for a reaction
+                                            timestamp: reactionData.timestamp,
+                                            dir: "auto"
+                                        }, 
+                                        time_to_live: 172800 
+                                    },
                                     fcm: { notification: { title: title, body: body, icon: reactorPhoto }, data: { click_action: deepLink }, priority: "high" },
-                                    apns: { aps: { alert: { title: title, body: body }, "thread-id": chatDocId }, headers: { "apns-priority": "10", "apns-push-type": "alert" } }
+                                    apns: { 
+                                        aps: { alert: { title: title, body: body }, "thread-id": chatDocId }, 
+                                        headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-collapse-id": `reaction_${chatDocId}` } 
+                                    }
                                 });
                             }
                         } catch (err) { console.error("❌ Reaction Push Error:", err); }
@@ -355,7 +386,7 @@ module.exports = function(app) {
 
                     try {
                         // ALWAYS fetch exact user profile from DB to guarantee Names and PFPs are 100% correct
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 12 Hours)
+                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
                         let senderData;
                         if (userCache.has(senderUid)) {
                             senderData = userCache.get(senderUid);
@@ -363,7 +394,7 @@ module.exports = function(app) {
                             const senderDoc = await db.collection('users').doc(senderUid).get();
                             senderData = senderDoc.data() || {};
                             userCache.set(senderUid, senderData);
-                            setTimeout(() => userCache.delete(senderUid), 43200000); // 12-hour TTL
+                            setTimeout(() => userCache.delete(senderUid), 86400000); // UPDATED: 24-hour TTL
                         }
 
                         const senderName = senderData.name || senderData.username || notifData.senderName || notifData.fromName || "Someone";
@@ -467,7 +498,13 @@ module.exports = function(app) {
                                     icon: senderPhoto, 
                                     deep_link: deepLink, 
                                     hide_notification_if_site_has_focus: true,
-                                    badge: "https://www.goorac.biz/badge.png" // ADVANCED UI Polish
+                                    badge: "https://www.goorac.biz/badge.png", // ADVANCED UI Polish
+                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
+                                    tag: "social_notifications", // Stacks ALL social alerts (likes, follows) into one neat group!
+                                    renotify: true, // Forces ringing on collapse update
+                                    vibrate: [200, 100, 200], // Explicit hardware buzz
+                                    timestamp: msgTime,
+                                    dir: "auto"
                                 }, 
                                 time_to_live: 172800 // ADVANCED FIX: 48 Hours 
                             },
@@ -485,7 +522,12 @@ module.exports = function(app) {
                                     alert: { title: title, body: body }, 
                                     "thread-id": "notifications" 
                                 }, 
-                                headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } 
+                                headers: { 
+                                    "apns-priority": "10", 
+                                    "apns-push-type": "alert", 
+                                    "apns-expiration": "172800",
+                                    "apns-collapse-id": "social_notifications" // 🚨 JACKPOT: Stacks iOS social alerts 
+                                } 
                             }
                         });
                         
@@ -536,7 +578,7 @@ module.exports = function(app) {
                     setTimeout(() => processedNotifs.delete(throttleKey), 45000); 
 
                     try {
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 12 Hours)
+                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
                         let callerInfo;
                         if (userCache.has(callerUid)) {
                             callerInfo = userCache.get(callerUid);
@@ -544,7 +586,7 @@ module.exports = function(app) {
                             const callerDoc = await db.collection('users').doc(callerUid).get();
                             callerInfo = callerDoc.data() || {};
                             userCache.set(callerUid, callerInfo);
-                            setTimeout(() => userCache.delete(callerUid), 43200000); // 12-hour TTL
+                            setTimeout(() => userCache.delete(callerUid), 86400000); // UPDATED: 24-hour TTL
                         }
 
                         const callerName = callerInfo.name || callerInfo.username || callData.callerName || "Someone";
@@ -559,11 +601,24 @@ module.exports = function(app) {
                         // --- ADVANCED: Publish with Retry - KEEP TTL 60 to prevent phantom ringing later ---
                         await publishWithRetry(beamsClient, [targetUid], {
                             web: { 
-                                notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, requireInteraction: true }, // ADVANCED: Force user to interact 
+                                notification: { 
+                                    title, 
+                                    body, 
+                                    icon: callerPhoto, 
+                                    deep_link: deepLink, 
+                                    hide_notification_if_site_has_focus: true, 
+                                    requireInteraction: true, // ADVANCED: Force user to interact 
+                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
+                                    tag: "incoming_call", // Ensures multiple ICE candidates don't create multiple call banners!
+                                    vibrate: [500, 1000, 500, 1000, 500, 1000], // Intense vibration pattern specifically for incoming calls
+                                    timestamp: Date.now(),
+                                    dir: "auto"
+                                    // actions: [{ action: "answer", title: "Answer" }, { action: "decline", title: "Decline" }] // DISABLED: Removed interactive buttons per user request without deleting line
+                                }, 
                                 time_to_live: 60 // MUST STAY 60 FOR CALLS
                             }, 
                             fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "incoming_call" }, priority: "high" },
-                            apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60" } }
+                            apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60", "apns-collapse-id": "incoming_call" } }
                         });
                         console.log(`✅ Incoming Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Call Push Error:", e); }
@@ -601,7 +656,7 @@ module.exports = function(app) {
                     setTimeout(() => processedNotifs.delete(docId), 180000);
 
                     try {
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 12 Hours)
+                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
                         let callerInfo;
                         if (userCache.has(callerUid)) {
                             callerInfo = userCache.get(callerUid);
@@ -609,7 +664,7 @@ module.exports = function(app) {
                             const callerDoc = await db.collection('users').doc(callerUid).get();
                             callerInfo = callerDoc.data() || {};
                             userCache.set(callerUid, callerInfo);
-                            setTimeout(() => userCache.delete(callerUid), 43200000); // 12-hour TTL
+                            setTimeout(() => userCache.delete(callerUid), 86400000); // UPDATED: 24-hour TTL
                         }
 
                         const callerName = callerInfo.name || callerInfo.username || logData.callerName || "Someone";
@@ -623,9 +678,28 @@ module.exports = function(app) {
 
                         // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
                         await publishWithRetry(beamsClient, [targetUid], {
-                            web: { notification: { title, body, icon: callerPhoto, deep_link: deepLink, hide_notification_if_site_has_focus: true, badge: "https://www.goorac.biz/badge.png" }, time_to_live: 172800 },
+                            web: { 
+                                notification: { 
+                                    title, 
+                                    body, 
+                                    icon: callerPhoto, 
+                                    deep_link: deepLink, 
+                                    hide_notification_if_site_has_focus: true, 
+                                    badge: "https://www.goorac.biz/badge.png",
+                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
+                                    tag: `missed_call_${callerUid}`, // Stacks multiple missed calls from the same person!
+                                    renotify: true, // Forces ringing on collapse update
+                                    vibrate: [200, 100, 200], // Explicit hardware buzz
+                                    timestamp: msgTime,
+                                    dir: "auto"
+                                }, 
+                                time_to_live: 172800 
+                            },
                             fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "missed_call" }, priority: "high" },
-                            apns: { aps: { alert: { title, body }, "thread-id": "calls" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800" } }
+                            apns: { 
+                                aps: { alert: { title, body }, "thread-id": "calls" }, 
+                                headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800", "apns-collapse-id": `missed_call_${callerUid}` } 
+                            }
                         });
                         console.log(`✅ Missed Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Missed Call Push Error:", e); }
