@@ -72,6 +72,7 @@ module.exports = function(app) {
     }
 
     const db = admin.firestore();
+    const rdb = admin.database(); // <-- ADVANCED FIX: Added Realtime Database to catch frontend signaling!
 
     // 2. Initialize Pusher Beams
     const beamsClient = new PushNotifications({
@@ -610,7 +611,7 @@ module.exports = function(app) {
                                     requireInteraction: true, // ADVANCED: Force user to interact 
                                     // 🚨 ADVANCED JACKPOT FEATURE 🚨
                                     tag: "incoming_call", // Ensures multiple ICE candidates don't create multiple call banners!
-                                    vibrate: [500, 1000, 500, 1000, 500, 1000], // Intense vibration pattern specifically for incoming calls
+                                    vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000], // HEAVY VIBRATION FOR RINGING
                                     timestamp: Date.now(),
                                     dir: "auto"
                                     // actions: [{ action: "answer", title: "Answer" }, { action: "decline", title: "Decline" }] // DISABLED: Removed interactive buttons per user request without deleting line
@@ -625,6 +626,73 @@ module.exports = function(app) {
                 }
             });
         }, (error) => { console.error("❌ Calls listener error:", error); });
+
+        // --- ADVANCED FIX: ADDED REALTIME DATABASE LISTENER BECAUSE FRONTEND USES RDB FOR CALLS ---
+        rdb.ref('calls_status').on('child_added', async (snapshot) => {
+            processRdbCall(snapshot);
+        });
+        rdb.ref('calls_status').on('child_changed', async (snapshot) => {
+            processRdbCall(snapshot);
+        });
+
+        async function processRdbCall(snapshot) {
+            if (isBooting) return;
+            const targetUid = snapshot.key;
+            const callData = snapshot.val();
+            
+            if (!callData || callData.status !== 'ringing') return;
+
+            const callerUid = callData.callerId;
+            if (!targetUid || !callerUid) return;
+
+            // Throttle to avoid duplicate RDB and Firestore pings
+            const throttleKey = `call_rdb_${targetUid}_${callerUid}`;
+            if (processedNotifs.has(throttleKey)) return;
+            processedNotifs.add(throttleKey);
+            setTimeout(() => processedNotifs.delete(throttleKey), 45000); 
+
+            try {
+                let callerInfo;
+                if (userCache.has(callerUid)) {
+                    callerInfo = userCache.get(callerUid);
+                } else {
+                    const callerDoc = await db.collection('users').doc(callerUid).get();
+                    callerInfo = callerDoc.data() || {};
+                    userCache.set(callerUid, callerInfo);
+                    setTimeout(() => userCache.delete(callerUid), 86400000); 
+                }
+
+                const callerName = callerInfo.name || callerInfo.username || callData.callerName || "Someone";
+                const callerPhoto = callerInfo.photoURL || callData.callerPfp || "https://www.goorac.biz/icon.png";
+                const isVideo = callData.type === 'video';
+
+                const title = isVideo ? "Incoming Video Call 🎥" : "Incoming Audio Call 📞";
+                const body = `${callerName} is calling you... Tap to answer.`;
+                const deepLink = `https://www.goorac.biz/calls.html?targetUid=${targetUid}&autoAnswer=true`;
+
+                // --- ADVANCED RINGING PAYLOAD ---
+                await publishWithRetry(beamsClient, [targetUid], {
+                    web: { 
+                        notification: { 
+                            title, 
+                            body, 
+                            icon: callerPhoto, 
+                            deep_link: deepLink, 
+                            hide_notification_if_site_has_focus: true, 
+                            requireInteraction: true, 
+                            tag: "incoming_call", 
+                            vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000], // HEAVY VIBRATION FOR RINGING
+                            timestamp: Date.now(),
+                            dir: "auto"
+                        }, 
+                        time_to_live: 60
+                    }, 
+                    fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "incoming_call" }, priority: "high" },
+                    apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60", "apns-collapse-id": "incoming_call" } }
+                });
+                console.log(`✅ Incoming Call Push (RDB fallback) sent to ${targetUid}`);
+            } catch (e) { console.error("❌ RDB Call Push Error:", e); }
+        }
 
         // 2. MISSED CALLS (Watches the 'call_logs' collection)
         db.collection('call_logs').onSnapshot((snapshot) => {
