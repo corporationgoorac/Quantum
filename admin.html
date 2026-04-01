@@ -485,6 +485,10 @@
                     <span class="toggle-text">Profile Discoverability</span>
                     <div class="track"><div class="knob"></div></div>
                 </div>
+                <div class="toggle-item" id="tg-act" onclick="toggle('tg-act', 'blue')">
+                    <span class="toggle-text">Activity Status (Public)</span>
+                    <div class="track"><div class="knob"></div></div>
+                </div>
                 <div class="toggle-item" id="tg-err" onclick="toggle('tg-err', 'red')">
                     <span class="toggle-text" style="color:var(--accent-red)">Force Server Error</span>
                     <div class="track"><div class="knob"></div></div>
@@ -739,6 +743,7 @@
             setTog('tg-adm', u.admin === true);
             setTog('tg-sus', u.suspended === true);
             setTog('tg-disc', u.searchResult === true);
+            setTog('tg-act', u.showActivityStatus !== false); // Default to visible
             setTog('tg-err', u.serverError === true);
 
             document.getElementById('backdrop').classList.add('active');
@@ -769,6 +774,7 @@
             
             const wasVer = oldUser.verified;
             const isVer = document.getElementById('tg-ver').classList.contains('active');
+            const isAct = document.getElementById('tg-act').classList.contains('active');
             
             // 2. Construct Data Payload
             const data = {
@@ -781,20 +787,27 @@
                 admin: document.getElementById('tg-adm').classList.contains('active'),
                 suspended: document.getElementById('tg-sus').classList.contains('active'),
                 searchResult: document.getElementById('tg-disc').classList.contains('active'),
+                showActivityStatus: isAct,
                 serverError: document.getElementById('tg-err').classList.contains('active')
             };
 
             try {
                 // 3. Write to Firestore
                 await db.collection("users").doc(editId).update(data);
+
+                // 4. Update Realtime DB Status (Presence Visibility Logic)
+                await rdb.ref('/status/' + editId).update({ 
+                    state: isAct ? 'online' : 'offline', 
+                    last_changed: firebase.database.ServerValue.TIMESTAMP 
+                });
                 
-                // 4. Update Memory IMMEDIATELY
+                // 5. Update Memory IMMEDIATELY
                 userList[oldUserIndex] = { ...oldUser, ...data };
                 
-                // 5. Update UI (List Row) IMMEDIATELY
+                // 6. Update UI (List Row) IMMEDIATELY
                 updateRowUI(editId, userList[oldUserIndex]);
                 
-                // 6. Handle Verification Event
+                // 7. Handle Verification Event
                 if(!wasVer && isVer) {
                     await sendWelcomeMsg(editId, data.name);
                     toast("User Verified & Notified");
@@ -1051,7 +1064,7 @@
             const el = document.getElementById(id);
             if(on) {
                 el.classList.add('active');
-                if(id==='tg-ver' || id==='tg-disc') el.classList.add('active'); // Default blue is handled by .active
+                if(id==='tg-ver' || id==='tg-disc' || id==='tg-act') el.classList.add('active'); // Default blue is handled by .active
                 if(id==='tg-adm') el.classList.add('purple');
                 if(id==='tg-sus' || id==='tg-err') el.classList.add('red');
             } else {
