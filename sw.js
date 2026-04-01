@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v75'; // Bumped version to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v56'; // Bumped version to force cache update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -61,8 +61,6 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
     self.skipWaiting();
     e.waitUntil(caches.open(CACHE_NAME).then(c => {
-        // Use cache.addAll if you want strict "all or nothing" caching
-        // Your current method is fine if you want to be lenient
         return Promise.all(ASSETS.map(url => c.add(url).catch(console.warn)));
     }));
 });
@@ -75,7 +73,6 @@ self.addEventListener('activate', (e) => {
             caches.keys().then(keys => {
                 return Promise.all(
                     keys.map(key => {
-                        // Delete any cache that doesn't match the current CACHE_NAME
                         if (key !== CACHE_NAME) {
                             return caches.delete(key);
                         }
@@ -88,43 +85,64 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    // --- UPDATED: OS POST Request Interception with IndexedDB Persistence ---
+    // --- ADVANCED 405 FIX: Crash-Proof OS POST Request Interception ---
     if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
         e.respondWith((async () => {
-            const formData = await e.request.formData();
-            const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
-            
-            const files = formData.getAll('shared_files');
-            const title = formData.get('title') || '';
-            const text = formData.get('text') || '';
-            const url = formData.get('url') || '';
-
-            // ADVANCED FIX: Store in IndexedDB to survive Service Worker sleeping
-            await new Promise((resolve) => {
+            try {
+                let formData;
+                
+                // Android throws URL-Encoded forms on text-only which crashes formData()
                 try {
-                    const request = indexedDB.open('GooracShareDB', 1);
-                    request.onupgradeneeded = (evt) => {
-                        evt.target.result.createObjectStore('shared_data');
+                    formData = await e.request.formData();
+                } catch (formDataError) {
+                    // Fallback to manual text parsing if it wasn't multipart
+                    const rawText = await e.request.text();
+                    const params = new URLSearchParams(rawText);
+                    formData = {
+                        getAll: (key) => [], // No files in URL Encoded fallback
+                        get: (key) => params.get(key) || ''
                     };
-                    request.onsuccess = (evt) => {
-                        const db = evt.target.result;
-                        const tx = db.transaction('shared_data', 'readwrite');
-                        tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
-                        tx.oncomplete = resolve;
-                    };
-                    request.onerror = resolve;
-                } catch(err) {
-                    resolve();
                 }
-            });
 
-            // Send the files directly if the UI happens to be fully awake
-            if (client) {
-                client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
+                // Safely grab the data
+                const files = (formData.getAll && typeof formData.getAll === 'function') ? formData.getAll('shared_files') : [];
+                const title = formData.get('title') || '';
+                const text = formData.get('text') || '';
+                const url = formData.get('url') || '';
+
+                // ADVANCED FIX: Store in IndexedDB to survive Service Worker sleeping
+                await new Promise((resolve) => {
+                    try {
+                        const request = indexedDB.open('GooracShareDB', 1);
+                        request.onupgradeneeded = (evt) => {
+                            evt.target.result.createObjectStore('shared_data');
+                        };
+                        request.onsuccess = (evt) => {
+                            const db = evt.target.result;
+                            const tx = db.transaction('shared_data', 'readwrite');
+                            tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
+                            tx.oncomplete = resolve;
+                        };
+                        request.onerror = resolve;
+                    } catch(err) {
+                        resolve();
+                    }
+                });
+
+                // Send the files directly if the UI happens to be fully awake
+                const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
+                if (client) {
+                    client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
+                }
+
+                // Redirect the user to the actual page using GET (303)
+                return Response.redirect('/share.html', 303);
+                
+            } catch (fatalError) {
+                console.error("Fatal SW Catch:", fatalError);
+                // IF EVERYTHING BURNS TO THE GROUND, FORCE A 303 REDIRECT ANYWAY TO PREVENT 405!
+                return Response.redirect('/share.html', 303);
             }
-
-            // Redirect the user to the actual page to load the UI
-            return Response.redirect('/share.html', 303);
         })());
         return; // Stop execution here so it doesn't hit the GET logic below
     }
@@ -134,29 +152,22 @@ self.addEventListener('fetch', (e) => {
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
-        // ADDED { ignoreSearch: true } HERE to ignore query parameters that break caching
         caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
             
             // 1. Kick off a background network request to fetch the freshest data
             const fetchPromise = fetch(e.request).then((networkResponse) => {
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Update the cache silently in the background so the next launch is up-to-date
-                    // We clone() the response because it can only be consumed once
                     if (networkResponse.ok) {
                         cache.put(e.request, networkResponse.clone());
                     }
                 });
                 return networkResponse;
             }).catch(() => {
-                // Network failed (user is offline). 
-                // If they are trying to navigate to a new page, fallback to home.html
                 if (e.request.mode === 'navigate') {
                     return caches.match('/home.html');
                 }
             });
 
-            // 2. THE MAGIC TRICK: Return the cached response INSTANTLY if we have it.
-            // If we don't have it in the cache yet, wait for the network fetch.
             return cachedResponse || fetchPromise;
         })
     );
