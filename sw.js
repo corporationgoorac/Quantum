@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v57'; // Bumped version to force cache update
+const CACHE_NAME = 'goorac-quantum-v58'; // Bumped version to force cache update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -91,12 +91,17 @@ self.addEventListener('fetch', (e) => {
             try {
                 let formData;
                 
+                // THE ULTIMATE FIX: Clone the request so we can safely try reading it twice without destroying the stream!
+                const reqCloneForFormData = e.request.clone();
+                const reqCloneForText = e.request.clone();
+
                 // Android throws URL-Encoded forms on text-only which crashes formData()
                 try {
-                    formData = await e.request.formData();
+                    formData = await reqCloneForFormData.formData();
                 } catch (formDataError) {
+                    console.warn("formData parse failed, falling back to text mapping...");
                     // Fallback to manual text parsing if it wasn't multipart
-                    const rawText = await e.request.text();
+                    const rawText = await reqCloneForText.text();
                     const params = new URLSearchParams(rawText);
                     formData = {
                         getAll: (key) => [], // No files in URL Encoded fallback
