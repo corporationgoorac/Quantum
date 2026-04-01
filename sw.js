@@ -27,6 +27,7 @@ const ASSETS = [
     '/pulse.html',
     '/pulseLobby.html',
     '/setup.html',
+    '/share.html',
     '/userProfile.html',
     '/vision.html',
     '/visionLobby.html',
@@ -87,6 +88,29 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
+    // --- ADDED: OS POST Request Interception for Web Share Target ---
+    if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
+        e.respondWith((async () => {
+            const formData = await e.request.formData();
+            const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
+            
+            const files = formData.getAll('shared_files');
+            const title = formData.get('title') || '';
+            const text = formData.get('text') || '';
+            const url = formData.get('url') || '';
+
+            // Send the files to the share.html page
+            if (client) {
+                client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
+            }
+
+            // Redirect the user to the actual page to load the UI
+            return Response.redirect('/share.html', 303);
+        })());
+        return; // Stop execution here so it doesn't hit the GET logic below
+    }
+    // ----------------------------------------------------------------
+
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
