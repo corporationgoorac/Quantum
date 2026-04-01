@@ -15,13 +15,13 @@
     {
       "src": "images/icon-quantum.png",
       "type": "image/png",
-      "sizes": "192x192",
+      "sizes": "1024x1024",
       "purpose": "any"
     },
     {
       "src": "images/icon-quantum.png",
       "type": "image/png",
-      "sizes": "512x512",
+      "sizes": "1024x1024",
       "purpose": "any maskable"
     }
   ],
@@ -34,7 +34,7 @@
       "icons": [
         {
           "src": "images/icon-quantum.png",
-          "sizes": "192x192"
+          "sizes": "1024x1024"
         }
       ]
     },
@@ -46,7 +46,7 @@
       "icons": [
         {
           "src": "images/icon-quantum.png",
-          "sizes": "192x192"
+          "sizes": "1024x1024"
         }
       ]
     }
