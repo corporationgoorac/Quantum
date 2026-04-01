@@ -134,7 +134,7 @@
         <div style="width: 50px;"></div>
     </header>
 
-    <div class="share-preview-box">
+    <div class="share-preview-box" id="advanced-preview-box">
         <img id="preview-thumb" class="share-thumb" src="">
         <div class="share-text-preview" id="preview-text">Attached Media</div>
     </div>
@@ -239,7 +239,7 @@
             
             sharedText = `${title} ${t} ${u}`.trim();
 
-            if (files && files.length > 0) {
+            if (files && files.length > 0 && files[0].size > 0) { // Added size check for ghost files
                 processSharedFile(files[0]);
             } else {
                 showShareUI();
@@ -261,7 +261,7 @@
             
             sharedText = `${title} ${t} ${u}`.trim();
 
-            if (files && files.length > 0) {
+            if (files && files.length > 0 && files[0].size > 0) { // Added size check for ghost files
                 processSharedFile(files[0]);
             } else {
                 showShareUI();
@@ -368,7 +368,16 @@
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared File";
         } else {
+            // ADVANCED TEXT-ONLY HANDLING
+            thumb.style.display = 'none';
             textPreview.innerText = sharedText || "No content attached";
+            textPreview.style.fontSize = "1.05rem";
+            textPreview.style.color = "#ffffff";
+            textPreview.style.webkitLineClamp = "4"; // Let text breathe
+            document.getElementById('advanced-preview-box').style.background = "var(--accent)";
+            document.getElementById('advanced-preview-box').style.color = "#000";
+            textPreview.style.color = "#000";
+            textPreview.style.fontWeight = "600";
         }
 
         if(myUid) setupInfiniteScroll();
