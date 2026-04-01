@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v60'; // Bumped version to force cache update
+const CACHE_NAME = 'goorac-quantum-v61'; // Bumped version to force cache update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -85,37 +85,40 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    // --- ADVANCED 405 FIX: THE "NO REDIRECT" METHOD ---
+    // --- TITANIUM ARMOR 405 & OFFLINE FIX ---
     if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
         e.respondWith((async () => {
             try {
-                let formData;
-                
-                // Clone the request so we can safely try reading it twice without destroying the stream!
+                // 1. Clone the request safely so we can try multiple parsers without destroying it
                 const reqCloneForFormData = e.request.clone();
                 const reqCloneForText = e.request.clone();
 
-                // Android throws URL-Encoded forms on text-only which crashes formData()
+                let files = [];
+                let title = '', text = '', url = '';
+
+                // 2. Safely attempt to parse the data
                 try {
-                    formData = await reqCloneForFormData.formData();
+                    const formData = await reqCloneForFormData.formData();
+                    if (formData.getAll) files = formData.getAll('shared_files') || [];
+                    if (formData.get) {
+                        title = formData.get('title') || '';
+                        text = formData.get('text') || '';
+                        url = formData.get('url') || '';
+                    }
                 } catch (formDataError) {
-                    console.warn("formData parse failed, falling back to text mapping...");
-                    // Fallback to manual text parsing if it wasn't multipart
-                    const rawText = await reqCloneForText.text();
-                    const params = new URLSearchParams(rawText);
-                    formData = {
-                        getAll: (key) => [], // No files in URL Encoded fallback
-                        get: (key) => params.get(key) || ''
-                    };
+                    // If formData crashes (Android URL-Encoded Text Bug), fallback smoothly
+                    try {
+                        const rawText = await reqCloneForText.text();
+                        const params = new URLSearchParams(rawText);
+                        title = params.get('title') || '';
+                        text = params.get('text') || '';
+                        url = params.get('url') || '';
+                    } catch (textError) {
+                        console.warn("Complete extraction failure, proceeding with empty data.");
+                    }
                 }
 
-                // Safely grab the data
-                const files = (formData.getAll && typeof formData.getAll === 'function') ? formData.getAll('shared_files') : [];
-                const title = formData.get('title') || '';
-                const text = formData.get('text') || '';
-                const url = formData.get('url') || '';
-
-                // ADVANCED FIX: Store in IndexedDB to survive Service Worker sleeping
+                // 3. Store in IndexedDB to survive the redirect
                 await new Promise((resolve) => {
                     try {
                         const request = indexedDB.open('GooracShareDB', 1);
@@ -127,6 +130,7 @@ self.addEventListener('fetch', (e) => {
                             const tx = db.transaction('shared_data', 'readwrite');
                             tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
                             tx.oncomplete = resolve;
+                            tx.onerror = resolve; // Ensure it resolves even if DB fails
                         };
                         request.onerror = resolve;
                     } catch(err) {
@@ -134,30 +138,21 @@ self.addEventListener('fetch', (e) => {
                     }
                 });
 
-                // Send the files directly if the UI happens to be fully awake
-                const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
-                if (client) {
-                    client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
-                }
+                // 4. Send the files directly if the UI happens to be fully awake
+                try {
+                    const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
+                    if (client) {
+                        client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
+                    }
+                } catch(clientErr) {}
 
-                // =================================================================
-                // THE 405 BULLETPROOF VEST: NEVER USE Response.redirect() HERE!
-                // We fetch share.html from the cache and hand it directly back to the OS 
-                // as a 200 OK response. The OS server never gets hit with a POST.
-                // =================================================================
-                const cachedPage = await caches.match('/share.html', { ignoreSearch: true });
-                if (cachedPage) {
-                    return cachedPage;
-                }
+                // 5. THE ONLY LEGAL WAY TO PROCEED: Issue a 303 Redirect to force a standard GET
+                return Response.redirect('/share.html', 303);
                 
-                // Absolute worst-case scenario: cache failed, force a pure GET request
-                return fetch(new Request('/share.html', { method: 'GET' }));
-                
-            } catch (fatalError) {
-                console.error("Fatal SW Catch:", fatalError);
-                // IF EVERYTHING BURNS TO THE GROUND, DO NOT REDIRECT. FORCE A GET FETCH!
-                const fallbackCache = await caches.match('/share.html', { ignoreSearch: true });
-                return fallbackCache || fetch(new Request('/share.html', { method: 'GET' }));
+            } catch (catastrophicError) {
+                // EVEN IF THE UNIVERSE COLLAPSES, FIRE A 303 REDIRECT TO PREVENT 405 AND "TEMPORARILY DOWN"
+                console.error("Catastrophic SW Error:", catastrophicError);
+                return Response.redirect('/share.html', 303);
             }
         })());
         return; // Stop execution here so it doesn't hit the GET logic below
