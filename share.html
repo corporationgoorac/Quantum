@@ -213,6 +213,15 @@
         }
     });
 
+    // Tell the Service Worker we are ready to receive the file!
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+            if(reg.active) {
+                reg.active.postMessage({ type: 'SHARE_READY' });
+            }
+        });
+    }
+
     // Fallback: If 1.5 seconds pass and no SW message, check if it was a GET request with query params
     setTimeout(() => {
         if (!hasReceivedFile) {
@@ -225,8 +234,11 @@
             if (sharedText) {
                 showShareUI();
             } else {
-                // Nothing shared, just redirect back
-                window.location.replace('messages.html');
+                // FIX: Commented out the redirect so it doesn't kick you out of the screen
+                // window.location.replace('messages.html'); 
+                
+                showShareUI();
+                document.getElementById('preview-text').innerText = "No content attached or loading failed.";
             }
         }
     }, 1500);
