@@ -29,89 +29,120 @@
         * { box-sizing: border-box !important; margin: 0; padding: 0; }
         chat-loader:not(:defined), image-picker:not(:defined), file-picker:not(:defined) { display: none !important; }
 
+        /* THEME.JS INTEGRATION & REDESIGN */
         :root {
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --accent: #00d2ff;
-            --border: rgba(255, 255, 255, 0.1);
-            --text-dim: #888;
-            --text-main: #ffffff;
+            --bg: var(--bg-color, #121212);
+            --surface: var(--surface-color, #1e1e1e);
+            --surface-hover: var(--surface-hover-color, #2a2a2a);
+            --accent: var(--primary-color, #00d2ff);
+            --border: var(--border-color, rgba(255, 255, 255, 0.08));
+            --text-dim: var(--text-secondary, #888888);
+            --text-main: var(--text-primary, #ffffff);
+            --radius-lg: 20px;
+            --radius-md: 14px;
         }
 
         body {
-            background: var(--bg); color: white; margin: 0;
-            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg); color: var(--text-main); margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow-x: hidden;
             -webkit-user-select: none; user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* HEADER */
+        /* HEADER REDESIGN */
         header {
-            position: sticky; top: 0; background: rgba(18, 18, 18, 0.9);
+            position: sticky; top: 0; 
+            background: rgba(18, 18, 18, 0.75);
             padding: 15px 20px; display: flex; justify-content: space-between;
             align-items: center; border-bottom: 1px solid var(--border); z-index: 1000;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             padding-top: max(15px, env(safe-area-inset-top));
         }
-        .header-title { font-weight: 800; font-size: 1.15rem; color: var(--text-main); }
-        .cancel-btn { background: transparent; color: var(--text-dim); border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .header-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); letter-spacing: -0.3px; }
+        .cancel-btn { background: transparent; color: var(--text-dim); border: none; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .cancel-btn:active { opacity: 0.6; transform: scale(0.95); }
 
-        /* CONTENT PREVIEW */
+        /* CONTENT PREVIEW REDESIGN */
         .share-preview-box {
-            background: var(--surface); padding: 15px 20px; border-bottom: 1px solid var(--border);
+            background: var(--surface); margin: 15px; border-radius: var(--radius-md);
+            padding: 15px; border: 1px solid var(--border);
             display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .share-thumb {
-            width: 60px; height: 60px; border-radius: 12px; object-fit: cover; background: #000; display: none;
+            width: 55px; height: 55px; border-radius: 10px; object-fit: cover; background: var(--bg); display: none;
+            border: 1px solid var(--border);
         }
         .share-text-preview {
-            flex: 1; font-size: 0.9rem; color: var(--text-dim); display: -webkit-box;
+            flex: 1; font-size: 0.95rem; color: var(--text-dim); display: -webkit-box;
             -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            line-height: 1.4; font-weight: 500;
         }
 
-        /* SEARCH BAR */
-        .search-container { padding: 15px 20px; background: var(--bg); position: sticky; top: calc(60px + env(safe-area-inset-top)); z-index: 999; }
+        /* SEARCH BAR REDESIGN */
+        .search-container { 
+            padding: 10px 15px 15px 15px; background: var(--bg); position: sticky; 
+            top: calc(60px + env(safe-area-inset-top)); z-index: 999; 
+        }
+        .search-wrapper {
+            position: relative; display: flex; align-items: center;
+        }
+        .search-wrapper .material-icons-round {
+            position: absolute; left: 14px; color: var(--text-dim); font-size: 20px;
+        }
         .search-input {
             width: 100%; background: var(--surface); border: 1px solid var(--border);
-            padding: 12px 16px; border-radius: 14px; color: white; outline: none; font-size: 16px;
+            padding: 14px 16px 14px 42px; border-radius: var(--radius-lg); 
+            color: var(--text-main); outline: none; font-size: 16px; font-weight: 500;
+            transition: all 0.2s ease;
         }
-        .search-input:focus { border-color: var(--accent); }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.15); }
+        .search-input::placeholder { color: var(--text-dim); }
 
-        /* FRIENDS LIST */
-        .member-list-container { padding-bottom: 120px; }
-        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; }
-        .selectable-member:active { background: rgba(255,255,255,0.05); }
-        .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; background: #333; }
+        /* FRIENDS LIST REDESIGN */
+        .member-list-container { padding-bottom: 120px; padding-top: 5px; }
+        .selectable-member { 
+            display: flex; align-items: center; padding: 12px 20px; 
+            border-bottom: 1px solid transparent; cursor: pointer; transition: background 0.2s;
+        }
+        .selectable-member:active { background: var(--surface-hover); }
+        .sel-pfp { width: 52px; height: 52px; border-radius: 50%; margin-right: 15px; object-fit: cover; background: var(--surface); border: 1px solid var(--border); }
         .sel-info { flex: 1; }
-        .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
-        .sel-handle { color: var(--text-dim); font-size: 0.85rem; }
+        .sel-name { font-weight: 700; color: var(--text-main); font-size: 1.05rem; display: flex; align-items: center; gap: 6px; letter-spacing: -0.2px; }
+        .sel-handle { color: var(--text-dim); font-size: 0.85rem; font-weight: 500; margin-top: 2px; }
         .v-badge { width: 14px; height: 14px; }
         
-        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
-        .sel-checkbox.checked::after { content: "✓"; color: #000; font-weight: 900; }
-
-        /* FLOATING SEND BUTTON */
-        .floating-send-btn {
-            position: fixed; bottom: 30px; left: 20px; right: 20px;
-            background: var(--text-main); color: #000; border: none;
-            padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem;
-            cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 1000;
-            display: flex; justify-content: space-between; align-items: center;
-            transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        /* MODERN CHECKBOX */
+        .sel-checkbox { 
+            width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--text-dim); 
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
-        .floating-send-btn.visible { transform: translateY(0); }
-        .floating-send-btn:active { transform: scale(0.97); }
+        .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+        .sel-checkbox.checked::after { content: "done"; font-family: 'Material Icons Round'; color: #000; font-size: 18px; font-weight: bold; }
 
-        .infinite-scroll-trigger { height: 40px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.9rem; }
+        /* FLOATING SEND BUTTON REDESIGN */
+        .floating-send-btn {
+            position: fixed; bottom: 35px; left: 20px; right: 20px;
+            background: var(--accent); color: #000; border: none;
+            padding: 16px 24px; border-radius: var(--radius-lg); font-weight: 800; font-size: 1.1rem;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3); z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+            opacity: 0;
+        }
+        .floating-send-btn.visible { transform: translateY(0); opacity: 1; }
+        .floating-send-btn:active { transform: scale(0.96) translateY(0); }
+        .floating-send-btn .btn-left { display: flex; align-items: center; gap: 8px; }
+
+        .infinite-scroll-trigger { height: 60px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 0.95rem; font-weight: 600; }
         
         /* PROCESSING SCREEN */
         #processing-screen {
             position: fixed; inset: 0; background: var(--bg); z-index: 9999999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .spinner { width: 45px; height: 45px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; margin-bottom: 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         #share-ui-container { display: none; }
@@ -124,12 +155,12 @@
 
 <div id="processing-screen">
     <div class="spinner"></div>
-    <div style="font-weight: 700; color: #fff;">Processing Shared Content...</div>
+    <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem; letter-spacing: -0.3px;">Processing Shared Content...</div>
 </div>
 
 <div id="share-ui-container">
     <header>
-        <button class="cancel-btn" onclick="window.location.replace('messages.html')">Cancel</button>
+        <button class="cancel-btn" onclick="triggerHaptic(50); window.location.replace('messages.html')">Cancel</button>
         <div class="header-title">Share To</div>
         <div style="width: 50px;"></div>
     </header>
@@ -140,19 +171,32 @@
     </div>
 
     <div class="search-container">
-        <input type="text" id="member-search-input" class="search-input" placeholder="Search friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
+        <div class="search-wrapper">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="member-search-input" class="search-input" placeholder="Search friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
+        </div>
     </div>
 
     <div class="member-list-container" id="friends-list"></div>
     <div id="scroll-trigger" class="infinite-scroll-trigger">Loading...</div>
 
     <button class="floating-send-btn" id="send-btn" onclick="executeShare()">
-        <span>Send</span>
-        <span id="selected-count" style="background: rgba(0,0,0,0.1); padding: 2px 10px; border-radius: 10px;">0 Chats</span>
+        <div class="btn-left">
+            <span>Send</span>
+            <span class="material-icons-round" style="font-size: 20px;">send</span>
+        </div>
+        <span id="selected-count" style="background: rgba(0,0,0,0.15); padding: 4px 12px; border-radius: 12px; font-size: 0.95rem;">0 Chats</span>
     </button>
 </div>
 
 <script>
+    // --- HAPTIC FEEDBACK ENGINE ---
+    const triggerHaptic = (pattern) => {
+        if (navigator.vibrate) {
+            try { navigator.vibrate(pattern); } catch (e) {}
+        }
+    };
+
     if (typeof window.initFirebaseCore === 'function') {
         window.initFirebaseCore();
     } else if (!firebase.apps.length && window.firebaseConfig) {
@@ -231,6 +275,7 @@
     checkPersistentShareData().then(data => {
         if (data && !hasReceivedFile) {
             hasReceivedFile = true;
+            triggerHaptic(30); // Success buzz
             
             const files = data.files || [];
             const t = data.text && data.text !== 'undefined' ? data.text : '';
@@ -252,6 +297,8 @@
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'SHARED_DATA' && !hasReceivedFile) {
             hasReceivedFile = true;
+            triggerHaptic(30); // Success buzz
+            
             const files = event.data.files || [];
             
             // Clean undefined text data from OS intent
@@ -360,24 +407,26 @@
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || "Shared Image";
         } else if (finalMediaUrl && finalMediaType === 'video') {
-            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%230a0a0a'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>🎥</text></svg>";
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>🎥</text></svg>";
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared Video";
         } else if (finalMediaUrl) {
-            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%230a0a0a'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>📄</text></svg>";
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>📄</text></svg>";
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared File";
         } else {
-            // ADVANCED TEXT-ONLY HANDLING
+            // ADVANCED TEXT-ONLY HANDLING (REDESIGNED + CAPPED AT 2 LINES)
             thumb.style.display = 'none';
             textPreview.innerText = sharedText || "No content attached";
-            textPreview.style.fontSize = "1.05rem";
-            textPreview.style.color = "#ffffff";
-            textPreview.style.webkitLineClamp = "4"; // Let text breathe
-            document.getElementById('advanced-preview-box').style.background = "var(--accent)";
-            document.getElementById('advanced-preview-box').style.color = "#000";
-            textPreview.style.color = "#000";
-            textPreview.style.fontWeight = "600";
+            textPreview.style.fontSize = "1rem";
+            textPreview.style.color = "var(--text-main)";
+            textPreview.style.webkitLineClamp = "2"; // Fixed to exactly 2 lines
+            
+            const previewBox = document.getElementById('advanced-preview-box');
+            previewBox.style.background = "var(--surface)";
+            previewBox.style.border = "1px solid var(--border)";
+            previewBox.style.padding = "18px 20px";
+            textPreview.style.fontWeight = "400";
         }
 
         if(myUid) setupInfiniteScroll();
@@ -492,6 +541,8 @@
     }
 
     window.toggleUserSelection = function(uid, checkboxEl) {
+        triggerHaptic(15); // Light tap for selection
+        
         const index = selectedUsers.indexOf(uid);
         if(index > -1) {
             selectedUsers.splice(index, 1);
@@ -516,8 +567,10 @@
     // 5. SEND TO ALL SELECTED CHATS
     // ==========================================
     window.executeShare = async function() {
+        triggerHaptic([30, 50, 30]); // Distinct send confirmation vibration
+        
         const btn = document.getElementById('send-btn');
-        btn.innerHTML = "Sending... <div class='spinner' style='width:20px;height:20px;margin:0;border-width:2px;'></div>";
+        btn.innerHTML = "<div class='btn-left'><span>Sending...</span><div class='spinner' style='width:20px;height:20px;margin:0;border-width:2px;border-top-color:#000;'></div></div>";
         btn.style.pointerEvents = 'none';
 
         const timestamp = firebase.firestore.FieldValue.serverTimestamp();
@@ -570,11 +623,13 @@
 
         try {
             await batch.commit();
+            triggerHaptic(50); // Final success tap before redirect
             window.location.replace('messages.html');
         } catch (error) {
             console.error("Share failed", error);
+            triggerHaptic([100, 50, 100, 50, 100]); // Error vibration sequence
             alert("Failed to send transmission. Check your network.");
-            btn.innerHTML = `<span>Send</span><span id="selected-count">${selectedUsers.length} Chats</span>`;
+            btn.innerHTML = `<div class="btn-left"><span>Send</span><span class="material-icons-round" style="font-size: 20px;">send</span></div><span id="selected-count" style="background: rgba(0,0,0,0.15); padding: 4px 12px; border-radius: 12px; font-size: 0.95rem;">${selectedUsers.length} Chats</span>`;
             btn.style.pointerEvents = 'auto';
         }
     };
