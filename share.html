@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>Goorac | Share Transmission</title>
+    
+    <script src="config.js"></script>
+    <script src="components/theme.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script type="module" src="components/presence.js"></script>
+    <script src="components/chatLoader.js" defer></script>
+    <chat-loader></chat-loader>
+    
+    <script src="components/imagePicker.js" defer></script>
+    <script src="components/filePicker.js" defer></script>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box !important; margin: 0; padding: 0; }
+        chat-loader:not(:defined), image-picker:not(:defined), file-picker:not(:defined) { display: none !important; }
+
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --accent: #00d2ff;
+            --border: rgba(255, 255, 255, 0.1);
+            --text-dim: #888;
+            --text-main: #ffffff;
+        }
+
+        body {
+            background: var(--bg); color: white; margin: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+            overflow-x: hidden;
+            -webkit-user-select: none; user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* HEADER */
+        header {
+            position: sticky; top: 0; background: rgba(18, 18, 18, 0.9);
+            padding: 15px 20px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid var(--border); z-index: 1000;
+            backdrop-filter: blur(20px);
+            padding-top: max(15px, env(safe-area-inset-top));
+        }
+        .header-title { font-weight: 800; font-size: 1.15rem; color: var(--text-main); }
+        .cancel-btn { background: transparent; color: var(--text-dim); border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+        /* CONTENT PREVIEW */
+        .share-preview-box {
+            background: var(--surface); padding: 15px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .share-thumb {
+            width: 60px; height: 60px; border-radius: 12px; object-fit: cover; background: #000; display: none;
+        }
+        .share-text-preview {
+            flex: 1; font-size: 0.9rem; color: var(--text-dim); display: -webkit-box;
+            -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        /* SEARCH BAR */
+        .search-container { padding: 15px 20px; background: var(--bg); position: sticky; top: calc(60px + env(safe-area-inset-top)); z-index: 999; }
+        .search-input {
+            width: 100%; background: var(--surface); border: 1px solid var(--border);
+            padding: 12px 16px; border-radius: 14px; color: white; outline: none; font-size: 16px;
+        }
+        .search-input:focus { border-color: var(--accent); }
+
+        /* FRIENDS LIST */
+        .member-list-container { padding-bottom: 120px; }
+        .selectable-member { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .selectable-member:active { background: rgba(255,255,255,0.05); }
+        .sel-pfp { width: 50px; height: 50px; border-radius: 16px; margin-right: 15px; object-fit: cover; background: #333; }
+        .sel-info { flex: 1; }
+        .sel-name { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+        .sel-handle { color: var(--text-dim); font-size: 0.85rem; }
+        .v-badge { width: 14px; height: 14px; }
+        
+        .sel-checkbox { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .sel-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+        .sel-checkbox.checked::after { content: "✓"; color: #000; font-weight: 900; }
+
+        /* FLOATING SEND BUTTON */
+        .floating-send-btn {
+            position: fixed; bottom: 30px; left: 20px; right: 20px;
+            background: var(--text-main); color: #000; border: none;
+            padding: 18px; border-radius: 18px; font-weight: 800; font-size: 1.05rem;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .floating-send-btn.visible { transform: translateY(0); }
+        .floating-send-btn:active { transform: scale(0.97); }
+
+        .infinite-scroll-trigger { height: 40px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.9rem; }
+        
+        /* PROCESSING SCREEN */
+        #processing-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #share-ui-container { display: none; }
+    </style>
+</head>
+<body>
+
+<image-picker id="img-picker"></image-picker>
+<file-picker id="file-picker"></file-picker>
+
+<div id="processing-screen">
+    <div class="spinner"></div>
+    <div style="font-weight: 700; color: #fff;">Processing Shared Content...</div>
+</div>
+
+<div id="share-ui-container">
+    <header>
+        <button class="cancel-btn" onclick="window.location.replace('messages.html')">Cancel</button>
+        <div class="header-title">Share To</div>
+        <div style="width: 50px;"></div>
+    </header>
+
+    <div class="share-preview-box">
+        <img id="preview-thumb" class="share-thumb" src="">
+        <div class="share-text-preview" id="preview-text">Attached Media</div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="member-search-input" class="search-input" placeholder="Search friends..." autocomplete="off" oninput="handleMemberSearch(this.value)">
+    </div>
+
+    <div class="member-list-container" id="friends-list"></div>
+    <div id="scroll-trigger" class="infinite-scroll-trigger">Loading...</div>
+
+    <button class="floating-send-btn" id="send-btn" onclick="executeShare()">
+        <span>Send</span>
+        <span id="selected-count" style="background: rgba(0,0,0,0.1); padding: 2px 10px; border-radius: 10px;">0 Chats</span>
+    </button>
+</div>
+
+<script>
+    if (typeof window.initFirebaseCore === 'function') {
+        window.initFirebaseCore();
+    } else if (!firebase.apps.length && window.firebaseConfig) {
+        firebase.initializeApp(window.firebaseConfig);
+    }
+
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const V_URL = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
+
+    let myUid = "";
+    let mutualFriends = [];
+    let selectedUsers = [];
+    
+    // Media State
+    let finalMediaUrl = null;
+    let finalMediaMeta = null;
+    let finalMediaType = null; // 'image', 'video', 'audio', 'file'
+    let sharedText = "";
+
+    // Pagination State
+    let friendsLoadedCount = 0;
+    const friendsPerPage = 20; 
+    let observer;
+    let isFetchingFriends = false;
+    let currentFriendSearch = "";
+    let currentSearchSessionId = 0;
+    let memberSearchTimeout = null;
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            myUid = user.uid;
+            fetchUserData();
+        } else { 
+            window.location.replace('login.html'); 
+        }
+    });
+
+    // ==========================================
+    // 1. CATCH SHARED FILES FROM SERVICE WORKER
+    // ==========================================
+    let hasReceivedFile = false;
+
+    // Listen to messages from the Service Worker
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SHARED_DATA') {
+            hasReceivedFile = true;
+            const files = event.data.files;
+            sharedText = event.data.text + " " + event.data.url + " " + event.data.title;
+            sharedText = sharedText.trim();
+
+            if (files && files.length > 0) {
+                processSharedFile(files[0]);
+            } else {
+                // It was just text/url sharing
+                showShareUI();
+            }
+        }
+    });
+
+    // Fallback: If 1.5 seconds pass and no SW message, check if it was a GET request with query params
+    setTimeout(() => {
+        if (!hasReceivedFile) {
+            const params = new URLSearchParams(window.location.search);
+            const text = params.get('text') || '';
+            const url = params.get('url') || '';
+            const title = params.get('title') || '';
+            
+            sharedText = `${title} ${text} ${url}`.trim();
+            if (sharedText) {
+                showShareUI();
+            } else {
+                // Nothing shared, just redirect back
+                window.location.replace('messages.html');
+            }
+        }
+    }, 1500);
+
+    // ==========================================
+    // 2. PROCESS FILE WITH PICKERS
+    // ==========================================
+    function processSharedFile(file) {
+        document.getElementById('processing-screen').style.display = 'none';
+
+        if (file.type.startsWith('image/')) {
+            finalMediaType = 'image';
+            const picker = document.getElementById('img-picker');
+            picker.handleFileSelect(file); // Trigger Image Picker directly
+        } else {
+            if (file.type.startsWith('video/')) finalMediaType = 'video';
+            else if (file.type.startsWith('audio/')) finalMediaType = 'audio';
+            else finalMediaType = 'file';
+
+            const picker = document.getElementById('file-picker');
+            picker.handleFileSelect(file); // Trigger File/Video Picker directly
+        }
+    }
+
+    // Catch Pickers Upload Events
+    document.addEventListener('DOMContentLoaded', () => {
+        const imgPicker = document.getElementById('img-picker');
+        const filePicker = document.getElementById('file-picker');
+
+        if (imgPicker) {
+            imgPicker.addEventListener('image-uploaded', (e) => {
+                finalMediaUrl = e.detail.url;
+                showShareUI();
+            });
+        }
+
+        if (filePicker) {
+            filePicker.addEventListener('file-uploaded', (e) => {
+                finalMediaUrl = e.detail.url;
+                finalMediaMeta = e.detail.metadata;
+                showShareUI();
+            });
+        }
+    });
+
+    // ==========================================
+    // 3. SHOW FRIENDS LIST UI
+    // ==========================================
+    function showShareUI() {
+        document.getElementById('processing-screen').style.display = 'none';
+        document.getElementById('share-ui-container').style.display = 'block';
+
+        const thumb = document.getElementById('preview-thumb');
+        const textPreview = document.getElementById('preview-text');
+
+        if (finalMediaUrl && finalMediaType === 'image') {
+            thumb.src = finalMediaUrl;
+            thumb.style.display = 'block';
+            textPreview.innerText = sharedText || "Shared Image";
+        } else if (finalMediaUrl && finalMediaType === 'video') {
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%230a0a0a'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>🎥</text></svg>";
+            thumb.style.display = 'block';
+            textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared Video";
+        } else if (finalMediaUrl) {
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%230a0a0a'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>📄</text></svg>";
+            thumb.style.display = 'block';
+            textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared File";
+        } else {
+            textPreview.innerText = sharedText || "No content attached";
+        }
+
+        if(myUid) setupInfiniteScroll();
+    }
+
+    // ==========================================
+    // 4. LOAD MUTUAL FRIENDS (Pagination)
+    // ==========================================
+    async function fetchUserData() {
+        try {
+            const userDoc = await db.collection("users").doc(myUid).get();
+            const data = userDoc.data();
+            const followingIds = (data?.following || []).map(f => typeof f === 'string' ? f : f.uid);
+            const followersIds = (data?.followers || []).map(f => typeof f === 'string' ? f : f.uid);
+            
+            // Intersection for Mutual Friends
+            mutualFriends = [...new Set(followingIds.filter(id => followersIds.includes(id)))];
+            
+            // Also include recent chats to the top
+            const chatsDoc = await db.collection("users").doc(myUid).get();
+            const pinned = chatsDoc.data()?.pinnedChats || [];
+            // Assuming we prioritize mutual friends for simplicity, standard chat logic
+            
+            if (document.getElementById('share-ui-container').style.display === 'block') {
+                setupInfiniteScroll();
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    window.handleMemberSearch = function(val) {
+        clearTimeout(memberSearchTimeout);
+        memberSearchTimeout = setTimeout(() => {
+            currentFriendSearch = val.toLowerCase().trim();
+            friendsLoadedCount = 0;
+            document.getElementById('friends-list').innerHTML = "";
+            currentSearchSessionId++; 
+            isFetchingFriends = false;
+            setupInfiniteScroll(); 
+        }, 250); 
+    };
+
+    function setupInfiniteScroll() {
+        if(observer) observer.disconnect();
+        const trigger = document.getElementById('scroll-trigger');
+        trigger.style.display = "flex";
+        trigger.innerText = "Loading...";
+        
+        observer = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) loadMoreFriends();
+        });
+        observer.observe(trigger);
+        loadMoreFriends(); 
+    }
+
+    function loadMoreFriends() {
+        if (isFetchingFriends || mutualFriends.length === 0) return;
+        isFetchingFriends = true; 
+
+        const mySearchId = currentSearchSessionId;
+        const slice = mutualFriends.slice(friendsLoadedCount, friendsLoadedCount + friendsPerPage);
+        
+        if(slice.length === 0) {
+            document.getElementById('scroll-trigger').style.display = "none";
+            isFetchingFriends = false;
+            return;
+        }
+
+        db.collection("users").where(firebase.firestore.FieldPath.documentId(), 'in', slice).get()
+        .then(snap => {
+            if (mySearchId !== currentSearchSessionId) {
+                isFetchingFriends = false; return; 
+            }
+
+            const listEl = document.getElementById('friends-list');
+            
+            snap.docs.forEach(doc => {
+                const u = doc.data();
+                const uid = doc.id;
+                
+                const searchStr = currentFriendSearch;
+                const matchesSearch = searchStr === "" || 
+                                      (u.name || "").toLowerCase().includes(searchStr) || 
+                                      (u.username || "").toLowerCase().includes(searchStr);
+
+                if (matchesSearch && !document.getElementById('share-member-' + uid)) {
+                    const isSelected = selectedUsers.includes(uid);
+                    const verifiedIcon = u.verified ? `<img src="${V_URL}" class="v-badge">` : '';
+                    
+                    const div = document.createElement('div');
+                    div.id = 'share-member-' + uid;
+                    div.className = 'selectable-member';
+                    div.onclick = () => toggleUserSelection(uid, div.querySelector('.sel-checkbox'));
+                    div.innerHTML = `
+                        <img src="${u.photoURL || 'https://via.placeholder.com/150'}" class="sel-pfp">
+                        <div class="sel-info">
+                            <div class="sel-name">${u.name || u.username} ${verifiedIcon}</div>
+                            <div class="sel-handle">@${u.username}</div>
+                        </div>
+                        <div class="sel-checkbox ${isSelected ? 'checked' : ''}"></div>
+                    `;
+                    listEl.appendChild(div);
+                }
+            });
+            
+            friendsLoadedCount += slice.length;
+            
+            if(friendsLoadedCount >= mutualFriends.length) {
+                document.getElementById('scroll-trigger').style.display = "none";
+            } else {
+                document.getElementById('scroll-trigger').innerText = "Scroll for more";
+            }
+            isFetchingFriends = false; 
+        }).catch(e => {
+            console.error(e);
+            isFetchingFriends = false; 
+        });
+    }
+
+    window.toggleUserSelection = function(uid, checkboxEl) {
+        const index = selectedUsers.indexOf(uid);
+        if(index > -1) {
+            selectedUsers.splice(index, 1);
+            checkboxEl.classList.remove('checked');
+        } else {
+            selectedUsers.push(uid);
+            checkboxEl.classList.add('checked');
+        }
+        
+        const btn = document.getElementById('send-btn');
+        const count = document.getElementById('selected-count');
+        
+        if (selectedUsers.length > 0) {
+            btn.classList.add('visible');
+            count.innerText = selectedUsers.length + (selectedUsers.length === 1 ? ' Chat' : ' Chats');
+        } else {
+            btn.classList.remove('visible');
+        }
+    };
+
+    // ==========================================
+    // 5. SEND TO ALL SELECTED CHATS
+    // ==========================================
+    window.executeShare = async function() {
+        const btn = document.getElementById('send-btn');
+        btn.innerHTML = "Sending... <div class='spinner' style='width:20px;height:20px;margin:0;border-width:2px;'></div>";
+        btn.style.pointerEvents = 'none';
+
+        const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+        
+        // Build the core message object
+        let msgData = {
+            text: sharedText,
+            sender: myUid,
+            timestamp: timestamp,
+            seen: false,
+            reactions: {}
+        };
+
+        if (finalMediaUrl && finalMediaType === 'image') {
+            msgData.imageUrl = finalMediaUrl;
+        } else if (finalMediaUrl) {
+            msgData.fileUrl = finalMediaUrl;
+            msgData.fileMeta = finalMediaMeta;
+        }
+
+        // Determine inbox display text
+        let displayTxt = sharedText || "Shared Media";
+        if (!sharedText && finalMediaUrl) {
+            if (finalMediaType === 'image') displayTxt = "📷 Image";
+            else if (finalMediaType === 'video') displayTxt = "🎥 Video";
+            else if (finalMediaType === 'audio') displayTxt = "🎵 Audio";
+            else displayTxt = "📎 Attachment";
+        }
+
+        const batch = db.batch();
+
+        for (const targetUid of selectedUsers) {
+            const chatId = myUid < targetUid ? `${myUid}_${targetUid}` : `${targetUid}_${myUid}`;
+            
+            // 1. Add message to Subcollection
+            const msgRef = db.collection("chats").doc(chatId).collection("messages").doc();
+            batch.set(msgRef, msgData);
+
+            // 2. Update parent Chat document
+            const chatRef = db.collection("chats").doc(chatId);
+            batch.set(chatRef, {
+                participants: [myUid, targetUid],
+                lastMessage: displayTxt,
+                lastSender: myUid,
+                lastTimestamp: timestamp,
+                seen: false,
+                [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
+            }, { merge: true });
+        }
+
+        try {
+            await batch.commit();
+            window.location.replace('messages.html');
+        } catch (error) {
+            console.error("Share failed", error);
+            alert("Failed to send transmission. Check your network.");
+            btn.innerHTML = `<span>Send</span><span id="selected-count">${selectedUsers.length} Chats</span>`;
+            btn.style.pointerEvents = 'auto';
+        }
+    };
+</script>
+</body>
+</html>
