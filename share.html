@@ -196,9 +196,61 @@
     // ==========================================
     let hasReceivedFile = false;
 
-    // Listen to messages from the Service Worker
+    // --- NEW: PULL FROM INDEXEDDB IF PWA WAS CLOSED ---
+    async function checkPersistentShareData() {
+        return new Promise((resolve) => {
+            try {
+                const request = indexedDB.open('GooracShareDB', 1);
+                request.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore('shared_data');
+                };
+                request.onsuccess = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains('shared_data')) return resolve(false);
+                    const tx = database.transaction('shared_data', 'readwrite');
+                    const store = tx.objectStore('shared_data');
+                    const getReq = store.get('latest_share');
+                    
+                    getReq.onsuccess = () => {
+                        if (getReq.result) {
+                            store.delete('latest_share'); // Clear it after reading
+                            resolve(getReq.result);
+                        } else {
+                            resolve(false);
+                        }
+                    };
+                    getReq.onerror = () => resolve(false);
+                };
+                request.onerror = () => resolve(false);
+            } catch(err) {
+                resolve(false);
+            }
+        });
+    }
+
+    checkPersistentShareData().then(data => {
+        if (data && !hasReceivedFile) {
+            hasReceivedFile = true;
+            
+            const files = data.files || [];
+            const t = data.text && data.text !== 'undefined' ? data.text : '';
+            const u = data.url && data.url !== 'undefined' ? data.url : '';
+            const title = data.title && data.title !== 'undefined' ? data.title : '';
+            
+            sharedText = `${title} ${t} ${u}`.trim();
+
+            if (files && files.length > 0) {
+                processSharedFile(files[0]);
+            } else {
+                showShareUI();
+            }
+        }
+    });
+    // --------------------------------------------------
+
+    // Listen to messages from the Service Worker (if website is already open)
     navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'SHARED_DATA') {
+        if (event.data && event.data.type === 'SHARED_DATA' && !hasReceivedFile) {
             hasReceivedFile = true;
             const files = event.data.files || [];
             
