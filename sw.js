@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v58'; // Bumped version to force cache update
+const CACHE_NAME = 'goorac-quantum-v60'; // Bumped version to force cache update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -85,13 +85,13 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    // --- ADVANCED 405 FIX: Crash-Proof OS POST Request Interception ---
+    // --- ADVANCED 405 FIX: THE "NO REDIRECT" METHOD ---
     if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
         e.respondWith((async () => {
             try {
                 let formData;
                 
-                // THE ULTIMATE FIX: Clone the request so we can safely try reading it twice without destroying the stream!
+                // Clone the request so we can safely try reading it twice without destroying the stream!
                 const reqCloneForFormData = e.request.clone();
                 const reqCloneForText = e.request.clone();
 
@@ -140,13 +140,24 @@ self.addEventListener('fetch', (e) => {
                     client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
                 }
 
-                // Redirect the user to the actual page using GET (303)
-                return Response.redirect('/share.html', 303);
+                // =================================================================
+                // THE 405 BULLETPROOF VEST: NEVER USE Response.redirect() HERE!
+                // We fetch share.html from the cache and hand it directly back to the OS 
+                // as a 200 OK response. The OS server never gets hit with a POST.
+                // =================================================================
+                const cachedPage = await caches.match('/share.html', { ignoreSearch: true });
+                if (cachedPage) {
+                    return cachedPage;
+                }
+                
+                // Absolute worst-case scenario: cache failed, force a pure GET request
+                return fetch(new Request('/share.html', { method: 'GET' }));
                 
             } catch (fatalError) {
                 console.error("Fatal SW Catch:", fatalError);
-                // IF EVERYTHING BURNS TO THE GROUND, FORCE A 303 REDIRECT ANYWAY TO PREVENT 405!
-                return Response.redirect('/share.html', 303);
+                // IF EVERYTHING BURNS TO THE GROUND, DO NOT REDIRECT. FORCE A GET FETCH!
+                const fallbackCache = await caches.match('/share.html', { ignoreSearch: true });
+                return fallbackCache || fetch(new Request('/share.html', { method: 'GET' }));
             }
         })());
         return; // Stop execution here so it doesn't hit the GET logic below
