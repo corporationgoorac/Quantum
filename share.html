@@ -200,30 +200,41 @@
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'SHARED_DATA') {
             hasReceivedFile = true;
-            const files = event.data.files;
-            sharedText = event.data.text + " " + event.data.url + " " + event.data.title;
-            sharedText = sharedText.trim();
+            const files = event.data.files || [];
+            
+            // Clean undefined text data from OS intent
+            const t = event.data.text && event.data.text !== 'undefined' ? event.data.text : '';
+            const u = event.data.url && event.data.url !== 'undefined' ? event.data.url : '';
+            const title = event.data.title && event.data.title !== 'undefined' ? event.data.title : '';
+            
+            sharedText = `${title} ${t} ${u}`.trim();
 
             if (files && files.length > 0) {
                 processSharedFile(files[0]);
             } else {
-                // It was just text/url sharing
                 showShareUI();
             }
         }
     });
 
-    // Tell the Service Worker we are ready to receive the file!
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(reg => {
-            if(reg.active) {
-                reg.active.postMessage({ type: 'SHARE_READY' });
-            }
-        });
-    }
+    // AGGRESSIVE HANDSHAKE: Ping the SW every 150ms until we get the file
+    const handshakeInterval = setInterval(() => {
+        if (hasReceivedFile) {
+            clearInterval(handshakeInterval);
+            return;
+        }
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'SHARE_READY' });
+        } else {
+            navigator.serviceWorker.ready.then(reg => {
+                if(reg.active) reg.active.postMessage({ type: 'SHARE_READY' });
+            });
+        }
+    }, 150);
 
-    // Fallback: If 1.5 seconds pass and no SW message, check if it was a GET request with query params
+    // Fallback: Extended to 2.5 seconds to give slow OS networks time
     setTimeout(() => {
+        clearInterval(handshakeInterval);
         if (!hasReceivedFile) {
             const params = new URLSearchParams(window.location.search);
             const text = params.get('text') || '';
@@ -234,14 +245,11 @@
             if (sharedText) {
                 showShareUI();
             } else {
-                // FIX: Commented out the redirect so it doesn't kick you out of the screen
-                // window.location.replace('messages.html'); 
-                
                 showShareUI();
                 document.getElementById('preview-text').innerText = "No content attached or loading failed.";
             }
         }
-    }, 1500);
+    }, 2500);
 
     // ==========================================
     // 2. PROCESS FILE WITH PICKERS
@@ -249,13 +257,14 @@
     function processSharedFile(file) {
         document.getElementById('processing-screen').style.display = 'none';
 
-        if (file.type.startsWith('image/')) {
+        // More robust checking for Android devices that don't send mime types cleanly
+        if (file.type.startsWith('image/') || (file.name && file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
             finalMediaType = 'image';
             const picker = document.getElementById('img-picker');
             picker.handleFileSelect(file); // Trigger Image Picker directly
         } else {
-            if (file.type.startsWith('video/')) finalMediaType = 'video';
-            else if (file.type.startsWith('audio/')) finalMediaType = 'audio';
+            if (file.type.startsWith('video/') || (file.name && file.name.match(/\.(mp4|webm|mkv|mov)$/i))) finalMediaType = 'video';
+            else if (file.type.startsWith('audio/') || (file.name && file.name.match(/\.(mp3|wav|ogg)$/i))) finalMediaType = 'audio';
             else finalMediaType = 'file';
 
             const picker = document.getElementById('file-picker');
@@ -325,11 +334,6 @@
             
             // Intersection for Mutual Friends
             mutualFriends = [...new Set(followingIds.filter(id => followersIds.includes(id)))];
-            
-            // Also include recent chats to the top
-            const chatsDoc = await db.collection("users").doc(myUid).get();
-            const pinned = chatsDoc.data()?.pinnedChats || [];
-            // Assuming we prioritize mutual friends for simplicity, standard chat logic
             
             if (document.getElementById('share-ui-container').style.display === 'block') {
                 setupInfiniteScroll();
