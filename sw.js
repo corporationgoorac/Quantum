@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v55'; // Bumped version to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v75'; // Bumped version to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
