@@ -792,14 +792,19 @@
             };
 
             try {
-                // 3. Write to Firestore
+                // 3. Write to Firestore (Primary Update)
                 await db.collection("users").doc(editId).update(data);
 
                 // 4. Update Realtime DB Status (Presence Visibility Logic)
-                await rdb.ref('/status/' + editId).update({ 
-                    state: isAct ? 'online' : 'offline', 
-                    last_changed: firebase.database.ServerValue.TIMESTAMP 
-                });
+                // ISOLATED TRY-CATCH: If this fails due to rules, it won't crash the UI
+                try {
+                    await rdb.ref('/status/' + editId).update({ 
+                        state: isAct ? 'online' : 'offline', 
+                        last_changed: firebase.database.ServerValue.TIMESTAMP 
+                    });
+                } catch (rdbError) {
+                    console.warn("Realtime DB Status Update Denied. Check RDB Rules.", rdbError);
+                }
                 
                 // 5. Update Memory IMMEDIATELY
                 userList[oldUserIndex] = { ...oldUser, ...data };
@@ -809,8 +814,13 @@
                 
                 // 7. Handle Verification Event
                 if(!wasVer && isVer) {
-                    await sendWelcomeMsg(editId, data.name);
-                    toast("User Verified & Notified");
+                    try {
+                        await sendWelcomeMsg(editId, data.name);
+                        toast("User Verified & Notified");
+                    } catch (msgError) {
+                        console.warn("Failed to send welcome message.", msgError);
+                        toast("User Verified (Msg Error)");
+                    }
                 } else {
                     toast("Profile Updated");
                 }
