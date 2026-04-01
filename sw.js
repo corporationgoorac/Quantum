@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to v34 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v55'; // Bumped version to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -88,7 +88,7 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    // --- ADDED: OS POST Request Interception for Web Share Target ---
+    // --- UPDATED: OS POST Request Interception with IndexedDB Persistence ---
     if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
         e.respondWith((async () => {
             const formData = await e.request.formData();
@@ -99,7 +99,26 @@ self.addEventListener('fetch', (e) => {
             const text = formData.get('text') || '';
             const url = formData.get('url') || '';
 
-            // Send the files to the share.html page
+            // ADVANCED FIX: Store in IndexedDB to survive Service Worker sleeping
+            await new Promise((resolve) => {
+                try {
+                    const request = indexedDB.open('GooracShareDB', 1);
+                    request.onupgradeneeded = (evt) => {
+                        evt.target.result.createObjectStore('shared_data');
+                    };
+                    request.onsuccess = (evt) => {
+                        const db = evt.target.result;
+                        const tx = db.transaction('shared_data', 'readwrite');
+                        tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
+                        tx.oncomplete = resolve;
+                    };
+                    request.onerror = resolve;
+                } catch(err) {
+                    resolve();
+                }
+            });
+
+            // Send the files directly if the UI happens to be fully awake
             if (client) {
                 client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
             }
