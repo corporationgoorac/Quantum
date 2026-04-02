@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v61'; // Bumped version to force cache update
+const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to v34 to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -27,7 +27,6 @@ const ASSETS = [
     '/pulse.html',
     '/pulseLobby.html',
     '/setup.html',
-    '/share.html',
     '/userProfile.html',
     '/vision.html',
     '/visionLobby.html',
@@ -61,6 +60,8 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
     self.skipWaiting();
     e.waitUntil(caches.open(CACHE_NAME).then(c => {
+        // Use cache.addAll if you want strict "all or nothing" caching
+        // Your current method is fine if you want to be lenient
         return Promise.all(ASSETS.map(url => c.add(url).catch(console.warn)));
     }));
 });
@@ -73,6 +74,7 @@ self.addEventListener('activate', (e) => {
             caches.keys().then(keys => {
                 return Promise.all(
                     keys.map(key => {
+                        // Delete any cache that doesn't match the current CACHE_NAME
                         if (key !== CACHE_NAME) {
                             return caches.delete(key);
                         }
@@ -85,100 +87,33 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    // --- TITANIUM ARMOR 405 & OFFLINE FIX ---
-    if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
-        e.respondWith((async () => {
-            try {
-                // 1. Clone the request safely so we can try multiple parsers without destroying it
-                const reqCloneForFormData = e.request.clone();
-                const reqCloneForText = e.request.clone();
-
-                let files = [];
-                let title = '', text = '', url = '';
-
-                // 2. Safely attempt to parse the data
-                try {
-                    const formData = await reqCloneForFormData.formData();
-                    if (formData.getAll) files = formData.getAll('shared_files') || [];
-                    if (formData.get) {
-                        title = formData.get('title') || '';
-                        text = formData.get('text') || '';
-                        url = formData.get('url') || '';
-                    }
-                } catch (formDataError) {
-                    // If formData crashes (Android URL-Encoded Text Bug), fallback smoothly
-                    try {
-                        const rawText = await reqCloneForText.text();
-                        const params = new URLSearchParams(rawText);
-                        title = params.get('title') || '';
-                        text = params.get('text') || '';
-                        url = params.get('url') || '';
-                    } catch (textError) {
-                        console.warn("Complete extraction failure, proceeding with empty data.");
-                    }
-                }
-
-                // 3. Store in IndexedDB to survive the redirect
-                await new Promise((resolve) => {
-                    try {
-                        const request = indexedDB.open('GooracShareDB', 1);
-                        request.onupgradeneeded = (evt) => {
-                            evt.target.result.createObjectStore('shared_data');
-                        };
-                        request.onsuccess = (evt) => {
-                            const db = evt.target.result;
-                            const tx = db.transaction('shared_data', 'readwrite');
-                            tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
-                            tx.oncomplete = resolve;
-                            tx.onerror = resolve; // Ensure it resolves even if DB fails
-                        };
-                        request.onerror = resolve;
-                    } catch(err) {
-                        resolve();
-                    }
-                });
-
-                // 4. Send the files directly if the UI happens to be fully awake
-                try {
-                    const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
-                    if (client) {
-                        client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
-                    }
-                } catch(clientErr) {}
-
-                // 5. THE ONLY LEGAL WAY TO PROCEED: Issue a 303 Redirect to force a standard GET
-                return Response.redirect('/share.html', 303);
-                
-            } catch (catastrophicError) {
-                // EVEN IF THE UNIVERSE COLLAPSES, FIRE A 303 REDIRECT TO PREVENT 405 AND "TEMPORARILY DOWN"
-                console.error("Catastrophic SW Error:", catastrophicError);
-                return Response.redirect('/share.html', 303);
-            }
-        })());
-        return; // Stop execution here so it doesn't hit the GET logic below
-    }
-    // ----------------------------------------------------------------
-
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
+        // ADDED { ignoreSearch: true } HERE to ignore query parameters that break caching
         caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
             
             // 1. Kick off a background network request to fetch the freshest data
             const fetchPromise = fetch(e.request).then((networkResponse) => {
                 caches.open(CACHE_NAME).then((cache) => {
+                    // Update the cache silently in the background so the next launch is up-to-date
+                    // We clone() the response because it can only be consumed once
                     if (networkResponse.ok) {
                         cache.put(e.request, networkResponse.clone());
                     }
                 });
                 return networkResponse;
             }).catch(() => {
+                // Network failed (user is offline). 
+                // If they are trying to navigate to a new page, fallback to home.html
                 if (e.request.mode === 'navigate') {
                     return caches.match('/home.html');
                 }
             });
 
+            // 2. THE MAGIC TRICK: Return the cached response INSTANTLY if we have it.
+            // If we don't have it in the cache yet, wait for the network fetch.
             return cachedResponse || fetchPromise;
         })
     );
