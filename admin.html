@@ -439,6 +439,7 @@
                     <img src="" id="e-img" class="hero-img">
                     <div class="hero-info">
                         <h2 id="e-name">Name</h2>
+                        <div id="e-status-badge" style="font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Offline</div>
                         <div class="hero-id" onclick="copyId()" style="margin-bottom: 8px;">
                             <span id="e-uid">UID</span> <span class="material-icons-round" style="font-size:10px; margin-left:4px;">content_copy</span>
                         </div>
@@ -570,6 +571,7 @@
         const auth = firebase.auth();
 
         let userList = [];
+        let presenceMap = {}; // Tracks real-time status
         let lastCursor = null;
         let isLoading = false;
         let hasMore = true;
@@ -648,10 +650,15 @@
                 if(!s.empty) gooracId = s.docs[0].id;
             });
 
-            // Online Count
+            // Online Count & Presence Sync
             rdb.ref('status').on('value', s => {
                 let c = 0;
-                s.forEach(x => { if(x.val().state === 'online') c++; });
+                s.forEach(x => { 
+                    const statusData = x.val();
+                    presenceMap[x.key] = statusData;
+                    if(statusData.state === 'online') c++; 
+                    updatePresenceUI(x.key, statusData);
+                });
                 document.getElementById('st-active').innerText = c;
             });
 
@@ -662,6 +669,41 @@
                 if(ent[0].isIntersecting && !isLoading && hasMore) loadBatch();
             }, {root: document.getElementById('scroll-target'), threshold: 0.1});
             obs.observe(document.getElementById('loader'));
+        }
+
+        // Helper to update individual row sub-labels in real-time
+        function updatePresenceUI(uid, status) {
+            const rowSub = document.querySelector(`#row-${uid} .presence-text`);
+            if(rowSub) {
+                const text = formatPresenceText(status);
+                rowSub.innerText = text;
+                rowSub.style.color = status.state === 'online' ? 'var(--accent-green)' : 'var(--text-muted)';
+            }
+            if(editId === uid) {
+                const badge = document.getElementById('e-status-badge');
+                if(badge) {
+                    badge.innerText = formatPresenceText(status);
+                    badge.style.color = status.state === 'online' ? 'var(--accent-green)' : 'var(--text-muted)';
+                }
+            }
+        }
+
+        function formatPresenceText(status) {
+            if(!status) return "Offline";
+            if(status.state === 'online') return "Active now";
+            return "Active " + timeAgo(status.last_changed) + " ago";
+        }
+
+        function timeAgo(ts) {
+            const diff = Date.now() - ts;
+            const sec = Math.floor(diff / 1000);
+            if (sec < 60) return "Just now";
+            const min = Math.floor(sec / 60);
+            if (min < 60) return min + "m";
+            const hr = Math.floor(min / 60);
+            if (hr < 24) return hr + "h";
+            const d = Math.floor(hr / 24);
+            return d + "d";
         }
 
         async function loadBatch() {
@@ -690,8 +732,6 @@
             const el = document.createElement('div');
             el.className = 'row';
             el.id = 'row-' + u.id;
-            // FIX: Pass the ID string, NOT the object.
-            // This prevents stale data closures.
             el.onclick = () => openEdit(u.id);
             
             let b = '';
@@ -699,11 +739,15 @@
             if(u.verified) b += `<span class="badge ver">VER</span>`;
             if(u.suspended) b += `<span class="badge ban">BAN</span>`;
 
+            const status = presenceMap[u.id];
+            const presenceText = formatPresenceText(status);
+            const presenceColor = (status && status.state === 'online') ? 'var(--accent-green)' : 'var(--text-muted)';
+
             el.innerHTML = `
                 <img src="${u.photoURL || 'https://via.placeholder.com/50'}" class="row-img">
                 <div class="row-info">
                     <div class="row-name">${u.name}</div>
-                    <div class="row-sub">@${u.username}</div>
+                    <div class="row-sub">@${u.username} • <span class="presence-text" style="color:${presenceColor}">${presenceText}</span></div>
                 </div>
                 <div class="badges" id="badges-${u.id}">${b}</div>
                 <span class="material-icons-round" style="font-size:16px; color:#333;">chevron_right</span>
@@ -729,6 +773,12 @@
             document.getElementById('e-name').innerText = u.name;
             document.getElementById('e-uid').innerText = u.id;
             
+            // Sync current status badge
+            const status = presenceMap[uid];
+            const badge = document.getElementById('e-status-badge');
+            badge.innerText = formatPresenceText(status);
+            badge.style.color = (status && status.state === 'online') ? 'var(--accent-green)' : 'var(--text-muted)';
+
             document.getElementById('e-fol').innerText = (u.followers || []).length;
             document.getElementById('e-fing').innerText = (u.following || []).length;
             
@@ -838,7 +888,7 @@
             if(!row) return; 
             
             row.querySelector('.row-name').innerText = d.name;
-            row.querySelector('.row-sub').innerText = "@" + d.username;
+            row.querySelector('.row-sub').innerHTML = "@" + d.username + ` • <span class="presence-text">${formatPresenceText(presenceMap[uid])}</span>`;
             row.querySelector('.row-img').src = d.photoURL;
             
             let b = '';
