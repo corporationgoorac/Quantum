@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to v34 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v55'; // Bumped version to force cache update immediately
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -27,6 +27,7 @@ const ASSETS = [
     '/pulse.html',
     '/pulseLobby.html',
     '/setup.html',
+    '/share.html', // 🔧 FIXED: Added share.html back to the cache list!
     '/userProfile.html',
     '/vision.html',
     '/visionLobby.html',
