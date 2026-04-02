@@ -581,7 +581,7 @@
         let pin = "";
         let castMode = 'ALL';
 
-        // NEW: Precision Last Active Formatting Engine
+        // UPDATED: Precision Last Active Formatting Engine with IST logic
         function timeAgoFull(ts) {
             if (!ts) return "Never";
             const now = Date.now();
@@ -589,9 +589,22 @@
             const mins = Math.floor(diff / 60000);
             const hrs = Math.floor(mins / 60);
             const days = Math.floor(hrs / 24);
+            const twelveHours = 12 * 60 * 60 * 1000;
 
             if (mins < 1) return "Active Now";
-            if (mins < 60) return `Active ${mins}m ago`;
+
+            // If active within 12 hours, show exact Indian Time (IST) in 12-hour format
+            if (diff < twelveHours) {
+                const indianTime = new Date(ts).toLocaleString('en-IN', {
+                    timeZone: 'Asia/Kolkata',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                return `Active at ${indianTime}`;
+            }
+
+            // Older than 12 hours formatting
             if (hrs < 24) return `Active ${hrs}hr ${mins % 60}m ago`;
             return `Active ${days}d ${hrs % 24}hr ago`;
         }
