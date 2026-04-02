@@ -35,6 +35,10 @@ async function publishWithRetry(targetUids, payloadData, maxRetries = 3) {
     // 🚨 BUG FIX: Ensure the tag never exceeds OneSignal's strict 64-byte limit
     const safeTag = payloadData.tag ? payloadData.tag.substring(0, 64) : "default";
 
+    // 🚨 THE ULTIMATE FIX FOR APP BADGES & GROUPING
+    // This unique ID forces Android/Chrome to keep the old message and stack the new one, which triggers the App Badge!
+    const uniquePushId = safeTag + "_" + Date.now();
+
     const osPayload = {
         app_id: ONE_SIGNAL_APP_ID,
         // Uses the OneSignal 'login' alias to map to Firebase UIDs
@@ -45,8 +49,16 @@ async function publishWithRetry(targetUids, payloadData, maxRetries = 3) {
         url: payloadData.deep_link,
         chrome_web_icon: payloadData.icon, // Web Icon
         large_icon: payloadData.icon, // Android Icon
-        collapse_id: safeTag, // Replaces previous notifications from the same chat safely
-        thread_id: safeTag, // iOS grouping safely
+        
+        // --- STACKING & BADGES ENFORCEMENT ---
+        android_group: safeTag, // Native Android Grouping
+        android_group_message: { en: "You have $[notif_count] new notifications" },
+        web_push_topic: uniquePushId, // STOPS Web Push from deleting old messages!
+        
+        thread_id: safeTag, // iOS grouping
+        ios_badgeType: "Increase", // Forces iOS Badge
+        ios_badgeCount: 1,
+
         ttl: payloadData.time_to_live || 172800, // Beats Doze Mode
         ios_sound: payloadData.sound === "ringtone.wav" ? "ringtone.wav" : "default",
         android_sound: payloadData.sound === "ringtone.wav" ? "ringtone" : "default",
