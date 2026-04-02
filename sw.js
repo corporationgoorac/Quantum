@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v55'; // Bumped version to force cache update immediately
+const CACHE_NAME = 'goorac-quantum-v56'; // Bumped version to force cache update immediately
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -27,7 +27,7 @@ const ASSETS = [
     '/pulse.html',
     '/pulseLobby.html',
     '/setup.html',
-    '/share.html', // 🔧 FIXED: Added share.html back to the cache list!
+    '/share.html', // Essential: Keeps the share target cached
     '/userProfile.html',
     '/vision.html',
     '/visionLobby.html',
@@ -61,21 +61,18 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
     self.skipWaiting();
     e.waitUntil(caches.open(CACHE_NAME).then(c => {
-        // Use cache.addAll if you want strict "all or nothing" caching
-        // Your current method is fine if you want to be lenient
         return Promise.all(ASSETS.map(url => c.add(url).catch(console.warn)));
     }));
 });
 
-// 2. Activate (Clean old caches) - FIXED
+// 2. Activate (Clean old caches)
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         Promise.all([
-            self.clients.claim(), // Take control immediately
+            self.clients.claim(), 
             caches.keys().then(keys => {
                 return Promise.all(
                     keys.map(key => {
-                        // Delete any cache that doesn't match the current CACHE_NAME
                         if (key !== CACHE_NAME) {
                             return caches.delete(key);
                         }
@@ -86,35 +83,59 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
+// 3. Fetch (The Hugging Face Shield & Offline Fallback)
 self.addEventListener('fetch', (e) => {
+    
+    // ========================================================================
+    // 🛡️ THE SHIELD: INTERCEPT POST REQUESTS BEFORE GITHUB PAGES THROWS 405
+    // ========================================================================
+    if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
+        e.respondWith((async () => {
+            try {
+                // 1. Catch the file from the Android Gallery
+                const formData = await e.request.formData();
+
+                // 2. Secretly forward it to your Hugging Face Server in the background
+                const hfResponse = await fetch('https://corporationgoorac-quantumbackend.hf.space/share/receiver', {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow' // Automatically follows Hugging Face's 303 Redirect
+                });
+
+                // 3. Because 'follow' is true, hfResponse.url now contains the final 
+                // destination string from Hugging Face (including the ?tempId=... )
+                // We force the browser to navigate there safely using a GET request.
+                return Response.redirect(hfResponse.url, 303);
+
+            } catch (error) {
+                console.error("SW Relay Error:", error);
+                return Response.redirect('/share.html?error=relay_failed', 303);
+            }
+        })());
+        return; 
+    }
+    // ========================================================================
+
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
-        // ADDED { ignoreSearch: true } HERE to ignore query parameters that break caching
         caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
             
-            // 1. Kick off a background network request to fetch the freshest data
+            // Kick off a background network request to fetch the freshest data
             const fetchPromise = fetch(e.request).then((networkResponse) => {
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Update the cache silently in the background so the next launch is up-to-date
-                    // We clone() the response because it can only be consumed once
                     if (networkResponse.ok) {
                         cache.put(e.request, networkResponse.clone());
                     }
                 });
                 return networkResponse;
             }).catch(() => {
-                // Network failed (user is offline). 
-                // If they are trying to navigate to a new page, fallback to home.html
                 if (e.request.mode === 'navigate') {
                     return caches.match('/home.html');
                 }
             });
 
-            // 2. THE MAGIC TRICK: Return the cached response INSTANTLY if we have it.
-            // If we don't have it in the cache yet, wait for the network fetch.
             return cachedResponse || fetchPromise;
         })
     );
