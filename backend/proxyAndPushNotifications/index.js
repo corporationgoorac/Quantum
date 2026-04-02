@@ -43,7 +43,7 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // ============================================================================
-// 1. IMPORT YOUR 5 SEPARATE MODULES
+// 1. IMPORT YOUR SEPARATE MODULES
 // ============================================================================
 const aiRoutes = require('./ai');
 const visionRoutes = require('./visionScrapper'); 
@@ -51,12 +51,14 @@ const bitesScrapper = require('./bitesScrapper');
 const pushNotifications = require('./pushNotifications');
 const startScheduledPushes = require('./scheduledPush'); 
 const startPulseVisionCleanup = require('./pulseAndVision'); // <-- INJECTED NEW MODULE
+const shareRoutes = require('./share'); // <-- INJECTED SHARE MODULE
 
 // ============================================================================
 // 2. MOUNT YOUR ROUTERS
 // ============================================================================
 app.use('/api', aiRoutes); 
 app.use('/api', visionRoutes);
+app.use('/share', shareRoutes); // <-- MOUNTED ON /share
 
 // ============================================================================
 // 3. ATTACH YOUR DIRECT PLUGINS
@@ -74,7 +76,7 @@ startPulseVisionCleanup(); // <-- INJECTED CRON START
 // 5. GLOBAL HEALTH CHECK & SERVER START
 // ============================================================================
 app.get('/', (req, res) => {
-    res.send('🚀 Quantum Master Backend is ONLINE and running all services (AI, Vision, Bites, Push)!');
+    res.send('🚀 Quantum Master Backend is ONLINE and running all services (AI, Vision, Bites, Push, Share)!');
 });
 
 // 🔧 FIXED: Hugging Face Spaces specifically route external traffic to port 7860.
