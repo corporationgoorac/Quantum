@@ -1,5 +1,4 @@
 const admin = require('firebase-admin');
-const PushNotifications = require('@pusher/push-notifications-server');
 
 // --- STRICT CACHES to prevent duplicate sends and reaction spam ---
 // FIXED: Set to 0. Phone clock drift was causing users with slow clocks to be permanently blocked by this check!
@@ -22,17 +21,55 @@ setInterval(() => {
     if (processedNotifs.size > 50000) processedNotifs.clear();
 }, 86400000); // UPDATED: Now checks and cleans every 24 hours instead of 1 hour to save Firebase reads!
 
-// --- ADVANCED: EXPONENTIAL BACKOFF RETRY SYSTEM ---
-// If the Pusher API throws a 429 (Rate Limit) or 503 (Server Error), this ensures the push isn't lost
-async function publishWithRetry(beamsClient, targetUids, payload, maxRetries = 3) {
+// --- ADVANCED: EXPONENTIAL BACKOFF RETRY SYSTEM (Upgraded to OneSignal) ---
+// If the API throws a 429 (Rate Limit) or 503 (Server Error), this ensures the push isn't lost
+async function publishWithRetry(targetUids, payloadData, maxRetries = 3) {
+    const ONE_SIGNAL_APP_ID = "e8dd6176-1634-47df-8375-ba261c7de172";
+    const ONE_SIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
+
+    if (!ONE_SIGNAL_API_KEY) {
+        console.error("❌ ONESIGNAL_API_KEY is missing in your server environment variables.");
+        return;
+    }
+
+    // 🚨 BUG FIX: Ensure the tag never exceeds OneSignal's strict 64-byte limit
+    const safeTag = payloadData.tag ? payloadData.tag.substring(0, 64) : "default";
+
+    const osPayload = {
+        app_id: ONE_SIGNAL_APP_ID,
+        // Uses the OneSignal 'login' alias to map to Firebase UIDs
+        include_aliases: { external_id: targetUids }, 
+        target_channel: "push",
+        headings: { en: payloadData.title },
+        contents: { en: payloadData.body },
+        url: payloadData.deep_link,
+        chrome_web_icon: payloadData.icon, // Web Icon
+        large_icon: payloadData.icon, // Android Icon
+        collapse_id: safeTag, // Replaces previous notifications from the same chat safely
+        thread_id: safeTag, // iOS grouping safely
+        ttl: payloadData.time_to_live || 172800, // Beats Doze Mode
+        ios_sound: payloadData.sound === "ringtone.wav" ? "ringtone.wav" : "default",
+        android_sound: payloadData.sound === "ringtone.wav" ? "ringtone" : "default",
+        priority: 10
+    };
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            await beamsClient.publishToInterests(targetUids, payload);
+            const response = await fetch('https://onesignal.com/api/v1/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${ONE_SIGNAL_API_KEY}`
+                },
+                body: JSON.stringify(osPayload)
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status} - ${await response.text()}`);
             return; // Success, exit the retry loop
         } catch (error) {
             if (attempt === maxRetries) {
                 console.error(`❌ [PUSH FAILED] after ${maxRetries} attempts for UIDs: ${targetUids}`, error);
-                throw error;
+                return; // Don't throw to avoid crashing the event listener
             }
             const delay = Math.pow(2, attempt) * 500; // 1s, 2s, 4s backoff
             console.warn(`⚠️ [PUSH RETRY] Attempt ${attempt} failed. Retrying in ${delay}ms...`);
@@ -73,12 +110,6 @@ module.exports = function(app) {
 
     const db = admin.firestore();
     const rdb = admin.database(); // <-- ADVANCED FIX: Added Realtime Database to catch frontend signaling!
-
-    // 2. Initialize Pusher Beams
-    const beamsClient = new PushNotifications({
-      instanceId: '66574b98-4518-443c-9245-7a3bd9ac0ab7',
-      secretKey: '99DC07D1A9F9B584F776F46A3353B3C3FC28CB53EFE8B162D57EBAEB37669A6A' 
-    });
 
     // --- BUG FIX: Cache Invalidator ---
     // Listens for user profile changes so the 24-hour cache doesn't show old names/photos
@@ -187,7 +218,7 @@ module.exports = function(app) {
                             else if (messageData.fileMeta?.type?.includes('audio')) bodyText = "🎵 Sent a voice message";
                             else if (messageData.fileUrl) bodyText = "📎 Sent an attachment";
 
-                            // 🛡️ URI FIX: Safely encode parameters to prevent Pusher 422 Crashes
+                            // 🛡️ URI FIX: Safely encode parameters to prevent Crashes
                             const deepLink = isGroup 
                                 ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
                                 : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(senderUsername)}`;
@@ -195,40 +226,13 @@ module.exports = function(app) {
                             // SPEED OPTIMIZATION: Fire all target push notifications in parallel
                             // --- ADVANCED: Using Custom publishWithRetry wrapper and 48-Hour TTL (172800) ---
                             await Promise.all(targetUids.map(targetUid => 
-                                publishWithRetry(beamsClient, [targetUid], {
-                                    web: { 
-                                        notification: { 
-                                            title: senderName, 
-                                            body: bodyText, 
-                                            icon: senderPhoto, 
-                                            deep_link: deepLink, 
-                                            hide_notification_if_site_has_focus: true,
-                                            // ADVANCED: Add badge for Android taskbar compliance
-                                            badge: "https://www.goorac.biz/badge.png",
-                                            // 🚨 ADVANCED JACKPOT FEATURE: Collapse ID & Forced Ringing 🚨
-                                            tag: chatDocId, // Replaces previous notifications from the same chat so the tray doesn't flood!
-                                            renotify: true, // Guarantees the phone rings/vibrates even when stacking over an existing notification
-                                            vibrate: [200, 100, 200], // Explicitly forces hardware vibration to ensure it gets noticed
-                                            timestamp: msgTime, // Forces Android to treat this as a chronologically new event
-                                            dir: "auto" // Ensures text renders correctly regardless of the user's phone language
-                                            // actions: [{ action: "open", title: "Open App" }] // DISABLED: Removed interactive buttons per user request without deleting line
-                                        }, 
-                                        time_to_live: 172800 // ADVANCED FIX: 48 Hours to beat Doze Mode
-                                    },
-                                    fcm: { 
-                                        notification: { title: senderName, body: bodyText, icon: senderPhoto }, 
-                                        data: { click_action: deepLink, type: "chat_message" }, 
-                                        priority: "high" 
-                                    },
-                                    apns: { 
-                                        aps: { alert: { title: senderName, body: bodyText }, "thread-id": chatDocId, sound: "default" }, 
-                                        headers: { 
-                                            "apns-priority": "10", 
-                                            "apns-push-type": "alert", 
-                                            "apns-expiration": "172800",
-                                            "apns-collapse-id": chatDocId // 🚨 JACKPOT: Stacks iOS notifications neatly
-                                        } 
-                                    }
+                                publishWithRetry([targetUid], {
+                                    title: senderName,
+                                    body: bodyText,
+                                    icon: senderPhoto,
+                                    deep_link: deepLink,
+                                    tag: chatDocId, // 🚨 ADVANCED JACKPOT FEATURE: Collapse ID
+                                    time_to_live: 172800 // ADVANCED FIX: 48 Hours to beat Doze Mode
                                 })
                             ));
                         } catch (error) { console.error("❌ Message Push Error:", error); }
@@ -293,35 +297,19 @@ module.exports = function(app) {
                                 const title = isGroup ? reactorName : `New Reaction`;
                                 const body = `${isGroup ? reactorName.split(' ')[0] : reactorName} reacted ${reactionData.emoji} to your message.`;
 
-                                // 🛡️ URI FIX: Safely encode parameters to prevent Pusher 422 Crashes
+                                // 🛡️ URI FIX: Safely encode parameters to prevent Crashes
                                 const deepLink = isGroup 
                                     ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
                                     : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(reactorUsername)}`;
 
                                 // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                                await publishWithRetry(beamsClient, [messageOwner], {
-                                    web: { 
-                                        notification: { 
-                                            title: title, 
-                                            body: body, 
-                                            icon: reactorPhoto, 
-                                            deep_link: deepLink, 
-                                            hide_notification_if_site_has_focus: true, 
-                                            badge: "https://www.goorac.biz/badge.png",
-                                            // 🚨 ADVANCED JACKPOT FEATURE 🚨
-                                            tag: `reaction_${chatDocId}`, // Neatly stacks multiple reactions on the same chat!
-                                            renotify: true, // Forces ringing on collapse update
-                                            vibrate: [100, 50, 100], // Lighter vibration for a reaction
-                                            timestamp: reactionData.timestamp,
-                                            dir: "auto"
-                                        }, 
-                                        time_to_live: 172800 
-                                    },
-                                    fcm: { notification: { title: title, body: body, icon: reactorPhoto }, data: { click_action: deepLink }, priority: "high" },
-                                    apns: { 
-                                        aps: { alert: { title: title, body: body }, "thread-id": chatDocId }, 
-                                        headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-collapse-id": `reaction_${chatDocId}` } 
-                                    }
+                                await publishWithRetry([messageOwner], {
+                                    title: title,
+                                    body: body,
+                                    icon: reactorPhoto,
+                                    deep_link: deepLink,
+                                    tag: `reaction_${chatDocId}`, // Neatly stacks multiple reactions
+                                    time_to_live: 172800 
                                 });
                             }
                         } catch (err) { console.error("❌ Reaction Push Error:", err); }
@@ -401,7 +389,7 @@ module.exports = function(app) {
                         const senderName = senderData.name || senderData.username || notifData.senderName || notifData.fromName || "Someone";
                         const senderPhoto = senderData.photoURL || notifData.senderPfp || notifData.fromPfp || "https://www.goorac.biz/icon.png";
                         
-                        // 🛡️ URI FIX: Safely encode the entire raw link to prevent 422 Crashes
+                        // 🛡️ URI FIX: Safely encode the entire raw link to prevent Crashes
                         let rawLink = notifData.link || notifData.targetUrl || `https://www.goorac.biz/notifications.html`;
                         const deepLink = rawLink.startsWith('http') ? encodeURI(rawLink) : `https://www.goorac.biz/${encodeURI(rawLink.replace(/^\//, ''))}`;
 
@@ -489,47 +477,15 @@ module.exports = function(app) {
                             body = textContent || `${senderName} interacted with your profile.`;
                         }
 
-                        // Publish the final constructed notification to Pusher Beams
+                        // Publish the final constructed notification to OneSignal
                         // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                        await publishWithRetry(beamsClient, [targetUid], {
-                            web: { 
-                                notification: { 
-                                    title: title, 
-                                    body: body, 
-                                    icon: senderPhoto, 
-                                    deep_link: deepLink, 
-                                    hide_notification_if_site_has_focus: true,
-                                    badge: "https://www.goorac.biz/badge.png", // ADVANCED UI Polish
-                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
-                                    tag: "social_notifications", // Stacks ALL social alerts (likes, follows) into one neat group!
-                                    renotify: true, // Forces ringing on collapse update
-                                    vibrate: [200, 100, 200], // Explicit hardware buzz
-                                    timestamp: msgTime,
-                                    dir: "auto"
-                                }, 
-                                time_to_live: 172800 // ADVANCED FIX: 48 Hours 
-                            },
-                            fcm: { 
-                                notification: { 
-                                    title: title, 
-                                    body: body, 
-                                    icon: senderPhoto 
-                                }, 
-                                data: { click_action: deepLink, type: "database_alert" }, 
-                                priority: "high" 
-                            },
-                            apns: { 
-                                aps: { 
-                                    alert: { title: title, body: body }, 
-                                    "thread-id": "notifications" 
-                                }, 
-                                headers: { 
-                                    "apns-priority": "10", 
-                                    "apns-push-type": "alert", 
-                                    "apns-expiration": "172800",
-                                    "apns-collapse-id": "social_notifications" // 🚨 JACKPOT: Stacks iOS social alerts 
-                                } 
-                            }
+                        await publishWithRetry([targetUid], {
+                            title: title,
+                            body: body,
+                            icon: senderPhoto,
+                            deep_link: deepLink,
+                            tag: "social_notifications", // Stacks ALL social alerts into one neat group!
+                            time_to_live: 172800 // ADVANCED FIX: 48 Hours
                         });
                         
                         console.log(`✅ Pure DB Push sent to ${targetUid} for event type: ${type}`);
@@ -600,26 +556,14 @@ module.exports = function(app) {
                         const deepLink = `https://www.goorac.biz/calls.html`;
 
                         // --- ADVANCED: Publish with Retry - KEEP TTL 60 to prevent phantom ringing later ---
-                        await publishWithRetry(beamsClient, [targetUid], {
-                            web: { 
-                                notification: { 
-                                    title, 
-                                    body, 
-                                    icon: callerPhoto, 
-                                    deep_link: deepLink, 
-                                    hide_notification_if_site_has_focus: true, 
-                                    requireInteraction: true, // ADVANCED: Force user to interact 
-                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
-                                    tag: "incoming_call", // Ensures multiple ICE candidates don't create multiple call banners!
-                                    vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000], // HEAVY VIBRATION FOR RINGING
-                                    timestamp: Date.now(),
-                                    dir: "auto"
-                                    // actions: [{ action: "answer", title: "Answer" }, { action: "decline", title: "Decline" }] // DISABLED: Removed interactive buttons per user request without deleting line
-                                }, 
-                                time_to_live: 60 // MUST STAY 60 FOR CALLS
-                            }, 
-                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "incoming_call" }, priority: "high" },
-                            apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60", "apns-collapse-id": "incoming_call" } }
+                        await publishWithRetry([targetUid], {
+                            title: title,
+                            body: body,
+                            icon: callerPhoto,
+                            deep_link: deepLink,
+                            tag: "incoming_call",
+                            time_to_live: 60, // MUST STAY 60 FOR CALLS
+                            sound: "ringtone.wav"
                         });
                         console.log(`✅ Incoming Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Call Push Error:", e); }
@@ -671,24 +615,14 @@ module.exports = function(app) {
                 const deepLink = `https://www.goorac.biz/calls.html?targetUid=${targetUid}&autoAnswer=true`;
 
                 // --- ADVANCED RINGING PAYLOAD ---
-                await publishWithRetry(beamsClient, [targetUid], {
-                    web: { 
-                        notification: { 
-                            title, 
-                            body, 
-                            icon: callerPhoto, 
-                            deep_link: deepLink, 
-                            hide_notification_if_site_has_focus: true, 
-                            requireInteraction: true, 
-                            tag: "incoming_call", 
-                            vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000], // HEAVY VIBRATION FOR RINGING
-                            timestamp: Date.now(),
-                            dir: "auto"
-                        }, 
-                        time_to_live: 60
-                    }, 
-                    fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "incoming_call" }, priority: "high" },
-                    apns: { aps: { alert: { title, body }, "thread-id": "calls", sound: "ringtone.wav" }, headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "60", "apns-collapse-id": "incoming_call" } }
+                await publishWithRetry([targetUid], {
+                    title: title,
+                    body: body,
+                    icon: callerPhoto,
+                    deep_link: deepLink,
+                    tag: "incoming_call",
+                    time_to_live: 60, // MUST STAY 60 FOR CALLS
+                    sound: "ringtone.wav"
                 });
                 console.log(`✅ Incoming Call Push (RDB fallback) sent to ${targetUid}`);
             } catch (e) { console.error("❌ RDB Call Push Error:", e); }
@@ -745,29 +679,13 @@ module.exports = function(app) {
                         const deepLink = `https://www.goorac.biz/calls.html`;
 
                         // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                        await publishWithRetry(beamsClient, [targetUid], {
-                            web: { 
-                                notification: { 
-                                    title, 
-                                    body, 
-                                    icon: callerPhoto, 
-                                    deep_link: deepLink, 
-                                    hide_notification_if_site_has_focus: true, 
-                                    badge: "https://www.goorac.biz/badge.png",
-                                    // 🚨 ADVANCED JACKPOT FEATURE 🚨
-                                    tag: `missed_call_${callerUid}`, // Stacks multiple missed calls from the same person!
-                                    renotify: true, // Forces ringing on collapse update
-                                    vibrate: [200, 100, 200], // Explicit hardware buzz
-                                    timestamp: msgTime,
-                                    dir: "auto"
-                                }, 
-                                time_to_live: 172800 
-                            },
-                            fcm: { notification: { title, body, icon: callerPhoto }, data: { click_action: deepLink, type: "missed_call" }, priority: "high" },
-                            apns: { 
-                                aps: { alert: { title, body }, "thread-id": "calls" }, 
-                                headers: { "apns-priority": "10", "apns-push-type": "alert", "apns-expiration": "172800", "apns-collapse-id": `missed_call_${callerUid}` } 
-                            }
+                        await publishWithRetry([targetUid], {
+                            title: title,
+                            body: body,
+                            icon: callerPhoto,
+                            deep_link: deepLink,
+                            tag: `missed_call_${callerUid}`, // Stacks multiple missed calls
+                            time_to_live: 172800 
                         });
                         console.log(`✅ Missed Call Push sent to ${targetUid}`);
                     } catch (e) { console.error("❌ Missed Call Push Error:", e); }

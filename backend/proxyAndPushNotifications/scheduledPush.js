@@ -1,11 +1,7 @@
-const PushNotifications = require('@pusher/push-notifications-server');
 const cron = require('node-cron');
 
-// Initialize Pusher Beams
-const beamsClient = new PushNotifications({
-  instanceId: '66574b98-4518-443c-9245-7a3bd9ac0ab7',
-  secretKey: '99DC07D1A9F9B584F776F46A3353B3C3FC28CB53EFE8B162D57EBAEB37669A6A' 
-});
+// OneSignal Configuration
+const ONE_SIGNAL_APP_ID = "e8dd6176-1634-47df-8375-ba261c7de172";
 
 const iconUrl = "https://github.com/corporationgoorac/Goorac/raw/refs/heads/main/images/icon.png";
 const clickUrl = "https://www.goorac.biz/home.html";
@@ -187,48 +183,45 @@ const eveningMessages = [
   { title: "Signing off?", body: "Drop a 'goodnight' note for your friends." }
 ];
 
-// --- BROADCAST FUNCTION ---
-function sendBroadcast(msgData) {
-  beamsClient.publishToInterests(['hello'], {
-    web: {
-      notification: {
-        title: msgData.title,
-        body: msgData.body,
-        icon: iconUrl,
-        deep_link: clickUrl,
-        hide_notification_if_site_has_focus: false
-      }
-    },
-    fcm: {
-      notification: {
-        title: msgData.title,
-        body: msgData.body,
-        icon: iconUrl
-      },
-      data: {
-        click_action: clickUrl
-      },
-      priority: "high"
-    },
-    apns: {
-      aps: {
-        alert: {
-          title: msgData.title,
-          body: msgData.body
-        }
-      },
+// --- BROADCAST FUNCTION (Upgraded to OneSignal) ---
+async function sendBroadcast(msgData) {
+  const ONE_SIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
+
+  if (!ONE_SIGNAL_API_KEY) {
+      console.error("❌ ONESIGNAL_API_KEY is missing in your server environment variables.");
+      return;
+  }
+
+  const payload = {
+    app_id: ONE_SIGNAL_APP_ID,
+    // Targets users who have the 'broadcast' tag we set on the frontend
+    filters: [
+      { field: "tag", key: "broadcast", relation: "=", value: "hello" }
+    ],
+    headings: { en: msgData.title },
+    contents: { en: msgData.body },
+    url: clickUrl,
+    chrome_web_icon: iconUrl,
+    large_icon: iconUrl,
+    priority: 10
+  };
+
+  try {
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
       headers: {
-        "apns-priority": "10",
-        "apns-push-type": "alert"
-      }
-    }
-  })
-  .then((publishResponse) => {
-    console.log(`✅ Scheduled Broadcast Sent: "${msgData.title} - ${msgData.body}" | ID: ${publishResponse.publishId}`);
-  })
-  .catch((error) => {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${ONE_SIGNAL_API_KEY}`
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status} - ${await response.text()}`);
+    const result = await response.json();
+    console.log(`✅ Scheduled Broadcast Sent: "${msgData.title} - ${msgData.body}" | ID: ${result.id}`);
+  } catch (error) {
     console.error('❌ Error sending scheduled notification:', error);
-  });
+  }
 }
 
 // Wrap the schedules so they can be triggered from the master server
