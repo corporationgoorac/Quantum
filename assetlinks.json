@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "biz.goorac.www.twa",
+    "sha256_cert_fingerprints": ["78:5A:73:50:16:4C:F6:DD:04:75:F1:74:4B:8B:91:E6:99:3B"]
+  }
+}]
