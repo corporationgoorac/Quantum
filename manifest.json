@@ -52,7 +52,7 @@
     }
   ],
   "share_target": {
-    "action": "https://corporationgoorac-quantumbackend.hf.space/share/receiver",
+    "action": "/share.html",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
