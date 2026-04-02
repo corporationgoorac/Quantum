@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/share",
+      "destination": "https://corporationgoorac-quantumbackend.hf.space/share/receiver"
+    }
+  ]
+}
