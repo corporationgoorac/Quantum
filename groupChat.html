@@ -54,52 +54,7 @@
     })();
 </script>
 
-    <script>
-    // =========================================================================
-    //  SMART CLEAR: DISMISS ONLY THIS CHAT'S PUSH NOTIFICATIONS
-    // =========================================================================
-    async function clearCurrentChatNotifications() {
-        if ('serviceWorker' in navigator) {
-            try {
-                // Determine the current chat ID based on which file we are in
-                const currentChatTag = typeof chatId !== 'undefined' ? chatId : (typeof groupId !== 'undefined' ? groupId : null);
-                
-                if (!currentChatTag) return;
-
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (const reg of registrations) {
-                    if (typeof reg.getNotifications === 'function') {
-                        // Fetch all active notifications
-                        const notifications = await reg.getNotifications();
-                        
-                        notifications.forEach(notification => {
-                            // Only close the notification if its tag matches this exact chat
-                            if (notification.tag === currentChatTag) {
-                                notification.close();
-                            }
-                        });
-                    }
-                }
-            } catch (e) {
-                console.log("Silent error clearing specific notifications:", e);
-            }
-        }
-    }
-
-    // 1. Run when the chat history successfully loads
-    document.addEventListener('DOMContentLoaded', () => {
-        // Slight delay to ensure chatId/groupId are initialized by your main script
-        setTimeout(clearCurrentChatNotifications, 1000); 
-    });
     
-    // 2. Run again if the user minimizes the app and switches back to it
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            clearCurrentChatNotifications();
-        }
-    });
-</script>
-
     <style>
         /* =========================================
            1. CORE VARIABLES & THEME DEFINITIONS
