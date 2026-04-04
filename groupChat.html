@@ -32,6 +32,19 @@
     <script src="components/filePicker.js" defer></script>
     <script src="components/viewMedia.js" defer></script>
 
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    // 1. Initialize OneSignal for this specific page
+    await OneSignal.init({
+      appId: "e8dd6176-1634-47df-8375-ba261c7de172",
+    });
+    
+    // 2. Instantly clear all Quantum notifications from the system tray
+    OneSignal.Notifications.clearAll();
+  });
+</script>
 
 <script>
     /**
