@@ -2686,6 +2686,59 @@
         setTimeout(updateMood, 1000);
     })();
 </script>
+<script>
+    // =========================================================================
+    //  SMART CLEAR: DISMISS ONLY THIS CHAT'S PUSH NOTIFICATIONS (BULLETPROOF)
+    // =========================================================================
+    async function clearCurrentChatNotifications(retryCount = 0) {
+        // 🚨 SAFETY NET: Stop trying after 10 seconds to prevent crashing the browser
+        if (retryCount > 20) return; 
+
+        if ('serviceWorker' in navigator) {
+            try {
+                // Try to get chatId (from chat.html) or groupId (from groupChat.html)
+                let currentChatTag = null;
+                if (typeof chatId !== 'undefined' && chatId) currentChatTag = chatId;
+                else if (typeof groupId !== 'undefined' && groupId) currentChatTag = groupId;
+                
+                // If Firebase hasn't created the ID yet, wait 500ms and try again
+                if (!currentChatTag) {
+                    setTimeout(() => clearCurrentChatNotifications(retryCount + 1), 500);
+                    return;
+                }
+
+                // 🚨 THE FIX: Use .ready to guarantee we talk to the ACTIVE Service Worker
+                const reg = await navigator.serviceWorker.ready;
+                
+                if (reg && typeof reg.getNotifications === 'function') {
+                    // 1. Direct browser query (Fastest & most reliable)
+                    const exactNotifications = await reg.getNotifications({ tag: currentChatTag });
+                    exactNotifications.forEach(notification => notification.close());
+
+                    // 2. Backup check just in case the tag was slightly modified
+                    const allNotifications = await reg.getNotifications();
+                    allNotifications.forEach(notification => {
+                        if (notification.tag && notification.tag.includes(currentChatTag)) {
+                            notification.close();
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("Silent error clearing specific notifications:", e);
+            }
+        }
+    }
+
+    // 1. Start the checking loop immediately when the page loads
+    clearCurrentChatNotifications();
+    
+    // 2. Run again if the user minimizes the app and switches back to it
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            clearCurrentChatNotifications();
+        }
+    });
+</script>
 
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
