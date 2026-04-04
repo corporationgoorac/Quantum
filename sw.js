@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v14'; // Bumped to v34 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v13'; // Bumped to v34 to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -85,8 +85,35 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
+// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback & Share Interception)
 self.addEventListener('fetch', (e) => {
+    const url = new URL(e.request.url);
+
+    // --- NEW: Intercept POST requests heading to /api/share for the Web Share Target ---
+    if (e.request.method === 'POST' && url.pathname.endsWith('/api/share')) {
+        e.respondWith((async () => {
+            try {
+                // Extract the media files and text from the share intent
+                const formData = await e.request.formData();
+
+                // Forward the files directly to your Hugging Face backend
+                await fetch('https://corporationgoorac-quantumbackend.hf.space/share/receiver', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                // Redirect the user smoothly to the messages page
+                return Response.redirect('/messages.html', 303);
+            } catch (error) {
+                console.error('Quantum Share Error:', error);
+                // If it fails, send them to the home page with an error flag
+                return Response.redirect('/home.html?error=share_failed', 303);
+            }
+        })());
+        return; // Stop further execution for this specific request
+    }
+    // -----------------------------------------------------------------------------------
+
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
