@@ -2739,6 +2739,79 @@
         }
     });
 </script>
+<script>
+    // =========================================================================
+    //  ULTIMATE CLEAR: HUNTS DOWN AND DISMISSES THIS CHAT'S NOTIFICATIONS
+    // =========================================================================
+    async function clearCurrentChatNotifications(retryCount = 0) {
+        if (retryCount > 20) return; // Stop trying after 10 seconds
+
+        if ('serviceWorker' in navigator) {
+            try {
+                let currentChatTag = null;
+                if (typeof chatId !== 'undefined' && chatId) currentChatTag = chatId;
+                else if (typeof groupId !== 'undefined' && groupId) currentChatTag = groupId;
+                
+                // Wait for Firebase to load the Chat ID
+                if (!currentChatTag) {
+                    setTimeout(() => clearCurrentChatNotifications(retryCount + 1), 500);
+                    return;
+                }
+
+                // Check EVERY registered service worker (prevents missing Pusher's hidden worker)
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                
+                for (const reg of registrations) {
+                    if (typeof reg.getNotifications === 'function') {
+                        // Fetch ALL active notifications currently on the screen
+                        const notifications = await reg.getNotifications();
+                        
+                        notifications.forEach(notification => {
+                            let shouldClose = false;
+
+                            // 1. Check if the Tag matches
+                            if (notification.tag && notification.tag.includes(currentChatTag)) {
+                                shouldClose = true;
+                            }
+                            
+                            // 2. Check if Pusher hid the Chat ID inside the payload data
+                            const notifDataStr = JSON.stringify(notification.data || {});
+                            if (notifDataStr.includes(currentChatTag)) {
+                                shouldClose = true;
+                            }
+
+                            // 3. Check if the sender's name is in the Notification Title
+                            if (typeof chatTargetData !== 'undefined' && chatTargetData.name) {
+                                // Get the first name (e.g., "Siva" from "Siva Manihandan")
+                                const firstName = chatTargetData.name.split(' ')[0];
+                                if (notification.title && notification.title.includes(firstName)) {
+                                    shouldClose = true;
+                                }
+                            }
+
+                            // If we caught it using any of the 3 methods, destroy it!
+                            if (shouldClose) {
+                                notification.close();
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log("Silent error clearing specific notifications:", e);
+            }
+        }
+    }
+
+    // Start the checking loop immediately
+    clearCurrentChatNotifications();
+    
+    // Run again if the user minimizes the app and switches back
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            clearCurrentChatNotifications();
+        }
+    });
+</script>
 
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
