@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to v34 to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -85,45 +85,8 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback & Share Interception)
+// 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
-    const url = new URL(e.request.url);
-
-    // --- NEW: Intercept POST requests heading to /api/share for the Web Share Target ---
-    if (e.request.method === 'POST' && url.pathname.endsWith('/api/share')) {
-        e.respondWith((async () => {
-            try {
-                // 1. Extract the media files from the phone's share intent
-                const formData = await e.request.formData();
-
-                // 2. Send to Hugging Face. 
-                // CRITICAL: We use redirect: 'manual' so the browser doesn't swallow your server's redirect!
-                const backendResponse = await fetch('https://corporationgoorac-quantumbackend.hf.space/share/receiver', {
-                    method: 'POST',
-                    body: formData,
-                    redirect: 'manual' 
-                });
-
-                // 3. Grab the EXACT redirect URL your backend generated (e.g., /share.html?tempId=...)
-                const redirectUrl = backendResponse.headers.get('Location');
-
-                if (redirectUrl) {
-                    // 4. Send the user straight to that URL so your frontend can pull the file from RAM
-                    return Response.redirect(redirectUrl, 303);
-                } else {
-                    // Fallback if the backend fails to send a Location header
-                    return Response.redirect('/share.html?error=no_location', 303);
-                }
-
-            } catch (error) {
-                console.error('Quantum Share Error:', error);
-                return Response.redirect('/share.html?error=upload_failed', 303);
-            }
-        })());
-        return; // Stop further execution for this specific request
-    }
-    // -----------------------------------------------------------------------------------
-
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
