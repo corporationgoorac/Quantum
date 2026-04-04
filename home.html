@@ -10,17 +10,7 @@
     <script src="components/theme.js"></script>
 
     <script src="config.js"></script>
-    
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "3cc2676b-61f4-4a39-bfbd-229d988b96b8",
-        });
-      });
-    </script>
-    
+    <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
     <link rel="manifest" href="manifest.json">
 
     <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
@@ -1039,17 +1029,15 @@
                 checkMyMoment(user.uid, userData.photoURL);
                 listenToSystemPopup();
 
-                // OneSignal Registration
-                if (window.OneSignalDeferred) {
-                    window.OneSignalDeferred.push(async function(OneSignal) {
-                        try {
-                            await OneSignal.login(user.uid); 
-                            await OneSignal.User.addTag("broadcast", "hello"); 
-                            console.log("✅ OneSignal: User logged in and tagged for broadcasts.");
-                        } catch (error) { 
-                            console.error('❌ OneSignal registration failed:', error); 
-                        }
-                    });
+                if (window.pusherConfig && window.PusherPushNotifications) {
+                    try {
+                        const beamsClient = new window.PusherPushNotifications.Client({
+                            instanceId: window.pusherConfig.instanceId,
+                        });
+                        await beamsClient.start();
+                        await beamsClient.addDeviceInterest('hello'); 
+                        await beamsClient.addDeviceInterest(user.uid); 
+                    } catch (error) { console.error('❌ Pusher Beams registration failed:', error); }
                 }
             } else {
                 window.location.href = "setup.html";
