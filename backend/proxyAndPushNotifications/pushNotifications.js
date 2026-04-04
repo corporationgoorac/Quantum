@@ -235,6 +235,14 @@ module.exports = function(app) {
                                 ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
                                 : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(senderUsername)}`;
 
+                            // --- PRODUCTION READY FOCUSED CHECK (ZERO DELAYS, ZERO EXTRA DB PINGS) ---
+                            // Checks purely against memory data fetched above. Requires frontend to use batch writes!
+                            if (messageData.seen === true || messageData.read === true) return; 
+                            if (isGroup && chatData.unreadCount) {
+                                targetUids = targetUids.filter(uid => chatData.unreadCount[uid] > 0);
+                            }
+                            if (targetUids.length === 0) return;
+
                             // SPEED OPTIMIZATION: Fire all target push notifications in parallel
                             // --- ADVANCED: Using Custom publishWithRetry wrapper and 48-Hour TTL (172800) ---
                             await Promise.all(targetUids.map(targetUid => 
@@ -384,6 +392,9 @@ module.exports = function(app) {
                     
                     // Safety abort: Do not send push if IDs are missing, or if user liked their own post
                     if (!targetUid || !senderUid || targetUid === senderUid) return; 
+
+                    // --- PRODUCTION READY FOCUSED CHECK (ZERO DELAYS, ZERO DB PINGS) ---
+                    if (notifData.seen === true || notifData.read === true) return; 
 
                     try {
                         // ALWAYS fetch exact user profile from DB to guarantee Names and PFPs are 100% correct
