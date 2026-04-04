@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v13'; // Bumped to v34 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to trigger immediate update
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -93,21 +93,31 @@ self.addEventListener('fetch', (e) => {
     if (e.request.method === 'POST' && url.pathname.endsWith('/api/share')) {
         e.respondWith((async () => {
             try {
-                // Extract the media files and text from the share intent
+                // 1. Extract the media files from the phone's share intent
                 const formData = await e.request.formData();
 
-                // Forward the files directly to your Hugging Face backend
-                await fetch('https://corporationgoorac-quantumbackend.hf.space/share/receiver', {
+                // 2. Send to Hugging Face. 
+                // CRITICAL: We use redirect: 'manual' so the browser doesn't swallow your server's redirect!
+                const backendResponse = await fetch('https://corporationgoorac-quantumbackend.hf.space/share/receiver', {
                     method: 'POST',
                     body: formData,
+                    redirect: 'manual' 
                 });
 
-                // Redirect the user smoothly to the messages page
-                return Response.redirect('/messages.html', 303);
+                // 3. Grab the EXACT redirect URL your backend generated (e.g., /share.html?tempId=...)
+                const redirectUrl = backendResponse.headers.get('Location');
+
+                if (redirectUrl) {
+                    // 4. Send the user straight to that URL so your frontend can pull the file from RAM
+                    return Response.redirect(redirectUrl, 303);
+                } else {
+                    // Fallback if the backend fails to send a Location header
+                    return Response.redirect('/share.html?error=no_location', 303);
+                }
+
             } catch (error) {
                 console.error('Quantum Share Error:', error);
-                // If it fails, send them to the home page with an error flag
-                return Response.redirect('/home.html?error=share_failed', 303);
+                return Response.redirect('/share.html?error=upload_failed', 303);
             }
         })());
         return; // Stop further execution for this specific request
