@@ -1,715 +1,258 @@
-const admin = require('firebase-admin');
 const PushNotifications = require('@pusher/push-notifications-server');
+const cron = require('node-cron');
 
-// 2. Initialize Pusher Beams (Moved to top level so the retry function can use it)
+// Initialize Pusher Beams
 const beamsClient = new PushNotifications({
   instanceId: '66574b98-4518-443c-9245-7a3bd9ac0ab7',
   secretKey: '99DC07D1A9F9B584F776F46A3353B3C3FC28CB53EFE8B162D57EBAEB37669A6A' 
 });
 
-// --- STRICT CACHES to prevent duplicate sends and reaction spam ---
-// FIXED: Set to 0. Phone clock drift was causing users with slow clocks to be permanently blocked by this check!
-const SERVER_START_TIME = 0; 
-const processedMessages = new Set();
-const processedNotifs = new Set();
-const reactionThrottle = new Set(); // Specifically limits reaction spam
+const iconUrl = "https://github.com/corporationgoorac/Goorac/raw/refs/heads/main/images/icon.png";
+const clickUrl = "https://www.goorac.biz/home.html";
 
-// --- PERFORMANCE CACHES (Ultra-Fast 24-Hour RAM Cache) ---
-const userCache = new Map(); 
+// --- MESSAGE BANKS (Upgraded to Title/Body format) ---
 
-// --- ADVANCED: MEMORY LEAK GUARD ---
-// Prevents the Node.js server from crashing due to heap overflow if the cache grows too large
-setInterval(() => {
-    if (userCache.size > 10000) {
-        console.warn("⚠️ [MEMORY GUARD] Cache exceeded 10,000 users. Pruning old entries...");
-        userCache.clear(); // Emergency flush to protect server RAM
-    }
-    if (processedMessages.size > 50000) processedMessages.clear();
-    if (processedNotifs.size > 50000) processedNotifs.clear();
-}, 86400000); // UPDATED: Now checks and cleans every 24 hours instead of 1 hour to save Firebase reads!
+const morningMessages = [
+  // Original 10 adapted
+  { title: "Good morning!", body: "What's on your mind? Post a note now." },
+  { title: "Rise and shine!", body: "Share your first thought of the day on Quantum." },
+  { title: "Good morning!", body: "Set the tone for your day with a new note." },
+  { title: "Wakey wakey!", body: "The Quantum network is waiting for your morning vibe." },
+  { title: "A fresh day begins!", body: "What are your goals today? Drop a note." },
+  { title: "Good morning!", body: "Got any wild dreams to share before you forget them?" },
+  { title: "Start your day right.", body: "Post a quick morning update!" },
+  { title: "Good morning!", body: "Coffee in hand? Time to check in on Quantum." },
+  { title: "New morning, new moment.", body: "What's happening in your world?" },
+  { title: "Morning!", body: "The dashboard is empty without your daily note." },
+  // 50 New Additions
+  { title: "Good morning!", body: "Let's get this day started! Share a quick note." },
+  { title: "Happy morning!", body: "Who are you checking in on today? Post a note!" },
+  { title: "Good morning!", body: "Another day, another Quantum moment. What's up?" },
+  { title: "Rise and grind!", body: "What's the first thing on your checklist today?" },
+  { title: "Morning check-in!", body: "Drop a note to let your network know you're awake." },
+  { title: "Good morning!", body: "Anything exciting planned for today?" },
+  { title: "Hello world!", body: "Start your morning by dropping a thought on Quantum." },
+  { title: "Good morning!", body: "Your network is waking up. Say hello!" },
+  { title: "Early bird gets the worm!", body: "Post the first note of the day." },
+  { title: "Good morning!", body: "What's your morning motivation today?" },
+  { title: "Top of the morning!", body: "Share a fresh note to start the day." },
+  { title: "Good morning!", body: "Did you sleep well? Drop a quick update." },
+  { title: "Sunrise vibes!", body: "Post a picture or note of your morning." },
+  { title: "Good morning!", body: "What's the best thing that could happen today?" },
+  { title: "Morning magic!", body: "Start the day with a positive note." },
+  { title: "Good morning!", body: "Got a morning routine? Share it with the network." },
+  { title: "Hey there!", body: "The Quantum timeline awaits your morning post." },
+  { title: "Good morning!", body: "Drop a note and kickstart your day!" },
+  { title: "Fresh start!", body: "Clear your mind and post a morning note." },
+  { title: "Good morning!", body: "What are you having for breakfast? Let us know." },
+  { title: "Morning thoughts!", body: "Share your early morning brainstorms." },
+  { title: "Good morning!", body: "It's a beautiful day. Post a note about it!" },
+  { title: "Awake and online!", body: "Make your presence known on Quantum." },
+  { title: "Good morning!", body: "Any big news to share this morning?" },
+  { title: "Morning boost!", body: "Send some good vibes to your network." },
+  { title: "Good morning!", body: "Take 10 seconds to share your morning mood." },
+  { title: "Daybreak!", body: "What's the plan for today? Drop a note." },
+  { title: "Good morning!", body: "Your friends haven't heard from you yet today!" },
+  { title: "Morning focus!", body: "What's your main priority today? Post it." },
+  { title: "Good morning!", body: "Time to shine! Share a Quantum note." },
+  { title: "Hello morning!", body: "Drop a note before the busy day begins." },
+  { title: "Good morning!", body: "Got a quote of the day? Share it now." },
+  { title: "Morning energy!", body: "Let your network feel your morning vibe." },
+  { title: "Good morning!", body: "What's the weather like? Post an update." },
+  { title: "New dawn!", body: "A new opportunity to post a great note." },
+  { title: "Good morning!", body: "Start a conversation on Quantum this morning." },
+  { title: "Morning alert!", body: "Time to catch up on what you missed overnight." },
+  { title: "Good morning!", body: "Share a thought to inspire your network today." },
+  { title: "Ready for the day?", body: "Prove it with a quick Quantum post!" },
+  { title: "Good morning!", body: "Don't let the morning pass without a note." },
+  { title: "Morning reflections!", body: "What are you grateful for today?" },
+  { title: "Good morning!", body: "It's time to log your first moment of the day." },
+  { title: "Bright and early!", body: "Drop a note while the world is still quiet." },
+  { title: "Good morning!", body: "What's playing in your headphones this morning?" },
+  { title: "Morning hustle!", body: "Share your early grind with your network." },
+  { title: "Good morning!", body: "Take a deep breath and post a note." },
+  { title: "Morning greeting!", body: "Say hi to everyone on Quantum." },
+  { title: "Good morning!", body: "Set your intentions for the day with a note." },
+  { title: "Morning update!", body: "Keep your friends in the loop right from the start." },
+  { title: "Good morning!", body: "Let's make today amazing. Post a note!" }
+];
 
-// --- ADVANCED: EXPONENTIAL BACKOFF RETRY SYSTEM (Reverted to Pusher Beams) ---
-// If the API throws a 429 (Rate Limit) or 503 (Server Error), this ensures the push isn't lost
-async function publishWithRetry(targetUids, payloadData, maxRetries = 3) {
-    
-    // 🚨 BUG FIX: Ensure the tag never exceeds strict string limits
-    const safeTag = payloadData.tag ? payloadData.tag.substring(0, 64) : "default";
+const afternoonMessages = [
+  // Original 10 adapted
+  { title: "Halfway there!", body: "How's your day going? Drop a note." },
+  { title: "Lunchtime!", body: "Take a break and share a moment on Quantum." },
+  { title: "Good afternoon!", body: "Need a midday reset? Post what's on your mind." },
+  { title: "Afternoon check-in!", body: "Keep your network updated." },
+  { title: "Hope your day is productive!", body: "Take a second to share a note." },
+  { title: "Midday slump?", body: "Wake up your friends with a new Quantum post." },
+  { title: "Good afternoon!", body: "What's the highlight of your day so far?" },
+  { title: "Take a breather.", body: "What are you up to this afternoon?" },
+  { title: "Afternoon vibes!", body: "Share a quick update with the network." },
+  { title: "Just checking in!", body: "Drop a midday note for your friends." },
+  // 50 New Additions
+  { title: "Good afternoon!", body: "How is your schedule looking? Drop a note." },
+  { title: "Midday break!", body: "Grab a snack and post a quick update." },
+  { title: "Good afternoon!", body: "Still crushing it? Let your network know." },
+  { title: "Afternoon thoughts!", body: "What's on your mind right now?" },
+  { title: "Good afternoon!", body: "Take 5 minutes to catch up on Quantum." },
+  { title: "Lunch break check-in!", body: "What are you eating? Share a note!" },
+  { title: "Good afternoon!", body: "Have you drank enough water? Post an update." },
+  { title: "Afternoon energy!", body: "Send some motivation to your network." },
+  { title: "Good afternoon!", body: "Time for a quick stretch and a Quantum post." },
+  { title: "Midday recap!", body: "Summarize your morning in a single note." },
+  { title: "Good afternoon!", body: "Is today going as planned? Drop a thought." },
+  { title: "Afternoon check!", body: "Who is online? Post a note to find out." },
+  { title: "Good afternoon!", body: "Share a random thought from your afternoon." },
+  { title: "Midday hustle!", body: "Keep the momentum going with a quick post." },
+  { title: "Good afternoon!", body: "What's the most interesting thing that happened today?" },
+  { title: "Afternoon reset!", body: "Clear your head and share a moment." },
+  { title: "Good afternoon!", body: "Your network misses you. Say hello!" },
+  { title: "Lunch hour vibes!", body: "Drop a note before you get back to work." },
+  { title: "Good afternoon!", body: "Got any afternoon plans? Let us know." },
+  { title: "Midday inspiration!", body: "Share a quote or thought to boost your friends." },
+  { title: "Good afternoon!", body: "Take a step back. Post what you're feeling." },
+  { title: "Afternoon grind!", body: "Document your hard work on Quantum." },
+  { title: "Good afternoon!", body: "Need a distraction? See what's new on the timeline." },
+  { title: "Midday mood!", body: "How are you feeling at this exact moment?" },
+  { title: "Good afternoon!", body: "It's the perfect time for a quick note." },
+  { title: "Afternoon chill!", body: "Taking it easy today? Post an update." },
+  { title: "Good afternoon!", body: "What's playing on your afternoon playlist?" },
+  { title: "Midday update!", body: "Keep the timeline active with your thoughts." },
+  { title: "Good afternoon!", body: "Any surprises today? Share them here." },
+  { title: "Afternoon check-up!", body: "Check in on your friends with a new note." },
+  { title: "Good afternoon!", body: "What's the weather doing now? Drop a note." },
+  { title: "Midday moment!", body: "Snap a pic or write a note about right now." },
+  { title: "Good afternoon!", body: "Don't let the afternoon drag. Post something fun!" },
+  { title: "Afternoon boost!", body: "Drop a high-energy note for your network." },
+  { title: "Good afternoon!", body: "Take a breath. Post a note. Keep going." },
+  { title: "Midday check!", body: "Are you staying productive? Let us know." },
+  { title: "Good afternoon!", body: "Share a quick win from your day so far." },
+  { title: "Afternoon update!", body: "Your friends are waiting for your note." },
+  { title: "Good afternoon!", body: "Time flies! Drop a note before the day is over." },
+  { title: "Midday magic!", body: "Make someone smile with a positive afternoon note." }
+];
 
-    // Maps your simplified payload to the complex Pusher Beams structure automatically
-    const pusherPayload = {
-        web: { 
-            notification: { 
-                title: payloadData.title, 
-                body: payloadData.body, 
-                icon: payloadData.icon, 
-                deep_link: payloadData.deep_link, 
-                hide_notification_if_site_has_focus: true,
-                badge: "https://www.goorac.biz/badge.png",
-                tag: safeTag,
-                renotify: true,
-                // Checks if it's a call to trigger heavy vibration, otherwise standard vibration
-                vibrate: payloadData.sound === "ringtone.wav" ? [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000] : [200, 100, 200],
-                timestamp: Date.now(),
-                dir: "auto"
-            }, 
-            time_to_live: payloadData.time_to_live || 172800 
-        },
-        fcm: { 
-            notification: { title: payloadData.title, body: payloadData.body, icon: payloadData.icon }, 
-            data: { click_action: payloadData.deep_link, type: "notification" }, 
-            priority: "high" 
-        },
-        apns: { 
-            aps: { alert: { title: payloadData.title, body: payloadData.body }, "thread-id": safeTag, sound: payloadData.sound || "default" }, 
-            headers: { 
-                "apns-priority": "10", 
-                "apns-push-type": "alert", 
-                "apns-expiration": (payloadData.time_to_live || 172800).toString(), 
-                "apns-collapse-id": safeTag 
-            } 
+const eveningMessages = [
+  // Original 10 adapted
+  { title: "Good evening!", body: "How was your day? Post a note." },
+  { title: "Winding down?", body: "Share your final thoughts of the day on Quantum." },
+  { title: "Good evening!", body: "Time to reflect—drop a note about your day." },
+  { title: "The day is almost over.", body: "What was your best moment?" },
+  { title: "Evening check-in!", body: "Let your network know how today went." },
+  { title: "Relax and unwind.", body: "Share a chill evening note." },
+  { title: "Good evening!", body: "Got any late-night thoughts to post?" },
+  { title: "Wrapping up the day?", body: "Leave a note for your friends to wake up to." },
+  { title: "Sunset vibes.", body: "What's on your mind tonight?" },
+  { title: "Good evening!", body: "Summarize your day in a single Quantum note." },
+  // 50 New Additions
+  { title: "Good evening!", body: "What's for dinner? Drop a tasty update." },
+  { title: "Nighttime vibes!", body: "Share your evening mood with your network." },
+  { title: "Good evening!", body: "Did you accomplish everything today? Post a note." },
+  { title: "Evening chill!", body: "What are you watching or reading tonight?" },
+  { title: "Good evening!", body: "End your day on a high note. Literally!" },
+  { title: "Night owl?", body: "The network is still awake. Post a thought!" },
+  { title: "Good evening!", body: "Take a moment to decompress on Quantum." },
+  { title: "Evening reflections!", body: "What did you learn today? Share it." },
+  { title: "Good evening!", body: "Time to log off soon? Drop one last note." },
+  { title: "Late-night thoughts!", body: "Share those deep evening brainstorms." },
+  { title: "Good evening!", body: "How are you spending your night? Let us know." },
+  { title: "Evening unwind!", body: "Post a note and let the day's stress go." },
+  { title: "Good evening!", body: "Got any fun plans for tonight? Drop an update." },
+  { title: "Night check-in!", body: "See who else is up late on Quantum." },
+  { title: "Good evening!", body: "Share a cozy moment from your night." },
+  { title: "Evening review!", body: "Rate your day from 1 to 10 in a note." },
+  { title: "Good evening!", body: "Your daily dashboard is waiting for an evening update." },
+  { title: "Sunset thoughts!", body: "Post a picture of your evening." },
+  { title: "Good evening!", body: "What are you looking forward to tomorrow?" },
+  { title: "Evening peace!", body: "Drop a calming note for your friends." },
+  { title: "Good evening!", body: "Did anything funny happen today? Share it!" },
+  { title: "Nightcap!", body: "Finish strong with a final Quantum post." },
+  { title: "Good evening!", body: "Catch up on what you missed today." },
+  { title: "Evening calm!", body: "Take a deep breath and share your thoughts." },
+  { title: "Good evening!", body: "Before you sleep, drop a note for the timeline." },
+  { title: "Nightly check!", body: "Make sure you left your mark on today." },
+  { title: "Good evening!", body: "What's your favorite part of the night? Post it." },
+  { title: "Evening wrap-up!", body: "Close out the day with your network." },
+  { title: "Good evening!", body: "Got a song stuck in your head tonight? Share it." },
+  { title: "Nighttime updates!", body: "Keep the timeline fresh before bed." },
+  { title: "Good evening!", body: "How was the weather today? Drop a final note." },
+  { title: "Evening relaxation!", body: "Put your feet up and post a moment." },
+  { title: "Good evening!", body: "Did you talk to someone special today? Share a hint!" },
+  { title: "Late-night inspiration!", body: "Leave a thought for the early birds tomorrow." },
+  { title: "Good evening!", body: "It's quiet time. What's on your mind?" },
+  { title: "Evening recap!", body: "What was the highlight of your afternoon?" },
+  { title: "Good evening!", body: "Time for a final check of the Quantum network." },
+  { title: "Nightly thoughts!", body: "Share a random thought before you sleep." },
+  { title: "Good evening!", body: "Hope you had a great day! Post a note to celebrate." },
+  { title: "Signing off?", body: "Drop a 'goodnight' note for your friends." }
+];
+
+// --- BROADCAST FUNCTION ---
+function sendBroadcast(msgData) {
+  beamsClient.publishToInterests(['hello'], {
+    web: {
+      notification: {
+        title: msgData.title,
+        body: msgData.body,
+        icon: iconUrl,
+        deep_link: clickUrl,
+        hide_notification_if_site_has_focus: false
+      }
+    },
+    fcm: {
+      notification: {
+        title: msgData.title,
+        body: msgData.body,
+        icon: iconUrl
+      },
+      data: {
+        click_action: clickUrl
+      },
+      priority: "high"
+    },
+    apns: {
+      aps: {
+        alert: {
+          title: msgData.title,
+          body: msgData.body
         }
-    };
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            // PUSHER BEAMS API EXECUTION
-            await beamsClient.publishToInterests(targetUids, pusherPayload);
-            return; // Success, exit the retry loop
-        } catch (error) {
-            if (attempt === maxRetries) {
-                console.error(`❌ [PUSH FAILED] after ${maxRetries} attempts for UIDs: ${targetUids}`, error);
-                return; // Don't throw to avoid crashing the event listener
-            }
-            const delay = Math.pow(2, attempt) * 500; // 1s, 2s, 4s backoff
-            console.warn(`⚠️ [PUSH RETRY] Attempt ${attempt} failed. Retrying in ${delay}ms...`);
-            await new Promise(res => setTimeout(res, delay));
-        }
+      },
+      headers: {
+        "apns-priority": "10",
+        "apns-push-type": "alert"
+      }
     }
+  })
+  .then((publishResponse) => {
+    console.log(`✅ Scheduled Broadcast Sent: "${msgData.title} - ${msgData.body}" | ID: ${publishResponse.publishId}`);
+  })
+  .catch((error) => {
+    console.error('❌ Error sending scheduled notification:', error);
+  });
 }
 
-// --- NEW FIX: Boot Phase Lock ---
-// Prevents downloading and processing thousands of historical messages on server restart
-let isBooting = true;
-setTimeout(() => { 
-    isBooting = false; 
-    console.log("🚀 Quantum Boot Phase Complete. Live Listening Active."); 
-}, 2000); // 2-second lock
-
-module.exports = function(app) {
-    // --- HEALTH CHECK ROUTES FOR UPTIME MONITORS ---
-    // (Note: The '/' route is handled by the master server now, but '/ping' remains here for your monitors)
-    app.get('/ping', (req, res) => {
-      res.status(200).send('Pong! Push Server is awake.');
-    });
-
-    // 1. Initialize Firebase Admin SDK
-    if (!admin.apps.length) {
-        try {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                // 👇 THIS IS THE ONLY LINE ADDED TO FIX THE DATABASE CRASH 👇
-                databaseURL: "https://goorac-quantum-default-rtdb.asia-southeast1.firebasedatabase.app"
-            });
-            console.log("✅ Firebase Admin initialized successfully");
-        } catch (error) {
-            console.error("❌ Failed to initialize Firebase Admin.", error);
-        }
-    }
-
-    const db = admin.firestore();
-    const rdb = admin.database(); // <-- ADVANCED FIX: Added Realtime Database to catch frontend signaling!
-
-    // --- BUG FIX: Cache Invalidator ---
-    // Listens for user profile changes so the 24-hour cache doesn't show old names/photos
-    db.collection('users').onSnapshot((snap) => {
-        snap.docChanges().forEach(change => {
-            if (change.type === 'modified') userCache.delete(change.doc.id);
-        });
-    });
-
-    // ============================================================================
-    // LISTENER 1: CHATS, GROUP CHATS, DIRECT REPLIES, AND REACTIONS
-    // ============================================================================
-    function startMessageListener() {
-        console.log("🎧 Listening for Chat Messages, Group Chats & Reactions...");
-        
-        // 🚀 THE PERFECT COLD START FIX: Ignore the initial historical data payload
-        let isFirstRun = true; 
-
-        db.collectionGroup('messages').onSnapshot((snapshot) => {
-            
-            // Mathematically guarantees zero spam on reboot
-            if (isFirstRun) {
-                isFirstRun = false;
-                return;
-            }
-
-            snapshot.docChanges().forEach(async (change) => {
-                
-                // STRICT FIX: Ignore all historical snapshot data during the first 2 seconds
-                if (isBooting) return;
-
-                // Handle both new messages AND modified messages (for reactions)
-                if (change.type === 'added' || change.type === 'modified') {
-                    const messageData = change.doc.data();
-                    const docId = change.doc.id;
-                    
-                    // RELIABLE TIMESTAMP: Uses Firestore's un-hackable create/update time
-                    let msgTime = SERVER_START_TIME;
-                    if (change.doc.createTime) msgTime = change.doc.createTime.toMillis();
-                    if (change.doc.updateTime && change.type === 'modified') msgTime = change.doc.updateTime.toMillis();
-
-                    // FIXED: Increased to 24 hours (86400000ms) to completely fix the "stops working after a while" bug caused by phone clock drift
-                    if (Date.now() - msgTime > 86400000) return;
-                    if (msgTime <= SERVER_START_TIME) return; 
-
-                    // -----------------------------------------------------------------
-                    // A. HANDLE BRAND NEW MESSAGES
-                    // -----------------------------------------------------------------
-                    if (change.type === 'added') {
-                        if (processedMessages.has(docId)) return;
-                        processedMessages.add(docId);
-                        setTimeout(() => processedMessages.delete(docId), 180000); 
-
-                        try {
-                            const senderUid = messageData.sender;
-                            if (!senderUid) return; // Safety check to prevent server crashes
-
-                            const chatRef = change.doc.ref.parent.parent;
-                            const chatDocId = chatRef.id;
-                            const chatDoc = await chatRef.get();
-                            
-                            // RACE CONDITION FIX: Do not rely solely on the document existing. 
-                            // It might not be fully written yet by the frontend!
-                            const chatData = chatDoc.exists ? chatDoc.data() : {};
-                            const isGroup = chatData.isGroup === true;
-                            
-                            let targetUids = [];
-                            
-                            if (isGroup) {
-                                // Group chats must read from participants array
-                                targetUids = (chatData.participants || []).filter(uid => uid !== senderUid);
-                            } else {
-                                // 1-on-1 chats mathematically extract the target from the ID string instantly!
-                                const extractedUids = chatDocId.split('_');
-                                if (extractedUids.length === 2) {
-                                    targetUids = [extractedUids[0] === senderUid ? extractedUids[1] : extractedUids[0]];
-                                } else {
-                                    targetUids = (chatData.participants || []).filter(uid => uid !== senderUid);
-                                }
-                            }
-
-                            if (targetUids.length === 0) return; // Abort if no target found
-                            
-                            // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
-                            let senderData;
-                            if (userCache.has(senderUid)) {
-                                senderData = userCache.get(senderUid);
-                            } else {
-                                const senderDoc = await db.collection('users').doc(senderUid).get();
-                                senderData = senderDoc.data() || {};
-                                userCache.set(senderUid, senderData);
-                                setTimeout(() => userCache.delete(senderUid), 86400000); // UPDATED: 24-hour TTL to save Firebase reads
-                            }
-
-                            let senderName = senderData.name || senderData.username || "Someone";
-                            const senderPhoto = senderData.photoURL || "https://www.goorac.biz/icon.png";
-                            const senderUsername = senderData.username || senderUid;
-
-                            if (isGroup) senderName = `${senderName} in ${chatData.groupName || 'Group'}`;
-
-                            let bodyText = messageData.text || "New message";
-                            if (messageData.isHtml || messageData.isDropReply || messageData.replyToNote) bodyText = "💬 Replied to your post";
-                            else if (messageData.isBite) bodyText = "🎬 Sent a Bite video";
-                            else if (messageData.isGif) bodyText = "🎞️ Sent a GIF";
-                            else if (messageData.imageUrl) bodyText = "📷 Sent an image";
-                            else if (messageData.fileMeta?.type?.includes('audio')) bodyText = "🎵 Sent a voice message";
-                            else if (messageData.fileUrl) bodyText = "📎 Sent an attachment";
-
-                            // 🛡️ URI FIX: Safely encode parameters to prevent Crashes
-                            const deepLink = isGroup 
-                                ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
-                                : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(senderUsername)}`;
-
-                            // SPEED OPTIMIZATION: Fire all target push notifications in parallel
-                            // --- ADVANCED: Using Custom publishWithRetry wrapper and 48-Hour TTL (172800) ---
-                            await Promise.all(targetUids.map(targetUid => 
-                                publishWithRetry([targetUid], {
-                                    title: senderName,
-                                    body: bodyText,
-                                    icon: senderPhoto,
-                                    deep_link: deepLink,
-                                    tag: chatDocId, // 🚨 ADVANCED JACKPOT FEATURE: Collapse ID
-                                    time_to_live: 172800 // ADVANCED FIX: 48 Hours to beat Doze Mode
-                                })
-                            ));
-                        } catch (error) { console.error("❌ Message Push Error:", error); }
-                    }
-
-                    // -----------------------------------------------------------------
-                    // B. HANDLE MESSAGE REACTIONS (THROTTLED TO PREVENT SPAM)
-                    // -----------------------------------------------------------------
-                    if (change.type === 'modified' && messageData.reactions) {
-                        try {
-                            const messageOwner = messageData.sender; 
-                            if (!messageOwner) return;
-
-                            for (const [reactorUid, reactionData] of Object.entries(messageData.reactions)) {
-                                
-                                if (reactorUid === messageOwner) continue; // Don't notify self
-                                if (!reactorUid) continue;
-
-                                // STRICT THROTTLE: Prevents the "multiple notifications" bug
-                                // Only allows 1 reaction notification per user, per message, every 10 seconds
-                                const throttleKey = `throttle_${docId}_${reactorUid}`;
-                                if (reactionThrottle.has(throttleKey)) continue;
-                                
-                                reactionThrottle.add(throttleKey);
-                                setTimeout(() => reactionThrottle.delete(throttleKey), 10000); 
-
-                                // FIXED: Increased drift tolerance to 24 hours to stop bugs on mobile
-                                if (Date.now() - reactionData.timestamp > 86400000) continue;
-                                if (reactionData.timestamp <= SERVER_START_TIME) continue;
-
-                                // Cache key to permanently log this specific emoji reaction in memory
-                                const reactionCacheKey = `reaction_${docId}_${reactorUid}_${reactionData.emoji}`;
-                                if (processedMessages.has(reactionCacheKey)) continue;
-                                processedMessages.add(reactionCacheKey);
-                                setTimeout(() => processedMessages.delete(reactionCacheKey), 180000);
-
-                                const chatRef = change.doc.ref.parent.parent;
-                                const chatDocId = chatRef.id;
-                                const chatDoc = await chatRef.get();
-                                
-                                // Safe fetching of group data
-                                const chatData = chatDoc.exists ? chatDoc.data() : {};
-                                const isGroup = chatData.isGroup === true;
-
-                                // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
-                                let reactorInfo;
-                                if (userCache.has(reactorUid)) {
-                                    reactorInfo = userCache.get(reactorUid);
-                                } else {
-                                    const reactorDoc = await db.collection('users').doc(reactorUid).get();
-                                    reactorInfo = reactorDoc.data() || {};
-                                    userCache.set(reactorUid, reactorInfo);
-                                    setTimeout(() => userCache.delete(reactorUid), 86400000); // UPDATED: 24-hour TTL
-                                }
-
-                                let reactorName = reactorInfo.name || reactorInfo.username || "Someone";
-                                const reactorPhoto = reactorInfo.photoURL || "https://www.goorac.biz/icon.png";
-                                const reactorUsername = reactorInfo.username || reactorUid;
-
-                                if (isGroup) reactorName = `${reactorName} in ${chatData.groupName || 'Group'}`;
-
-                                const title = isGroup ? reactorName : `New Reaction`;
-                                const body = `${isGroup ? reactorName.split(' ')[0] : reactorName} reacted ${reactionData.emoji} to your message.`;
-
-                                // 🛡️ URI FIX: Safely encode parameters to prevent Crashes
-                                const deepLink = isGroup 
-                                    ? `https://www.goorac.biz/groupChat.html?id=${encodeURIComponent(chatDocId)}` 
-                                    : `https://www.goorac.biz/chat.html?user=${encodeURIComponent(reactorUsername)}`;
-
-                                // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                                await publishWithRetry([messageOwner], {
-                                    title: title,
-                                    body: body,
-                                    icon: reactorPhoto,
-                                    deep_link: deepLink,
-                                    tag: `reaction_${chatDocId}`, // Neatly stacks multiple reactions
-                                    time_to_live: 172800 
-                                });
-                            }
-                        } catch (err) { console.error("❌ Reaction Push Error:", err); }
-                    }
-                }
-            });
-        }, (error) => { console.error("❌ Messages listener error:", error); });
-    }
-
-    // ============================================================================
-    // LISTENER 2: BULLETPROOF DATABASE CATCH-ALL FOR LIKES, COMMENTS, DROPS, NOTES
-    // ============================================================================
-    function startNotificationListener() {
-        console.log("🎧 Listening for ALL Database Notifications (Drops, Notes, Moments, Likes)...");
-        
-        // 🚀 THE PERFECT COLD START FIX
-        let isFirstRun = true; 
-
-        db.collection('notifications').onSnapshot((snapshot) => {
-            
-            if (isFirstRun) {
-                isFirstRun = false;
-                return;
-            }
-
-            snapshot.docChanges().forEach(async (change) => {
-                
-                // STRICT FIX: Ignore all historical snapshot data during the first 2 seconds
-                if (isBooting) return;
-
-                if (change.type === 'added') {
-                    const docId = change.doc.id;
-                    
-                    // Prevent duplicate processing of the same notification document
-                    if (processedNotifs.has(docId)) return;
-                    processedNotifs.add(docId);
-                    setTimeout(() => processedNotifs.delete(docId), 180000); 
-
-                    const notifData = change.doc.data();
-                    
-                    // BULLETPROOF TIMESTAMP: Uses Firestore creation time if payload timestamp is missing/broken
-                    let msgTime = SERVER_START_TIME;
-                    if (change.doc.createTime) {
-                        msgTime = change.doc.createTime.toMillis();
-                    } else if (notifData.timestamp && notifData.timestamp.toMillis) {
-                        msgTime = notifData.timestamp.toMillis();
-                    } else if (notifData.timestamp) {
-                        msgTime = new Date(notifData.timestamp).getTime();
-                    }
-
-                    // FIXED: Increased tolerance to 24 hours to prevent dropped notifications due to client drift
-                    if (Date.now() - msgTime > 86400000) return;
-                    if (msgTime <= SERVER_START_TIME) return;
-
-                    // ==============================================================
-                    // EXHAUSTIVE ID CATCHER: Guarantees we find the sender and receiver
-                    // ==============================================================
-                    const targetUid = notifData.toUid || notifData.targetUid || notifData.receiverId || notifData.ownerId || notifData.authorId || notifData.postOwnerId || notifData.to || notifData.targetUser;
-                    const senderUid = notifData.fromUid || notifData.senderUid || notifData.userId || notifData.sender || notifData.actorId || notifData.byUser || notifData.from;
-                    
-                    // Safety abort: Do not send push if IDs are missing, or if user liked their own post
-                    if (!targetUid || !senderUid || targetUid === senderUid) return; 
-
-                    try {
-                        // ALWAYS fetch exact user profile from DB to guarantee Names and PFPs are 100% correct
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
-                        let senderData;
-                        if (userCache.has(senderUid)) {
-                            senderData = userCache.get(senderUid);
-                        } else {
-                            const senderDoc = await db.collection('users').doc(senderUid).get();
-                            senderData = senderDoc.data() || {};
-                            userCache.set(senderUid, senderData);
-                            setTimeout(() => userCache.delete(senderUid), 86400000); // UPDATED: 24-hour TTL
-                        }
-
-                        const senderName = senderData.name || senderData.username || notifData.senderName || notifData.fromName || "Someone";
-                        const senderPhoto = senderData.photoURL || notifData.senderPfp || notifData.fromPfp || "https://www.goorac.biz/icon.png";
-                        
-                        // 🛡️ URI FIX: Safely encode the entire raw link to prevent Crashes
-                        let rawLink = notifData.link || notifData.targetUrl || `https://www.goorac.biz/notifications.html`;
-                        const deepLink = rawLink.startsWith('http') ? encodeURI(rawLink) : `https://www.goorac.biz/${encodeURI(rawLink.replace(/^\//, ''))}`;
-
-                        let title = "New Notification";
-                        let body = ""; 
-
-                        // Extract text payload no matter what the frontend named the variable
-                        const textContent = notifData.text || notifData.body || notifData.message || notifData.comment || notifData.noteText || "";
-                        
-                        // Force lowercase for foolproof string matching
-                        const type = (notifData.type || "").toLowerCase();
-                        const linkString = (deepLink || "").toLowerCase();
-                        const textLower = textContent.toLowerCase();
-
-                        // ==============================================================
-                        // 1. BULLETPROOF LIKE CATCHER (Drops, Notes, Moments, Posts)
-                        // ==============================================================
-                        if (type.includes('like') || textLower.includes('liked')) {
-                            title = `New Like ❤️`;
-                            
-                            // Explicitly check for Drop indicators first
-                            if (type === 'drop_like' || type.includes('drop') || notifData.dropId || linkString.includes('drop')) {
-                                body = `${senderName} liked your Drop.`;
-                            } 
-                            // Explicitly check for Note indicators
-                            else if (type === 'note_like' || type.includes('note') || notifData.noteId || linkString.includes('note')) {
-                                body = `${senderName} liked your Note.`;
-                            } 
-                            // Explicitly check for Moment indicators
-                            else if (type === 'like_moment' || type === 'moment_like' || type.includes('moment') || notifData.momentId || linkString.includes('moment')) {
-                                body = `${senderName} liked your Moment.`;
-                            } 
-                            // Fallback for general post likes
-                            else {
-                                body = `${senderName} liked your post.`;
-                            }
-                        } 
-                        
-                        // ==============================================================
-                        // 2. BULLETPROOF REPLY & COMMENT CATCHER
-                        // ==============================================================
-                        else if (type.includes('reply') || type.includes('comment') || textLower.includes('replied') || textLower.includes('commented')) {
-                            title = `New Reply 💬`;
-                            
-                            if (type === 'drop_reply' || type.includes('drop') || notifData.dropId || linkString.includes('drop')) {
-                                 body = textContent ? `${senderName} replied to your Drop: "${textContent}"` : `${senderName} replied to your Drop.`;
-                            } 
-                            else if (type === 'note_reply' || type.includes('note') || notifData.noteId || linkString.includes('note')) {
-                                 body = textContent ? `${senderName} replied to your Note: "${textContent}"` : `${senderName} replied to your Note.`;
-                            } 
-                            else if (type === 'moment_reply' || type === 'moment_comment' || type.includes('moment') || notifData.momentId || linkString.includes('moment')) {
-                                 body = textContent ? `${senderName} replied to your Moment: "${textContent}"` : `${senderName} replied to your Moment.`;
-                            } 
-                            else {
-                                 body = textContent ? `${senderName} commented: "${textContent}"` : `${senderName} commented on your post.`;
-                            }
-                        } 
-
-                        // ==============================================================
-                        // 3. FOLLOW CATCHER
-                        // ==============================================================
-                        else if (type.includes('follow')) {
-                            title = `New Follower 👤`;
-                            body = `${senderName} started following you.`;
-                        }
-
-                        // ==============================================================
-                        // 4. GENERIC INTERACTION FALLBACK
-                        // ==============================================================
-                        else if (type.includes('drop') || notifData.dropId) {
-                            title = `Drop Interaction 🔔`;
-                            body = `${senderName} interacted with your Drop.`;
-                        }
-                        else if (type.includes('note') || notifData.noteId) {
-                            title = `Note Interaction 🔔`;
-                            body = `${senderName} interacted with your Note.`;
-                        }
-                        else if (type.includes('moment') || notifData.momentId) {
-                            title = `Moment Interaction 🔔`;
-                            body = `${senderName} interacted with your Moment.`;
-                        }
-                        else {
-                            // Ultimate fail-safe so no database event is ever missed
-                            title = `New Activity 🔔`;
-                            body = textContent || `${senderName} interacted with your profile.`;
-                        }
-
-                        // Publish the final constructed notification
-                        // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                        await publishWithRetry([targetUid], {
-                            title: title,
-                            body: body,
-                            icon: senderPhoto,
-                            deep_link: deepLink,
-                            tag: "social_notifications", // Stacks ALL social alerts into one neat group!
-                            time_to_live: 172800 // ADVANCED FIX: 48 Hours
-                        });
-                        
-                        console.log(`✅ Pure DB Push sent to ${targetUid} for event type: ${type}`);
-
-                    } catch (error) { 
-                        console.error("❌ Notification Push Error:", error); 
-                    }
-                }
-            });
-        }, (error) => { console.error("❌ Notifications DB listener error:", error); });
-    }
-
-    // ============================================================================
-    // LISTENER 3: AUDIO AND VIDEO CALLS
-    // ============================================================================
-    function startCallListener() {
-        console.log("🎧 Listening for Incoming and Missed Calls...");
-
-        // 🚀 THE PERFECT COLD START FIX FOR CALLS
-        let isFirstRunIncoming = true; 
-        let isFirstRunMissed = true;
-
-        // 1. INCOMING CALLS (Watches the 'calls' signaling collection)
-        db.collection('calls').onSnapshot((snapshot) => {
-            
-            if (isFirstRunIncoming) {
-                isFirstRunIncoming = false;
-                return;
-            }
-
-            snapshot.docChanges().forEach(async (change) => {
-                
-                if (isBooting) return;
-
-                if (change.type === 'added' || change.type === 'modified') {
-                    const callData = change.doc.data();
-                    if (callData.status !== 'calling') return; // Only notify if currently ringing
-
-                    const targetUid = change.doc.id; // Receiver's UID is the Document ID
-                    const callerUid = callData.callerId;
-                    if (!targetUid || !callerUid) return;
-
-                    // Throttle calls to prevent ringing them 50 times during ICE candidate exchange
-                    const throttleKey = `call_${targetUid}_${callerUid}`;
-                    if (processedNotifs.has(throttleKey)) return;
-                    processedNotifs.add(throttleKey);
-                    setTimeout(() => processedNotifs.delete(throttleKey), 45000); 
-
-                    try {
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
-                        let callerInfo;
-                        if (userCache.has(callerUid)) {
-                            callerInfo = userCache.get(callerUid);
-                        } else {
-                            const callerDoc = await db.collection('users').doc(callerUid).get();
-                            callerInfo = callerDoc.data() || {};
-                            userCache.set(callerUid, callerInfo);
-                            setTimeout(() => userCache.delete(callerUid), 86400000); // UPDATED: 24-hour TTL
-                        }
-
-                        const callerName = callerInfo.name || callerInfo.username || callData.callerName || "Someone";
-                        const callerPhoto = callerInfo.photoURL || callData.callerPfp || "https://www.goorac.biz/icon.png";
-                        
-                        const isVideo = callData.type === 'video';
-
-                        const title = isVideo ? "Incoming Video Call 🎥" : "Incoming Audio Call 📞";
-                        const body = `${callerName} is calling you... Tap to answer.`;
-                        const deepLink = `https://www.goorac.biz/calls.html`;
-
-                        // --- ADVANCED: Publish with Retry - KEEP TTL 60 to prevent phantom ringing later ---
-                        await publishWithRetry([targetUid], {
-                            title: title,
-                            body: body,
-                            icon: callerPhoto,
-                            deep_link: deepLink,
-                            tag: "incoming_call",
-                            time_to_live: 60, // MUST STAY 60 FOR CALLS
-                            sound: "ringtone.wav"
-                        });
-                        console.log(`✅ Incoming Call Push sent to ${targetUid}`);
-                    } catch (e) { console.error("❌ Call Push Error:", e); }
-                }
-            });
-        }, (error) => { console.error("❌ Calls listener error:", error); });
-
-        // --- ADVANCED FIX: ADDED REALTIME DATABASE LISTENER BECAUSE FRONTEND USES RDB FOR CALLS ---
-        rdb.ref('calls_status').on('child_added', async (snapshot) => {
-            processRdbCall(snapshot);
-        });
-        rdb.ref('calls_status').on('child_changed', async (snapshot) => {
-            processRdbCall(snapshot);
-        });
-
-        async function processRdbCall(snapshot) {
-            if (isBooting) return;
-            const targetUid = snapshot.key;
-            const callData = snapshot.val();
-            
-            if (!callData || callData.status !== 'ringing') return;
-
-            const callerUid = callData.callerId;
-            if (!targetUid || !callerUid) return;
-
-            // Throttle to avoid duplicate RDB and Firestore pings
-            const throttleKey = `call_rdb_${targetUid}_${callerUid}`;
-            if (processedNotifs.has(throttleKey)) return;
-            processedNotifs.add(throttleKey);
-            setTimeout(() => processedNotifs.delete(throttleKey), 45000); 
-
-            try {
-                let callerInfo;
-                if (userCache.has(callerUid)) {
-                    callerInfo = userCache.get(callerUid);
-                } else {
-                    const callerDoc = await db.collection('users').doc(callerUid).get();
-                    callerInfo = callerDoc.data() || {};
-                    userCache.set(callerUid, callerInfo);
-                    setTimeout(() => userCache.delete(callerUid), 86400000); 
-                }
-
-                const callerName = callerInfo.name || callerInfo.username || callData.callerName || "Someone";
-                const callerPhoto = callerInfo.photoURL || callData.callerPfp || "https://www.goorac.biz/icon.png";
-                const isVideo = callData.type === 'video';
-
-                const title = isVideo ? "Incoming Video Call 🎥" : "Incoming Audio Call 📞";
-                const body = `${callerName} is calling you... Tap to answer.`;
-                const deepLink = `https://www.goorac.biz/calls.html?targetUid=${targetUid}&autoAnswer=true`;
-
-                // --- ADVANCED RINGING PAYLOAD ---
-                await publishWithRetry([targetUid], {
-                    title: title,
-                    body: body,
-                    icon: callerPhoto,
-                    deep_link: deepLink,
-                    tag: "incoming_call",
-                    time_to_live: 60, // MUST STAY 60 FOR CALLS
-                    sound: "ringtone.wav"
-                });
-                console.log(`✅ Incoming Call Push (RDB fallback) sent to ${targetUid}`);
-            } catch (e) { console.error("❌ RDB Call Push Error:", e); }
-        }
-
-        // 2. MISSED CALLS (Watches the 'call_logs' collection)
-        db.collection('call_logs').onSnapshot((snapshot) => {
-            
-            if (isFirstRunMissed) {
-                isFirstRunMissed = false;
-                return;
-            }
-
-            snapshot.docChanges().forEach(async (change) => {
-                
-                let msgTime = SERVER_START_TIME;
-                if (change.doc.createTime) msgTime = change.doc.createTime.toMillis();
-
-                // STRICT FIX: Ignore historical data on boot, BUT allow missed calls from the last 10 minutes
-                if (isBooting && (Date.now() - msgTime > 600000)) return;
-
-                if (change.type === 'added') {
-                    const logData = change.doc.data();
-                    if (logData.status !== 'missed') return; // Only notify if missed
-
-                    const targetUid = logData.receiverId;
-                    const callerUid = logData.callerId;
-                    if (!targetUid || targetUid === callerUid) return;
-
-                    const docId = change.doc.id;
-                    if (processedNotifs.has(docId)) return;
-                    processedNotifs.add(docId);
-                    setTimeout(() => processedNotifs.delete(docId), 180000);
-
-                    try {
-                        // HIGH-SPEED CACHE INJECTION (Upgraded to 24 Hours)
-                        let callerInfo;
-                        if (userCache.has(callerUid)) {
-                            callerInfo = userCache.get(callerUid);
-                        } else {
-                            const callerDoc = await db.collection('users').doc(callerUid).get();
-                            callerInfo = callerDoc.data() || {};
-                            userCache.set(callerUid, callerInfo);
-                            setTimeout(() => userCache.delete(callerUid), 86400000); // UPDATED: 24-hour TTL
-                        }
-
-                        const callerName = callerInfo.name || callerInfo.username || logData.callerName || "Someone";
-                        const callerPhoto = callerInfo.photoURL || logData.callerPfp || "https://www.goorac.biz/icon.png";
-                        
-                        const isVideo = logData.type === 'video';
-
-                        const title = "Missed Call 📵";
-                        const body = `You missed a ${isVideo ? 'video' : 'voice'} call from ${callerName}.`;
-                        const deepLink = `https://www.goorac.biz/calls.html`;
-
-                        // --- ADVANCED: Publish with Retry and 48-Hour TTL ---
-                        await publishWithRetry([targetUid], {
-                            title: title,
-                            body: body,
-                            icon: callerPhoto,
-                            deep_link: deepLink,
-                            tag: `missed_call_${callerUid}`, // Stacks multiple missed calls
-                            time_to_live: 172800 
-                        });
-                        console.log(`✅ Missed Call Push sent to ${targetUid}`);
-                    } catch (e) { console.error("❌ Missed Call Push Error:", e); }
-                }
-            });
-        }, (error) => { console.error("❌ Call Logs listener error:", error); });
-    }
-
-    // Export all listeners wrapped in a single starter function
-    function startPushListener() {
-        startMessageListener();
-        startNotificationListener();
-        startCallListener(); // <-- Starts the new Call Listeners
-    }
-
-    // Start the Firebase background listeners when this module is required
-    startPushListener();
-}
+// Wrap the schedules so they can be triggered from the master server
+module.exports = function startScheduledPushes() {
+  // --- SCHEDULES ---
+  // The timezone parameter ensures it fires exactly at your local time, regardless of Render's server location.
+
+  // 1. Morning Schedule (6:45 AM)
+  cron.schedule('45 6 * * *', () => {
+    const randomMsg = morningMessages[Math.floor(Math.random() * morningMessages.length)];
+    sendBroadcast(randomMsg);
+  }, { timezone: "Asia/Kolkata" });
+
+  // 2. Afternoon Schedule (12:30 PM)
+  cron.schedule('30 12 * * *', () => {
+    const randomMsg = afternoonMessages[Math.floor(Math.random() * afternoonMessages.length)];
+    sendBroadcast(randomMsg);
+  }, { timezone: "Asia/Kolkata" });
+
+  // 3. Evening Schedule (7:30 PM / 19:30)
+  cron.schedule('30 19 * * *', () => {
+    const randomMsg = eveningMessages[Math.floor(Math.random() * eveningMessages.length)];
+    sendBroadcast(randomMsg);
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log('⏳ Goorac Quantum Scheduled Notification Service is running...');
+};
