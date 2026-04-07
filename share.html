@@ -240,52 +240,6 @@
     // ==========================================
     let hasReceivedFile = false;
 
-    // =========================================================================
-    // 1.5 NEW: FETCH SHARED FILE FROM NODE.JS RAM SERVER (HUGGING FACE)
-    // =========================================================================
-    async function fetchTempShareFromServer() {
-        const params = new URLSearchParams(window.location.search);
-        const tempId = params.get('tempId');
-        
-        // Grab text/url parameters if the OS sent them through the redirect
-        const text = params.get('text') || '';
-        const url = params.get('url') || '';
-        const title = params.get('title') || '';
-        
-        if (title || text || url) {
-            sharedText = `${title} ${text} ${url}`.trim();
-        }
-
-        if (tempId) {
-            hasReceivedFile = true; // Locks out the old SW/IndexedDB fallbacks below
-            try {
-                document.getElementById('processing-screen').style.display = 'flex';
-
-                const response = await fetch(`https://corporationgoorac-quantumbackend.hf.space/share/preview/${tempId}`);
-                
-                if (!response.ok) throw new Error("File expired or missing");
-
-                const blob = await response.blob();
-                
-                // Reconstruct a File object so your pickers can read file.name and file.size
-                const fileName = response.headers.get('x-original-filename') || `shared_media_${Date.now()}`;
-                const file = new File([blob], fileName, { type: blob.type });
-
-                // Trigger your existing picker logic
-                processSharedFile(file);
-
-            } catch (error) {
-                console.error("Failed to fetch temp file:", error);
-                document.getElementById('preview-text').innerText = "Failed to load shared file. It may have expired.";
-                showShareUI();
-            }
-        }
-    }
-
-    // Execute the new server pull immediately
-    fetchTempShareFromServer();
-
-
     // --- NEW: PULL FROM INDEXEDDB IF PWA WAS CLOSED ---
     async function checkPersistentShareData() {
         return new Promise((resolve) => {
@@ -453,11 +407,11 @@
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || "Shared Image";
         } else if (finalMediaUrl && finalMediaType === 'video') {
-            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>磁</text></svg>";
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>🎥</text></svg>";
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared Video";
         } else if (finalMediaUrl) {
-            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>塘</text></svg>";
+            thumb.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%231e1e1e'/><text x='50%' y='50%' font-size='24' text-anchor='middle' dominant-baseline='central'>📄</text></svg>";
             thumb.style.display = 'block';
             textPreview.innerText = sharedText || finalMediaMeta?.name || "Shared File";
         } else {
@@ -640,10 +594,10 @@
         // Determine inbox display text
         let displayTxt = sharedText || "Shared Media";
         if (!sharedText && finalMediaUrl) {
-            if (finalMediaType === 'image') displayTxt = "胴 Image";
-            else if (finalMediaType === 'video') displayTxt = "磁 Video";
-            else if (finalMediaType === 'audio') displayTxt = "七 Audio";
-            else displayTxt = "梼 Attachment";
+            if (finalMediaType === 'image') displayTxt = "📷 Image";
+            else if (finalMediaType === 'video') displayTxt = "🎥 Video";
+            else if (finalMediaType === 'audio') displayTxt = "🎵 Audio";
+            else displayTxt = "📎 Attachment";
         }
 
         const batch = db.batch();
