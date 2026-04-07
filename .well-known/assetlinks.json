@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "biz.goorac.www.twa",
-        "sha256_cert_fingerprints": ["D5:02:75:E3:B6:9F:46:5F:62:C0:09:44:A6:89:31:0F:07:2B:9F:E5:08:12:57:16:FD:01:93:0C:6D:89:29:E6"]
+        "sha256_cert_fingerprints": ["60:B0:4B:6E:98:E0:40:00:0D:66:B2:A5:C8:54:38:15:5B:E2:9B:F8:01:93:98:A1:D9:D3:03:E9:BC:B6:49:17"]
       }
     }]
