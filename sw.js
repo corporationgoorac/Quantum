@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v54'; // Bumped to v34 to trigger immediate update
+const CACHE_NAME = 'goorac-quantum-v59'; // Bumped version to force cache update (Fixed Const to const)
 const ASSETS = [
     '/',
     '/aboutGroup.html',
@@ -27,6 +27,7 @@ const ASSETS = [
     '/pulse.html',
     '/pulseLobby.html',
     '/setup.html',
+    '/share.html',
     '/userProfile.html',
     '/vision.html',
     '/visionLobby.html',
@@ -56,12 +57,13 @@ const ASSETS = [
     '/components/viewNotes.js'
 ];
 
+// If you are still using Pusher Beams, uncomment the line below:
+// importScripts("https://js.pusher.com/beams/service-worker.js");
+
 // 1. Install (Cache Files)
 self.addEventListener('install', (e) => {
     self.skipWaiting();
     e.waitUntil(caches.open(CACHE_NAME).then(c => {
-        // Use cache.addAll if you want strict "all or nothing" caching
-        // Your current method is fine if you want to be lenient
         return Promise.all(ASSETS.map(url => c.add(url).catch(console.warn)));
     }));
 });
@@ -74,7 +76,6 @@ self.addEventListener('activate', (e) => {
             caches.keys().then(keys => {
                 return Promise.all(
                     keys.map(key => {
-                        // Delete any cache that doesn't match the current CACHE_NAME
                         if (key !== CACHE_NAME) {
                             return caches.delete(key);
                         }
@@ -87,41 +88,120 @@ self.addEventListener('activate', (e) => {
 
 // 3. Fetch (Stale-While-Revalidate to KILL the loading bar, with Offline Fallback)
 self.addEventListener('fetch', (e) => {
+    // --- ADVANCED 405 FIX: Crash-Proof OS POST Request Interception ---
+    if (e.request.method === 'POST' && e.request.url.includes('/share.html')) {
+        e.respondWith((async () => {
+            try {
+                let formData;
+                
+                // THE ULTIMATE FIX: Clone the request so we can safely try reading it twice without destroying the stream!
+                const reqCloneForFormData = e.request.clone();
+                const reqCloneForText = e.request.clone();
+
+                // Android throws URL-Encoded forms on text-only which crashes formData()
+                try {
+                    formData = await reqCloneForFormData.formData();
+                } catch (formDataError) {
+                    console.warn("formData parse failed, falling back to text mapping...");
+                    // Fallback to manual text parsing if it wasn't multipart
+                    const rawText = await reqCloneForText.text();
+                    const params = new URLSearchParams(rawText);
+                    formData = {
+                        getAll: (key) => [], // No files in URL Encoded fallback
+                        get: (key) => params.get(key) || ''
+                    };
+                }
+
+                // Safely grab the data
+                const files = (formData.getAll && typeof formData.getAll === 'function') ? formData.getAll('shared_files') : [];
+                const title = formData.get('title') || '';
+                const text = formData.get('text') || '';
+                const url = formData.get('url') || '';
+
+                // ADVANCED FIX: Store in IndexedDB to survive Service Worker sleeping
+                await new Promise((resolve) => {
+                    try {
+                        const request = indexedDB.open('GooracShareDB', 1);
+                        request.onupgradeneeded = (evt) => {
+                            evt.target.result.createObjectStore('shared_data');
+                        };
+                        request.onsuccess = (evt) => {
+                            const db = evt.target.result;
+                            const tx = db.transaction('shared_data', 'readwrite');
+                            tx.objectStore('shared_data').put({ files, title, text, url }, 'latest_share');
+                            tx.oncomplete = resolve;
+                        };
+                        request.onerror = resolve;
+                    } catch(err) {
+                        resolve();
+                    }
+                });
+
+                // Send the files directly if the UI happens to be fully awake
+                const client = await self.clients.get(e.clientId || await self.clients.matchAll().then(clients => clients[0]?.id));
+                if (client) {
+                    client.postMessage({ type: 'SHARED_DATA', files, title, text, url });
+                }
+
+                // Redirect the user to the actual page using GET (303)
+                return Response.redirect('/share.html', 303);
+                
+            } catch (fatalError) {
+                console.error("Fatal SW Catch:", fatalError);
+                // IF EVERYTHING BURNS TO THE GROUND, FORCE A 303 REDIRECT ANYWAY TO PREVENT 405!
+                return Response.redirect('/share.html', 303);
+            }
+        })());
+        return; // Stop execution here so it doesn't hit the GET logic below
+    }
+    // ----------------------------------------------------------------
+
     // Only intercept standard GET requests
     if (e.request.method !== 'GET') return;
 
     e.respondWith(
-        // ADDED { ignoreSearch: true } HERE to ignore query parameters that break caching
         caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
             
             // 1. Kick off a background network request to fetch the freshest data
             const fetchPromise = fetch(e.request).then((networkResponse) => {
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Update the cache silently in the background so the next launch is up-to-date
-                    // We clone() the response because it can only be consumed once
                     if (networkResponse.ok) {
                         cache.put(e.request, networkResponse.clone());
                     }
                 });
                 return networkResponse;
             }).catch(() => {
-                // Network failed (user is offline). 
-                // If they are trying to navigate to a new page, fallback to home.html
                 if (e.request.mode === 'navigate') {
                     return caches.match('/home.html');
                 }
             });
 
-            // 2. THE MAGIC TRICK: Return the cached response INSTANTLY if we have it.
-            // If we don't have it in the cache yet, wait for the network fetch.
             return cachedResponse || fetchPromise;
         })
     );
 });
 
-// 4. Notification Click
+// 4. Notification Click (Updated to force Android app focus instead of Chrome)
 self.addEventListener('notificationclick', (e) => {
     e.notification.close();
-    const url = e.notification.data?.url || '/home.html';
-    e.waitUntil(clients.openWindow(url));
+    
+    // Ensure we build a full URL based on your domain
+    const urlToOpen = new URL(e.notification.data?.url || '/home.html', self.location.origin).href;
+
+    e.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            // Check if the app is already open in the background
+            for (let i = 0; i < windowClients.length; i++) {
+                let client = windowClients[i];
+                // If it is open, bring it to the front
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // If it is completely closed, open a new standalone PWA window
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
+    );
 });
