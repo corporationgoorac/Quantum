@@ -502,6 +502,7 @@
                 </div>
 
                 <div id="youtube-player"></div>
+                <video id="html5-player" style="display:none; width:100%; height:100%; z-index:10; object-fit:contain; background:#000;" playsinline></video>
                 
                 <div id="video-progress-container" onclick="seekTimeline(event)">
                     <div id="video-progress-bar"></div>
@@ -650,6 +651,9 @@
         <div class="picker-header">
             <span class="material-icons-round" style="font-size:32px; color:#fff; cursor:pointer;" onclick="closePicker(false)">expand_more</span>
             <input type="text" id="vid-search-input" class="search-box" placeholder="Search or paste YouTube link...">
+            <button class="dj-btn" style="background:var(--accent); color:#fff; margin-left:10px; padding:10px;" onclick="handlePasteLink()" title="Paste Video Link">
+                <span class="material-icons-round">content_paste</span>
+            </button>
         </div>
         <div id="picker-results">
             <div style="text-align:center; padding: 50px; color:#666;">
@@ -681,6 +685,15 @@
             const s = Math.floor(seconds % 60);
             if (h > 0) return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
             return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // NEW MP4 SUPPORT: Handle Paste Link Button Click
+        function handlePasteLink() {
+            const url = prompt("Paste a direct video link (e.g., ending in .mp4):");
+            if (url && url.trim() !== "") {
+                const cleanUrl = url.trim();
+                selectVideo({ id: cleanUrl, title: "Custom Direct Video", author: "Pasted Link", imgUrl: "https://via.placeholder.com/120x68/222222/00d2ff?text=MP4" });
+            }
         }
 
         // ==========================================================================
@@ -873,6 +886,79 @@
         function createPlayer(vidId, startTime = 0) {
             document.getElementById('video-placeholder').style.display = 'none';
             document.getElementById('video-touch-overlay').style.display = 'flex';
+
+            // --- INJECTED MP4 NATIVE SUPPORT ---
+            const isHTML5 = vidId.toLowerCase().includes('.mp4') || (vidId.startsWith('http') && !vidId.includes('youtube.com') && !vidId.includes('youtu.be'));
+            const html5Video = document.getElementById('html5-player');
+            const ytVideo = document.getElementById('youtube-player');
+
+            if (isHTML5) {
+                ytVideo.style.display = 'none';
+                html5Video.style.display = 'block';
+
+                if (player && player.isHTML5Adapter) {
+                    player.loadVideoById({videoId: vidId, startSeconds: startTime});
+                    return;
+                }
+
+                if (player && typeof player.destroy === 'function' && !player.isHTML5Adapter) {
+                    try { player.destroy(); } catch(e){}
+                    player = null;
+                    ytVideo.outerHTML = '<div id="youtube-player"></div>';
+                }
+
+                if (typeof window.YT === 'undefined' || !window.YT.PlayerState) {
+                    window.YT = window.YT || {};
+                    window.YT.PlayerState = { PLAYING: 1, PAUSED: 2, BUFFERING: 3, ENDED: 0 };
+                }
+
+                player = {
+                    isHTML5Adapter: true,
+                    loadVideoById: function(args) { 
+                        html5Video.src = args.videoId; 
+                        html5Video.currentTime = args.startSeconds || 0; 
+                        html5Video.play().catch(()=>{}); 
+                    },
+                    playVideo: function() { html5Video.play().catch(()=>{}); },
+                    pauseVideo: function() { html5Video.pause(); },
+                    seekTo: function(time) { html5Video.currentTime = time; },
+                    getCurrentTime: function() { return html5Video.currentTime; },
+                    getDuration: function() { return html5Video.duration || 0; },
+                    getPlayerState: function() {
+                        if (html5Video.ended) return YT.PlayerState.ENDED;
+                        if (html5Video.paused) return YT.PlayerState.PAUSED;
+                        if (html5Video.readyState < 3) return YT.PlayerState.BUFFERING;
+                        return YT.PlayerState.PLAYING;
+                    },
+                    stopVideo: function() { html5Video.pause(); html5Video.src = ''; },
+                    destroy: function() { html5Video.pause(); html5Video.src = ''; player = null; }
+                };
+
+                html5Video.src = vidId;
+                html5Video.currentTime = startTime;
+
+                html5Video.oncanplay = () => {
+                    isPlayerReady = true;
+                    visionDb.collection('vision_rooms').doc(roomId).get().then(doc => {
+                        if(doc.exists) syncVisionEngine(doc.data());
+                    });
+                };
+                html5Video.onplay = () => onPlayerStateChange({data: YT.PlayerState.PLAYING});
+                html5Video.onpause = () => onPlayerStateChange({data: YT.PlayerState.PAUSED});
+                html5Video.onended = () => onPlayerStateChange({data: YT.PlayerState.ENDED});
+                html5Video.onwaiting = () => onPlayerStateChange({data: YT.PlayerState.BUFFERING});
+                html5Video.onplaying = () => onPlayerStateChange({data: YT.PlayerState.PLAYING});
+                
+                return;
+            } else {
+                html5Video.style.display = 'none';
+                ytVideo.style.display = 'block';
+                if (player && player.isHTML5Adapter) {
+                    player.destroy();
+                    player = null;
+                }
+            }
+            // --- END INJECTED MP4 NATIVE SUPPORT ---
 
             if (player) {
                 player.loadVideoById({videoId: vidId, startSeconds: startTime});
@@ -1404,6 +1490,12 @@
             if (e.key === 'Enter') {
                 const query = e.target.value.trim();
                 if (!query) return;
+
+                // NEW MP4 SUPPORT: Quick catch for direct MP4 links typed/pasted and hit Enter
+                if (query.toLowerCase().endsWith('.mp4') || (query.startsWith('http') && !query.includes('youtube') && !query.includes('youtu.be'))) {
+                    selectVideo({ id: query, title: "Custom Direct Video", author: "Direct Link", imgUrl: "https://via.placeholder.com/120x68/222222/00d2ff?text=MP4" });
+                    return;
+                }
                 
                 const container = document.getElementById('picker-results');
                 
