@@ -1,6 +1,6 @@
 /**
  * Goorac Quantum Engine - Universal GIF Picker Component
- * Uses the Keyless Tenor Legacy API to bypass all 401/403 browser blocks.
+ * Uses the GIPHY API Public Beta Key.
  */
 
 class GifPicker extends HTMLElement {
@@ -9,8 +9,8 @@ class GifPicker extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         
         // --- 1. CORE API CONFIGURATION ---
-        // Universal Master Key - No registration required, bypasses browser origin blocks.
-        this.apiKey = 'LIVDSRZULELA'; 
+        // GIPHY Public Beta Key
+        this.apiKey = 'dc6zaTOxFJmzC'; 
         
         // Local Storage State
         let savedRecents = JSON.parse(localStorage.getItem('goorac_gif_recents')) || [];
@@ -20,7 +20,7 @@ class GifPicker extends HTMLElement {
         this.lastSearchedTerm = "";
         this.searchTimeout = null;
         this.activeCategory = 'trending';
-        this.nextPos = null; // Used for Tenor pagination
+        this.nextPos = null; // Used for pagination
         this.isFetchingMore = false;
         
         // AI State
@@ -208,10 +208,10 @@ class GifPicker extends HTMLElement {
         const cacheKey = `${endpoint}_${query}_${limit}_${pos}`;
         if (this.apiCache[cacheKey]) return this.apiCache[cacheKey];
 
-        // Using Tenor V1 Legacy Endpoint with Universal Key
-        let url = `https://g.tenor.com/v1/${endpoint}?key=${this.apiKey}&limit=${limit}&media_filter=minimal`;
+        // Using GIPHY API
+        let url = `https://api.giphy.com/v1/gifs/${endpoint}?api_key=${this.apiKey}&limit=${limit}`;
         if (query) url += `&q=${encodeURIComponent(query)}`;
-        if (pos) url += `&pos=${pos}`;
+        if (pos) url += `&offset=${pos}`;
 
         try {
             const response = await fetch(url);
@@ -219,19 +219,19 @@ class GifPicker extends HTMLElement {
             
             const data = await response.json();
             
-            // Map Tenor V1 data payload
-            const results = data.results.map(gif => {
-                const media = gif.media[0].tinygif; // Optimized for chat
+            // Map GIPHY data payload
+            const results = data.data.map(gif => {
+                const media = gif.images.fixed_height_small; // Optimized for chat
                 return {
                     id: gif.id,
                     url: media.url,
-                    width: media.dims[0],
-                    height: media.dims[1],
+                    width: parseInt(media.width, 10),
+                    height: parseInt(media.height, 10),
                     title: gif.title || "GIF"
                 };
             });
             
-            const returnData = { results: results, next: data.next };
+            const returnData = { results: results, next: data.pagination.offset + data.pagination.count };
             this.apiCache[cacheKey] = returnData;
             return returnData;
             
