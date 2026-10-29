@@ -548,77 +548,6 @@
             50% { transform: translateY(-4px); opacity: 1; background: var(--accent); } 
         }
 
-        /* LIVE SYNC WORD-BY-WORD BUBBLE STYLES */
-        @keyframes liveBorderPulse {
-            0%, 100% { 
-                border-color: rgba(255, 109, 0, 0.35); 
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 109, 0, 0.15); 
-            }
-            50% { 
-                border-color: var(--accent); 
-                box-shadow: 0 6px 22px rgba(255, 109, 0, 0.35), 0 0 14px var(--accent-dim); 
-            }
-        }
-
-        @keyframes liveCursorBlink {
-            0%, 100% { opacity: 1; transform: scaleY(1); }
-            50% { opacity: 0.25; transform: scaleY(0.85); }
-        }
-
-        .typing-bubble.live-sync-bubble {
-            background: var(--received-bg) !important;
-            color: var(--received-text) !important;
-            padding: 12px 18px !important;
-            border-radius: 22px !important;
-            border-bottom-left-radius: 4px !important;
-            height: auto !important;
-            min-height: 42px;
-            max-width: 75vw;
-            width: fit-content;
-            display: inline-block !important;
-            font-size: 1.05rem;
-            line-height: 1.45;
-            letter-spacing: 0.3px;
-            word-wrap: break-word;
-            border: 1.5px solid var(--accent) !important;
-            animation: liveBorderPulse 1.8s infinite ease-in-out;
-            transition: all 0.2s var(--ease-smooth);
-        }
-
-        .live-sync-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.65rem;
-            font-weight: 800;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
-            opacity: 0.95;
-        }
-
-        .live-sync-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent);
-            border-radius: 50%;
-            box-shadow: 0 0 6px var(--accent);
-            animation: pulseGreen 1.2s infinite;
-        }
-
-        .live-sync-cursor {
-            display: inline-block;
-            width: 7px;
-            height: 15px;
-            background: var(--accent);
-            vertical-align: middle;
-            margin-left: 5px;
-            border-radius: 2px;
-            box-shadow: 0 0 8px var(--accent);
-            animation: liveCursorBlink 0.9s infinite ease-in-out;
-        }
-
         /* FIX: Ensure scroll trigger is absolutely positioned at the top for proper intersection observation */
         #scroll-trigger { 
             position: absolute;
@@ -2119,83 +2048,9 @@ box-shadow: var(--received-shadow);
     let statusUpdateInterval = null;
     let isFirstStatusLoad = true; 
 
-    // Audio SFX & Crisp Web Audio API Synthesizer (Zero External Dependency)
+    // Audio SFX
     const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
     const likeSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
-
-    const SoundFX = (function() {
-        let ctx = null;
-        function getContext() {
-            if (!ctx) {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (AudioCtx) ctx = new AudioCtx();
-            }
-            if (ctx && ctx.state === 'suspended') {
-                ctx.resume().catch(() => {});
-            }
-            return ctx;
-        }
-        return {
-            playSendSnap: function() {
-                try {
-                    const c = getContext();
-                    if (!c) { popSound.play().catch(()=>{}); return; }
-                    const now = c.currentTime;
-                    
-                    // High-definition transient snap + warm acoustic pop
-                    const osc = c.createOscillator();
-                    const gain = c.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(320, now);
-                    osc.frequency.exponentialRampToValueAtTime(1150, now + 0.035);
-                    osc.frequency.exponentialRampToValueAtTime(180, now + 0.065);
-                    
-                    gain.gain.setValueAtTime(0.01, now);
-                    gain.gain.linearRampToValueAtTime(0.38, now + 0.008);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
-                    
-                    osc.connect(gain);
-                    gain.connect(c.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.07);
-                } catch (e) { popSound.play().catch(()=>{}); }
-            },
-            playReceiveSnap: function() {
-                try {
-                    const c = getContext();
-                    if (!c) { popSound.play().catch(()=>{}); return; }
-                    const now = c.currentTime;
-                    
-                    // Crisp dual-harmonic incoming crystal lock chime
-                    const osc1 = c.createOscillator();
-                    const osc2 = c.createOscillator();
-                    const gain = c.createGain();
-                    
-                    osc1.type = 'sine';
-                    osc2.type = 'triangle';
-                    
-                    osc1.frequency.setValueAtTime(587.33, now); // D5
-                    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.045); // A5
-                    
-                    osc2.frequency.setValueAtTime(1174.66, now); // D6 harmonic
-                    osc2.frequency.exponentialRampToValueAtTime(1760, now + 0.045);
-                    
-                    gain.gain.setValueAtTime(0.01, now);
-                    gain.gain.linearRampToValueAtTime(0.28, now + 0.01);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
-                    
-                    osc1.connect(gain);
-                    osc2.connect(gain);
-                    gain.connect(c.destination);
-                    
-                    osc1.start(now);
-                    osc2.start(now);
-                    osc1.stop(now + 0.1);
-                    osc2.stop(now + 0.1);
-                } catch (e) { popSound.play().catch(()=>{}); }
-            }
-        };
-    })();
 
     // DOM References
     const mInput = document.getElementById('m-input');
@@ -2220,8 +2075,7 @@ box-shadow: var(--received-shadow);
     setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
     const msgResizeObserver = new ResizeObserver(() => {
-        const distFromBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
-        if (!window.isLoadingMore && (window.isInitialLoadScroll || distFromBottom < 120)) {
+        if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 450))) {
             window.scrollToBottom();
         }
     });
@@ -2385,20 +2239,14 @@ box-shadow: var(--received-shadow);
     sendBtnUI.addEventListener('mousedown', handleSendClick);
     sendBtnUI.addEventListener('touchstart', handleSendClick);
 
-    // Auto-Resize Textarea & Word-by-Word Live Sync Engine
-    let liveTypingDebounce = null;
-    let lastSyncedLiveText = "";
-
+    // Auto-Resize Textarea
     mInput.addEventListener('input', function() {
         this.style.height = 'auto'; 
-        this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+        this.style.height = (this.scrollHeight) + 'px';
         if(this.value === '') this.style.height = 'auto';
         
-        const rawVal = this.value;
-        const trimmedVal = rawVal.trim();
-
         // Toggle Send / Mic Button / Emoji positions
-        if(trimmedVal.length > 0) {
+        if(this.value.trim().length > 0) {
             sendBtnUI.classList.add('active');
             micWrapper.style.display = 'none';
             // Swap icons layout when typing starts
@@ -2406,30 +2254,9 @@ box-shadow: var(--received-shadow);
             document.getElementById('emoji-toggle-left').style.display = 'flex';
             document.getElementById('emoji-toggle-right').style.display = 'none';
             document.getElementById('gif-toggle-right').style.display = 'none';
-            
-            // WORD-BY-WORD LIVE SYNC TO RTDB (Zero Firestore Reads/Writes, Same Rules)
-            if (chatId && myUid) {
-                const isWordBoundary = /[\s.,!?]$/.test(rawVal);
-                const isFirstWordStart = lastSyncedLiveText === "";
-
-                if ((isWordBoundary || isFirstWordStart) && trimmedVal !== lastSyncedLiveText) {
-                    clearTimeout(liveTypingDebounce);
-                    lastSyncedLiveText = trimmedVal;
-                    rdb.ref(`typing/${chatId}/${myUid}`).set(trimmedVal);
-                } else {
-                    clearTimeout(liveTypingDebounce);
-                    liveTypingDebounce = setTimeout(() => {
-                        const currentTrimmed = mInput.value.trim();
-                        if (currentTrimmed.length > 0 && currentTrimmed !== lastSyncedLiveText) {
-                            lastSyncedLiveText = currentTrimmed;
-                            rdb.ref(`typing/${chatId}/${myUid}`).set(currentTrimmed);
-                        }
-                    }, 380);
-                }
-            }
+            // Send Typing Indicator
+            rdb.ref(`typing/${chatId}/${myUid}`).set(true);
         } else {
-            clearTimeout(liveTypingDebounce);
-            lastSyncedLiveText = "";
             sendBtnUI.classList.remove('active');
             micWrapper.style.display = 'flex';
             // Revert icons layout
@@ -2437,11 +2264,11 @@ box-shadow: var(--received-shadow);
             document.getElementById('emoji-toggle-left').style.display = 'none';
             document.getElementById('emoji-toggle-right').style.display = 'flex';
             document.getElementById('gif-toggle-right').style.display = 'flex';
-            if (chatId && myUid) rdb.ref(`typing/${chatId}/${myUid}`).set(false);
+            rdb.ref(`typing/${chatId}/${myUid}`).set(false);
         }
         
-        // Auto-Scroll on Typing ONLY if already near bottom
-        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 250) {
+        // Auto-Scroll on Typing ONLY if already near bottom (Generous threshold of 800px added)
+        if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800) {
              window.scrollToBottom();
         }
     });
@@ -2786,17 +2613,7 @@ box-shadow: var(--received-shadow);
             updateInboxCacheLocal(chatId, chatTargetData.lastMessage || "Message seen", chatTargetData.lastSender, false);
         }).catch(e => {});
 
-        // Helper to safely escape live typing text
-        function escapeLiveHtml(str) {
-            return String(str)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // Typing Listener (UPDATED FOR RECORDING, LIVE WORD-BY-WORD BUBBLE, OFFLINE FIX & SCROLL FIX)
+        // Typing Listener (UPDATED FOR RECORDING & OFFLINE FIX & SCROLL FIX)
         rdb.ref(`typing/${chatId}/${targetUid}`).on('value', (s) => {
             const val = s.val();
             const bubble = document.getElementById('typing-bubble-content');
@@ -2814,27 +2631,17 @@ box-shadow: var(--received-shadow);
                     <div class="rec-wave-icon"><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div></div>
                     Recording...
                 `;
-                inputBox.style.boxShadow = "0 0 15px rgba(255, 69, 58, 0.3)"; // Glow red when recording
-                if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 220) window.scrollToBottom(true);
-            } else if (typeof val === 'string' && val.trim().length > 0) {
-                // LIVE WORD-BY-WORD SYNC BUBBLE
-                typingRow.style.display = 'flex';
-                bubble.className = "typing-bubble live-sync-bubble";
-                bubble.innerHTML = `
-                    <div class="live-sync-badge"><span class="live-sync-dot"></span>Live Typing</div>
-                    <div><span>${escapeLiveHtml(val)}</span><span class="live-sync-cursor"></span></div>
-                `;
-                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)";
-                if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 220) window.scrollToBottom(true);
+                inputBox.style.boxShadow = "0 0 15px rgba(255, 69, 58, 0.3)"; // NEW FEATURE: Glow red when recording
+                if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom(true);
             } else if (val === true) {
                 typingRow.style.display = 'flex';
                 bubble.className = "typing-bubble";
                 bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)"; // Glow orange when typing
-                if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 220) window.scrollToBottom(true);
+                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)"; // NEW FEATURE: Glow orange when typing
+                if (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150) window.scrollToBottom(true);
             } else {
                 typingRow.style.display = 'none';
-                inputBox.style.boxShadow = "none"; // Remove glow
+                inputBox.style.boxShadow = "none"; // NEW FEATURE: Remove glow
             }
         });
 
@@ -3026,4 +2833,2245 @@ box-shadow: var(--received-shadow);
                             // hasVisualChanges remains false for this loop
                         } else {
                             // Text changed or something major, do full re-render
-                            messagesMap.se
+                            messagesMap.set(msgId, msgData);
+                            hasVisualChanges = true;
+                        }
+                    } 
+                    else if (change.type === "removed") {
+                        // FIX FOR DISAPPEARING MESSAGES: Safely and reliably clean up unsent messages
+                        if (messagesMap.has(msgId)) {
+                            messagesMap.delete(msgId);
+                            const el = document.getElementById(msgId);
+                            if(el) el.remove();
+                            didRemoveMessage = true;
+                            hasVisualChanges = true; 
+                        }
+                    }
+                    
+                    // Mark read logic
+                    if(msgData.sender !== myUid && !msgData.seen) {
+                        db.collection("chats").doc(chatId).collection("messages").doc(msgId).update({ 
+                            seen: true,
+                            seenAt: firebase.firestore.FieldValue.serverTimestamp() 
+                        });
+                        // INBOX CACHE UPDATE FOR READ STATUS (BACKGROUND)
+                        let displayTxt2 = msgData.text || "Message";
+                        if(msgData.isBite) displayTxt2 = "🎬 Bite";
+                        else if(msgData.isGif) displayTxt2 = "🎞️ GIF";
+                        else if(msgData.imageUrl) displayTxt2 = "📷 Image";
+                        else if(msgData.fileUrl) displayTxt2 = "📎 Attachment";
+                        updateInboxCacheLocal(chatId, displayTxt2, msgData.sender, false);
+                    }
+                });
+
+                if(isNewIncoming) { 
+                    vibrate([50, 50, 50]); // UPGRADED NEW MESSAGE VIBRATION
+                    if(chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight > 250) {
+                        scrollBtn.classList.add('new-msg');
+                    }
+                }
+
+                if (hasVisualChanges || isFirstLoad || didRemoveMessage) {
+                    if (isFirstLoad) {
+                        renderAll();
+                        chatFlow.scrollTop = chatFlow.scrollHeight;
+                        setTimeout(() => {
+                            chatFlow.style.opacity = '1';
+                            isFirstLoad = false;
+                        }, 50);
+                    } else {
+                        // NEW FIX: Smarter auto-scroll. Only scroll if near bottom. 
+                        // Increased threshold to 800 to be very generous.
+                        const isNearBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 800; 
+                        const cfSH = chatFlow.scrollHeight;
+                        const cfST = chatFlow.scrollTop;
+                        
+                        renderAll();
+                        
+                        if (isNearBottom) {
+                            requestAnimationFrame(() => window.scrollToBottom(true));
+                        } else {
+                            // Maintain scroll position if up high
+                            chatFlow.style.overflowAnchor = 'auto'; 
+                            if (isNewIncoming) {
+                                scrollBtn.classList.add('new-msg');
+                                scrollBtn.style.display = 'flex';
+                            }
+                        }
+                    }
+                }
+                
+                saveMessagesToCache();
+            });
+    }
+
+    // NEW FUNCTION: Surgical DOM update for reactions (prevents glitching)
+    function updateReactionDOM(msgId, reactions) {
+        const bubble = document.getElementById(`bubble-${msgId}`) || document.getElementById(`media-${msgId}`);
+        // Find reaction badges in this row (text bubble or media wrapper)
+        // We look for ID react-{msgId}
+        const badgeElements = document.querySelectorAll(`#react-${msgId}`);
+        
+        let reactionsList = [];
+        if (reactions) reactionsList = Object.values(reactions);
+        const reactionDisplay = reactionsList.map(r => r.emoji).join(' ');
+        
+        badgeElements.forEach(el => {
+            // Only update DOM if the text is actually different (prevents loop glitch)
+            if (el.innerText !== reactionDisplay) {
+                el.innerText = reactionDisplay;
+                el.style.display = reactionDisplay ? 'block' : 'none';
+                
+                // Add a small bounce animation ONLY if visible
+                if (reactionDisplay) {
+                    el.classList.remove('updated');
+                    void el.offsetWidth; // Trigger reflow
+                    el.classList.add('updated');
+                }
+            }
+        });
+    }
+
+    // NEW FUNCTION: Detects if someone else added a reaction and triggers physics
+    function detectNewReactions(oldData, newData, msgId) {
+        if (!oldData || !newData) return;
+        
+        const oldReactions = oldData.reactions || {};
+        const newReactions = newData.reactions || {};
+        
+        // Iterate through new reactions to find added ones
+        Object.keys(newReactions).forEach(uid => {
+            const oldReaction = oldReactions[uid];
+            const newReaction = newReactions[uid];
+            
+            // If there was no reaction before, or the emoji changed
+            if (!oldReaction || oldReaction.emoji !== newReaction.emoji) {
+                // Trigger Visual Pop for BOTH users (Sender sees it locally via click, receiver sees it here)
+                // We add a slight delay if it's the sender to avoid conflict with local click anim
+                if (uid !== myUid && newReaction.emoji) {
+                    triggerReactionPop(msgId, newReaction.emoji);
+                    if(newReaction.emoji === '❤️') triggerHeartAnimation(); // <--- ADDED: Trigger full screen heart for receiver
+                }
+            }
+        });
+    }
+
+    // NEW FUNCTION: Spawns a floating emoji (FIXED MEDIA BOUNDS GLITCH)
+    function triggerReactionPop(msgId, emoji) {
+        if (!emoji) return; // Prevent empty pops
+
+        // Try to find the bubble or the media container
+        const bubble = document.getElementById(`bubble-${msgId}`) || 
+                       document.getElementById(msgId)?.querySelector('.msg-media-wrapper') ||
+                       document.getElementById(msgId)?.querySelector('.msg-video-container');
+                       
+        if (!bubble) return;
+
+        const rect = bubble.getBoundingClientRect();
+        const isMedia = bubble.classList.contains('msg-media-wrapper') || bubble.classList.contains('msg-video-container');
+
+        // Calculate start position
+        // For media (which can be tall), start near the bottom right where the reaction badge is.
+        // For text bubbles, center is fine.
+        let startX = isMedia ? (rect.right - 40) : (rect.left + (rect.width / 2) - 20);
+        let startY = isMedia ? (rect.bottom - 40) : (rect.top + (rect.height / 2));
+
+        // Clamp to screen bounds just in case element is partially scrolled out
+        if (startY < 50) startY = 50;
+        if (startY > window.innerHeight - 50) startY = window.innerHeight - 50;
+        if (startX < 20) startX = 20;
+        if (startX > window.innerWidth - 40) startX = window.innerWidth - 40;
+
+        const floatEl = document.createElement('div');
+        floatEl.className = 'floating-emoji';
+        floatEl.innerText = emoji;
+        floatEl.style.left = `${startX}px`;
+        floatEl.style.top = `${startY}px`;
+        
+        document.body.appendChild(floatEl);
+        
+        // Play sound if desired
+        likeSound.play().catch(()=>{});
+
+        // Remove from DOM after animation
+        setTimeout(() => {
+            floatEl.remove();
+        }, 1500);
+    }
+
+    function saveMessagesToCache() {
+        if (!chatId) return;
+        try {
+            const msgsToSave = Array.from(messagesMap.values()).map(m => {
+                let savedM = { ...m };
+                if (m.timestamp && typeof m.timestamp.toDate === 'function') {
+                    savedM.timestampIso = m.timestamp.toDate().toISOString();
+                }
+                if (m.seenAt && typeof m.seenAt.toDate === 'function') {
+                    savedM.seenAtIso = m.seenAt.toDate().toISOString();
+                }
+                delete savedM.timestamp; 
+                delete savedM.seenAt;
+                return savedM;
+            });
+            msgsToSave.sort((a, b) => new Date(a.timestampIso) - new Date(b.timestampIso));
+            const limitMsgs = msgsToSave; // Changed from msgsToSave.slice(-50) to store all local
+            try { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(limitMsgs)); } catch(quotaErr) { localStorage.setItem(`chat_msgs_${chatId}`, JSON.stringify(msgsToSave.slice(-300))); }
+        } catch (e) { console.error("Cache Save Error", e); }
+    }
+    
+    // NEW PC MENU TRIGGER FUNCTION
+    window.triggerMenuFromClick = function(id) {
+        const msg = messagesMap.get(id);
+        if(msg) {
+            openMenu(id, msg.sender, msg.text || '');
+        }
+    };
+
+    function renderAll() {
+        // ========================================================================================
+        // NEW SMART VIRTUAL DOM DIFFING (Fixes "Render all messages every time" and flickering)
+        // ========================================================================================
+        let tempContainer = document.createElement('div');
+        let originalContainer = container;
+        container = tempContainer; // Hijack DOM target so renderMessage goes to Temp
+
+        const sorted = Array.from(messagesMap.entries())
+            .filter(([id, data]) => data.timestamp)
+            .sort((a, b) => {
+                const tA = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
+                const tB = (data => data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestampIso).getTime());
+                return tA(a[1]) - tB(b[1]);
+            });
+
+        let lastDateLabel = "";
+        let lastSeenMsgId = null;
+        let lastMsgTime = 0;
+
+        for (let i = sorted.length - 1; i >= 0; i--) {
+            const [id, data] = sorted[i];
+            if (data.sender === myUid && data.seen === true) {
+                lastSeenMsgId = id;
+                break;
+            }
+        }
+
+        sorted.forEach(([id, data], index) => {
+            const msgDate = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestampIso);
+            const msgTime = msgDate.getTime();
+
+            const dateLabel = getDateDivider(msgDate);
+            if (dateLabel !== lastDateLabel) {
+                const div = document.createElement('div');
+                div.className = "date-divider";
+                div.innerText = dateLabel;
+                container.appendChild(div);
+                lastDateLabel = dateLabel;
+                lastMsgTime = msgTime;
+            } else {
+                if (lastMsgTime > 0 && (msgTime - lastMsgTime) > 3600000) {
+                    const tDiv = document.createElement('div');
+                    tDiv.className = "time-divider";
+                    tDiv.innerText = formatTime12(msgDate);
+                    container.appendChild(tDiv);
+                }
+            }
+
+            lastMsgTime = msgTime;
+
+            const prevMsg = index > 0 ? sorted[index - 1][1] : null;
+            const nextMsg = index + 1 < sorted.length ? sorted[index + 1][1] : null;
+
+            const isFirstInGroup = !prevMsg || prevMsg.sender !== data.sender || (msgDate - (prevMsg.timestamp.toDate ? prevMsg.timestamp.toDate() : new Date(prevMsg.timestampIso))) > 300000;
+            const isLastInGroup = !nextMsg || nextMsg.sender !== data.sender || ((nextMsg.timestamp.toDate ? nextMsg.timestamp.toDate() : new Date(nextMsg.timestampIso)) - msgDate) > 300000;
+
+            renderMessage(data, id, id === lastSeenMsgId, isFirstInGroup, isLastInGroup);
+        });
+
+        // Restore original container reference
+        container = originalContainer;
+
+        // Perform DOM Diff
+        if (container.children.length === 0) {
+            // First load: just dump everything in
+            while (tempContainer.firstChild) container.appendChild(tempContainer.firstChild);
+        } else {
+            let newChildren = Array.from(tempContainer.children);
+            let oldChildren = Array.from(container.children);
+
+            for (let i = 0; i < newChildren.length; i++) {
+                let newChild = newChildren[i];
+                let oldChild = oldChildren[i];
+
+                if (!oldChild) {
+                    // It's a brand new appended message
+                    container.appendChild(newChild);
+                } else if (newChild.id && oldChild.id === newChild.id) {
+                    // The IDs match. Only update if the content or classes actually changed
+                    if (oldChild.innerHTML !== newChild.innerHTML || oldChild.className !== newChild.className) {
+                        let audio = oldChild.querySelector('audio');
+                        let video = oldChild.querySelector('video');
+                        // Never interrupt playing media!
+                        if ((audio && !audio.paused) || (video && !video.paused)) {
+                            // Media is playing. To prevent stale data, we manually update just the reaction badge
+                            let newMsgData = messagesMap.get(newChild.id);
+                            if (newMsgData) updateReactionDOM(newChild.id, newMsgData.reactions);
+                        } else {
+                            oldChild.innerHTML = newChild.innerHTML;
+                            oldChild.className = newChild.className;
+                            
+                            // Reattach Listeners for the updated node
+                            let msgData = messagesMap.get(newChild.id);
+                            let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`);
+                            if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
+                            
+                            let mediaEl = oldChild.querySelector('.msg-media-wrapper') || oldChild.querySelector('.msg-video-container');
+                            if(mediaEl) attachMessageListeners(mediaEl, newChild.id, msgData);
+                            
+                            let pill = oldChild.querySelector('.msg-audio-pill') || oldChild.querySelector('.msg-file-pill');
+                            if(pill) attachMessageListeners(pill, newChild.id, msgData);
+                        }
+                    }
+                } else {
+                    // Fallback for mismatch (e.g. dividers adjusting)
+                    container.replaceChild(newChild, oldChild);
+                }
+            }
+            // Remove any trailing messages that got deleted from DB
+            while (container.children.length > newChildren.length) {
+                container.removeChild(container.lastChild);
+            }
+        }
+        // ========================================================================================
+    }
+
+    function renderMessage(m, id, isLastSeen, isFirstInGroup, isLastInGroup) {
+        const side = m.sender === myUid ? 'sent' : 'received';
+        const date = m.timestamp.toDate ? m.timestamp.toDate() : new Date(m.timestampIso);
+
+        const rowDiv = document.createElement('div');
+        rowDiv.id = id;
+        
+        let rowClass = `msg-row ${side}`;
+        if(isLastInGroup) rowClass += ' group-bottom';
+        if(isFirstInGroup && isLastInGroup) rowClass += ' single';
+        rowDiv.className = rowClass;
+        
+        let reactionsList = [];
+        let myReaction = null;
+        if (m.reactions) {
+            reactionsList = Object.values(m.reactions);
+            if (m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
+        }
+        const reactionDisplay = reactionsList.map(r => r.emoji).join(' ');
+
+        let seenText = "";
+        if (isLastSeen && side === 'sent') {
+            if (m.seenAt) {
+                const sDate = m.seenAt.toDate ? m.seenAt.toDate() : new Date(m.seenAtIso);
+                seenText = "Seen " + timeAgo(sDate);
+            } else {
+                seenText = "Seen"; 
+            }
+        }
+        
+        // Styling Vars
+        const boxStyle = reactionDisplay ? 'style="margin-bottom: 16px"' : '';
+        const replyHtml = m.replyTo ? `<div class="reply-box-ui" onclick="event.stopPropagation(); scrollToAndFlash('${m.replyTo}')">${m.replyTo}</div>` : '';
+
+        // Note Reply - FULL UI RENDER (Updated Layout)
+        const noteMeta = m.noteMetadata || {};
+        const noteReplyHtml = m.replyToNote ? `
+            <div class="note-reply-wrapper">
+                <div class="note-reply-pill ${noteMeta.isGlass ? 'glass' : ''}" style="
+                    background: ${noteMeta.bgTexture ? `url(${noteMeta.bgTexture})` : (noteMeta.bgColor || '#262626')};
+                    background-size: cover;
+                    color: ${noteMeta.textColor || '#fff'};
+                    font-family: ${noteMeta.font || 'system-ui'};
+                ">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px; width:100%; justify-content:center; opacity:0.9;">
+                        <img src="${(typeof noteMeta.pfp === 'string' && noteMeta.pfp !== 'true') ? noteMeta.pfp : (typeof chatTargetData.photoURL === 'string' && chatTargetData.photoURL !== 'true' ? chatTargetData.photoURL : 'https://via.placeholder.com/20')}" style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);">
+                        <span style="font-size:0.75rem;font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,0.5);">${noteMeta.username || 'User'}</span>
+                    </div>
+                    
+                    ${noteMeta.songName ? `
+                    <div class="note-music-pill">
+                         <span class="material-icons-round" style="font-size:10px;">music_note</span>
+                         <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${noteMeta.songName}</span>
+                    </div>` : ''}
+
+                    <div style="font-size:1rem;font-weight:700;line-height:1.3; text-shadow:0 1px 5px rgba(0,0,0,0.4); padding: 0 5px;">
+                        ${m.replyToNote}
+                    </div>
+                </div>
+                <div class="note-connector"></div>
+            </div>` : '';
+        
+        // Group Logic for Borders
+        let groupClass = '';
+        if (isFirstInGroup && isLastInGroup) groupClass = 'single';
+        else if (isFirstInGroup) groupClass = 'group-top';
+        else if (isLastInGroup) groupClass = 'group-bottom';
+        else groupClass = 'group-mid';
+
+        let renderImageUrl = (typeof m.imageUrl === 'string' && m.imageUrl !== 'true') ? m.imageUrl : null;
+        let renderFileUrl = (typeof m.fileUrl === 'string' && m.fileUrl !== 'true') ? m.fileUrl : null;
+        let renderFileMeta = m.fileMeta;
+        let renderText = m.text || "";
+
+        // Auto-detect media links in text
+        if (!renderImageUrl && !renderFileUrl && renderText) {
+            const urlMatch = renderText.match(/(https?:\/\/[^\s]+)/);
+            if (urlMatch) {
+                const url = urlMatch[0];
+                const urlPath = url.split('?')[0].toLowerCase();
+                let matchedMedia = false;
+                if (urlPath.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                    renderImageUrl = url;
+                    matchedMedia = true;
+                } else if (urlPath.match(/\.(mp4|webm|mov)$/i)) {
+                    renderFileUrl = url;
+                    renderFileMeta = { type: 'video/mp4', name: 'Video Link', size: 0 };
+                    matchedMedia = true;
+                } else if (urlPath.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                    renderFileUrl = url;
+                    renderFileMeta = { type: 'audio/mp3', name: 'Audio Link', size: 0 };
+                    matchedMedia = true;
+                }
+                
+                // FIX: Hide link text if the message is exactly just the URL (so it only displays the media)
+                if (matchedMedia && renderText.trim() === url) {
+                    renderText = ""; 
+                }
+            }
+        }
+
+        let mediaHtml = '';
+        let bubbleClass = `bubble ${groupClass}`;
+        let bubbleStyle = '';
+
+        // NEW LOGIC FOR MEDIA DIMENSIONS AND SCROLL FIX
+        let dynamicStyle = '';
+        let storedRatio = localStorage.getItem('media_ratio_' + id);
+        if (storedRatio) {
+            dynamicStyle = `aspect-ratio: ${storedRatio}; min-height: auto;`;
+        } else {
+            dynamicStyle = `min-height: 200px;`;
+        }
+
+        // Media Types Construction - LOAD EVENT ADDED TO FIX SCROLL HIDDEN BUG
+        if (m.isBite) {
+            mediaHtml = `
+            <div class="msg-media-wrapper ${groupClass}" onclick="handleBiteClick(event, '${m.biteId}', '${id}')">
+                <div style="position:relative; width:220px; border-radius:18px; overflow:hidden; background:#111; aspect-ratio: 9/16;">
+                    <img src="${m.biteImgUrl || 'https://via.placeholder.com/220x390?text=Bite'}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)" style="width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; pointer-events:none;">
+                    <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); pointer-events:none;"></div>
+                    
+                    <div class="play-overlay" style="border-color: var(--accent); background: rgba(0,0,0,0.6); pointer-events:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid var(--accent);"><span class="material-icons-round" style="font-size:36px; color:white;">play_arrow</span></div>
+                    
+                    <div style="position:absolute; bottom:12px; left:14px; right:14px; pointer-events:none; text-align:left;">
+                        <div style="color:var(--accent); font-size:0.75rem; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <span class="material-icons-round" style="font-size:14px;">smart_display</span> Bite
+                        </div>
+                        <div style="color:#fff; font-size:0.95rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${m.biteTitle || 'Bite Video'}</div>
+                        <div style="color:#bbb; font-size:0.75rem; font-weight: 500; margin-top:2px;">@${m.biteAuthor || 'Creator'}</div>
+                    </div>
+                </div>
+                <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
+            </div>`;
+            bubbleClass = `bubble has-media ${groupClass}`;
+            if(!renderText) bubbleStyle = "display:none;";
+        }
+        else if (renderImageUrl) {
+            mediaHtml = `
+            <div class="msg-media-wrapper ${groupClass}" onclick="document.getElementById('media-viewer').open('${renderImageUrl}')">
+                <img src="${renderImageUrl}" class="chat-media-img" style="${dynamicStyle}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)">
+                <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
+            </div>`;
+            bubbleClass = `bubble has-media ${groupClass}`;
+            if(!renderText) bubbleStyle = "display:none;";
+        } 
+        else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('video')) {
+            mediaHtml = `
+            <div class="msg-video-container" onclick="document.getElementById('media-viewer').open('${renderFileUrl}', 'video')">
+                <video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:auto; max-height:380px; background:#000; ${dynamicStyle}" preload="metadata" onloadeddata="if(this.videoWidth && this.videoHeight){ localStorage.setItem('media_ratio_${id}', this.videoWidth + '/' + this.videoHeight); this.style.aspectRatio = this.videoWidth + '/' + this.videoHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)"></video>
+                <div class="play-overlay"><span class="material-icons-round" style="font-size:32px; color:white;">play_arrow</span></div>
+                <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
+            </div>`;
+            bubbleClass = `bubble has-media ${groupClass}`;
+            if(!renderText) bubbleStyle = "display:none;";
+        }
+        else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('audio')) {
+            const safeId = 'audio-' + id;
+            // VOICE NOTE UI WITH SPEED - BIGGER UI
+            mediaHtml = `
+            <div class="msg-audio-pill" id="pill-${safeId}">
+                <div class="audio-control-btn" onclick="event.stopPropagation(); window.toggleAudio('${safeId}');">
+                    <svg id="icon-${safeId}" viewBox="0 0 24 24" style="pointer-events: none;"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+                <div class="audio-wave-container" id="wave-${safeId}">
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                </div>
+                <div class="audio-speed-btn" id="speed-${safeId}" onclick="event.stopPropagation(); changePlaybackRate('${safeId}')">1x</div>
+                
+                <audio id="${safeId}" src="${renderFileUrl}" ontimeupdate="updateAudioUI('${safeId}')" onended="resetAudioUI('${safeId}')"></audio>
+                
+                <div id="react-${id}" class="reaction-badge" style="position:absolute; bottom:-8px; right:10px; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div>
+            </div>`;
+            bubbleClass = `bubble has-media ${groupClass}`; 
+            if(!renderText) bubbleStyle = "display:none;";
+        }
+        else if (renderFileUrl) {
+            mediaHtml = `
+            <div class="msg-file-pill" onclick="window.open('${renderFileUrl}', '_blank')">
+                <div class="file-icon">📄</div>
+                <div class="file-details">
+                    <div class="file-name">${renderFileMeta.name || "File"}</div>
+                    <div class="file-meta">${(renderFileMeta.size / (1024*1024)).toFixed(2)} MB • ${renderFileMeta.type.toUpperCase()}</div>
+                </div>
+                <div id="react-${id}" class="reaction-badge" style="right:0; ${reactionDisplay ? 'display:block' : ''}" onclick="showReactionDetails('${id}', event)">${reactionDisplay}</div>
+            </div>`;
+            bubbleClass = `bubble has-media ${groupClass}`;
+            if(!renderText) bubbleStyle = "display:none;";
+        }
+
+        const safeText = linkify(renderText);
+        
+        // ADVANCED EMOJI DETECTOR FOR JUMBO INSTAGRAM EMOJIS
+        const textNoSpaces = (renderText || "").replace(/\s/g, '');
+        const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
+        const isOnlyEmoji = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 5 && emojiRegex.test(textNoSpaces);
+        
+        if (isOnlyEmoji && !renderImageUrl && !renderFileUrl && !m.replyTo) {
+            bubbleClass += ' jumbo-emoji';
+        }
+        
+        // --- ADDED: Swipe Reply Icon, Desktop 3-dot Menu & Timestamp Footer ---
+        let contentHTML = `
+            <div class="swipe-reply-icon"><svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
+            <div class="msg-options-btn" onclick="event.stopPropagation(); window.triggerMenuFromClick('${id}')">
+                <span class="material-icons-round" style="font-size:20px;">more_vert</span>
+            </div>
+            ${noteReplyHtml}
+            ${replyHtml}
+            ${mediaHtml}
+            <div class="${bubbleClass}" id="bubble-${id}" style="${bubbleStyle}">
+                <span id="text-${id}">${safeText} ${m.edited ? '<small style="opacity:0.6;font-size:0.65rem; margin-left:4px;">(edited)</small>' : ''}</span>
+                ${(!renderImageUrl && !renderFileUrl && !renderFileMeta?.type?.includes('audio')) ? `<div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>` : ''}
+            </div>
+            <div class="msg-timestamp-footer">${formatTime12(date)}</div>
+        `;
+
+        if (side === 'received') {
+            const pfpUrl = chatTargetData ? chatTargetData.photoURL : 'https://via.placeholder.com/30';
+            const pfpClass = isLastInGroup ? 'msg-avatar visible' : 'msg-avatar';
+            
+            rowDiv.innerHTML = `
+                <div class="received-inner-row">
+                    <img src="${pfpUrl}" class="${pfpClass}">
+                    <div class="msg-bubble-box" ${boxStyle}>
+                        ${contentHTML}
+                    </div>
+                </div>
+                ${seenText ? `<div class="seen-status">${seenText}</div>` : ''}
+            `;
+        } else {
+            rowDiv.innerHTML = `
+                <div class="msg-bubble-box" ${boxStyle}>
+                    ${contentHTML}
+                </div>
+                ${seenText ? `<div class="seen-status">${seenText}</div>` : ''}
+            `;
+        }
+        
+        // This append gets caught and managed by the Virtual DOM diff if called inside renderAll
+        container.appendChild(rowDiv);
+        
+        // Attach Listeners
+        const bubbleEl = rowDiv.querySelector(`#bubble-${id}`);
+        if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, id, m);
+        
+        const mediaEl = rowDiv.querySelector('.msg-media-wrapper') || rowDiv.querySelector('.msg-video-container');
+        if(mediaEl) attachMessageListeners(mediaEl, id, m);
+        
+        const pill = rowDiv.querySelector('.msg-audio-pill') || rowDiv.querySelector('.msg-file-pill');
+        if(pill) attachMessageListeners(pill, id, m);
+    }
+    
+    // =========================================
+    //  18. INTERACTIONS & HELPERS
+    // =========================================
+    
+    // --- 1. GLOBAL LONG PRESS FOR TIMESTAMPS ---
+    function setupGlobalTimestamps() {
+        const bg = document.getElementById('chat-flow');
+        let pressTimer;
+        
+        bg.addEventListener('touchstart', (e) => {
+            // Check if user is clicking on interactive elements or bubbles
+            const isInteractive = e.target.closest('.msg-bubble-box') || 
+                                  e.target.closest('.input-area-container') || 
+                                  e.target.closest('#chat-header');
+                                  
+            if(!isInteractive) {
+                pressTimer = setTimeout(() => {
+                    const containerObj = document.getElementById('messages-container');
+                    const chatFlow = document.getElementById('chat-flow');
+                    
+                    // FIXED: Calculate current scroll offset from bottom
+                    const scrollBottomOffset = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
+                    
+                    // Apply class
+                    containerObj.classList.add('show-timestamps');
+                    
+                    // FIXED: If user was near bottom, snap back to bottom instantly (prevent jump)
+                    if(scrollBottomOffset < 50) {
+                         chatFlow.scrollTop = chatFlow.scrollHeight;
+                    }
+                    
+                    vibrate([50, 50]); // Vibrate twice
+                }, 500);
+            }
+        }, {passive: true});
+
+        bg.addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+            document.getElementById('messages-container').classList.remove('show-timestamps');
+        });
+        
+        bg.addEventListener('touchmove', () => {
+            clearTimeout(pressTimer); // Cancel if scrolling
+        }, {passive: true});
+    }
+    
+    // --- 2. SWIPE TO REPLY (BIDIRECTIONAL) ---
+    function attachMessageListeners(element, id, m) {
+            let reactionsList = [];
+            let myReaction = null;
+            if (m.reactions && m.reactions[myUid]) myReaction = m.reactions[myUid].emoji;
+
+            // Double Tap logic fixed to not close mobile keyboard
+            let lastTap = 0;
+            element.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    window.cancelBiteClick(id); // Prevent video navigation on double tap
+                    e.preventDefault(); // STOP KEYBOARD CLOSING
+                    e.stopPropagation(); // ENHANCED: PREVENT BODY BLURRING
+
+                    if (document.activeElement === mInput || mInput.matches(':focus')) {
+                        // ENHANCED: Robust re-focus logic identical to swipe keyboard protection
+                        mInput.focus({preventScroll: true});
+                        setTimeout(() => { mInput.click(); }, 10);
+                    }
+                    
+                    if (m.sender === myUid) {
+                        vibrate(40);
+                        activeMenuId = id; 
+                        initEdit();
+                    } else {
+                        vibrate(50); 
+                        triggerHeartAnimation();
+                        applyReactionToId(id, myReaction === '❤️' ? '' : '❤️');
+                    }
+                }
+                lastTap = currentTime;
+            }, { passive: false });
+
+            // Long Press Menu & Swipe Logic
+            let startX = 0, currentX = 0, menuTimer = null, isScrolling = false;
+            let swipeBubbleBox = element.closest('.msg-bubble-box'); // We animate the wrapper
+            let swipeIcon = swipeBubbleBox.querySelector('.swipe-reply-icon');
+            let side = m.sender === myUid ? 'sent' : 'received';
+
+            element.addEventListener('touchstart', (e) => {
+                // FIX: Don't trigger swipe/menu if hitting audio controls
+                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return;
+
+                startX = e.touches[0].clientX;
+                currentX = startX; // FIX: Initialize currentX to startX. Critical for long press detection without movement.
+                isScrolling = false; 
+                window.isScrollingNow = false;
+                
+                // FIX: Remove transition lag on touch so the bubble firmly attaches to the finger swipe preventing the opposite-direction illusion
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
+                menuTimer = setTimeout(() => {
+                    if (!isScrolling && Math.abs(currentX - startX) < 10) { 
+                        vibrate(70); 
+                        openMenu(id, m.sender, m.text); 
+                    }
+                }, 500);
+            }, {passive: true});
+
+            element.addEventListener('touchmove', (e) => {
+                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
+
+                currentX = e.touches[0].clientX;
+                let diff = currentX - startX;
+                
+                // Detect scroll vs swipe
+                if (Math.abs(diff) > 10) { 
+                      clearTimeout(menuTimer);
+                      isScrolling = true;
+                      window.isScrollingNow = true;
+                }
+                
+                // FIX: Ensure no transition is active while dragging
+                swipeBubbleBox.style.transition = 'none';
+                if(swipeIcon) swipeIcon.style.transition = 'none';
+                
+                // Logic: 
+                // Received (Left) -> Swipe Right (diff > 0)
+                // Sent (Right) -> Swipe Left (diff < 0)
+                
+                if (side === 'received' && diff > 0 && diff < 150) {
+                    swipeBubbleBox.style.transform = `translateX(${diff}px)`;
+                    if(swipeIcon) {
+                        let scale = Math.min(1, diff / 60);
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
+                    }
+                } 
+                else if (side === 'sent' && diff < 0 && diff > -150) {
+                    swipeBubbleBox.style.transform = `translateX(${diff}px)`;
+                    if(swipeIcon) {
+                        let scale = Math.min(1, Math.abs(diff) / 60);
+                        // FIXED: counter-translate the icon X position so it anchors visually
+                        swipeIcon.style.transform = `translate(${-diff}px, -50%) scale(${scale})`;
+                    }
+                }
+                
+            }, {passive: true});
+
+            element.addEventListener('touchend', (e) => {
+                clearTimeout(menuTimer);
+                setTimeout(() => window.isScrollingNow = false, 50);
+                if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
+                
+                let diff = currentX - startX;
+                let threshold = 60;
+                let triggered = false;
+
+                if (side === 'received' && diff > threshold) triggered = true;
+                if (side === 'sent' && diff < -threshold) triggered = true;
+
+                if (triggered && isScrolling) {
+                    vibrate(40);
+                    let replyText = m.text;
+                    if(!replyText) {
+                        if(m.isBite) replyText = "🎬 Bite";
+                        else if(m.isGif) replyText = "🎞️ GIF";
+                        else if(m.imageUrl) replyText = "📷 Photo";
+                        else if(m.fileMeta && m.fileMeta.type.includes('audio')) replyText = "🎵 Audio";
+                        else replyText = "Attachment";
+                    }
+                    // FIX: iOS Keyboard hack - strictly synchronous execution here
+                    mInput.focus({preventScroll: true});
+                    setTimeout(() => { mInput.click(); }, 10); // Fallback for mobile WebKit if strict synchronous blocks
+                    triggerReply(replyText);
+                }
+
+                // Animate Back
+                swipeBubbleBox.style.transition = "transform 0.3s var(--ease-spring)";
+                swipeBubbleBox.style.transform = `translateX(0px)`;
+                if(swipeIcon) {
+                    swipeIcon.style.transition = "transform 0.3s";
+                    swipeIcon.style.transform = `translateY(-50%) scale(0)`;
+                }
+                
+                setTimeout(() => { 
+                    swipeBubbleBox.style.transition = ""; 
+                    if(swipeIcon) swipeIcon.style.transition = "";
+                }, 300);
+                
+                startX = 0; currentX = 0; isScrolling = false;
+            });
+    }
+
+    // Audio Player Logic with Speed
+    window.toggleAudio = function(id) {
+        console.log("Toggle audio called for ID:", id);
+        const audio = document.getElementById(id);
+        const icon = document.getElementById('icon-' + id);
+        const wave = document.getElementById('wave-' + id);
+        
+        if (!audio) {
+            console.error("Audio element not found:", id);
+            return;
+        }
+
+        const currentSrc = audio.getAttribute('src');
+        if (!currentSrc || currentSrc === 'true' || currentSrc.trim() === '') {
+            alert("This voice message is unavailable or corrupted.");
+            return;
+        }
+        
+        // Stop all other audio
+        document.querySelectorAll('audio').forEach(a => {
+            if(a.id !== id && !a.paused) { a.pause(); window.resetAudioUI(a.id); }
+        });
+
+        if (audio.paused) {
+            audio.dataset.loading = 'true';
+            
+            // Add crossorigin property dynamically if needed (helps with some external domains)
+            // Note: If server blocks with 403, it will still fail, but this protects the code.
+            audio.crossOrigin = "anonymous";
+            
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                      // Play started
+                      audio.dataset.loading = 'false';
+                      console.log("Playing audio");
+                      icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Pause
+                      if(wave) wave.classList.add('audio-playing');
+                }).catch(error => {
+                      audio.dataset.loading = 'false';
+                      console.error("Playback prevented:", error);
+                      alert("Cannot play audio. The server hosting this file refused access (CORS / 403 Forbidden), or the format is unsupported.");
+                });
+            }
+        } else {
+            audio.pause();
+            console.log("Paused audio");
+            icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play
+            if(wave) wave.classList.remove('audio-playing');
+        }
+    };
+    
+    window.changePlaybackRate = function(id) {
+        const audio = document.getElementById(id);
+        const btn = document.getElementById('speed-' + id);
+        if(!audio) return;
+        
+        let current = audio.playbackRate;
+        let next = 1.0;
+        if(current === 1.0) next = 1.5;
+        else if(current === 1.5) next = 2.0;
+        else next = 1.0;
+        
+        audio.playbackRate = next;
+        btn.innerText = next + "x";
+        // event propagation already stopped inline
+    }
+
+    window.updateAudioUI = function(id) {}; // Visualizer handles animation via CSS class
+    window.resetAudioUI = function(id) {
+        const icon = document.getElementById('icon-' + id);
+        const wave = document.getElementById('wave-' + id);
+        const audio = document.getElementById(id);
+        const speedBtn = document.getElementById('speed-' + id); // FIX: Get element safely
+
+        if(icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        if(wave) wave.classList.remove('audio-playing');
+        if(audio) { 
+            audio.playbackRate = 1.0; 
+            // FIX: Check if speedBtn exists before setting innerText
+            if(speedBtn) speedBtn.innerText = "1x"; 
+        }
+    };
+
+    // Helper Functions
+    function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + "y";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + "mo";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + "d";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + "h";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + "m";
+        return "Now";
+    }
+
+    function formatActiveTime(timestamp) {
+        if (!timestamp) return "";
+        const now = Date.now();
+        const diff = now - timestamp;
+        if (diff < 60000) return "Active now";
+        return "Active " + timeAgo(new Date(timestamp)) + " ago";
+    }
+
+    // FIXED: Robust time formatting
+    function formatTime12(date) {
+        if(!date || isNaN(date.getTime())) return "";
+        let hours = date.getHours();
+        let minutes = date.getMinutes();
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        return `${hours}:${minutes} ${ampm}`;
+    }
+
+    function getDateDivider(date) {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        if (date.toDateString() === today.toDateString()) return "Today";
+        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    function triggerHeartAnimation() {
+        const h = document.getElementById('heart-overlay');
+        h.style.animation = 'none';
+        h.offsetHeight; 
+        h.style.animation = 'heartPop 0.8s ease-out';
+        likeSound.play().catch(e => {}); 
+        
+        // MODIFICATION: Removed full-screen fireEffect('hearts') here so only the overlay pops
+        // fireEffect('hearts'); 
+    }
+
+   
+    
+
+    
+        // === UPGRADED NEW IMPROVED EFFECT SYSTEM (17 EFFECTS) WITH PHYSICS ===
+    function fireEffect(type) {
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let particles = [];
+        
+        // PERFORMANCE TWEAK: Safe default particle counts to prevent lag
+        let particleCount = 50; 
+        if(type === 'hearts') particleCount = 80; 
+        if(type === 'blackHeart') particleCount = 70; 
+        if(type === 'balloons') particleCount = 40;
+        if(type === 'snow') particleCount = 120;
+        if(type === 'rain') particleCount = 200;
+        if(type === 'thumbsup') particleCount = 40;
+        if(type === 'fireworks') particleCount = 120;
+        if(type === 'money') particleCount = 50;
+        if(type === 'bubbles') particleCount = 60;
+        if(type === 'leaves') particleCount = 70;
+
+        const colors = ['#FFD700', '#FF4500', '#00BFFF', '#32CD32', '#FF69B4', '#9400D3'];
+        const heartColors = ['#FF0000', '#FF1493', '#FF69B4', '#FFB6C1', '#FFFFFF'];
+        const emojiMap = { money: '💵', thumbsup: '👍', bubbles: '🫧', skulls: '💀', clovers: '🍀', clapping: '👏', poop: '💩', alien: '👽', ghost: '👻', leaves: '🍂', stars: '⭐', balloons: '🎈' };
+
+        // Initialize particles
+        for(let i=0; i < particleCount; i++) {
+            let p = {
+                x: Math.random() * canvas.width,
+                y: -Math.random() * 200,
+                size: Math.random() * 8 + 8, // Slightly larger base size
+                speedY: Math.random() * 5 + 3,
+                speedX: Math.random() * 2 - 1,
+                rotation: Math.random() * 360,
+                rotationSpeed: Math.random() * 6 - 3, // Smoother rotation
+                color: colors[Math.floor(Math.random() * colors.length)],
+                opacity: 1,
+                wobble: Math.random() * 10,
+                wobbleIncrement: Math.random() * 0.03 + 0.01,
+                tilt: 0, 
+                tiltAngle: Math.random() * Math.PI, 
+                tiltAngleIncrement: Math.random() * 0.05 + 0.02
+            };
+
+            // Physics for bottom-spawning effects (Hearts, BlackHearts, Emojis, Confetti)
+            if (type === 'hearts' || type === 'blackHeart' || emojiMap[type] || type === 'confetti') {
+                p.y = canvas.height + 50 + Math.random() * 150;
+                p.speedY = -(Math.random() * 8 + 5); // Snappy upward pop
+                
+                if(type === 'hearts') p.color = heartColors[Math.floor(Math.random() * heartColors.length)];
+                if(emojiMap[type]) { p.size = Math.random() * 16 + 14; } // Bigger emojis
+                
+                // Mix of Black Hearts and Diamonds
+                if (type === 'blackHeart') {
+                    p.text = Math.random() > 0.4 ? '🖤' : '💎'; // 60% black hearts, 40% diamonds
+                    p.size = Math.random() * 18 + 14;
+                }
+            }
+            
+            // Confetti specific sizes
+            if (type === 'confetti') {
+                p.size = Math.random() * 6 + 4;
+            }
+            if (type === 'snow') {
+                p.color = '#FFFFFF'; p.speedY = Math.random() * 2 + 1; p.size = Math.random() * 3 + 2;
+            }
+            if (type === 'rain') {
+                p.color = '#a0c4ff'; p.speedY = Math.random() * 12 + 15; p.speedX = Math.random() * 1 + 0.5; p.size = Math.random() * 15 + 10;
+            }
+            if (type === 'fireworks') {
+                p.x = canvas.width / 2; p.y = canvas.height / 2;
+                let angle = Math.random() * Math.PI * 2;
+                let velocity = Math.random() * 10 + 4;
+                p.speedX = Math.cos(angle) * velocity;
+                p.speedY = Math.sin(angle) * velocity;
+            }
+
+            particles.push(p);
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            
+            particles.forEach((p) => {
+                // Apply wobble/drift to non-linear effects
+                if (type !== 'fireworks' && type !== 'rain') {
+                    p.wobble += p.wobbleIncrement;
+                    p.x += Math.sin(p.wobble) * (type === 'snow' ? 0.5 : 1.2);
+                    p.tiltAngle += p.tiltAngleIncrement;
+                    p.tilt = Math.sin(p.tiltAngle) * 12; // Smoother side-to-side drift
+                }
+
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Opacity & Gravity Physics
+                if (type === 'fireworks') {
+                    p.speedY += 0.15; // Gravity
+                    p.speedX *= 0.96; // Friction
+                    p.opacity -= 0.01; // Fade fast
+                } else if (type === 'hearts' || type === 'blackHeart' || emojiMap[type] || type === 'confetti') {
+                    p.speedY += 0.06; // CREATIVE: Slight gravity pull so they slow down beautifully near the top
+                    p.opacity -= 0.007; // Fast fade to prevent lag
+                }
+                
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.opacity);
+
+                // Add nice glowing shadows to specific effects
+                if (type === 'snow' || type === 'fireworks' || type === 'hearts') {
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = p.color;
+                }
+
+                ctx.translate(p.x + p.tilt, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                
+                // --- RENDER LOGIC ---
+                if (type === 'hearts') {
+                    ctx.fillStyle = p.color;
+                    // Creative touch: Hearts smoothly pulse as they float
+                    const pulse = 1 + Math.sin(Date.now() / 200 + p.wobble) * 0.2;
+                    const scale = (p.size / 10) * pulse; 
+                    ctx.scale(scale, scale);
+                    ctx.beginPath(); ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(-5, -5, -10, 0, 0, 10);
+                    ctx.bezierCurveTo(10, 0, 5, -5, 0, 0); ctx.fill();
+                } else if (type === 'blackHeart') {
+                    // Creative touch: Black hearts and diamonds slightly pulse too
+                    const pulse = 1 + Math.sin(Date.now() / 250 + p.wobble) * 0.1;
+                    ctx.scale(pulse, pulse);
+                    ctx.font = `${p.size*2}px Arial`; 
+                    ctx.fillText(p.text, -p.size, p.size);
+                } else if (type === 'snow') {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill();
+                } else if (type === 'rain') {
+                    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(p.speedX*2, p.speedY*2); 
+                    ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.stroke();
+                } else if (emojiMap[type]) {
+                    ctx.font = `${p.size*2}px Arial`; 
+                    ctx.fillText(emojiMap[type], -p.size, p.size);
+                } else {
+                    // Default / Confetti
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                }
+                ctx.restore();
+                
+                p.rotation += p.rotationSpeed;
+                
+                // Keep animation alive if particles are still visible
+                if (p.opacity > 0 && p.y > -100 && p.y < canvas.height + 100 && p.x > -100 && p.x < canvas.width + 100) {
+                    active = true;
+                }
+            });
+            
+            if(active) requestAnimationFrame(animate);
+            else ctx.clearRect(0,0, canvas.width, canvas.height); // Clean up properly to free memory
+        }
+        animate();
+    }
+
+    
+
+    
+    // Use Centralized Keywords map from external file (Word Boundary Added)
+    function checkKeywords(text) {
+        const lower = text.toLowerCase();
+        const hasMatch = (trigger) => {
+            if (/[a-z0-9]/i.test(trigger)) {
+                return new RegExp(`\\b${trigger}\\b`, 'i').test(lower);
+            }
+            return lower.includes(trigger);
+        };
+
+        if (window.effectKeywords) {
+            for (const [effect, words] of Object.entries(window.effectKeywords)) {
+                if (words.some(w => hasMatch(w))) {
+                    fireEffect(effect);
+                    break; 
+                }
+            }
+        } else {
+            // Fallbacks in case script fails to load
+            if (hasMatch('love') || hasMatch('❤️')) fireEffect('hearts');
+            else if (hasMatch('congratulations') || hasMatch('🎉')) fireEffect('confetti');
+        }
+    }
+
+    function linkify(text) {
+        if (!text) return "";
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, function(url) {
+            return `<a onclick="event.stopPropagation(); window.open('${url}', '_blank')">${url}</a>`;
+        });
+    }
+
+    function scrollToAndFlash(textSnippet) {
+        const bubbles = document.querySelectorAll('.bubble span');
+        let targetId = null;
+        for(let span of bubbles) {
+            if(span.innerText.includes(textSnippet)) {
+                targetId = span.id.replace('text-', '');
+                break;
+            }
+        }
+        if(targetId) {
+            const el = document.getElementById(targetId);
+            if(el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const bubble = el.querySelector('.bubble') || el.closest('.bubble');
+                if(bubble) {
+                    bubble.classList.remove('flash-active');
+                    void bubble.offsetWidth; // Trigger reflow
+                    bubble.classList.add('flash-active');
+                }
+            }
+        }
+    }
+
+    function triggerReply(text) {
+        replyingTo = text;
+        document.getElementById('reply-text').innerText = "Replying to: " + (text.length > 50 ? text.substring(0,50)+"..." : text);
+        document.getElementById('reply-dock').style.display = 'flex';
+        mInput.focus(); 
+    }
+
+    function cancelInteraction() { 
+        if (editModeId) {
+            mInput.value = "";
+            mInput.style.height = 'auto';
+        }
+        replyingTo = null; 
+        editModeId = null;
+        document.getElementById('reply-dock').style.display = 'none'; 
+    }
+
+    // =========================================
+    //  19. MESSAGING CORE ACTIONS
+    // =========================================
+
+    const sendPushNotification = async (messageText) => {
+        // Only run if we have a person to send it to
+        if (!targetUid) return;
+        
+        // Get your name and photo to show in their notification banner
+        const senderName = myUserData && myUserData.name ? myUserData.name : "Someone";
+        const senderPhoto = myUserData && myUserData.photoURL ? myUserData.photoURL : "https://www.goorac.biz/icon.png";
+        
+        // FIX: Ensure username is defined, fallback to uid if missing to prevent null deep link breaks
+        const linkUserParam = (myUserData && myUserData.username) ? myUserData.username : myUid;
+        const deepLink = `https://www.goorac.biz/chat.html?user=${linkUserParam}`;
+
+        try {
+            // Your unique, permanent Render URL
+            const backendUrl = "https://pish-uigm.onrender.com/send-push";
+
+            // FETCH LOGIC COMMENTED OUT AS REQUESTED TO REMOVE PUSH NOTIFICATIONS
+            console.log("Push Notification system bypassed successfully.", { targetUid, senderUid: myUid, body: messageText });
+            /*
+            // Make the fetch call non-blocking but track its resolution
+            fetch(backendUrl, {
+                method: "POST",
+                keepalive: true, // NEW FIX: Ensures request completes blazingly fast even during UI stutters
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    targetUid: targetUid,
+                    senderUid: myUid, // <--- ADDED SENDER UID FOR GROUPING
+                    title: `New message from ${senderName}`,
+                    body: messageText,
+                    icon: senderPhoto, // This sends your PFP to the notification
+                    click_action: deepLink // Tells the server where the notification should lead
+                })
+            }).then(res => {
+                if (!res.ok) console.error("Push failed with status:", res.status);
+                else console.log("✅ Push successfully triggered via Render!");
+            }).catch(err => {
+                console.error("❌ Error sending push:", err);
+            });
+            */
+            
+        } catch (error) {
+            console.error("❌ Error configuring push:", error);
+        }
+    };
+    
+
+    async function sendImageMessage(imageUrl) {
+        popSound.play().catch(e => {});
+        window.scrollToBottom(true);
+
+        let msgData = {
+            text: "", 
+            sender: myUid, 
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            replyTo: replyingTo, 
+            seen: false, 
+            reactions: {},
+            imageUrl: imageUrl
+        };
+        cancelInteraction();
+        
+        // Removed blocking await for instant performance
+        db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
+        
+        updateLastMsg("📷 Image");
+        sendPushNotification("📷 Sent you an image");
+        window.scrollToBottom(true);
+    }
+    
+    async function sendGifMessage(gifUrl) {
+        popSound.play().catch(e => {});
+        window.scrollToBottom(true);
+
+        let msgData = {
+            text: "", 
+            sender: myUid, 
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            replyTo: replyingTo, 
+            seen: false, 
+            reactions: {},
+            imageUrl: gifUrl,
+            isGif: true // Special flag for replies/inbox UI
+        };
+        cancelInteraction();
+        
+        // Removed blocking await for instant performance
+        db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
+        
+        updateLastMsg("🎞️ GIF");
+        sendPushNotification("🎞️ Sent you a GIF");
+        window.scrollToBottom(true);
+    }
+
+    async function sendFileMessage(fileUrl, metadata) {
+        popSound.play().catch(e => {});
+        window.scrollToBottom(true);
+        const caption = metadata.caption || "";
+        
+        let msgData = {
+            text: caption,
+            sender: myUid, 
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            replyTo: replyingTo, 
+            seen: false, 
+            reactions: {},
+            fileUrl: fileUrl,
+            fileMeta: metadata
+        };
+        cancelInteraction();
+        
+        // Removed blocking await for instant performance
+        db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
+        
+        let label = "📄 File";
+        if(metadata.type && metadata.type.indexOf('video') !== -1) label = "🎥 Video Message";
+        else if(metadata.type && metadata.type.indexOf('audio') !== -1) label = "🎤 Voice Message";
+        
+        updateLastMsg(caption ? label + " " + caption : label);
+        sendPushNotification(caption ? label + " " + caption : label);
+        window.scrollToBottom(true);
+    }
+
+    function sendMsg() {
+        const text = mInput.value.trim();
+        if (!text) {
+            inputBox.classList.add('shake-anim');
+            setTimeout(() => inputBox.classList.remove('shake-anim'), 400);
+            return;
+        }
+
+        popSound.play().catch(e => {});
+        vibrate(50); // NEW: Send message vibration
+        
+        // Trigger Effects
+        checkKeywords(text);
+        
+        mInput.value = "";
+        mInput.style.height = 'auto'; 
+        sendBtnUI.classList.remove('active'); 
+        // Re-show mic button and dynamic emoji UI if empty
+        micWrapper.style.display = 'flex';
+        document.querySelector('.plus-btn').style.display = 'flex';
+        document.getElementById('emoji-toggle-left').style.display = 'none';
+        document.getElementById('emoji-toggle-right').style.display = 'flex';
+        document.getElementById('gif-toggle-right').style.display = 'flex';
+        
+        emojiTray.style.display = 'none';
+        document.getElementById('gif-tray').style.display = 'none';
+        attachmentMenu.style.display = 'none';
+        rdb.ref(`typing/${chatId}/${myUid}`).set(false);
+        mInput.focus(); 
+
+        if (editModeId) {
+            const idToEdit = editModeId; editModeId = null;
+            cancelInteraction(); 
+            db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true }).catch(e=>console.error(e));
+            updateLastMsg(text); // NEW FIX: Instantly updates inbox text for edits
+        } else {
+            const rText = replyingTo; cancelInteraction(); 
+            window.scrollToBottom(true);
+            let msgData = {
+                text, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                replyTo: rText, seen: false, reactions: {}
+            };
+            
+            // Removed await for immediate, non-blocking UI
+            db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error("Send error:", e));
+            
+            updateLastMsg(text);
+            sendPushNotification(text);
+        }
+        window.scrollToBottom(true);
+    }
+
+    function updateLastMsg(msgText) {
+        db.collection("chats").doc(chatId).set({
+            lastMessage: msgText, 
+            lastSender: myUid,
+            lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            participants: [myUid, targetUid], seen: false,
+            [`unreadCount.${targetUid}`]: firebase.firestore.FieldValue.increment(1)
+        }, { merge: true }).catch(e => console.error(e));
+        
+        updateInboxCacheLocal(chatId, msgText, myUid, false); // INBOX SYNC FALLBACK
+    }
+
+    // Menu & Edit Actions
+    function openMenu(id, sender, text) {
+        activeMenuId = id;
+        vibrate(30); // Vibrate on menu open
+        const isMine = sender === myUid;
+        
+        // Dynamically align L-shape based on sender
+        const menuCard = document.getElementById('main-menu-card');
+        menuCard.style.alignItems = isMine ? 'flex-end' : 'flex-start';
+        
+        document.getElementById('edit-btn').style.display = (isMine && text) ? 'flex' : 'none'; 
+        document.getElementById('unsend-btn').style.display = isMine ? 'flex' : 'none';
+        document.getElementById('menu-emoji-grid').style.display = 'none';
+        document.getElementById('menu-overlay').style.display = 'flex';
+        pushModalState('menu');
+    }
+
+    async function copyMessageText() {
+        if (!activeMenuId) return;
+        const el = document.getElementById('text-' + activeMenuId);
+        if(!el) { closeMenu(); return; } 
+        const msgText = el.innerText.split('(edited)')[0].trim();
+        try {
+            await navigator.clipboard.writeText(msgText);
+            closeMenu();
+        } catch (err) {}
+    }
+
+    function initEdit() {
+        const el = document.getElementById('text-'+activeMenuId);
+        if(!el) return;
+        const textToEdit = el.innerText.split('(edited)')[0].trim();
+        mInput.value = textToEdit;
+        mInput.style.height = 'auto'; 
+        mInput.style.height = mInput.scrollHeight + 'px';
+        editModeId = activeMenuId; 
+        closeMenu(); 
+        document.getElementById('reply-text').innerHTML = "<strong style='color:#FF9800'>Editing Message:</strong><br> " + textToEdit;
+        document.getElementById('reply-dock').style.display = 'flex';
+        mInput.focus();
+    }
+
+    async function unsendMsg() { 
+        const idToDelete = activeMenuId; closeMenu();
+        
+        // Optimistic Remove ensuring local storage properly reflects immediately 
+        if (messagesMap.has(idToDelete)) { 
+            messagesMap.delete(idToDelete); 
+            const el = document.getElementById(idToDelete);
+            if(el) el.remove();
+            saveMessagesToCache(); 
+            renderAll(); 
+        }
+        
+        try {
+            await db.collection("chats").doc(chatId).collection("messages").doc(idToDelete).delete();
+            const snapshot = await db.collection("chats").doc(chatId).collection("messages").orderBy("timestamp", "desc").limit(1).get();
+            if (!snapshot.empty) {
+                const lastMsg = snapshot.docs[0].data({ serverTimestamps: 'estimate' });
+                let txt = lastMsg.text || "";
+                
+                if (lastMsg.isBite) txt = txt ? "🎬 " + txt : "🎬 Bite";
+                else if (lastMsg.isGif) txt = txt ? "🎞️ " + txt : "🎞️ GIF";
+                else if (lastMsg.imageUrl) txt = txt ? "📷 " + txt : "📷 Image";
+                else if (lastMsg.fileUrl) {
+                    const type = lastMsg.fileMeta ? lastMsg.fileMeta.type : 'file';
+                    let icon = "📄", label = "File";
+                    if(type.indexOf('video') !== -1) { icon = "🎥"; label = "Video"; }
+                    else if(type.indexOf('audio') !== -1) { icon = "🎵"; label = "Audio"; }
+                    txt = txt ? `${icon} ${txt}` : `${icon} ${label}`;
+                }
+                
+                db.collection("chats").doc(chatId).update({ lastMessage: txt, lastSender: lastMsg.sender, lastTimestamp: lastMsg.timestamp });
+                updateInboxCacheLocal(chatId, txt, lastMsg.sender, false); 
+            } else {
+                db.collection("chats").doc(chatId).update({ lastMessage: "", lastSender: myUid, lastTimestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                updateInboxCacheLocal(chatId, "", myUid, false); 
+            }
+        } catch (err) {
+            console.error("Unsend failed", err);
+        }
+    }
+
+    // =======================================================================
+    // FIX: RELIABLE SCROLL LOADING FOR OLDER MESSAGES (REWRITTEN NO JUMP)
+    // =======================================================================
+    async function loadMoreMessages() {
+        if (isLoadingMore) return;
+        isLoadingMore = true; window.isLoadingMore = true;
+
+        let query = db.collection("chats").doc(chatId).collection("messages").orderBy("timestamp", "desc");
+
+        if (lastVisible) {
+            query = query.startAfter(lastVisible);
+        } else {
+            // Safe fallback to find oldest if lastVisible was cleared/dropped
+            let oldestMsg = null;
+            messagesMap.forEach(msg => {
+                if (!oldestMsg) oldestMsg = msg;
+                else {
+                    const tOld = oldestMsg.timestamp?.toDate ? oldestMsg.timestamp.toDate() : new Date(oldestMsg.timestampIso || 0);
+                    const tCur = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestampIso || 0);
+                    if (tCur < tOld) oldestMsg = msg;
+                }
+            });
+
+            if (oldestMsg) {
+                const queryDate = oldestMsg.timestamp?.toDate ? oldestMsg.timestamp.toDate() : new Date(oldestMsg.timestampIso || 0);
+                query = query.startAfter(queryDate);
+            } else {
+                isLoadingMore = false; window.isLoadingMore = false;
+                return;
+            }
+        }
+
+        try {
+            const snapshot = await query.limit(20).get();
+
+            if (!snapshot.empty) {
+                snapshot.forEach(doc => {
+                    let d = doc.data({ serverTimestamps: 'estimate' });
+                    d.id = doc.id;
+                    if (!messagesMap.has(doc.id)) {
+                        messagesMap.set(doc.id, d);
+                    }
+                });
+                lastVisible = snapshot.docs[snapshot.docs.length - 1];
+                
+                // --- NEW FAST JUMP-FREE LOGIC ---
+                // Identify the topmost element to anchor to before rendering
+                const containerEl = document.getElementById('messages-container');
+                const firstMsgEl = containerEl ? containerEl.querySelector('.msg-row') : null;
+                const anchorId = firstMsgEl ? firstMsgEl.id : null;
+                const anchorOffsetTop = firstMsgEl ? firstMsgEl.offsetTop : 0;
+                const currentScrollTop = chatFlow.scrollTop;
+                
+                chatFlow.style.overflowAnchor = 'none'; // Temporarily disable native anchor
+                
+                renderAll();
+
+                requestAnimationFrame(() => {
+                    if (anchorId) {
+                        const newAnchorEl = document.getElementById(anchorId);
+                        if (newAnchorEl) {
+                            const offsetDifference = newAnchorEl.offsetTop - anchorOffsetTop;
+                            chatFlow.scrollTop = currentScrollTop + offsetDifference;
+                        }
+                    }
+                    chatFlow.style.overflowAnchor = 'auto'; // Restore native anchor
+                    isLoadingMore = false; window.isLoadingMore = false;
+                });
+            } else {
+                lastVisible = null; // No more messages
+                isLoadingMore = false; window.isLoadingMore = false;
+            }
+        } catch (e) {
+            console.error("Pagination Error:", e);
+            isLoadingMore = false; window.isLoadingMore = false;
+        }
+    }
+
+    function setupObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoadingMore && messagesMap.size > 0) {
+                loadMoreMessages();
+            }
+        }, { root: chatFlow, rootMargin: "300px", threshold: 0 }); 
+        observer.observe(document.getElementById('scroll-trigger'));
+    }
+
+    // MODIFIED: Added smooth scroll parameter
+    window.scrollToBottom = function(smooth = false) { 
+        chatFlow.scrollTo({
+            top: chatFlow.scrollHeight,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    }
+
+    // Reaction Logic
+    async function applyReaction(emoji) {
+        if (!activeMenuId) return;
+        const msgId = activeMenuId; closeMenu(); 
+        vibrate(30); // Vibrate on manual emoji pick
+        await applyReactionToId(msgId, emoji);
+    }
+
+    async function applyReactionToId(id, emoji) {
+        // 1. Optimistic Update (Visual Pop Instant)
+        if (emoji !== '') {
+            triggerReactionPop(id, emoji);
+        }
+        vibrate(30); 
+
+        if(messagesMap.has(id)) {
+            let msg = messagesMap.get(id);
+            if(!msg.reactions) msg.reactions = {};
+
+            if(msg.reactions[myUid] && msg.reactions[myUid].emoji === emoji) {
+                 delete msg.reactions[myUid];
+            } else if (emoji !== '') {
+                 msg.reactions[myUid] = { emoji: emoji, timestamp: Date.now() };
+            }
+            messagesMap.set(id, msg);
+            // Surgical Update
+            updateReactionDOM(id, msg.reactions);
+        }
+
+        // 2. Firebase Update
+        const msgRef = db.collection("chats").doc(chatId).collection("messages").doc(id);
+        const doc = await msgRef.get();
+        const data = doc.data();
+        let currentReaction = (data.reactions && data.reactions[myUid]) ? data.reactions[myUid].emoji : null;
+
+        if (currentReaction === emoji) {
+            await msgRef.update({ [`reactions.${myUid}`]: firebase.firestore.FieldValue.delete() });
+        } else {
+            await msgRef.update({ [`reactions.${myUid}`]: { emoji: emoji, timestamp: Date.now() } });
+            
+            // NEW FIX: Updates inbox text and pushes notification instantly if reacting to THEIR message
+            if (data.sender !== myUid && emoji !== '') {
+                updateLastMsg(`Reacted ${emoji} to a message`);
+                sendPushNotification(`Reacted ${emoji} to your message`);
+            }
+        }
+    }
+
+    function showReactionDetails(msgId, event) {
+        event.stopPropagation();
+        const msgData = messagesMap.get(msgId);
+        if (!msgData || !msgData.reactions) return;
+
+        const listContainer = document.getElementById('react-list-items');
+        listContainer.innerHTML = '';
+
+        Object.entries(msgData.reactions).forEach(([uid, rData]) => {
+            const isMe = uid === myUid;
+            const pfpSrc = isMe ? (myUserData ? myUserData.photoURL : 'https://via.placeholder.com/40') : chatTargetData.photoURL;
+            const name = isMe ? "You" : (chatTargetData.name || chatTargetData.username);
+            const timeStr = formatTime12(new Date(rData.timestamp));
+
+            const el = document.createElement('div');
+            el.className = 'reactor-item';
+            el.innerHTML = `
+                <img src="${pfpSrc}" class="reactor-pfp">
+                <div class="reactor-info">
+                    <div class="reactor-name">${name}</div>
+                    <div class="reactor-time">${timeStr}</div>
+                </div>
+                <div class="reactor-emoji">${rData.emoji}</div>
+            `;
+            listContainer.appendChild(el);
+        });
+        document.getElementById('reaction-details-overlay').style.display = 'flex';
+        pushModalState('reactions');
+    }
+
+    function closeReactionDetails() { 
+        const overlay = document.getElementById('reaction-details-overlay');
+        if (overlay.style.display === 'flex') {
+            overlay.style.display = 'none'; 
+            if(history.state && history.state.modal === 'reactions') history.back();
+        }
+    }
+    
+    function initReplyFromActive() {
+        const el = document.getElementById('text-'+activeMenuId);
+        let text = el ? el.innerText.split('(edited)')[0].trim() : "Attachment";
+        
+        // If there's no text (it's media only), grab the correct label
+        if (!text || text === "Attachment") {
+             const msgData = messagesMap.get(activeMenuId);
+             if (msgData) {
+                 if (msgData.isBite) text = "🎬 Bite";
+                 else if (msgData.isGif) text = "🎞️ GIF";
+                 else if (msgData.imageUrl) text = "📷 Photo";
+                 else if (msgData.fileMeta && msgData.fileMeta.type.includes('audio')) text = "🎵 Audio";
+                 else if (msgData.fileUrl) text = "📄 File";
+             }
+        }
+        
+        triggerReply(text);
+        closeMenu();
+    }
+    
+    function closeMenu() { 
+        const overlay = document.getElementById('menu-overlay');
+        if(overlay.style.display === 'flex') {
+            overlay.style.display = 'none'; 
+            if(history.state && history.state.modal === 'menu') history.back();
+        }
+    }
+
+    // =========================================
+    //  20. AUDIO RECORDER LOGIC (INSTAGRAM STYLE)
+    // =========================================
+
+    // Variables for Recorder
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recStartTime = 0;
+    let recInterval = null;
+    let isRecording = false;
+    let isLocked = false;
+    let recStartY = 0;
+    let recStartX = 0;
+    let STORAGE_BUCKET = "public-files"; 
+    
+    // NEW: Guard flag to prevent multiple sends
+    let isAudioProcessing = false;
+
+    const recOverlay = document.getElementById('recording-overlay');
+    const recTimer = document.getElementById('rec-timer');
+    const cancelZone = document.getElementById('cancel-trash');
+    const lockPill = document.getElementById('lock-pill');
+    const cancelText = document.getElementById('rec-cancel-text');
+
+    // -- HELPER: Upload to Supabase via FilePicker Component's Client --
+    async function uploadAudioBlob(blob, duration, ext) {
+        const fileName = `voice_${Date.now()}_${myUid}.${ext}`;
+        const fpElement = document.getElementById('file-picker');
+        
+        let uploadedUrl = null;
+
+        // Ensure Supabase client is initialized if it exists
+        if (fpElement && !fpElement.sbClient && typeof fpElement.initSupabaseClient === 'function') {
+            fpElement.initSupabaseClient();
+        }
+
+        // Try Supabase first
+        if (fpElement && fpElement.sbClient) {
+            try {
+                const sbClient = fpElement.sbClient; 
+                const { data, error } = await sbClient.storage.from(STORAGE_BUCKET).upload(fileName, blob, { contentType: `audio/${ext}` });
+                
+                if (!error) {
+                    const { data: publicData } = sbClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+                    uploadedUrl = publicData.publicUrl;
+                }
+            } catch (err) {
+                console.warn("Supabase upload failed, falling back to Firebase...", err);
+            }
+        }
+
+        // Fallback to Firebase Storage if Supabase fails or is missing
+        if (!uploadedUrl) {
+            try {
+                const storageRef = firebase.storage().ref();
+                const audioRef = storageRef.child(`audios/${chatId}/${fileName}`);
+                const snapshot = await audioRef.put(blob);
+                uploadedUrl = await snapshot.ref.getDownloadURL();
+            } catch (fbErr) {
+                console.error("Firebase Audio Upload Failed:", fbErr);
+                // Fallback attempt: if storage is completely blocked, abort gracefully
+                isAudioProcessing = false;
+                return;
+            }
+        }
+
+        // Send the finalized message with whichever URL worked
+        sendFileMessage(uploadedUrl, {
+            type: `audio/${ext}`,
+            name: 'Voice Message',
+            size: blob.size,
+            duration: duration,
+            caption: "" 
+        });
+        
+        isAudioProcessing = false; 
+    }
+
+    // -- RECORDER FUNCTIONS --
+
+    async function startRecording() {
+        if (!navigator.mediaDevices) return;
+        if (isAudioProcessing) return; // Guard
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.start();
+            
+            isRecording = true;
+            isLocked = false;
+            recStartTime = Date.now();
+            
+            // UI Update
+            mInput.blur(); // Prevent keyboard open
+            micBtn.classList.add('recording');
+            recOverlay.style.display = 'flex';
+            lockPill.classList.add('visible');
+            
+            // Reset sliding text properly
+            cancelText.innerHTML = '<span class="material-icons-round" style="font-size:16px;">chevron_left</span> Slide to cancel';
+            cancelText.style.pointerEvents = 'none';
+            cancelText.onclick = null;
+            cancelText.style.opacity = '1';
+            
+            // Notify Other User
+            rdb.ref(`typing/${chatId}/${myUid}`).set('recording');
+            
+            vibrate(50);
+            popSound.play().catch(()=>{});
+
+            recInterval = setInterval(() => {
+                const diff = Math.floor((Date.now() - recStartTime) / 1000);
+                const m = Math.floor(diff / 60);
+                const s = diff % 60;
+                recTimer.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            }, 1000);
+
+        } catch (err) {
+            console.error("Mic Error", err);
+            alert("Microphone access needed");
+        }
+    }
+
+    async function stopRecording(shouldSend) {
+        if (!mediaRecorder || !isRecording) return;
+        
+        isRecording = false;
+        try { mediaRecorder.stop(); } catch(e){} // Catch invalid state
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        
+        clearInterval(recInterval);
+        recTimer.innerText = "0:00";
+        
+        // Reset UI
+        micBtn.classList.remove('recording');
+        micBtn.classList.remove('locked');
+        recOverlay.style.display = 'none';
+        lockPill.classList.remove('visible');
+        cancelZone.classList.remove('visible', 'active');
+        
+        rdb.ref(`typing/${chatId}/${myUid}`).set(false);
+
+        if (shouldSend) {
+            if(isAudioProcessing) return; // Guard double send
+            isAudioProcessing = true; // Lock
+
+            // Processing
+            setTimeout(() => {
+                // Fix format for iOS Support
+                const mime = mediaRecorder.mimeType || 'audio/webm';
+                // iOS Safari sometimes produces empty mimeType but it's mp4/m4a
+                const ext = mime.includes('mp4') ? 'mp4' : (mime.includes('ogg') ? 'ogg' : 'webm');
+                const blob = new Blob(audioChunks, { type: mime || 'audio/mp4' });
+                
+                const duration = Math.ceil((Date.now() - recStartTime) / 1000);
+                
+                if (duration < 1) {
+                      // Too short
+                      vibrate(50);
+                      isAudioProcessing = false; // Reset lock
+                } else {
+                      popSound.play().catch(()=>{}); 
+                      uploadAudioBlob(blob, duration, ext);
+                }
+            }, 200);
+        } else {
+            vibrate([30,50,30]); // Error vibe
+        }
+    }
+
+    function lockRecording() {
+        isLocked = true;
+        isRecording = true; // Ensure state
+        micBtn.classList.remove('recording');
+        micBtn.classList.add('locked'); // Turns red/stop icon style
+        lockPill.classList.remove('visible'); // Hide the hint
+        
+        // Transform the slider text into a clickable cancel button
+        cancelText.innerHTML = '<span class="material-icons-round" style="font-size:16px;">delete</span> Cancel';
+        cancelText.style.opacity = '1'; 
+        cancelText.style.pointerEvents = 'auto'; // allow click
+        cancelText.onclick = function() { stopRecording(false); };
+        
+        vibrate(100);
+    }
+
+    // -- TOUCH HANDLERS --
+
+    micBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        
+        mInput.blur(); // Ensures keyboard is hidden securely
+        
+        if (isLocked) {
+            // If locked, tap stops and sends
+            stopRecording(true);
+            return;
+        }
+        if (isRecording) return; // Prevent double trigger
+        
+        recStartY = e.touches[0].clientY;
+        recStartX = e.touches[0].clientX;
+        startRecording();
+    }, { passive: false });
+
+    micBtn.addEventListener('touchmove', (e) => {
+        if (!isRecording || isLocked) return;
+        
+        const currentY = e.touches[0].clientY;
+        const currentX = e.touches[0].clientX;
+        
+        const diffY = recStartY - currentY; // Up is positive
+        const diffX = recStartX - currentX; // Left is positive
+        
+        // 1. LOCK LOGIC (Slide Up)
+        if (diffY > 50) {
+            lockPill.style.transform = `translateY(-${diffY}px)`;
+            if (diffY > 100) {
+                lockRecording();
+            }
+        } else {
+            lockPill.style.transform = '';
+        }
+
+        // 2. CANCEL LOGIC (Slide Left)
+        if (diffX > 20) {
+            cancelZone.classList.add('visible');
+            recOverlay.style.opacity = Math.max(0.3, 1 - (diffX / 200)); // Fade out overlay
+            
+            // FIX: Made slide-to-cancel trigger faster and smoother (changed 150 to 100 threshold)
+            if (diffX > 100) {
+                cancelZone.classList.add('active'); // Trash turns red
+                cancelText.innerHTML = "Release to Cancel";
+                vibrate(10);
+            } else {
+                cancelZone.classList.remove('active');
+                cancelText.innerHTML = '<span class="material-icons-round" style="font-size:16px;">chevron_left</span> Slide to cancel';
+                recOverlay.style.opacity = '1';
+            }
+        } else {
+            cancelZone.classList.remove('visible');
+        }
+    }, { passive: false });
+
+    micBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        
+        if (isLocked) return; // Tap needed to stop if locked
+
+        const endX = e.changedTouches[0].clientX;
+        const diffX = recStartX - endX;
+
+        // FIX: Match the logic threshold above (100)
+        if (diffX > 100) {
+            stopRecording(false); // Cancelled
+        } else {
+            stopRecording(true); // Sent
+        }
+    });
+
+    // =========================================
+    //  21. MOBILE BACK BUTTON HANDLING (NEW)
+    // =========================================
+    function pushModalState(modalName) {
+        history.pushState({modal: modalName}, null, "");
+    }
+
+    window.addEventListener('popstate', (e) => {
+        // If state is null, user wants to go back or modals are closed
+        // We manually check if any modal is open and force close it (redundancy)
+        const modals = [
+            { id: 'emoji-tray', style: 'block' },
+            { id: 'gif-tray', style: 'block' },
+            { id: 'attachment-menu', style: 'flex' },
+            { id: 'reaction-picker-modal', style: 'flex' },
+            { id: 'menu-overlay', style: 'flex' },
+            { id: 'reaction-details-overlay', style: 'flex' }
+        ];
+        
+        let modalClosed = false;
+        modals.forEach(m => {
+            const el = document.getElementById(m.id);
+            if(el && el.style.display === m.style) {
+                el.style.display = 'none';
+                modalClosed = true;
+                if(m.id === 'emoji-tray' || m.id === 'gif-tray') {
+                    window.isEmojiTrayOpen = false;
+                    window.isGifTrayOpen = false;
+                    document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                    document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                    document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                }
+            }
+        });
+        
+        // If no modal was closed by popstate, and user intended to leave (e.state is null)
+        // We allow the browser to continue back
+        if(!modalClosed && !e.state) {
+            // Browser handles navigation
+        }
+    });
+
+    // =========================================
+    //  22. REAL-TIME AI EMOTION FINDER (VADER-INSPIRED NLP MODEL)
+    // =========================================
+    
+    (function initAIEngine() {
+        const moodMap = { happy: '😊', sad: '😢', angry: '😠', love: '❤️', funny: '😂', surprised: '😮', neutral: '😐' };
+        
+        // VADER-style dictionaries separated by language & type for strict weighted multipliers
+        const lexicons = {
+            emojis: {
+                happy: ['😊', '😁', '😄', '🙂', '🥳', '😎', '😇', '😌', '👍'],
+                sad: ['😢', '😭', '😞', '😔', '💔', '☹️', '😓', '👎'],
+                angry: ['😠', '😡', '🤬', '😾', '😤', '🖕'],
+                love: ['❤️', '😍', '🥰', '😘', '💕', '💖', '💗', '🫂', '🖤', '🤍', '🤎', '💙', '💜', '💚', '💎', '🧡'],
+                funny: ['😂', '🤣', '💀', '😹'],
+                surprised: ['😮', '😱', '😲', '🤯', '😳', '👀']
+            },
+            tamil: {
+                happy: ['santhosham', 'magilchi', 'super', 'sema', 'nalla', 'nandri', 'சந்தோஷம்', 'மகிழ்ச்சி', 'நன்று', 'mass', 'verithanam'],
+                sad: ['kavalai', 'varutham', 'sogam', 'kavala', 'kashtam', 'vali', 'கவலை', 'வருத்தம்', 'kastam', 'paavam'],
+                angry: ['kovam', 'kaduppu', 'erichal', 'poda', 'loosu', 'mutal', 'கோபம்', 'கடுப்பு', 'எரிச்சல்', 'eruma'],
+                love: ['kadhal', 'anbu', 'chellam', 'kutti', 'pudikum', 'en', 'uyire', 'காதல்', 'அன்பு', 'செல்லம்', 'thangam', 'kannu'],
+                funny: ['sirippu', 'nagaichuvai', 'கலக்கல்', 'சிரிப்பு', 'siripa'],
+                surprised: ['achariyam', 'athirchi', 'enna', 'nijamava', 'ஆச்சரியம்', 'அதிர்ச்சி', 'appadiya', 'unmaiyava']
+            },
+            english: {
+                happy: ['good', 'great', 'happy', 'yay', 'awesome', 'nice', 'sweet', 'cool', 'amazing', 'best'],
+                sad: ['sad', 'bad', 'sorry', 'depressed', 'down', 'miss', 'cry', 'hurt', 'pain'],
+                angry: ['angry', 'mad', 'hate', 'annoyed', 'wtf', 'stupid', 'dumb', 'idiot', 'furious'],
+                love: ['love', 'miss you', 'babe', 'baby', 'kiss', 'heart', 'beautiful', 'cute'],
+                funny: ['haha', 'lmao', 'lol', 'rofl', 'dead', 'funny', 'joke', 'hilarious'],
+                surprised: ['wow', 'omg', 'really', 'shocked', 'whoa', 'crazy', 'insane']
+            }
+        };
+
+        // NLP Negation Heuristics (Flips polarity if spotted before a keyword)
+        const negations = ['not', "don't", "dont", 'never', 'no', 'illa', 'illai', 'illay', 'illam', 'kidayathu', 'இல்லை'];
+
+        function calculateEmotion() {
+            if (!targetUid || messagesMap.size === 0) return moodMap.neutral;
+
+            // Extract the last 10 messages from the opposite person
+            const oppositeMsgs = Array.from(messagesMap.values())
+                .filter(m => m.sender === targetUid)
+                .sort((a, b) => {
+                    const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestampIso || 0).getTime();
+                    const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestampIso || 0).getTime();
+                    return tB - tA; // Sort descending (newest first)
+                })
+                .slice(0, 10);
+
+            if (oppositeMsgs.length === 0) return moodMap.neutral;
+
+            const scores = { happy: 0, sad: 0, angry: 0, love: 0, funny: 0, surprised: 0 };
+            
+            // Analyze with Time-Decay Weighting & Multipliers
+            oppositeMsgs.forEach((msg, index) => {
+                const rawText = (msg.text || '').toLowerCase();
+                const tokens = rawText.split(/[\s,.\?!]+/); // Tokenize
+                const timeWeight = 1.0 - (index * 0.05); // Top message is 1.0, 10th is 0.55
+                
+                // 1. Process Emojis globally (Highest Priority: x3.0)
+                // Emojis often sit without spaces, so string.includes() is safest
+                for (const [emotion, emojiList] of Object.entries(lexicons.emojis)) {
+                    emojiList.forEach(emoji => {
+                        if (rawText.includes(emoji)) { 
+                            scores[emotion] += 3.0 * timeWeight; 
+                        }
+                    });
+                }
+
+                // 2. Process Text Tokens (Tamil = x2.0, English = x1.0)
+                for (let i = 0; i < tokens.length; i++) {
+                    let word = tokens[i];
+                    if (!word) continue;
+
+                    // NLP Negation Check: Look at the preceding word
+                    let isNegated = false;
+                    if (i > 0 && negations.includes(tokens[i - 1])) {
+                        isNegated = true;
+                    }
+
+                    // Helper function to apply scores with heuristic polarity flipping
+                    const applyScore = (emotion, value) => {
+                        if (isNegated) {
+                            if (emotion === 'happy' || emotion === 'love' || emotion === 'funny') {
+                                scores.sad += value * timeWeight; // "not happy" -> sad
+                            } else if (emotion === 'sad' || emotion === 'angry') {
+                                scores.happy += value * timeWeight; // "not sad" -> happy
+                            }
+                        } else {
+                            scores[emotion] += value * timeWeight;
+                        }
+                    };
+
+                    // Check Tamil lexicons (Medium Priority)
+                    for (const [emotion, tamilList] of Object.entries(lexicons.tamil)) {
+                        if (tamilList.includes(word)) applyScore(emotion, 2.0);
+                    }
+
+                    // Check English lexicons (Lowest Text Priority)
+                    for (const [emotion, engList] of Object.entries(lexicons.english)) {
+                        if (engList.includes(word)) applyScore(emotion, 1.0);
+                    }
+                }
+            });
+
+            // Find dominant emotion mathematically
+            let dominant = 'neutral';
+            let maxScore = 0.5; // Threshold to prevent random noise triggers
+            
+            for (const [emotion, score] of Object.entries(scores)) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    dominant = emotion;
+                }
+            }
+
+            return moodMap[dominant];
+        }
+
+        function runMoodCycle() {
+            // Wait 15 seconds showing normal icon
+            setTimeout(() => {
+                const headerIcons = document.querySelectorAll('.header-actions .header-icon');
+                let videoIconEl = null;
+                // Find the video icon dynamically without altering HTML structure
+                for(let icon of headerIcons) {
+                    if(icon.innerHTML.includes('videocam') || icon.dataset.isVidIcon) {
+                        videoIconEl = icon;
+                        icon.dataset.isVidIcon = "true"; // Mark it for easy finding
+                        break;
+                    }
+                }
+
+                if (videoIconEl && targetUid) {
+                    const iconSpan = videoIconEl.querySelector('span');
+                    const detectedMood = calculateEmotion();
+                    
+                    // Transform to Mood Emoji
+                    iconSpan.classList.remove('material-icons-round');
+                    iconSpan.style.fontFamily = 'system-ui, sans-serif'; // Support native emoji
+                    iconSpan.style.fontSize = '24px'; // Fit standard icon size
+                    iconSpan.innerText = detectedMood;
+                    
+                    // Add smooth transition effect
+                    videoIconEl.style.transform = 'scale(1.2)';
+                    setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
+
+                    // Revert after 5 seconds
+                    setTimeout(() => {
+                        iconSpan.classList.add('material-icons-round');
+                        iconSpan.style.fontFamily = '';
+                        iconSpan.innerText = 'videocam';
+                        
+                        videoIconEl.style.transform = 'scale(1.2)';
+                        setTimeout(() => videoIconEl.style.transform = 'scale(1)', 200);
+                        
+                        // Restart cycle
+                        runMoodCycle();
+                    }, 5000);
+                } else {
+                    // Try again if DOM wasn't ready or targetUid missing
+                    runMoodCycle();
+                }
+            }, 15000);
+        }
+
+        // Start the continuous cycle
+        runMoodCycle();
+    })();
+
+</script>
+
+    <script>
+    // =========================================================================
+    //  SMART CLEAR: DISMISS ONLY THIS CHAT'S PUSH NOTIFICATIONS (BULLETPROOF)
+    // =========================================================================
+    async function clearCurrentChatNotifications(retryCount = 0) {
+        // 🚨 SAFETY NET: Stop trying after 10 seconds to prevent crashing the browser
+        if (retryCount > 20) return; 
+
+        if ('serviceWorker' in navigator) {
+            try {
+                // Try to get chatId (from chat.html) or groupId (from groupChat.html)
+                let currentChatTag = null;
+                if (typeof chatId !== 'undefined' && chatId) currentChatTag = chatId;
+                else if (typeof groupId !== 'undefined' && groupId) currentChatTag = groupId;
+                
+                // If Firebase hasn't created the ID yet, wait 500ms and try again
+                if (!currentChatTag) {
+                    setTimeout(() => clearCurrentChatNotifications(retryCount + 1), 500);
+                    return;
+                }
+
+                // 🚨 THE FIX: Use .ready to guarantee we talk to the ACTIVE Service Worker
+                const reg = await navigator.serviceWorker.ready;
+                
+                if (reg && typeof reg.getNotifications === 'function') {
+                    // 1. Direct browser query (Fastest & most reliable)
+                    const exactNotifications = await reg.getNotifications({ tag: currentChatTag });
+                    exactNotifications.forEach(notification => notification.close());
+
+                    // 2. Backup check just in case the tag was slightly modified
+                    const allNotifications = await reg.getNotifications();
+                    allNotifications.forEach(notification => {
+                        if (notification.tag && notification.tag.includes(currentChatTag)) {
+                            notification.close();
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("Silent error clearing specific notifications:", e);
+            }
+        }
+    }
+
+    // 1. Start the checking loop immediately when the page loads
+    clearCurrentChatNotifications();
+    
+    // 2. Run again if the user minimizes the app and switches back to it
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            clearCurrentChatNotifications();
+        }
+    });
+</script>
+<script>
+    // =========================================================================
+    //  ULTIMATE CLEAR: HUNTS DOWN AND DISMISSES THIS CHAT'S NOTIFICATIONS
+    // =========================================================================
+    async function clearCurrentChatNotifications(retryCount = 0) {
+        if (retryCount > 20) return; // Stop trying after 10 seconds
+
+        if ('serviceWorker' in navigator) {
+            try {
+                let currentChatTag = null;
+                if (typeof chatId !== 'undefined' && chatId) currentChatTag = chatId;
+                else if (typeof groupId !== 'undefined' && groupId) currentChatTag = groupId;
+                
+                // Wait for Firebase to load the Chat ID
+                if (!currentChatTag) {
+                    setTimeout(() => clearCurrentChatNotifications(retryCount + 1), 500);
+                    return;
+                }
+
+                // Check EVERY registered service worker (prevents missing Pusher's hidden worker)
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                
+                for (const reg of registrations) {
+                    if (typeof reg.getNotifications === 'function') {
+                        // Fetch ALL active notifications currently on the screen
+                        const notifications = await reg.getNotifications();
+                        
+                        notifications.forEach(notification => {
+                            let shouldClose = false;
+
+                            // 1. Check if the Tag matches
+                            if (notification.tag && notification.tag.includes(currentChatTag)) {
+                                shouldClose = true;
+                            }
+                            
+                            // 2. Check if Pusher hid the Chat ID inside the payload data
+                            const notifDataStr = JSON.stringify(notification.data || {});
+                            if (notifDataStr.includes(currentChatTag)) {
+                                shouldClose = true;
+                            }
+
+                            // 3. Check if the sender's name is in the Notification Title
+                            if (typeof chatTargetData !== 'undefined' && chatTargetData.name) {
+                                // Get the first name (e.g., "Siva" from "Siva Manihandan")
+                                const firstName = chatTargetData.name.split(' ')[0];
+                                if (notification.title && notification.title.includes(firstName)) {
+                                    shouldClose = true;
+                                }
+                            }
+
+                            // If we caught it using any of the 3 methods, destroy it!
+                            if (shouldClose) {
+                                notification.close();
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log("Silent error clearing specific notifications:", e);
+            }
+        }
+    }
+
+    // Start the checking loop immediately
+    clearCurrentChatNotifications();
+    
+    // Run again if the user minimizes the app and switches back
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            clearCurrentChatNotifications();
+        }
+    });
+</script>
+
+<script src="components/call-notifier.js" defer></script>
+<call-notifier></call-notifier>
+
+</body>
+</html>
