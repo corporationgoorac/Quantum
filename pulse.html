@@ -966,6 +966,15 @@
         const targetUsername = params.get('user');
         let wakeLock = null;
 
+        // ATOMIC SERVER CLOCK OFFSET (Fixes the 3-4s jump caused by clock difference between User A and User B's phones!)
+        let serverTimeOffset = 0;
+        pulseRdb.ref('.info/serverTimeOffset').on('value', snap => {
+            serverTimeOffset = Number(snap.val()) || 0;
+        });
+        function getServerNow() {
+            return Date.now() + serverTimeOffset;
+        }
+
         if (targetUsername) {
             try {
                 const cachedTarget = localStorage.getItem(`pulse_cache_user_${targetUsername}`);
@@ -998,6 +1007,7 @@
         
         let audioCtx, analyser, dataArray, canvas, canvasCtx, visualizerAnimation;
         let audioSourceNode = null; 
+        let silentKeepAliveNode = null;
         let rotationAngle = 0; 
 
         // State
@@ -1005,6 +1015,8 @@
         let isMyTurn = false;
         let currentSongId = null;
         let currentSongType = 'preview'; // 'preview' or 'full'
+        let previousCycleStatus = 'picking';
+        let localTrackStartServerMs = 0;
         let hasPickedEmoji = false;
         let emojiTimer = null, emojiCloseTimer = null, turnTimer = null, bufferSafetyTimer = null; 
         let lastSyncTime = 0; 
@@ -1199,12 +1211,15 @@
                         { src: artUrl, sizes: '512x512', type: 'image/jpeg' }
                     ] : []
                 });
+                navigator.mediaSession.playbackState = 'playing';
                 navigator.mediaSession.setActionHandler('play', () => {
                     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
                     audio.play().catch(()=>{});
                 });
                 navigator.mediaSession.setActionHandler('pause', () => {
                     // Keep stream synced in live session
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+                    audio.play().catch(()=>{});
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
                     if (isMyTurn) swapTurn();
@@ -1217,7 +1232,7 @@
             if (roomRef && myUid) {
                 roomRef.set({
                     [`screen_${myUid}`]: state,
-                    [`hb_${myUid}`]: Date.now()
+                    [`hb_${myUid}`]: getServerNow()
                 }, { merge: true }).catch(()=>{});
             }
             if (roomId && myUid) {
@@ -1236,9 +1251,9 @@
                 requestWakeLock();
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
                 if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.timestamp && !audio.paused) {
-                    const idealTime = (Date.now() - latestRoomData.timestamp) / 1000;
-                    if (idealTime > 0 && Math.abs(audio.currentTime - idealTime) > 1.8) {
-                        audio.currentTime = idealTime;
+                    const idealTime = (getServerNow() - latestRoomData.timestamp) / 1000;
+                    if (idealTime > 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 1.8) {
+                        try { audio.currentTime = idealTime; } catch (e) {}
                     }
                 }
             }
@@ -1294,7 +1309,7 @@
 
             const myField = (myUid < targetUid) ? 'userA' : 'userB';
             const otherField = (myUid < targetUid) ? 'userB' : 'userA';
-            const joinTimestamp = Date.now();
+            const joinTimestamp = getServerNow();
             
             const myPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`);
             const partnerPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`);
@@ -1313,7 +1328,7 @@
                         roomRef.set({
                             [myField]: 'online',
                             [`screen_${myUid}`]: document.hidden ? 'background' : 'active',
-                            [`hb_${myUid}`]: Date.now()
+                            [`hb_${myUid}`]: getServerNow()
                         }, { merge: true }).catch(()=>{});
                     }
                 }
@@ -1335,7 +1350,7 @@
                 const partnerSnap = await partnerPresenceRef.once('value');
                 const pVal = partnerSnap.val();
                 const partnerActuallyHere = (pVal === 'online' || pVal === 'background') ||
-                    (pVal && (pVal.state === 'online' || pVal.state === 'background') && (Date.now() - (pVal.ts || 0) < 60000));
+                    (pVal && (pVal.state === 'online' || pVal.state === 'background') && (getServerNow() - (pVal.ts || 0) < 60000));
                 isPartnerRdbOnline = Boolean(partnerActuallyHere);
 
                 const existingDoc = await roomRef.get();
@@ -1347,7 +1362,7 @@
                         [myField]: 'online',
                         [otherField]: partnerActuallyHere ? 'online' : 'offline',
                         [`screen_${myUid}`]: 'active',
-                        [`hb_${myUid}`]: Date.now(),
+                        [`hb_${myUid}`]: getServerNow(),
                         sessionStatus: 'active',
                         turn: existingData.turn || startingTurn,
                         cycleStatus: partnerActuallyHere ? (existingData.cycleStatus || 'picking') : 'picking',
@@ -1364,7 +1379,7 @@
                     await roomRef.set({
                         [myField]: 'online',
                         [`screen_${myUid}`]: 'active',
-                        [`hb_${myUid}`]: Date.now(),
+                        [`hb_${myUid}`]: getServerNow(),
                         sessionStatus: 'active',
                         radioMode: false,
                         lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -1537,7 +1552,7 @@
             const trackName = raw.trackName || raw.title || raw.name || 'Unknown Track';
             const artistName = raw.artistName || raw.artist || raw.subtitle || raw.uploader || 'Unknown Artist';
             const artworkUrl100 = raw.artworkUrl100 || raw.artwork || raw.image || raw.thumbnail || raw.cover || '';
-            const id = String(raw.id || raw.trackId || raw.videoId || (trackName + '_' + artistName + '_' + Date.now()));
+            const id = String(raw.id || raw.trackId || raw.videoId || (trackName + '_' + artistName + '_' + getServerNow()));
             return {
                 id: id,
                 trackName: String(trackName),
@@ -1549,7 +1564,7 @@
         }
 
         // -----------------------------------------------------------------
-        // TWO-PLAYER BARRIER SYNC ENGINE (WAIT FOR BOTH USERS & START TOGETHER)
+        // TWO-PLAYER BARRIER SYNC ENGINE (STARTS AT 0:00 FOR BOTH USERS!)
         // -----------------------------------------------------------------
         function syncCycle(data) {
             currentTurnUid = data.turn || ((myUid < targetUid) ? myUid : targetUid);
@@ -1579,6 +1594,7 @@
 
             // 1. PICKING PHASE
             if (status === 'picking' || !hasValidSong) {
+                previousCycleStatus = 'picking';
                 isAdvancingTrack = false;
                 clearTimeout(bufferSafetyTimer);
                 if (currentSongId !== null) {
@@ -1620,6 +1636,7 @@
             
             // 2. BUFFERING PHASE — BOTH USERS PRELOAD AND WAIT FOR EACH OTHER BEFORE STARTING!
             else if (status === 'buffering' && hasValidSong) {
+                previousCycleStatus = 'buffering';
                 const song = data.currentSong;
                 const songUniqueId = String(song.id || song.previewUrl);
 
@@ -1664,6 +1681,7 @@
                     const markMeReady = () => {
                         audio.oncanplay = null;
                         audio.onloadeddata = null;
+                        try { audio.currentTime = 0; } catch (e) {}
                         if (currentSongId === songUniqueId && roomRef && myUid) {
                             roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
                         }
@@ -1676,40 +1694,39 @@
                         markMeReady();
                     }
 
-                    // Local timer so even if onSnapshot doesn't fire again, this client marks ready & promotes to playing after max 5s
+                    // Safety fallback after 5s using synchronized server clock
                     clearTimeout(bufferSafetyTimer);
                     bufferSafetyTimer = setTimeout(() => {
                         if (latestRoomData && latestRoomData.cycleStatus === 'buffering' && currentSongId === songUniqueId) {
                             roomRef.set({
                                 ready: { [myUid]: true, [targetUid]: true },
                                 cycleStatus: 'playing',
-                                timestamp: Date.now()
+                                timestamp: getServerNow()
                             }, { merge: true }).catch(()=>{});
                         }
                     }, 5000);
                 } else {
-                    // Keep paused while in buffering barrier
+                    // Keep paused at 0:00 while in buffering barrier
                     if (!audio.paused) audio.pause();
                     if (audio.readyState >= 2 && !amIReady) {
                         roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
                     }
                 }
 
-                // As soon as BOTH players are ready, promote to 'playing' with fresh timestamp so both start at 0:00 together!
+                // As soon as BOTH players are ready, promote to 'playing' using atomic getServerNow()!
                 if (amIReady && isThemReady) {
                     clearTimeout(bufferSafetyTimer);
                     if (isMyTurn) {
                         roomRef.set({
                             cycleStatus: 'playing',
-                            timestamp: Date.now()
+                            timestamp: getServerNow()
                         }, { merge: true }).catch(()=>{});
                     } else {
-                        // Backup in case DJ's connection is slightly slower
                         setTimeout(() => {
                             if (latestRoomData && latestRoomData.cycleStatus === 'buffering') {
                                 roomRef.set({
                                     cycleStatus: 'playing',
-                                    timestamp: Date.now()
+                                    timestamp: getServerNow()
                                 }, { merge: true }).catch(()=>{});
                             }
                         }, 600);
@@ -1717,9 +1734,12 @@
                 }
             }
 
-            // 3. PLAYING PHASE — BOTH PLAYERS START AT THE EXACT SAME TIME
+            // 3. PLAYING PHASE — BOTH PLAYERS START AT 0:00 AT THE EXACT SAME TIME!
             else if (status === 'playing' && hasValidSong) {
                 clearTimeout(bufferSafetyTimer);
+                const justTransitionedFromBuffering = (previousCycleStatus === 'buffering');
+                previousCycleStatus = 'playing';
+
                 const song = data.currentSong;
                 const songUniqueId = String(song.id || song.previewUrl);
 
@@ -1752,23 +1772,24 @@
                     if (audioCtx && audioCtx.state === 'suspended') {
                         audioCtx.resume().catch(()=>{});
                     }
-                    // Align to exact shared start timestamp
-                    if (data.timestamp) {
-                        const elapsedSec = (Date.now() - data.timestamp) / 1000;
-                        if (elapsedSec > 0.35 && (!audio.duration || elapsedSec < audio.duration - 0.5)) {
-                            try { audio.currentTime = elapsedSec; } catch (e) {}
-                        } else {
-                            try { audio.currentTime = 0; } catch (e) {}
-                        }
+
+                    // CRITICAL FIX: When transitioning from 'buffering' -> 'playing', both users already waited for each other, so ALWAYS start from 0:00 (first second)!
+                    // Only seek if a user joined mid-song (> 3 seconds after server timestamp and wasn't in the buffering barrier).
+                    const serverElapsed = data.timestamp ? (getServerNow() - data.timestamp) / 1000 : 0;
+                    if (!justTransitionedFromBuffering && serverElapsed > 3.0 && (!audio.duration || serverElapsed < audio.duration - 1)) {
+                        try { audio.currentTime = serverElapsed; } catch (e) {}
+                    } else {
+                        try { audio.currentTime = 0; } catch (e) {}
                     }
+
+                    localTrackStartServerMs = getServerNow() - (audio.currentTime * 1000);
+                    lastSyncTime = getServerNow();
 
                     audio.play().then(() => {
                         document.getElementById('sync-overlay').classList.remove('active');
                     }).catch(() => {
                         document.getElementById('sync-overlay').classList.add('active');
                     });
-
-                    lastSyncTime = Date.now();
 
                     // Auto-end turn timer fallback for 30s Preview Mode
                     clearTimeout(turnTimer);
@@ -1778,14 +1799,13 @@
                         }, 30500);
                     }
                 } else if (!audio.paused) {
-                    // Tight 1.2s drift synchronization so both users stay locked on the exact same beat
-                    const SYNC_THROTTLE = 2000; 
-                    if (!ignoreAudioSync && (Date.now() - lastSyncTime > SYNC_THROTTLE)) {
-                        lastSyncTime = Date.now();
-                        const serverStart = data.timestamp;
-                        const now = Date.now();
-                        const idealTime = (now - serverStart) / 1000;
-                        if (serverStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 1.2) {
+                    // Drift check using atomic getServerNow() so phone clock skew never causes a 3-4s jump!
+                    const SYNC_THROTTLE = 3000; 
+                    if (!ignoreAudioSync && (getServerNow() - lastSyncTime > SYNC_THROTTLE)) {
+                        lastSyncTime = getServerNow();
+                        const refStart = data.timestamp || localTrackStartServerMs;
+                        const idealTime = (getServerNow() - refStart) / 1000;
+                        if (refStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 2.2) {
                             try { audio.currentTime = idealTime; } catch (e) {}
                         }
                     }
@@ -1849,7 +1869,7 @@
             roomRef.set({
                 currentSong: cleanSong,
                 cycleStatus: 'buffering',
-                timestamp: Date.now(),
+                timestamp: getServerNow(),
                 ready: {},
                 emojis: {},
                 songType: 'preview',
@@ -1868,7 +1888,7 @@
             roomRef.set({
                 currentSong: cleanSong,
                 cycleStatus: 'buffering',
-                timestamp: Date.now(),
+                timestamp: getServerNow(),
                 ready: {},
                 emojis: {},
                 songType: 'full',
@@ -1934,15 +1954,18 @@
             }
         };
 
-        // Background-safe timeupdate check for 30s drops
+        // Background-safe timeupdate check for 30s drops & AudioContext screen-off keep-alive
         audio.addEventListener('timeupdate', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(()=>{});
+            }
             if (currentSongType === 'preview' && audio.currentTime >= 29.8 && !isAdvancingTrack) {
                 audio.onended();
             }
         });
 
         // =================================================================
-        // VISUALIZER & DYNAMIC BEAT COLORS (REAL SONG FREQUENCY ANALYSER)
+        // VISUALIZER & DYNAMIC BEAT COLORS (REAL SONG FREQUENCY ANALYSER + SCREEN-OFF KEEP-ALIVE)
         // =================================================================
         function setupVisualizer() {
             if (audioCtx) return; 
@@ -1956,6 +1979,17 @@
                     audioSourceNode.connect(analyser);
                     analyser.connect(audioCtx.destination);
                 }
+
+                // Silent 0-gain keep-alive node prevents mobile browsers from suspending AudioContext when screen is turned off
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const silentGain = audioCtx.createGain();
+                    silentGain.gain.value = 0.00001;
+                    osc.connect(silentGain);
+                    silentGain.connect(audioCtx.destination);
+                    osc.start(0);
+                    silentKeepAliveNode = osc;
+                } catch (e) {}
 
                 analyser.fftSize = 256; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -2119,17 +2153,17 @@
 
             hasPickedEmoji = true;
             closeEmojiModal();
-            lastSyncTime = Date.now() + 5000;
+            lastSyncTime = getServerNow() + 5000;
             roomRef.set({ emojis: { [myUid]: emoji } }, { merge: true }).catch(()=>{});
         }
 
         function handleIncomingReaction(who, emoji) {
             if (who === 'me') {
                 if (lastReactionMe === emoji) return;
-                lastReactionMe = emoji; lastReactionTimeMe = Date.now(); 
+                lastReactionMe = emoji; lastReactionTimeMe = getServerNow(); 
             } else {
                 if (lastReactionThem === emoji) return;
-                lastReactionThem = emoji; lastReactionTimeThem = Date.now(); 
+                lastReactionThem = emoji; lastReactionTimeThem = getServerNow(); 
             }
 
             const targetId = (who === 'me') ? 'my-seated-emoji' : 'their-seated-emoji';
@@ -2171,7 +2205,7 @@
             if (msgContainer) msgContainer.innerHTML = ''; 
 
             if(!roomId) return;
-            chatListenStartTime = Date.now();
+            chatListenStartTime = getServerNow();
 
             chatUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).limitToLast(45).on('child_added', snap => {
                 const msg = snap.val();
@@ -2182,7 +2216,7 @@
                     if (!localReactionsStore[msg.targetMsgId]) localReactionsStore[msg.targetMsgId] = {};
                     localReactionsStore[msg.targetMsgId][msg.reactorUid] = {
                         emoji: msg.emoji,
-                        ts: msg.ts || Date.now(),
+                        ts: msg.ts || getServerNow(),
                         name: msg.reactorName || 'User',
                         photo: msg.reactorPhoto || ''
                     };
@@ -2363,7 +2397,7 @@
             const safeText = escapeHtmlText(msg.text);
             const isRecentMsg = (msg.ts || 0) >= (chatListenStartTime - 2000);
             
-            const d = new Date(msg.ts || Date.now());
+            const d = new Date(msg.ts || getServerNow());
             const timeString = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
             if (msg.type === 'sys') {
@@ -2581,7 +2615,7 @@
             
             const reactData = {
                 emoji: emoji,
-                ts: Date.now(), 
+                ts: getServerNow(), 
                 name: myProfile && myProfile.name ? myProfile.name : 'User',
                 photo: myProfile && myProfile.photoURL ? myProfile.photoURL : ''
             };
@@ -2627,7 +2661,7 @@
                 if(Object.keys(reacts).length === 0) return;
 
                 Object.values(reacts).forEach(r => {
-                    const d = new Date(r.ts || Date.now());
+                    const d = new Date(r.ts || getServerNow());
                     const timeString = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
                     const imgUrl = r.photo || 'https://via.placeholder.com/40';
                     
@@ -2717,7 +2751,7 @@
             unlockMobileAudio();
             if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             if (latestRoomData && latestRoomData.timestamp) {
-                const idealSeek = (Date.now() - latestRoomData.timestamp) / 1000;
+                const idealSeek = (getServerNow() - latestRoomData.timestamp) / 1000;
                 if (idealSeek > 0.5 && (!audio.duration || idealSeek < audio.duration - 1)) {
                     try { audio.currentTime = idealSeek; } catch (e) {}
                 }
@@ -2764,7 +2798,7 @@
                     roomRef.set({ 
                         sessionStatus: 'ended',
                         endedBy: myUid,
-                        endedAt: Date.now(),
+                        endedAt: getServerNow(),
                         chatReactions: {},
                         [myField]: 'offline'
                     }, { merge: true }).catch(e => console.log("Offline update skipped"));
