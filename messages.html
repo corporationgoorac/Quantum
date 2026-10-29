@@ -8,7 +8,7 @@
     <title>Goorac | Quantum Inbox</title>
     
     <script src="config.js"></script>
-<script src="components/theme.js"></script>
+    <script src="components/theme.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -29,6 +29,7 @@
     /**
      * SHELL ENFORCEMENT ENGINE
      * Redirects desktop users to the SPA shell if they open this file directly.
+     * UPDATED: Redirect bypassed to allow the new Master-Detail Desktop Layout to function natively.
      */
     (function enforceShell() {
         const isPC = window.innerWidth >= 1024;
@@ -41,7 +42,8 @@
             
             // Redirect to index.html with the 'view' parameter so the SPA loads this page
             const redirectUrl = `index.html?view=${encodeURIComponent(currentPath + currentParams)}`;
-            window.location.replace(redirectUrl);
+            // window.location.replace(redirectUrl); // LINE COMMENTED OUT TO ENABLE MASTER-DETAIL LAYOUT
+            console.log("Desktop Master-Detail Layout initialized. SPA redirect bypassed.");
         }
     })();
 </script>
@@ -72,6 +74,55 @@
             -webkit-user-select: none; user-select: none;
             -webkit-tap-highlight-color: transparent;
             width: 100% !important; max-width: 100vw !important; /* LOCKED HORIZONTAL */
+        }
+
+        /* --- NEW: APP LAYOUT FOR DESKTOP MASTER-DETAIL --- */
+        #app-layout {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #master-pane {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+        }
+        #detail-pane {
+            display: none; /* Hidden on mobile */
+            border: none;
+            border-left: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        @media (min-width: 1024px) {
+            body { padding-bottom: 0 !important; overflow: hidden; }
+            #app-layout { max-width: 100vw !important; }
+            #master-pane { 
+                flex: 0 0 420px; 
+                width: 420px; 
+                max-width: 420px; 
+                padding-bottom: 75px; /* Space for navbar */
+            }
+            #detail-pane { 
+                display: block; 
+                flex: 1; 
+                width: calc(100vw - 420px); 
+            }
+            main-navbar { width: 420px !important; }
+            /* Reposition modals for desktop */
+            .side-modal { width: 420px !important; right: auto; left: -420px; }
+            .side-modal.active { left: 0; right: auto; }
+            #delete-menu, #sort-modal, #msg-intro-modal, #confirm-modal { 
+                width: 400px; left: 210px; transform: translateX(-50%); 
+                bottom: -100%; border-radius: 24px; border: 1px solid var(--border); 
+            }
+            #delete-menu.active, #sort-modal.active, #msg-intro-modal.active, #confirm-modal.active { 
+                bottom: 50%; transform: translate(-50%, 50%); 
+            }
         }
 
         /* HEADER */
@@ -124,6 +175,7 @@
             height: 89px !important; box-sizing: border-box !important;
         }
         .chat-item:active { background: var(--glass); transform: scale(0.98); }
+        .chat-item.desktop-active { background: var(--glass); border-left: 4px solid var(--accent); }
 
         /* PFP Container for Online Dot */
         .pfp-container { position: relative; margin-right: 15px; flex-shrink: 0; }
@@ -205,7 +257,7 @@
         #delete-menu.active { bottom: 0; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99999; display: none; backdrop-filter: blur(8px); }
 
-        @media (min-width: 768px) {
+        @media (min-width: 768px) and (max-width: 1023px) {
             #delete-menu { width: 400px; left: 50%; transform: translateX(-50%); bottom: -100%; border-radius: 24px; border: 1px solid var(--border); padding-bottom: 20px; }
             #delete-menu.active { bottom: 50%; transform: translate(-50%, 50%); }
         }
@@ -216,7 +268,8 @@
         .context-name { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .context-username { color: var(--text-dim); font-size: 0.85rem; font-weight: 500; margin-top: 2px; }
         .action-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-        .btn-action { width: 100%; padding: 18px; border-radius: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; }
+        .btn-action { width: 100%; padding: 18px; border-radius: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-action:active { transform: scale(0.97); }
         .del-btn-big { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(255, 68, 68, 0.2); }
         .pin-btn-big { background: var(--surface); color: var(--accent); border: 1px solid var(--border); }
         .cancel-btn { background: transparent; color: #666; font-size: 0.9rem; margin-top: 10px; }
@@ -357,8 +410,19 @@
 <body oncontextmenu="return false;">
 
 <view-notes></view-notes>
-
 <image-picker id="group-image-picker" style="position: relative; z-index: 999999; display: block;"></image-picker>
+
+<!-- --- NEW CUSTOM HTML CONFIRMATION MODAL TO REPLACE NATIVE POPUP --- -->
+<div class="menu-overlay" id="confirm-overlay" onclick="closeConfirmModal(true)"></div>
+<div class="bottom-modal-intro" id="confirm-modal" style="padding-bottom: 25px; z-index: 100001;">
+    <div class="modal-handle-intro" onclick="closeConfirmModal(true)"></div>
+    <div class="modal-title-intro" style="text-align:center; margin-bottom: 10px; color: var(--danger);">Are you sure?</div>
+    <div class="modal-desc-intro" style="text-align:center; margin-bottom: 25px;">This action is irreversible and history will be permanently erased.</div>
+    <div style="display:flex; gap:15px; padding: 0 10px;">
+        <button class="btn-action cancel-btn" style="flex:1; background:var(--surface); border:1px solid var(--border); color: #fff; margin-top: 0;" onclick="closeConfirmModal(true)">Cancel</button>
+        <button class="btn-action del-btn-big" style="flex:1; margin-top: 0;" id="execute-confirm-delete">Erase</button>
+    </div>
+</div>
 
 <div class="modal-overlay-intro" id="msg-intro-overlay" onclick="closeIntroModal()"></div>
 <div class="bottom-modal-intro" id="msg-intro-modal">
@@ -400,16 +464,163 @@
     </div>
 </div>
 
-<header>
-    <div class="header-left">
-        <img src="images/icon.png" class="header-icon" id="header-app-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/000000/fff?text=G'">
-        <div class="header-title" ondblclick="clearAllUnreadBages()">Messages</div>
-    </div>
-    <div class="header-right" style="display: flex; align-items: center; gap: 18px;">
-        <svg onclick="openSearchModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; cursor: pointer; opacity: 0.95;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <svg onclick="openGroupModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; cursor: pointer; opacity: 0.95;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-    </div>
-</header>
+<!-- --- NEW APP LAYOUT WRAPPER FOR MASTER-DETAIL DESKTOP UI --- -->
+<div id="app-layout">
+    
+    <div id="master-pane">
+        <header>
+            <div class="header-left">
+                <img src="images/icon.png" class="header-icon" id="header-app-icon" alt="Goorac" onerror="this.src='https://via.placeholder.com/32/000000/fff?text=G'">
+                <div class="header-title" ondblclick="clearAllUnreadBages()">Messages</div>
+            </div>
+            <div class="header-right" style="display: flex; align-items: center; gap: 18px;">
+                <svg onclick="openSearchModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; cursor: pointer; opacity: 0.95;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <svg onclick="openGroupModal()" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; cursor: pointer; opacity: 0.95;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+        </header>
+
+        <div id="offline-toast">Waiting for network...</div>
+
+        <div id="notes-wrapper">
+            <div id="notes-container">
+                <div class="note-item" id="my-note-btn">
+                    <div id="my-note-preview" class="visible" style="background: #262626; color: #a0a0a0; display: flex;">
+                        <div class="note-text-content">What's on your mind?</div>
+                    </div>
+                    <img src="https://via.placeholder.com/65" class="note-pfp" id="my-note-pfp">
+                    <span class="note-username">Your Note</span>
+                    <div class="add-note-badge">+</div>
+                </div>
+                <script>
+                    (function loadNotesZeroMs() {
+                        const uid = localStorage.getItem('goorac_last_uid');
+                        if(!uid) return;
+                        
+                        const container = document.getElementById('notes-container');
+                        const myBtn = document.getElementById('my-note-btn');
+                        const preview = document.getElementById('my-note-preview');
+                        const myPfp = document.getElementById('my-note-pfp');
+
+                        const cachedMyPfp = localStorage.getItem('goorac_my_pfp_cache');
+                        const cachedUData = localStorage.getItem('goorac_u_cache');
+                        
+                        if (cachedMyPfp) {
+                            myPfp.src = cachedMyPfp;
+                        } else if(cachedUData) {
+                            try {
+                                const parsed = JSON.parse(cachedUData);
+                                if(parsed[uid] && parsed[uid].photoURL) {
+                                    myPfp.src = parsed[uid].photoURL;
+                                }
+                            } catch(e){}
+                        }
+
+                        let hasValidNote = false;
+                        try {
+                            const myNoteStr = localStorage.getItem('my_note_cache_' + uid);
+                            if(myNoteStr) {
+                                const data = JSON.parse(myNoteStr);
+                                if(new Date(data.expiresAt || new Date().getTime() + 86400000) > new Date()) {
+                                    hasValidNote = true;
+                                    myBtn.classList.add('has-note'); // CSS will hide the + sign
+                                    preview.classList.add('visible');
+                                    preview.style.background = data.bgColor || '#262626';
+                                    preview.style.color = data.textColor || '#fff';
+                                    preview.style.display = 'flex';
+                                    
+                                    let songHtmlMy = '';
+                                    if (data.songName) {
+                                        songHtmlMy = `<div style="display:flex; align-items:center; justify-content:center; gap:4px; font-size:0.65rem; opacity:0.9; margin-top:4px; font-weight:600; width:100%;">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                                            <span style="max-width:55px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.songName}</span>
+                                        </div>`;
+                                    }
+                                    const textHtml = data.text ? `<div class="note-text-content" style='text-align:${data.textAlign || 'center'}; font-family:${data.font || 'system-ui'}'>${data.text}</div>` : '';
+                                    preview.innerHTML = textHtml + songHtmlMy;
+                                }
+                            }
+                        }catch(e){}
+
+                        if (!hasValidNote) {
+                            myBtn.classList.remove('has-note');
+                            preview.classList.add('visible');
+                            preview.innerHTML = `<div class="note-text-content">What's on your mind?</div>`;
+                            preview.style.background = '#262626';
+                            preview.style.color = '#a0a0a0';
+                            preview.style.display = 'flex';
+                        }
+
+                        try {
+                            const mutualStr = localStorage.getItem('mutual_notes_cache_' + uid);
+                            if(mutualStr) {
+                                const mutuals = JSON.parse(mutualStr);
+                                let html = "";
+                                for(const [fUid, noteData] of Object.entries(mutuals)) {
+                                    if(new Date(noteData.expiresAt || new Date().getTime() + 86400000) > new Date()) {
+                                        const isLiked = noteData.likes && noteData.likes.some(l => l.uid === uid);
+                                        const isCF = noteData.audience === 'close_friends';
+                                        const bgStyle = `background:${noteData.bgColor || '#262626'}; color:${noteData.textColor || '#fff'}`;
+                                        const cfClass = isCF ? 'cf-note' : '';
+                                        
+                                        let songHtmlFr = '';
+                                        if (noteData.songName) {
+                                            songHtmlFr = `<div style="display:flex; align-items:center; justify-content:center; gap:4px; font-size:0.65rem; opacity:0.9; margin-top:4px; font-weight:600; width:100%;">
+                                                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                                                <span style="max-width:55px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${noteData.songName}</span>
+                                            </div>`;
+                                        }
+                                        const textHtmlFr = noteData.text ? `<div class="note-text-content" style='text-align:${noteData.textAlign || 'center'}; font-family:${noteData.font || 'system-ui'}'>${noteData.text}</div>` : '';
+                                        
+                                        html += `
+                                        <div id="note-${fUid}" class="note-item friend-note has-note">
+                                            <div class="note-bubble visible ${cfClass}" style="${bgStyle}">
+                                                ${textHtmlFr}${songHtmlFr}
+                                            </div>
+                                            <img src="${noteData.pfp || 'https://via.placeholder.com/65'}" class="note-pfp">
+                                            ${isLiked ? `<div class="note-like-indicator"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>` : ''}
+                                            <span class="note-username">${(noteData.username || 'User').split(' ')[0]}</span>
+                                        </div>`;
+                                    }
+                                }
+                                container.insertAdjacentHTML('beforeend', html);
+                            }
+                        }catch(e){}
+                    })();
+                </script>
+            </div>
+        </div>
+
+        <div class="inbox-controls">
+            <span class="inbox-controls-title">Chats</span>
+            <div class="sort-icon-btn" onclick="openSortModal()">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            </div>
+        </div>
+
+        <div class="search-wrap" style="display:none;"></div>
+        <div class="filter-scroll" style="display:none;"></div>
+
+        <div id="inbox-content">
+            <div id="chats-list">
+                <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:70%"></div></div></div>
+                <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:30%"></div><div class="skeleton-line" style="width:60%"></div></div></div>
+            </div>
+            <script>
+                // 🚀 ZERO MS LAYOUT SHIFT FIX: Inline cache hydration instantly before paint
+                (function() {
+                    const cachedHTML = localStorage.getItem('goorac_inbox_html');
+                    if (cachedHTML && cachedHTML.trim() !== "") document.getElementById('chats-list').innerHTML = cachedHTML;
+                })();
+            </script>
+        </div>
+
+    </div> <!-- END MASTER PANE -->
+
+    <!-- --- NEW DETAIL PANE FOR DESKTOP VIEW --- -->
+    <iframe id="detail-pane" name="detail-pane" src="about:blank"></iframe>
+
+</div> <!-- END APP LAYOUT -->
+
 <main-navbar id="main-nav"></main-navbar>
 <script>
     const cachedNavbarHtmlData = localStorage.getItem('goorac_navbar_html_cache');
@@ -439,140 +650,6 @@
     })();
 </script>
 
-<div id="offline-toast">Waiting for network...</div>
-
-<div id="notes-wrapper">
-    <div id="notes-container">
-        <div class="note-item" id="my-note-btn">
-            <div id="my-note-preview" class="visible" style="background: #262626; color: #a0a0a0; display: flex;">
-                <div class="note-text-content">What's on your mind?</div>
-            </div>
-            <img src="https://via.placeholder.com/65" class="note-pfp" id="my-note-pfp">
-            <span class="note-username">Your Note</span>
-            <div class="add-note-badge">+</div>
-        </div>
-        <script>
-            (function loadNotesZeroMs() {
-                const uid = localStorage.getItem('goorac_last_uid');
-                if(!uid) return;
-                
-                const container = document.getElementById('notes-container');
-                const myBtn = document.getElementById('my-note-btn');
-                const preview = document.getElementById('my-note-preview');
-                const myPfp = document.getElementById('my-note-pfp');
-
-                const cachedMyPfp = localStorage.getItem('goorac_my_pfp_cache');
-                const cachedUData = localStorage.getItem('goorac_u_cache');
-                
-                if (cachedMyPfp) {
-                    myPfp.src = cachedMyPfp;
-                } else if(cachedUData) {
-                    try {
-                        const parsed = JSON.parse(cachedUData);
-                        if(parsed[uid] && parsed[uid].photoURL) {
-                            myPfp.src = parsed[uid].photoURL;
-                        }
-                    } catch(e){}
-                }
-
-                let hasValidNote = false;
-                try {
-                    const myNoteStr = localStorage.getItem('my_note_cache_' + uid);
-                    if(myNoteStr) {
-                        const data = JSON.parse(myNoteStr);
-                        if(new Date(data.expiresAt || new Date().getTime() + 86400000) > new Date()) {
-                            hasValidNote = true;
-                            myBtn.classList.add('has-note'); // CSS will hide the + sign
-                            preview.classList.add('visible');
-                            preview.style.background = data.bgColor || '#262626';
-                            preview.style.color = data.textColor || '#fff';
-                            preview.style.display = 'flex';
-                            
-                            let songHtmlMy = '';
-                            if (data.songName) {
-                                songHtmlMy = `<div style="display:flex; align-items:center; justify-content:center; gap:4px; font-size:0.65rem; opacity:0.9; margin-top:4px; font-weight:600; width:100%;">
-                                    <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                                    <span style="max-width:55px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.songName}</span>
-                                </div>`;
-                            }
-                            const textHtml = data.text ? `<div class="note-text-content" style='text-align:${data.textAlign || 'center'}; font-family:${data.font || 'system-ui'}'>${data.text}</div>` : '';
-                            preview.innerHTML = textHtml + songHtmlMy;
-                        }
-                    }
-                }catch(e){}
-
-                if (!hasValidNote) {
-                    myBtn.classList.remove('has-note');
-                    preview.classList.add('visible');
-                    preview.innerHTML = `<div class="note-text-content">What's on your mind?</div>`;
-                    preview.style.background = '#262626';
-                    preview.style.color = '#a0a0a0';
-                    preview.style.display = 'flex';
-                }
-
-                try {
-                    const mutualStr = localStorage.getItem('mutual_notes_cache_' + uid);
-                    if(mutualStr) {
-                        const mutuals = JSON.parse(mutualStr);
-                        let html = "";
-                        for(const [fUid, noteData] of Object.entries(mutuals)) {
-                            if(new Date(noteData.expiresAt || new Date().getTime() + 86400000) > new Date()) {
-                                const isLiked = noteData.likes && noteData.likes.some(l => l.uid === uid);
-                                const isCF = noteData.audience === 'close_friends';
-                                const bgStyle = `background:${noteData.bgColor || '#262626'}; color:${noteData.textColor || '#fff'}`;
-                                const cfClass = isCF ? 'cf-note' : '';
-                                
-                                let songHtmlFr = '';
-                                if (noteData.songName) {
-                                    songHtmlFr = `<div style="display:flex; align-items:center; justify-content:center; gap:4px; font-size:0.65rem; opacity:0.9; margin-top:4px; font-weight:600; width:100%;">
-                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                                        <span style="max-width:55px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${noteData.songName}</span>
-                                    </div>`;
-                                }
-                                const textHtmlFr = noteData.text ? `<div class="note-text-content" style='text-align:${noteData.textAlign || 'center'}; font-family:${noteData.font || 'system-ui'}'>${noteData.text}</div>` : '';
-                                
-                                html += `
-                                <div id="note-${fUid}" class="note-item friend-note has-note">
-                                    <div class="note-bubble visible ${cfClass}" style="${bgStyle}">
-                                        ${textHtmlFr}${songHtmlFr}
-                                    </div>
-                                    <img src="${noteData.pfp || 'https://via.placeholder.com/65'}" class="note-pfp">
-                                    ${isLiked ? `<div class="note-like-indicator"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>` : ''}
-                                    <span class="note-username">${(noteData.username || 'User').split(' ')[0]}</span>
-                                </div>`;
-                            }
-                        }
-                        container.insertAdjacentHTML('beforeend', html);
-                    }
-                }catch(e){}
-            })();
-        </script>
-    </div>
-</div>
-
-<div class="inbox-controls">
-    <span class="inbox-controls-title">Chats</span>
-    <div class="sort-icon-btn" onclick="openSortModal()">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-    </div>
-</div>
-
-<div class="search-wrap" style="display:none;"></div>
-<div class="filter-scroll" style="display:none;"></div>
-
-<div id="inbox-content">
-    <div id="chats-list">
-        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:70%"></div></div></div>
-        <div class="skeleton-item"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line" style="width:30%"></div><div class="skeleton-line" style="width:60%"></div></div></div>
-    </div>
-    <script>
-        // 🚀 ZERO MS LAYOUT SHIFT FIX: Inline cache hydration instantly before paint
-        (function() {
-            const cachedHTML = localStorage.getItem('goorac_inbox_html');
-            if (cachedHTML && cachedHTML.trim() !== "") document.getElementById('chats-list').innerHTML = cachedHTML;
-        })();
-    </script>
-</div>
 
 <div class="menu-overlay" id="overlay" onclick="closeDeleteMenu(true)"></div>
 <div id="delete-menu">
@@ -1174,10 +1251,17 @@
 
     window.enterChat = function(e, usernameOrGroupId, isGroup) {
         if(isLongPress || e.target.closest('button')) return;
-        if(isGroup) {
-            window.location.href = `groupChat.html?id=${usernameOrGroupId}`; 
+        const targetUrl = isGroup ? `groupChat.html?id=${usernameOrGroupId}` : `chat.html?user=${usernameOrGroupId}`;
+        const isPC = window.innerWidth >= 1024;
+        
+        if(isPC) {
+            // Master-Detail Desktop View update
+            document.getElementById('detail-pane').src = targetUrl;
+            document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('desktop-active'));
+            e.currentTarget.classList.add('desktop-active');
         } else {
-            window.location.href = `chat.html?user=${usernameOrGroupId}`;
+            // Standard mobile navigation
+            window.location.href = targetUrl;
         }
     };
 
@@ -1224,6 +1308,10 @@
         if(document.getElementById('sort-overlay').style.display === 'block' && hash !== '#sort') {
             closeSortModal(false);
         }
+        // MODIFIED: Close the new confirm modal gracefully on hardware back press
+        if(document.getElementById('confirm-overlay').style.display === 'block' && hash !== '#confirm') {
+            closeConfirmModal(false);
+        }
     };
 
     async function togglePin(chatId, isPinned) {
@@ -1234,7 +1322,6 @@
     }
 
     window.closeDeleteMenu = function(shouldGoBack) {
-        activeChatId = null;
         document.getElementById('delete-menu').classList.remove('active');
         document.getElementById('overlay').style.display = 'none';
         const nav = document.querySelector('main-navbar');
@@ -1242,13 +1329,26 @@
         if(shouldGoBack && window.location.hash === "#menu") history.back();
     }
 
-    document.getElementById('confirm-delete').onclick = async function() {
+    // --- REPLACED: HTML MODAL LOGIC INSTEAD OF NATIVE CONFIRM() ---
+    document.getElementById('confirm-delete').onclick = function() {
         if(!activeChatId) return;
         const cid = activeChatId; 
         const isGroup = this.dataset.isGroup === "true";
-        closeDeleteMenu(true);
+        closeDeleteMenu(true); // Close the context menu
         
-        if(confirm("Are you sure? This action is irreversible.")) {
+        openConfirmModal(cid, isGroup); // Open the HTML modal
+    };
+
+    window.openConfirmModal = function(cid, isGroup) {
+        document.getElementById('confirm-overlay').style.display = 'block';
+        const modal = document.getElementById('confirm-modal');
+        modal.style.bottom = '0';
+        history.pushState({ modal: 'confirm' }, "", "#confirm");
+        
+        document.getElementById('execute-confirm-delete').onclick = async function() {
+            closeConfirmModal(true);
+            
+            // EXECUTE DELETION/LEAVE LOGIC
             localStorage.removeItem('goorac_inbox_html'); 
             localStorage.removeItem('goorac_inbox_data');
             localStorage.removeItem('chat_msgs_' + cid); 
@@ -1278,8 +1378,16 @@
                     }
                 }
             } catch(e) { console.error("Erase/Leave failed:", e); }
-        }
+        };
     };
+
+    window.closeConfirmModal = function(shouldGoBack) {
+        document.getElementById('confirm-modal').style.bottom = '-100%';
+        document.getElementById('confirm-overlay').style.display = 'none';
+        
+        if(shouldGoBack && window.location.hash === "#confirm") history.back();
+    };
+    // -----------------------------------------------------------
 
     window.handleSearch = function(val) { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => searchUsers(val), 400); }
 
