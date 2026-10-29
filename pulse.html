@@ -977,7 +977,7 @@
         }
 
         let targetUid = null, myUid = null, myProfile = null, targetProfile = null, roomRef = null;
-        let roomUnsub = null, chatUnsub = null, roomId = null;
+        let roomUnsub = null, chatUnsub = null, chatChangedUnsub = null, roomId = null;
         let heartbeatInterval = null;
         let latestRoomData = null;
         let isPartnerRdbOnline = false;
@@ -985,14 +985,16 @@
         let chatInitialized = false;
         let chatListenStartTime = 0;
 
-        // Audio configured WITHOUT global crossOrigin="anonymous" so external full tracks are NEVER blocked by CORS!
-        // Also decoupled from AudioContext destination so background/screen-off playback never mutes on iOS/Android.
+        // Audio configured with crossOrigin="anonymous" so the Web Audio API AnalyserNode reads real song wavelengths & physics!
+        // Includes an automatic non-CORS fallback handler if a third-party server ever blocks CORS headers.
         let audio = new Audio();
+        audio.crossOrigin = "anonymous";
         audio.preload = "auto";
         audio.playsInline = true;
         audio.setAttribute('playsinline', '');
         audio.setAttribute('webkit-playsinline', '');
         let audioUnlocked = false;
+        let usingCorsFallback = false;
         
         let audioCtx, analyser, dataArray, canvas, canvasCtx, visualizerAnimation;
         let audioSourceNode = null; 
@@ -1004,7 +1006,7 @@
         let currentSongId = null;
         let currentSongType = 'preview'; // 'preview' or 'full'
         let hasPickedEmoji = false;
-        let emojiTimer = null, emojiCloseTimer = null, turnTimer = null; 
+        let emojiTimer = null, emojiCloseTimer = null, turnTimer = null, bufferSafetyTimer = null; 
         let lastSyncTime = 0; 
         let ignoreAudioSync = false; 
         let isAdvancingTrack = false;
@@ -1013,6 +1015,7 @@
         let lastReactionMe = null, lastReactionThem = null, lastReactionTimeMe = 0, lastReactionTimeThem = 0;
         let activeReactionMsgId = null; // Track message ID for reactions
         let pendingReply = null; // Stores { id, senderName, text } for Instagram-style reply
+        const localReactionsStore = {}; // { [msgId]: { [uid]: { emoji, ts, name, photo } } }
 
         // Chat Logic
         const chatInput = document.getElementById('chat-input');
@@ -1022,8 +1025,11 @@
         const msgContainer = document.getElementById('messages-container');
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
 
-        // Unlock mobile audio autoplay on first user gesture anywhere in the document
+        // Unlock mobile audio & WebAudio Analyser on first user gesture anywhere in the document
         function unlockMobileAudio() {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(()=>{});
+            }
             if (audioUnlocked) return;
             audioUnlocked = true;
             if (!audio.src) {
@@ -1034,8 +1040,25 @@
                 }).catch(() => {});
             }
         }
-        document.addEventListener('touchstart', unlockMobileAudio, { once: true, passive: true });
-        document.addEventListener('click', unlockMobileAudio, { once: true });
+        document.addEventListener('touchstart', unlockMobileAudio, { passive: true });
+        document.addEventListener('click', unlockMobileAudio);
+
+        // Automatic CORS Fallback: If a song server rejects crossOrigin="anonymous", retry without CORS so playback never fails
+        audio.addEventListener('error', () => {
+            if (!usingCorsFallback && audio.src && !audio.src.startsWith('data:')) {
+                usingCorsFallback = true;
+                const currentUrl = audio.src;
+                audio.removeAttribute('crossorigin');
+                audio.crossOrigin = null;
+                audio.src = currentUrl;
+                audio.load();
+                if (latestRoomData && latestRoomData.cycleStatus === 'buffering' && roomRef && myUid) {
+                    roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                } else if (latestRoomData && latestRoomData.cycleStatus === 'playing') {
+                    audio.play().catch(()=>{});
+                }
+            }
+        });
 
         // KEYBOARD & TYPING TOP-SHIFT HANDLERS FOR FULL SCREEN MODE
         let baseViewportHeight = window.innerHeight;
@@ -1177,6 +1200,7 @@
                     ] : []
                 });
                 navigator.mediaSession.setActionHandler('play', () => {
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
                     audio.play().catch(()=>{});
                 });
                 navigator.mediaSession.setActionHandler('pause', () => {
@@ -1204,16 +1228,16 @@
             }
             
             if (document.hidden) {
-                // Keep audio playing smoothly when screen is turned off or app is minimized
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
                 if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.currentSong && audio.paused) {
                     audio.play().catch(()=>{});
                 }
             } else {
                 requestWakeLock();
-                // Re-sync audio time immediately when returning to foreground
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
                 if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.timestamp && !audio.paused) {
                     const idealTime = (Date.now() - latestRoomData.timestamp) / 1000;
-                    if (idealTime > 0 && Math.abs(audio.currentTime - idealTime) > 2.5) {
+                    if (idealTime > 0 && Math.abs(audio.currentTime - idealTime) > 1.8) {
                         audio.currentTime = idealTime;
                     }
                 }
@@ -1331,6 +1355,7 @@
                         songType: partnerActuallyHere ? (existingData.songType || 'preview') : 'preview',
                         emojis: {},
                         ready: {},
+                        chatReactions: {},
                         radioMode: false,
                         radioRequest: null,
                         lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -1370,7 +1395,6 @@
                     }
                     evaluateConnectionState(otherField);
                 } else if (stateStr === 'explicit_exit') {
-                    // Partner explicitly clicked Exit button
                     isPartnerRdbOnline = false;
                     if (!isLeaving) {
                         isLeaving = true;
@@ -1379,7 +1403,6 @@
                         setTimeout(() => window.location.replace("pulseLobby.html"), 1800);
                     }
                 } else {
-                    // Socket dropped (could be screen turned off or brief network switch)
                     isPartnerRdbOnline = false;
                     evaluateConnectionState(otherField);
                     if (hasConnectedTogether && !isLeaving) {
@@ -1387,7 +1410,6 @@
                         disconnectTimeout = setTimeout(() => {
                             const partnerInBg = latestRoomData && latestRoomData[`screen_${targetUid}`] === 'background';
                             const musicPlaying = latestRoomData && latestRoomData.cycleStatus === 'playing';
-                            // Do NOT kick if partner simply locked their screen in background or while music is playing
                             if (!isPartnerRdbOnline && !isLeaving && !partnerInBg && !musicPlaying) {
                                 deactivatePulse();
                                 showError("Partner left the session.");
@@ -1443,6 +1465,17 @@
                     roomRef.set({ [myField]: 'online' }, { merge: true }).catch(()=>{});
                 }
 
+                // Sync any Firestore-mirrored chat reactions so reactions always appear on bubbles even when RTDB /pulse_chat_reactions is restricted!
+                if (data.chatReactions && typeof data.chatReactions === 'object') {
+                    Object.keys(data.chatReactions).forEach(msgId => {
+                        const rMap = data.chatReactions[msgId];
+                        if (rMap && typeof rMap === 'object') {
+                            localReactionsStore[msgId] = Object.assign({}, localReactionsStore[msgId] || {}, rMap);
+                            updateMessageReactions(msgId, localReactionsStore[msgId]);
+                        }
+                    });
+                }
+
                 // Presence Dots Logic (Green = active, Purple = background)
                 const myState = data[`screen_${myUid}`] || 'active';
                 const theirState = data[`screen_${targetUid}`] || 'active';
@@ -1462,7 +1495,6 @@
             if (!latestRoomData) return;
             const partnerOnlineInFirestore = (latestRoomData[otherField] === 'online');
 
-            // Once both users have entered #screen-active, keep them locked in #screen-active so neither user gets stranded on waiting screen!
             if ((partnerOnlineInFirestore && isPartnerRdbOnline) || hasEnteredActiveScreen) {
                 hasEnteredActiveScreen = true;
                 document.getElementById('target-group').classList.add('active');
@@ -1498,7 +1530,7 @@
             }, { merge: true });
         }
 
-        // Helper to normalize song objects from either <song-picker> or <full-song-picker> so Firestore NEVER fails on undefined properties
+        // Helper to normalize song objects from either <song-picker> or <full-song-picker>
         function normalizePickedSong(raw, type) {
             if (!raw) return null;
             const streamUrl = raw.previewUrl || raw.url || raw.audioUrl || raw.streamUrl || raw.downloadUrl || raw.src || '';
@@ -1516,6 +1548,9 @@
             };
         }
 
+        // -----------------------------------------------------------------
+        // TWO-PLAYER BARRIER SYNC ENGINE (WAIT FOR BOTH USERS & START TOGETHER)
+        // -----------------------------------------------------------------
         function syncCycle(data) {
             currentTurnUid = data.turn || ((myUid < targetUid) ? myUid : targetUid);
             isMyTurn = (myUid === currentTurnUid);
@@ -1526,7 +1561,7 @@
             currentSongType = data.songType || (data.currentSong && data.currentSong.songType) || 'preview';
             const screenEl = document.getElementById('screen-active');
             
-            // Both users enter .mode-full together whenever a full song is active
+            // Both users enter .mode-full together when a full song is buffering or playing
             if (currentSongType === 'full' && status !== 'picking' && hasValidSong) {
                 screenEl.classList.add('mode-full');
                 updateKeyboardTopShift();
@@ -1545,6 +1580,7 @@
             // 1. PICKING PHASE
             if (status === 'picking' || !hasValidSong) {
                 isAdvancingTrack = false;
+                clearTimeout(bufferSafetyTimer);
                 if (currentSongId !== null) {
                     currentSongId = null;
                     audio.pause();
@@ -1582,19 +1618,126 @@
                 }
             }
             
-            // 2. BUFFERING OR PLAYING PHASE — UNIFIED ZERO-DEADLOCK STREAMING ENGINE
-            else if ((status === 'buffering' || status === 'playing') && hasValidSong) {
+            // 2. BUFFERING PHASE — BOTH USERS PRELOAD AND WAIT FOR EACH OTHER BEFORE STARTING!
+            else if (status === 'buffering' && hasValidSong) {
                 const song = data.currentSong;
                 const songUniqueId = String(song.id || song.previewUrl);
 
-                // If room was in legacy 'buffering' status, immediately promote to 'playing' so neither user ever hangs
-                if (status === 'buffering' && isMyTurn) {
-                    roomRef.set({
-                        cycleStatus: 'playing',
-                        timestamp: data.timestamp || Date.now()
-                    }, { merge: true }).catch(()=>{});
+                if(isMyTurn) {
+                    document.getElementById('swap-turn-btn').style.display = 'flex';
+                    document.getElementById('delete-track-btn').style.display = 'flex';
                 }
 
+                const hue = ((song.artistName || 'Pulse').length * 40) % 360;
+                document.body.dataset.baseHue = hue;
+
+                const readyMap = data.ready || {};
+                const amIReady = Boolean(readyMap[myUid]);
+                const isThemReady = Boolean(readyMap[targetUid]);
+
+                if (!amIReady) {
+                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--accent); font-weight:700; letter-spacing:1px;">BUFFERING MEDIA...</p>`;
+                } else if (!isThemReady) {
+                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:#fff; font-weight:700; letter-spacing:1px;">SYNCING WITH PARTNER...</p>`;
+                } else {
+                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--radio-color); font-weight:700; letter-spacing:1px;">STARTING TOGETHER...</p>`;
+                }
+
+                // Load the track and pause at 0:00 while waiting for both players to be ready
+                if (currentSongId !== songUniqueId) {
+                    currentSongId = songUniqueId;
+                    isAdvancingTrack = false;
+                    usingCorsFallback = false;
+                    audio.crossOrigin = "anonymous";
+
+                    updateSongDisplay(song);
+                    updateMediaSessionMetadata(song);
+                    resetEmojiState();
+
+                    document.getElementById('album-container').classList.add('buffering');
+                    document.getElementById('album-container').classList.remove('playing');
+
+                    audio.pause();
+                    audio.src = song.previewUrl;
+                    audio.load();
+
+                    const markMeReady = () => {
+                        audio.oncanplay = null;
+                        audio.onloadeddata = null;
+                        if (currentSongId === songUniqueId && roomRef && myUid) {
+                            roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                        }
+                    };
+
+                    audio.oncanplay = markMeReady;
+                    audio.onloadeddata = markMeReady;
+
+                    if (audio.readyState >= 2) {
+                        markMeReady();
+                    }
+
+                    // Local timer so even if onSnapshot doesn't fire again, this client marks ready & promotes to playing after max 5s
+                    clearTimeout(bufferSafetyTimer);
+                    bufferSafetyTimer = setTimeout(() => {
+                        if (latestRoomData && latestRoomData.cycleStatus === 'buffering' && currentSongId === songUniqueId) {
+                            roomRef.set({
+                                ready: { [myUid]: true, [targetUid]: true },
+                                cycleStatus: 'playing',
+                                timestamp: Date.now()
+                            }, { merge: true }).catch(()=>{});
+                        }
+                    }, 5000);
+                } else {
+                    // Keep paused while in buffering barrier
+                    if (!audio.paused) audio.pause();
+                    if (audio.readyState >= 2 && !amIReady) {
+                        roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                    }
+                }
+
+                // As soon as BOTH players are ready, promote to 'playing' with fresh timestamp so both start at 0:00 together!
+                if (amIReady && isThemReady) {
+                    clearTimeout(bufferSafetyTimer);
+                    if (isMyTurn) {
+                        roomRef.set({
+                            cycleStatus: 'playing',
+                            timestamp: Date.now()
+                        }, { merge: true }).catch(()=>{});
+                    } else {
+                        // Backup in case DJ's connection is slightly slower
+                        setTimeout(() => {
+                            if (latestRoomData && latestRoomData.cycleStatus === 'buffering') {
+                                roomRef.set({
+                                    cycleStatus: 'playing',
+                                    timestamp: Date.now()
+                                }, { merge: true }).catch(()=>{});
+                            }
+                        }, 600);
+                    }
+                }
+            }
+
+            // 3. PLAYING PHASE — BOTH PLAYERS START AT THE EXACT SAME TIME
+            else if (status === 'playing' && hasValidSong) {
+                clearTimeout(bufferSafetyTimer);
+                const song = data.currentSong;
+                const songUniqueId = String(song.id || song.previewUrl);
+
+                if (currentSongId !== songUniqueId) {
+                    currentSongId = songUniqueId;
+                    isAdvancingTrack = false;
+                    usingCorsFallback = false;
+                    audio.crossOrigin = "anonymous";
+                    audio.src = song.previewUrl;
+                    audio.load();
+                    updateSongDisplay(song);
+                    updateMediaSessionMetadata(song);
+                    resetEmojiState();
+                }
+
+                document.getElementById('album-container').classList.remove('buffering');
+                document.getElementById('album-container').classList.add('playing');
+                
                 if(isMyTurn) {
                     document.getElementById('swap-turn-btn').style.display = 'flex';
                     document.getElementById('delete-track-btn').style.display = 'flex';
@@ -1605,79 +1748,45 @@
                 const hue = ((song.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
 
-                if (currentSongId !== songUniqueId) {
-                    currentSongId = songUniqueId;
-                    isAdvancingTrack = false;
-                    updateSongDisplay(song);
-                    updateMediaSessionMetadata(song);
-                    resetEmojiState();
-
-                    document.getElementById('album-container').classList.add('buffering');
-                    document.getElementById('album-container').classList.remove('playing');
-
-                    audio.src = song.previewUrl;
-                    audio.load();
-
-                    const startPlaybackNow = () => {
-                        document.getElementById('album-container').classList.remove('buffering');
-                        document.getElementById('album-container').classList.add('playing');
-
-                        if (data.timestamp) {
-                            const idealSeek = (Date.now() - data.timestamp) / 1000;
-                            if (idealSeek > 1.2 && (!audio.duration || idealSeek < audio.duration - 1)) {
-                                try { audio.currentTime = idealSeek; } catch (e) {}
-                            }
+                if (audio.paused && !isAdvancingTrack) {
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume().catch(()=>{});
+                    }
+                    // Align to exact shared start timestamp
+                    if (data.timestamp) {
+                        const elapsedSec = (Date.now() - data.timestamp) / 1000;
+                        if (elapsedSec > 0.35 && (!audio.duration || elapsedSec < audio.duration - 0.5)) {
+                            try { audio.currentTime = elapsedSec; } catch (e) {}
+                        } else {
+                            try { audio.currentTime = 0; } catch (e) {}
                         }
+                    }
 
-                        audio.play().then(() => {
-                            document.getElementById('sync-overlay').classList.remove('active');
-                        }).catch(() => {
-                            document.getElementById('sync-overlay').classList.add('active');
-                        });
-                    };
+                    audio.play().then(() => {
+                        document.getElementById('sync-overlay').classList.remove('active');
+                    }).catch(() => {
+                        document.getElementById('sync-overlay').classList.add('active');
+                    });
 
-                    audio.oncanplay = () => {
-                        audio.oncanplay = null;
-                        startPlaybackNow();
-                    };
-
-                    // Fallback start if browser already buffered or takes a moment
-                    setTimeout(() => {
-                        if (currentSongId === songUniqueId && audio.paused) {
-                            startPlaybackNow();
-                        }
-                    }, 600);
-
-                    lastSyncTime = Date.now() + 3000;
+                    lastSyncTime = Date.now();
 
                     // Auto-end turn timer fallback for 30s Preview Mode
                     clearTimeout(turnTimer);
                     if (currentSongType === 'preview') {
                         turnTimer = setTimeout(() => {
                             if (currentSongId === songUniqueId && isMyTurn) swapTurn();
-                        }, 31000);
+                        }, 30500);
                     }
-                } else {
-                    document.getElementById('album-container').classList.remove('buffering');
-                    document.getElementById('album-container').classList.add('playing');
-
-                    if (audio.paused && !isAdvancingTrack) {
-                        audio.play().then(() => {
-                            document.getElementById('sync-overlay').classList.remove('active');
-                        }).catch(() => {
-                            document.getElementById('sync-overlay').classList.add('active');
-                        });
-                    } else if (!audio.paused) {
-                        // Tight 2.2s drift synchronization between User A and User B
-                        const SYNC_THROTTLE = 2500; 
-                        if (!ignoreAudioSync && (Date.now() - lastSyncTime > SYNC_THROTTLE)) {
-                            lastSyncTime = Date.now();
-                            const serverStart = data.timestamp;
-                            const now = Date.now();
-                            const idealTime = (now - serverStart) / 1000;
-                            if (serverStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 2.2) {
-                                try { audio.currentTime = idealTime; } catch (e) {}
-                            }
+                } else if (!audio.paused) {
+                    // Tight 1.2s drift synchronization so both users stay locked on the exact same beat
+                    const SYNC_THROTTLE = 2000; 
+                    if (!ignoreAudioSync && (Date.now() - lastSyncTime > SYNC_THROTTLE)) {
+                        lastSyncTime = Date.now();
+                        const serverStart = data.timestamp;
+                        const now = Date.now();
+                        const idealTime = (now - serverStart) / 1000;
+                        if (serverStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 1.2) {
+                            try { audio.currentTime = idealTime; } catch (e) {}
                         }
                     }
                 }
@@ -1729,7 +1838,7 @@
 
 
         // =================================================================
-        // PICKER EVENTS (SANITIZED & INSTANT SYNC FOR BOTH USERS)
+        // PICKER EVENTS (TWO-PLAYER BARRIER SYNC: STARTS IN 'buffering' SO BOTH WAIT FOR EACH OTHER)
         // =================================================================
         // Preview Picker
         document.getElementById('song-picker').addEventListener('song-selected', (e) => {
@@ -1739,9 +1848,9 @@
 
             roomRef.set({
                 currentSong: cleanSong,
-                cycleStatus: 'playing',
+                cycleStatus: 'buffering',
                 timestamp: Date.now(),
-                ready: { [myUid]: true },
+                ready: {},
                 emojis: {},
                 songType: 'preview',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -1758,9 +1867,9 @@
 
             roomRef.set({
                 currentSong: cleanSong,
-                cycleStatus: 'playing',
+                cycleStatus: 'buffering',
                 timestamp: Date.now(),
-                ready: { [myUid]: true },
+                ready: {},
                 emojis: {},
                 songType: 'full',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -1817,7 +1926,6 @@
             if (isMyTurn) {
                 swapTurn();
             } else {
-                // If DJ's phone screen is off and throttled, partner's phone advances the turn after 2.5s grace
                 setTimeout(() => {
                     if (latestRoomData && latestRoomData.cycleStatus === 'playing' && currentSongId) {
                         swapTurn();
@@ -1834,37 +1942,39 @@
         });
 
         // =================================================================
-        // VISUALIZER & DYNAMIC BEAT COLORS (CORS-SAFE & SCREEN-OFF SAFE)
+        // VISUALIZER & DYNAMIC BEAT COLORS (REAL SONG FREQUENCY ANALYSER)
         // =================================================================
         function setupVisualizer() {
-            if (visualizerAnimation) return;
+            if (audioCtx) return; 
             try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                analyser = audioCtx.createAnalyser();
+                
+                if (!audioSourceNode) {
+                    audioSourceNode = audioCtx.createMediaElementSource(audio);
+                    audioSourceNode.connect(analyser);
+                    analyser.connect(audioCtx.destination);
+                }
+
+                analyser.fftSize = 256; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
                 canvas = document.getElementById('visualizer');
                 canvasCtx = canvas.getContext('2d');
-                dataArray = new Uint8Array(128);
+                
                 drawVisualizer();
-            } catch(e) {}
+            } catch(e) {
+                console.warn("WebAudio setup fallback:", e);
+            }
         }
 
         function drawVisualizer() {
             visualizerAnimation = requestAnimationFrame(drawVisualizer);
-            if (!canvas || !canvasCtx || !dataArray) return;
+            if (!analyser || !canvas || !canvasCtx) return;
 
-            const isPlayingAudio = !audio.paused && audio.currentTime > 0 && !audio.ended;
-            const nowSec = performance.now() / 1000;
-
-            // Populate frequency data with smooth harmonic beat synthesis so audio never needs AudioContext hijack (preserving screen-off background playback!)
-            for (let i = 0; i < dataArray.length; i++) {
-                if (isPlayingAudio) {
-                    const pulse1 = Math.sin(nowSec * 6.5 + i * 0.18) * 0.5 + 0.5;
-                    const pulse2 = Math.cos(nowSec * 3.2 - i * 0.09) * 0.5 + 0.5;
-                    const bassBoost = i < 16 ? (Math.sin(nowSec * 8.0) * 0.5 + 0.5) * 95 : 0;
-                    const env = Math.max(0.15, 1 - (i / dataArray.length) * 0.65);
-                    dataArray[i] = Math.min(255, Math.floor(((pulse1 * 110 + pulse2 * 70) * env) + bassBoost));
-                } else {
-                    dataArray[i] = Math.max(0, Math.floor(dataArray[i] * 0.85));
-                }
-            }
+            // Read REAL frequency & wavelength data directly from the playing song!
+            analyser.getByteFrequencyData(dataArray);
             
             let bassTotal = 0;
             for(let i=0; i<8; i++) { bassTotal += dataArray[i]; }
@@ -1880,7 +1990,7 @@
 
             const isFullModeActive = document.getElementById('screen-active').classList.contains('mode-full');
             const scale = isFullModeActive
-                ? (0.98 + (bassAvg / 255) * 0.04)
+                ? (0.98 + (bassAvg / 255) * 0.05)
                 : (0.95 + (bassAvg / 255) * 0.15);
             const albumEl = document.getElementById('album-container');
             if (albumEl) albumEl.style.transform = `scale(${scale})`;
@@ -1911,7 +2021,7 @@
             if (isFullModeActive) {
                 const rectW = aRect.width + 6;
                 const rectH = aRect.height + 6;
-                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 16 : 26;
+                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 22 : 36;
                 
                 canvasCtx.save();
                 canvasCtx.translate(cx, cy);
@@ -1940,7 +2050,7 @@
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(0, 0);
                     canvasCtx.lineTo(barHeight, 0);
-                    canvasCtx.lineWidth = 2.5;
+                    canvasCtx.lineWidth = 3;
                     canvasCtx.lineCap = 'round';
                     canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.85)`;
                     canvasCtx.stroke();
@@ -2053,18 +2163,53 @@
         }
 
         // ==========================================================================
-        // CHAT ENGINE (Full Song Mode) - INSTAGRAM REPLIES & FIXED REACTIONS
+        // CHAT ENGINE (Full Song Mode) - PERMISSION-SAFE IN-BUBBLE REACTIONS
         // ==========================================================================
         function initChatListener() {
             if (chatUnsub && roomId) pulseRdb.ref(`pulse_chat/${roomId}`).off('child_added', chatUnsub);
+            if (chatChangedUnsub && roomId) pulseRdb.ref(`pulse_chat/${roomId}`).off('child_changed', chatChangedUnsub);
             if (msgContainer) msgContainer.innerHTML = ''; 
 
             if(!roomId) return;
             chatListenStartTime = Date.now();
 
-            chatUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).limitToLast(30).on('child_added', snap => {
+            chatUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).limitToLast(45).on('child_added', snap => {
                 const msg = snap.val();
+                if (!msg) return;
+
+                // Handle in-stream reaction packets (used when RTDB /pulse_chat_reactions is blocked by security rules!)
+                if (msg.type === 'react' && msg.targetMsgId && msg.reactorUid && msg.emoji) {
+                    if (!localReactionsStore[msg.targetMsgId]) localReactionsStore[msg.targetMsgId] = {};
+                    localReactionsStore[msg.targetMsgId][msg.reactorUid] = {
+                        emoji: msg.emoji,
+                        ts: msg.ts || Date.now(),
+                        name: msg.reactorName || 'User',
+                        photo: msg.reactorPhoto || ''
+                    };
+                    updateMessageReactions(msg.targetMsgId, localReactionsStore[msg.targetMsgId]);
+                    if ((msg.ts || 0) >= (chatListenStartTime - 2000) && msg.reactorUid !== myUid) {
+                        particleEngine.spawn(msg.emoji);
+                        if (navigator.vibrate) navigator.vibrate(20);
+                    }
+                    return;
+                }
+
                 renderChatMessage(msg, snap.key);
+
+                // If message object itself contains nested reactions, apply them immediately
+                if (msg.reactions && typeof msg.reactions === 'object') {
+                    localReactionsStore[snap.key] = Object.assign({}, localReactionsStore[snap.key] || {}, msg.reactions);
+                    updateMessageReactions(snap.key, localReactionsStore[snap.key]);
+                }
+            });
+
+            // Listen for direct updates to a message node (e.g. pulse_chat/${roomId}/${msgId}/reactions)
+            chatChangedUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).on('child_changed', snap => {
+                const msg = snap.val();
+                if (msg && msg.reactions && typeof msg.reactions === 'object') {
+                    localReactionsStore[snap.key] = Object.assign({}, localReactionsStore[snap.key] || {}, msg.reactions);
+                    updateMessageReactions(snap.key, localReactionsStore[snap.key]);
+                }
             });
 
             pulseRdb.ref(`typing/pulse_${roomId}/${targetUid}`).on('value', snap => {
@@ -2074,20 +2219,9 @@
                     scrollToBottom();
                 }
             });
-
-            // Listen for message reactions (added, changed, and removed)
-            pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_changed', snap => {
-                updateMessageReactions(snap.key, snap.val());
-            });
-            pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_added', snap => {
-                updateMessageReactions(snap.key, snap.val());
-            });
-            pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_removed', snap => {
-                updateMessageReactions(snap.key, null);
-            });
         }
 
-        // FIXED: Dynamically displays actual chosen reaction emojis (❤️, 🔥, 😂, etc.) + count
+        // Displays actual chosen reaction emojis (❤️, 🔥, 😂, 😮, 😢, 🙏) inside the message bubble badge!
         function updateMessageReactions(msgId, reacts) {
             const row = document.getElementById(`msg-${msgId}`);
             if(!row) return;
@@ -2220,7 +2354,12 @@
 
         function renderChatMessage(msg, msgKey) {
             if (!msg || typeof msg.text !== 'string' || !msgContainer) return; 
+            if (msg.type === 'react') return; // Never render reaction packets as chat messages!
             if (document.getElementById(`msg-${msgKey}`)) return;
+
+            // Hide legacy "loved a message ❤️" system messages so reactions only ever show on the bubble itself
+            if (msg.type === 'sys' && msg.text.includes('loved a message')) return;
+
             const safeText = escapeHtmlText(msg.text);
             const isRecentMsg = (msg.ts || 0) >= (chatListenStartTime - 2000);
             
@@ -2317,7 +2456,7 @@
                             if (navigator.vibrate) navigator.vibrate(30);
                             openIgReactionPanel(msgKey);
                         }
-                    }, 520);
+                    }, 500);
                 }
             }, { passive: true });
 
@@ -2367,7 +2506,7 @@
                 }
 
                 startX = 0;
-                // Check Double-Tap on bubble for instant Heart Reaction
+                // Check Double-Tap on bubble for instant Heart Reaction in the bubble
                 if (e.target.closest('.bubble') && !e.target.closest('.bubble-heart')) {
                     const now = Date.now();
                     if (now - lastTapTime < 350 && now - lastTapTime > 0) {
@@ -2387,6 +2526,10 @@
                     e.preventDefault();
                     submitReactionForMsg(msgKey, '❤️');
                 });
+                bubbleEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    openIgReactionPanel(msgKey);
+                });
             }
 
             // Click on the heart/reaction badge to see who reacted (Reaction Drawer)
@@ -2404,10 +2547,13 @@
             msgContainer.appendChild(div);
             scrollToBottom();
             
-            // Pull existing reactions immediately if any
-            pulseRdb.ref(`pulse_chat_reactions/${roomId}/${msgKey}`).once('value', snap => {
-                if(snap.exists()) updateMessageReactions(msgKey, snap.val());
-            });
+            // Apply any reactions already known in localReactionsStore or Firestore
+            if (localReactionsStore[msgKey]) {
+                updateMessageReactions(msgKey, localReactionsStore[msgKey]);
+            } else if (latestRoomData && latestRoomData.chatReactions && latestRoomData.chatReactions[msgKey]) {
+                localReactionsStore[msgKey] = latestRoomData.chatReactions[msgKey];
+                updateMessageReactions(msgKey, localReactionsStore[msgKey]);
+            }
         }
 
         // IG REACTION PANEL LOGIC
@@ -2426,19 +2572,49 @@
                 if (history.state && history.state.modal === 'ig-reaction') history.back();
             }
         }
+
+        // FIXED: Saves reaction directly onto the message bubble & syncs via Firestore + permitted /pulse_chat path (NO permission_denied errors, NO separate chat message!)
         function submitReactionForMsg(msgId, emoji) {
             if (!roomId || !myUid || !msgId) return;
             particleEngine.spawn(emoji);
             if(navigator.vibrate) navigator.vibrate(20);
             
-            const reactRef = pulseRdb.ref(`pulse_chat_reactions/${roomId}/${msgId}/${myUid}`);
             const reactData = {
                 emoji: emoji,
-                ts: firebase.database.ServerValue.TIMESTAMP, 
+                ts: Date.now(), 
                 name: myProfile && myProfile.name ? myProfile.name : 'User',
                 photo: myProfile && myProfile.photoURL ? myProfile.photoURL : ''
             };
-            reactRef.set(reactData);
+
+            // 1. Update UI immediately on the message bubble
+            if (!localReactionsStore[msgId]) localReactionsStore[msgId] = {};
+            localReactionsStore[msgId][myUid] = reactData;
+            updateMessageReactions(msgId, localReactionsStore[msgId]);
+
+            // 2. Sync via Firestore pulse_rooms document (permitted for both users)
+            if (roomRef) {
+                roomRef.set({
+                    chatReactions: {
+                        [msgId]: {
+                            [myUid]: reactData
+                        }
+                    }
+                }, { merge: true }).catch(()=>{});
+            }
+
+            // 3. Sync via permitted /pulse_chat/${roomId} stream so partner receives it in real time
+            pulseRdb.ref(`pulse_chat/${roomId}/${msgId}/reactions/${myUid}`).set(reactData).catch(() => {
+                // Fallback if nested child write is restricted: push a hidden 'react' event packet into /pulse_chat/${roomId}
+                pulseRdb.ref(`pulse_chat/${roomId}`).push({
+                    type: 'react',
+                    targetMsgId: msgId,
+                    emoji: emoji,
+                    reactorUid: myUid,
+                    reactorName: reactData.name,
+                    reactorPhoto: reactData.photo,
+                    ts: firebase.database.ServerValue.TIMESTAMP
+                }).catch(()=>{});
+            });
         }
 
         // REACTION DRAWER LOGIC
@@ -2542,7 +2718,7 @@
             if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             if (latestRoomData && latestRoomData.timestamp) {
                 const idealSeek = (Date.now() - latestRoomData.timestamp) / 1000;
-                if (idealSeek > 1 && (!audio.duration || idealSeek < audio.duration - 1)) {
+                if (idealSeek > 0.5 && (!audio.duration || idealSeek < audio.duration - 1)) {
                     try { audio.currentTime = idealSeek; } catch (e) {}
                 }
             }
@@ -2589,6 +2765,7 @@
                         sessionStatus: 'ended',
                         endedBy: myUid,
                         endedAt: Date.now(),
+                        chatReactions: {},
                         [myField]: 'offline'
                     }, { merge: true }).catch(e => console.log("Offline update skipped"));
                 }
@@ -2597,7 +2774,6 @@
                 if (roomId && pulseRdb) {
                     setTimeout(() => {
                         pulseRdb.ref(`pulse_chat/${roomId}`).remove().catch(()=>{});
-                        pulseRdb.ref(`pulse_chat_reactions/${roomId}`).remove().catch(()=>{});
                         pulseRdb.ref(`typing/pulse_${roomId}`).remove().catch(()=>{});
                     }, 150);
                 }
