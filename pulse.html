@@ -334,18 +334,27 @@
         .dj-btn span { font-size: 18px; }
         @keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* Sync Overlay */
+        /* Sync Overlay (Supports both TAP TO SYNC and WAITING TO SYNC modes) */
         #sync-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
+            position: absolute; inset: 0; background: rgba(0,0,0,0.88); z-index: 200;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            backdrop-filter: blur(15px); opacity: 0; pointer-events: none; transition: 0.3s;
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            opacity: 0; pointer-events: none; transition: 0.3s;
         }
         #sync-overlay.active { opacity: 1; pointer-events: auto; }
         .sync-btn {
             background: var(--accent); width: 70px; height: 70px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px var(--accent-glow); margin-bottom: 20px;
-            animation: pulse-ring 2s infinite;
+            animation: pulse-ring 2s infinite; cursor: pointer; transition: background 0.3s, box-shadow 0.3s;
         }
+        #sync-overlay.waiting-mode { cursor: default; }
+        #sync-overlay.waiting-mode .sync-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid var(--radio-color);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.35);
+            animation: spinSlow 2.2s linear infinite;
+        }
+        @keyframes spinSlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
 
         /* =========================================
@@ -811,12 +820,12 @@
                 </div>
             </div>
 
-            <div id="sync-overlay" onclick="resumeAudio()">
-                <div class="sync-btn">
-                    <span class="material-icons-round" style="color:#fff; font-size:32px;">play_arrow</span>
+            <div id="sync-overlay" onclick="handleSyncOverlayClick()">
+                <div class="sync-btn" id="sync-overlay-btn">
+                    <span class="material-icons-round" id="sync-overlay-icon" style="color:#fff; font-size:32px;">play_arrow</span>
                 </div>
-                <h3 style="font-weight:800; letter-spacing:1px; font-family:'Orbitron'">TAP TO SYNC</h3>
-                <p style="font-size:12px; color:#aaa; margin-top:5px;">Audio stream interrupted</p>
+                <h3 id="sync-overlay-title" style="font-weight:800; letter-spacing:1px; font-family:'Orbitron'">TAP TO SYNC</h3>
+                <p id="sync-overlay-desc" style="font-size:12px; color:#aaa; margin-top:5px;">Tap to start synchronized playback</p>
             </div>
         </div>
     </div>
@@ -1010,7 +1019,16 @@
         let audioSourceNode = null; 
         let silentKeepAliveNode = null;
         let rotationAngle = 0; 
-        const waveformSparks = []; // Subtle micro-sparks emitted ONLY from waveform peaks
+
+        // SPRING-GRAVITY & TRANSIENT SPARK PHYSICS ARRAYS FOR THE 128 WAVEFORM BARS
+        const prevBarValues = new Float32Array(128);
+        const smoothBarRatios = new Float32Array(128);
+        const barVelocities = new Float32Array(128);
+        const barPeakCaps = new Float32Array(128);
+        const barPeakCapVel = new Float32Array(128);
+        let prevOverallEnergy = 0;
+        let beatColorPhase = 0;
+        const waveformSparks = []; // Physics sparks launched when audio suddenly jumps from low to high
         let lastSparkSpawnMs = 0;
 
         // State
@@ -1025,6 +1043,7 @@
         let lastSyncTime = 0; 
         let ignoreAudioSync = false; 
         let isAdvancingTrack = false;
+        let syncOverlayState = 'hidden'; // 'hidden' | 'tap' | 'waiting'
 
         let isRadioMode = false, isRadioHost = false;
         let lastReactionMe = null, lastReactionThem = null, lastReactionTimeMe = 0, lastReactionTimeThem = 0;
@@ -1099,9 +1118,12 @@
                     bindAudioEvents(audio);
                     audio.load();
                     if (latestRoomData && latestRoomData.cycleStatus === 'buffering' && roomRef && myUid) {
-                        roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                        roomRef.set({
+                            readySongId: currentSongId,
+                            ready: { [myUid]: true }
+                        }, { merge: true }).catch(()=>{});
                     } else if (latestRoomData && latestRoomData.cycleStatus === 'playing') {
-                        audio.play().catch(()=>{});
+                        attemptSynchronizedPlay(latestRoomData, true);
                     }
                 }
             });
@@ -1280,13 +1302,13 @@
             
             if (document.hidden) {
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.currentSong && audio.paused) {
+                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.currentSong && audio.paused && syncOverlayState === 'hidden') {
                     audio.play().catch(()=>{});
                 }
             } else {
                 requestWakeLock();
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.timestamp && !audio.paused) {
+                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.timestamp && !audio.paused && syncOverlayState === 'hidden') {
                     const idealTime = (getServerNow() - latestRoomData.timestamp) / 1000;
                     if (idealTime > 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 1.8) {
                         try { audio.currentTime = idealTime; } catch (e) {}
@@ -1352,7 +1374,6 @@
 
             pulseRdb.ref('.info/connected').on('value', snap => {
                 if (snap.val() === true && !isLeaving) {
-                    // If user closes browser tab completely, RTDB automatically sets state to 'disconnected'
                     myPresenceRef.onDisconnect().set({
                         state: 'disconnected',
                         ts: firebase.database.ServerValue.TIMESTAMP
@@ -1394,7 +1415,6 @@
                 const existingData = existingDoc.exists ? (existingDoc.data() || {}) : {};
 
                 if (!existingDoc.exists || existingData.sessionStatus === 'ended' || !partnerActuallyHere) {
-                    // Wipe any leftover chat from a dead previous session
                     await pulseRdb.ref(`pulse_chat/${roomId}`).remove().catch(()=>{});
                     await pulseRdb.ref(`typing/pulse_${roomId}`).remove().catch(()=>{});
 
@@ -1411,6 +1431,7 @@
                         songType: partnerActuallyHere ? (existingData.songType || 'preview') : 'preview',
                         emojis: {},
                         ready: {},
+                        syncNeededBy: {},
                         chatReactions: {},
                         radioMode: false,
                         radioRequest: null,
@@ -1454,7 +1475,6 @@
                         evaluateConnectionState(otherField);
                     }
                 } else if (stateStr === 'explicit_exit') {
-                    // Partner explicitly left the page — delete the entire room and exit!
                     isPartnerRdbOnline = false;
                     if (!isLeaving) {
                         isLeaving = true;
@@ -1508,7 +1528,6 @@
 
             // REALTIME FIRESTORE LISTENER
             roomUnsub = roomRef.onSnapshot(snapshot => {
-                // If partner deleted the room document after we connected, clean up and exit immediately!
                 if (!snapshot.exists) {
                     if (hasEnteredActiveScreen && !isLeaving) {
                         isLeaving = true;
@@ -1523,7 +1542,6 @@
                 const data = snapshot.data();
                 latestRoomData = data;
                 
-                // Honor explicit 'ended' triggered by partner after we joined — and delete the room document!
                 if (data.sessionStatus === 'ended' && data.endedBy && data.endedBy !== myUid && (data.endedAt || 0) > joinTimestamp) {
                     if (!isLeaving) {
                         isLeaving = true;
@@ -1535,12 +1553,10 @@
                     return;
                 }
 
-                // Make sure our own field stays 'online' while we are in the room
                 if (data[myField] !== 'online' && !isLeaving) {
                     roomRef.set({ [myField]: 'online' }, { merge: true }).catch(()=>{});
                 }
 
-                // Sync any Firestore-mirrored chat reactions
                 if (data.chatReactions && typeof data.chatReactions === 'object') {
                     Object.keys(data.chatReactions).forEach(msgId => {
                         const rMap = data.chatReactions[msgId];
@@ -1551,7 +1567,6 @@
                     });
                 }
 
-                // Presence Dots Logic (Green = active, Purple = background)
                 const myState = data[`screen_${myUid}`] || 'active';
                 const theirState = data[`screen_${targetUid}`] || 'active';
 
@@ -1600,12 +1615,12 @@
                 songType: 'preview',                 
                 emojis: {},
                 ready: {},
+                syncNeededBy: {},
                 radioMode: false,
                 radioRequest: null
             }, { merge: true });
         }
 
-        // Helper to normalize song objects from either <song-picker> or <full-song-picker>
         function normalizePickedSong(raw, type) {
             if (!raw) return null;
             const streamUrl = raw.previewUrl || raw.url || raw.audioUrl || raw.streamUrl || raw.downloadUrl || raw.src || '';
@@ -1623,13 +1638,97 @@
             };
         }
 
-        // Helper to update #controls-container ONLY when state actually changes (Eliminates button flickering!)
         function setControlsContent(stateKey, htmlContent) {
             const controls = document.getElementById('controls-container');
             if (!controls) return;
             if (controls.dataset.renderedState === stateKey) return;
             controls.dataset.renderedState = stateKey;
             controls.innerHTML = htmlContent;
+        }
+
+        // -----------------------------------------------------------------
+        // COORDINATED "TAP TO SYNC" / "WAITING TO SYNC" OVERLAY MANAGER
+        // -----------------------------------------------------------------
+        function configureSyncOverlay(mode) {
+            syncOverlayState = mode;
+            const overlay = document.getElementById('sync-overlay');
+            const icon = document.getElementById('sync-overlay-icon');
+            const title = document.getElementById('sync-overlay-title');
+            const desc = document.getElementById('sync-overlay-desc');
+            if (!overlay) return;
+
+            if (mode === 'hidden') {
+                overlay.classList.remove('active', 'waiting-mode');
+            } else if (mode === 'tap') {
+                overlay.classList.remove('waiting-mode');
+                overlay.classList.add('active');
+                if (icon) icon.innerText = 'play_arrow';
+                if (title) title.innerText = 'TAP TO SYNC';
+                if (desc) desc.innerText = 'Tap to start synchronized playback for both players';
+            } else if (mode === 'waiting') {
+                overlay.classList.add('active', 'waiting-mode');
+                if (icon) icon.innerText = 'sync';
+                if (title) title.innerText = 'WAITING TO SYNC';
+                const pName = targetProfile && targetProfile.name ? targetProfile.name.split(' ')[0] : 'partner';
+                if (desc) desc.innerText = `Waiting for ${pName} to tap sync so you both start together...`;
+            }
+        }
+
+        function handleSyncOverlayClick() {
+            if (syncOverlayState === 'tap') {
+                resumeAudio();
+            }
+        }
+
+        // Attempts to play; if browser blocks autoplay, notifies Firestore so the OTHER user pauses and shows "WAITING TO SYNC"
+        function attemptSynchronizedPlay(data, resetToZero = false) {
+            const syncMap = (data && data.syncNeededBy) ? data.syncNeededBy : {};
+            const iNeedTap = Boolean(syncMap[myUid]);
+            const partnerNeedsTap = Boolean(syncMap[targetUid]);
+
+            // If partner is currently blocked on TAP TO SYNC (and I am not), pause my audio and show WAITING TO SYNC!
+            if (partnerNeedsTap && !iNeedTap) {
+                if (!audio.paused) audio.pause();
+                try { audio.currentTime = 0; } catch (e) {}
+                configureSyncOverlay('waiting');
+                return;
+            }
+
+            if (iNeedTap) {
+                if (!audio.paused) audio.pause();
+                configureSyncOverlay('tap');
+                return;
+            }
+
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(()=>{});
+            }
+
+            if (resetToZero) {
+                try { audio.currentTime = 0; } catch (e) {}
+            } else if (data && data.timestamp) {
+                const serverElapsed = (getServerNow() - data.timestamp) / 1000;
+                if (serverElapsed > 2.5 && (!audio.duration || serverElapsed < audio.duration - 1)) {
+                    try { audio.currentTime = serverElapsed; } catch (e) {}
+                } else if (audio.currentTime > 1.5 && serverElapsed < 1.2) {
+                    try { audio.currentTime = 0; } catch (e) {}
+                }
+            }
+
+            localTrackStartServerMs = getServerNow() - (audio.currentTime * 1000);
+            lastSyncTime = getServerNow();
+
+            audio.play().then(() => {
+                configureSyncOverlay('hidden');
+            }).catch(() => {
+                // Autoplay was blocked on this device! Tell Firestore so partner pauses and waits for us!
+                configureSyncOverlay('tap');
+                if (roomRef && myUid) {
+                    roomRef.set({
+                        syncNeededBy: { [myUid]: true }
+                    }, { merge: true }).catch(()=>{});
+                }
+            });
         }
 
         // -----------------------------------------------------------------
@@ -1641,11 +1740,9 @@
             const status = data.cycleStatus || 'picking';
             const hasValidSong = Boolean(data.currentSong && data.currentSong.previewUrl);
             
-            // Apply Song Type Mode (Full vs Preview UI layout toggles)
             currentSongType = data.songType || (data.currentSong && data.currentSong.songType) || 'preview';
             const screenEl = document.getElementById('screen-active');
             
-            // Both users enter .mode-full together when a full song is buffering or playing
             if (currentSongType === 'full' && status !== 'picking' && hasValidSong) {
                 screenEl.classList.add('mode-full');
                 updateKeyboardTopShift();
@@ -1657,7 +1754,6 @@
             document.getElementById('duo-me').classList.toggle('active', isMyTurn);
             document.getElementById('duo-them').classList.toggle('active', !isMyTurn);
 
-            // Hide swap/delete buttons globally first, selectively show if picked
             document.getElementById('delete-track-btn').style.display = 'none';
             document.getElementById('swap-turn-btn').style.display = 'none';
 
@@ -1666,6 +1762,8 @@
                 previousCycleStatus = 'picking';
                 isAdvancingTrack = false;
                 clearTimeout(bufferSafetyTimer);
+                configureSyncOverlay('hidden');
+
                 if (currentSongId !== null) {
                     currentSongId = null;
                     audio.pause();
@@ -1679,7 +1777,6 @@
                 clearTimeout(emojiTimer);
                 clearTimeout(turnTimer);
 
-                // Show Swap button if it's my turn
                 if(isMyTurn) document.getElementById('swap-turn-btn').style.display = 'flex';
 
                 if (isMyTurn) {
@@ -1703,6 +1800,7 @@
             // 2. BUFFERING PHASE — BOTH USERS PRELOAD AND WAIT FOR EACH OTHER BEFORE STARTING!
             else if (status === 'buffering' && hasValidSong) {
                 previousCycleStatus = 'buffering';
+                configureSyncOverlay('hidden');
                 const song = data.currentSong;
                 const songUniqueId = String(song.id || song.previewUrl);
 
@@ -1714,7 +1812,8 @@
                 const hue = ((song.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
 
-                const readyMap = data.ready || {};
+                const isReadyForCurrentSong = (!data.readySongId || data.readySongId === songUniqueId);
+                const readyMap = isReadyForCurrentSong ? (data.ready || {}) : {};
                 const amIReady = Boolean(readyMap[myUid]);
                 const isThemReady = Boolean(readyMap[targetUid]);
 
@@ -1726,7 +1825,6 @@
                     setControlsContent('buffering_start', `<p style="font-size:12px; color:var(--radio-color); font-weight:700; letter-spacing:1px;">STARTING TOGETHER...</p>`);
                 }
 
-                // Load the track and pause at 0:00 while waiting for both players to be ready
                 if (currentSongId !== songUniqueId) {
                     currentSongId = songUniqueId;
                     isAdvancingTrack = false;
@@ -1747,7 +1845,10 @@
                         audio.onloadeddata = null;
                         try { audio.currentTime = 0; } catch (e) {}
                         if (currentSongId === songUniqueId && roomRef && myUid) {
-                            roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                            roomRef.set({
+                                readySongId: songUniqueId,
+                                ready: { [myUid]: true }
+                            }, { merge: true }).catch(()=>{});
                         }
                     };
 
@@ -1758,31 +1859,34 @@
                         markMeReady();
                     }
 
-                    // Safety fallback after 5s using synchronized server clock
                     clearTimeout(bufferSafetyTimer);
                     bufferSafetyTimer = setTimeout(() => {
                         if (latestRoomData && latestRoomData.cycleStatus === 'buffering' && currentSongId === songUniqueId) {
                             roomRef.set({
+                                readySongId: songUniqueId,
                                 ready: { [myUid]: true, [targetUid]: true },
+                                syncNeededBy: {},
                                 cycleStatus: 'playing',
                                 timestamp: getServerNow()
                             }, { merge: true }).catch(()=>{});
                         }
                     }, 5000);
                 } else {
-                    // Keep paused at 0:00 while in buffering barrier
                     if (!audio.paused) audio.pause();
                     if (audio.readyState >= 2 && !amIReady) {
-                        roomRef.set({ ready: { [myUid]: true } }, { merge: true }).catch(()=>{});
+                        roomRef.set({
+                            readySongId: songUniqueId,
+                            ready: { [myUid]: true }
+                        }, { merge: true }).catch(()=>{});
                     }
                 }
 
-                // As soon as BOTH players are ready, promote to 'playing' using atomic getServerNow()!
                 if (amIReady && isThemReady) {
                     clearTimeout(bufferSafetyTimer);
                     if (isMyTurn) {
                         roomRef.set({
                             cycleStatus: 'playing',
+                            syncNeededBy: {},
                             timestamp: getServerNow()
                         }, { merge: true }).catch(()=>{});
                     } else {
@@ -1790,6 +1894,7 @@
                             if (latestRoomData && latestRoomData.cycleStatus === 'buffering') {
                                 roomRef.set({
                                     cycleStatus: 'playing',
+                                    syncNeededBy: {},
                                     timestamp: getServerNow()
                                 }, { merge: true }).catch(()=>{});
                             }
@@ -1798,7 +1903,7 @@
                 }
             }
 
-            // 3. PLAYING PHASE — BOTH PLAYERS START AT 0:00 AT THE EXACT SAME TIME!
+            // 3. PLAYING PHASE — BOTH PLAYERS START AT 0:00 AT THE EXACT SAME TIME (WITH COORDINATED TAP/WAIT SYNC)!
             else if (status === 'playing' && hasValidSong) {
                 clearTimeout(bufferSafetyTimer);
                 const justTransitionedFromBuffering = (previousCycleStatus === 'buffering');
@@ -1830,51 +1935,52 @@
                 const hue = ((song.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
 
-                if (audio.paused && !isAdvancingTrack) {
-                    if (audioCtx && audioCtx.state === 'suspended') {
-                        audioCtx.resume().catch(()=>{});
-                    }
+                // Check if either player is blocked by browser autoplay and needs TAP TO SYNC
+                const syncMap = data.syncNeededBy || {};
+                const iNeedTap = Boolean(syncMap[myUid]);
+                const partnerNeedsTap = Boolean(syncMap[targetUid]);
 
-                    // When transitioning from 'buffering' -> 'playing', both users already waited for each other, so ALWAYS start from 0:00 (first second)!
-                    const serverElapsed = data.timestamp ? (getServerNow() - data.timestamp) / 1000 : 0;
-                    if (!justTransitionedFromBuffering && serverElapsed > 3.0 && (!audio.duration || serverElapsed < audio.duration - 1)) {
-                        try { audio.currentTime = serverElapsed; } catch (e) {}
-                    } else {
-                        try { audio.currentTime = 0; } catch (e) {}
-                    }
-
-                    localTrackStartServerMs = getServerNow() - (audio.currentTime * 1000);
-                    lastSyncTime = getServerNow();
-
-                    audio.play().then(() => {
-                        document.getElementById('sync-overlay').classList.remove('active');
-                    }).catch(() => {
-                        document.getElementById('sync-overlay').classList.add('active');
-                    });
-
-                    // Auto-end turn timer fallback for 30s Preview Mode
+                if (iNeedTap) {
+                    if (!audio.paused) audio.pause();
+                    try { audio.currentTime = 0; } catch (e) {}
                     clearTimeout(turnTimer);
-                    if (currentSongType === 'preview') {
-                        turnTimer = setTimeout(() => {
-                            if (currentSongId === songUniqueId && isMyTurn) swapTurn(false);
-                        }, 30500);
-                    }
-                } else if (!audio.paused) {
-                    // Drift check using atomic getServerNow()
-                    const SYNC_THROTTLE = 3000; 
-                    if (!ignoreAudioSync && (getServerNow() - lastSyncTime > SYNC_THROTTLE)) {
-                        lastSyncTime = getServerNow();
-                        const refStart = data.timestamp || localTrackStartServerMs;
-                        const idealTime = (getServerNow() - refStart) / 1000;
-                        if (refStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 2.2) {
-                            try { audio.currentTime = idealTime; } catch (e) {}
+                    configureSyncOverlay('tap');
+                } else if (partnerNeedsTap) {
+                    // Partner hasn't tapped sync yet — pause our playback and show WAITING TO SYNC so we start together!
+                    if (!audio.paused) audio.pause();
+                    try { audio.currentTime = 0; } catch (e) {}
+                    clearTimeout(turnTimer);
+                    configureSyncOverlay('waiting');
+                } else {
+                    // Neither user is blocked — hide overlay and play in lockstep!
+                    const wasWaitingOnSync = (syncOverlayState !== 'hidden');
+                    configureSyncOverlay('hidden');
+
+                    if (audio.paused && !isAdvancingTrack) {
+                        attemptSynchronizedPlay(data, justTransitionedFromBuffering || wasWaitingOnSync);
+
+                        clearTimeout(turnTimer);
+                        if (currentSongType === 'preview') {
+                            turnTimer = setTimeout(() => {
+                                if (currentSongId === songUniqueId && isMyTurn && syncOverlayState === 'hidden') swapTurn(false);
+                            }, 30500);
+                        }
+                    } else if (!audio.paused) {
+                        const SYNC_THROTTLE = 3000; 
+                        if (!ignoreAudioSync && (getServerNow() - lastSyncTime > SYNC_THROTTLE)) {
+                            lastSyncTime = getServerNow();
+                            const refStart = data.timestamp || localTrackStartServerMs;
+                            const idealTime = (getServerNow() - refStart) / 1000;
+                            if (refStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 2.2) {
+                                try { audio.currentTime = idealTime; } catch (e) {}
+                            }
                         }
                     }
                 }
 
-                // Emoji popup only for Preview Mode
+                // Emoji popup only for Preview Mode when actively playing
                 clearTimeout(emojiTimer);
-                if (currentSongType === 'preview' && !hasPickedEmoji) {
+                if (currentSongType === 'preview' && !hasPickedEmoji && !iNeedTap && !partnerNeedsTap) {
                     emojiTimer = setTimeout(openEmojiModal, 5000); 
                 }
             }
@@ -1898,6 +2004,7 @@
                 currentSong: null, 
                 emojis: {},
                 ready: {},
+                syncNeededBy: {},
                 songType: 'preview',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).catch(()=>{});
@@ -1913,6 +2020,7 @@
                 currentSong: null, 
                 emojis: {},
                 ready: {},
+                syncNeededBy: {},
                 songType: 'preview',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).catch(()=>{});
@@ -1933,7 +2041,9 @@
                 currentSong: cleanSong,
                 cycleStatus: 'buffering',
                 timestamp: getServerNow(),
+                readySongId: cleanSong.id,
                 ready: {},
+                syncNeededBy: {},
                 emojis: {},
                 songType: 'preview',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -1952,7 +2062,9 @@
                 currentSong: cleanSong,
                 cycleStatus: 'buffering',
                 timestamp: getServerNow(),
+                readySongId: cleanSong.id,
                 ready: {},
+                syncNeededBy: {},
                 emojis: {},
                 songType: 'full',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -2003,7 +2115,7 @@
         }
 
         // =================================================================
-        // CLASSIC AROUND-RECTANGLE & CIRCULAR WAVEFORM VISUALIZER + SUBTLE PEAK SPARKLE
+        // SPRING-PHYSICS WAVEFORM VISUALIZER + BEAT COLOR SHIFT + LOW-TO-HIGH TRANSIENT SPARKS
         // =================================================================
         function setupVisualizer() {
             if (audioCtx) return; 
@@ -2011,7 +2123,10 @@
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContext();
                 analyser = audioCtx.createAnalyser();
-                analyser.smoothingTimeConstant = 0.8;
+                // Expanded dynamic decibel range so quiet sections drop low and loud peaks jump dramatically!
+                analyser.minDecibels = -85;
+                analyser.maxDecibels = -14;
+                analyser.smoothingTimeConstant = 0.68;
                 
                 if (!audioSourceNode && !usingCorsFallback) {
                     audioSourceNode = audioCtx.createMediaElementSource(audio);
@@ -2052,40 +2167,53 @@
             const nowMs = performance.now();
             const t = audio.currentTime || (nowMs / 1000);
 
-            // If a song server blocked CORS (usingCorsFallback), generate natural song-synced frequency waveform so bars still move with the song!
+            // If a song server blocked CORS (usingCorsFallback), generate natural high-contrast dynamic envelope with real drops and surges!
             let rawSum = 0;
             for (let i = 0; i < 32; i++) rawSum += dataArray[i];
             if (isPlayingAudio && rawSum === 0) {
+                const phraseEnvelope = Math.pow(Math.sin(t * 1.9) * 0.5 + 0.5, 1.8); // Swells from quiet (0.05) to loud (1.0)
+                const kickTransient = Math.pow(Math.max(0, Math.sin(t * 7.4)), 6);    // Sharp sudden beat kicks
                 for (let i = 0; i < dataArray.length; i++) {
-                    const lowBeat = Math.pow(Math.sin(t * 4.2) * 0.5 + 0.5, 2.2);
-                    const midWave = Math.sin(t * 6.8 - i * 0.16) * 0.5 + 0.5;
-                    const highWave = Math.cos(t * 11.4 + i * 0.28) * 0.5 + 0.5;
-                    const falloff = Math.max(0.12, 1 - (i / dataArray.length) * 0.72);
-                    const subKick = i < 12 ? lowBeat * 95 : 0;
-                    dataArray[i] = Math.min(255, Math.floor(((midWave * 115 + highWave * 55) * falloff) + subKick));
+                    const wave1 = Math.sin(t * 8.5 - i * 0.22) * 0.5 + 0.5;
+                    const wave2 = Math.cos(t * 13.2 + i * 0.35) * 0.5 + 0.5;
+                    const bandShape = Math.sin((i / dataArray.length) * Math.PI);
+                    const rawVal = ((wave1 * 0.65 + wave2 * 0.35) * phraseEnvelope * 185 * bandShape) + (i < 18 ? kickTransient * 135 : kickTransient * 55);
+                    dataArray[i] = Math.min(255, Math.max(0, Math.floor(rawVal)));
                 }
             } else if (!isPlayingAudio) {
                 for (let i = 0; i < dataArray.length; i++) {
-                    dataArray[i] = Math.max(0, Math.floor(dataArray[i] * 0.84));
+                    dataArray[i] = Math.max(0, Math.floor(dataArray[i] * 0.8));
                 }
             }
-            
-            let bassTotal = 0;
-            for(let i=0; i<8; i++) { bassTotal += dataArray[i]; }
-            const bassAvg = bassTotal / 8;
-            
-            const baseHue = Number(document.body.dataset.baseHue) || 200;
-            const lightness = 5 + (bassAvg / 255) * 14; 
-            document.body.style.background = `radial-gradient(circle at center, hsla(${baseHue}, 60%, ${lightness}%, 1), #000 90%)`;
+
+            // 2. Calculate Bass, Mid, High Energy & Sudden Low-to-High Transient Jump
+            let bassTotal = 0, midTotal = 0;
+            for (let i = 0; i < 10; i++) bassTotal += dataArray[i];
+            for (let i = 10; i < 50; i++) midTotal += dataArray[i];
+            const bassAvg = bassTotal / 10;
+            const midAvg = midTotal / 40;
+            const overallEnergy = bassAvg * 0.65 + midAvg * 0.35;
+            const energyJump = Math.max(0, overallEnergy - prevOverallEnergy);
+            prevOverallEnergy = overallEnergy * 0.25 + prevOverallEnergy * 0.75;
+
+            // Advance color phase faster when a beat hits so colors shift dynamically with the rhythm!
+            if (isPlayingAudio) {
+                beatColorPhase = (beatColorPhase + 0.35 + (bassAvg / 255) * 2.2 + (energyJump > 18 ? 14 : 0)) % 360;
+            }
+            const baseHue = (Number(document.body.dataset.baseHue) || 200);
+            const activeBeatHue = (baseHue + beatColorPhase) % 360;
+
+            const lightness = 5 + Math.pow(bassAvg / 255, 1.5) * 16; 
+            document.body.style.background = `radial-gradient(circle at center, hsla(${activeBeatHue}, 65%, ${lightness}%, 1), #000 90%)`;
 
             // Set Chat Tint dynamically for beat
-            const beatTint = `hsla(${baseHue}, 70%, 50%, ${(bassAvg / 255) * 0.15})`;
+            const beatTint = `hsla(${activeBeatHue}, 75%, 50%, ${(bassAvg / 255) * 0.16})`;
             document.documentElement.style.setProperty('--beat-chat-tint', beatTint);
 
             const isFullModeActive = document.getElementById('screen-active').classList.contains('mode-full');
             const scale = isFullModeActive
-                ? (0.98 + (bassAvg / 255) * 0.04)
-                : (0.95 + (bassAvg / 255) * 0.14);
+                ? (0.98 + Math.pow(bassAvg / 255, 1.4) * 0.045)
+                : (0.95 + Math.pow(bassAvg / 255, 1.4) * 0.15);
             const albumEl = document.getElementById('album-container');
             if (albumEl) albumEl.style.transform = `scale(${scale})`;
 
@@ -2105,13 +2233,42 @@
             canvasCtx.scale(dpr, dpr);
             canvasCtx.clearRect(0, 0, cRect.width, cRect.height);
 
-            // Calculate exact center and unscaled base dimensions of #album-container so the waveform wraps tightly around the box
             const aRect = albumEl.getBoundingClientRect();
             const cx = (aRect.left + aRect.width / 2) - cRect.left;
             const cy = (aRect.top + aRect.height / 2) - cRect.top;
-            const bars = dataArray.length; // 128 bars just like before!
+            const bars = dataArray.length; // 128 bars
 
-            // 1. RECTANGULAR AROUND-BOX WAVEFORM VISUALIZER (Full Song Mode)
+            // 3. UPDATE PER-BAR SPRING-GRAVITY PHYSICS & DETECT LOW-TO-HIGH JUMPS
+            for (let i = 0; i < bars; i++) {
+                // Mirror spectrum symmetrically around the perimeter so there is no dead tail on one side
+                const symIdx = i < bars / 2 ? i : (bars - 1 - i);
+                const rawVal = dataArray[symIdx];
+
+                // Non-linear power curve (pow 2.35): low/medium audio stays low and compact, while real beats shoot up!
+                const norm = rawVal / 255;
+                const shapedTarget = isPlayingAudio ? Math.pow(norm, 2.35) : 0;
+
+                // Spring-gravity physics: fast attack on rise, smooth elastic gravity fall on drop
+                if (shapedTarget > smoothBarRatios[i]) {
+                    barVelocities[i] = (shapedTarget - smoothBarRatios[i]) * 0.55;
+                    smoothBarRatios[i] += barVelocities[i];
+                } else {
+                    barVelocities[i] -= 0.018; // Gravity pull down
+                    smoothBarRatios[i] = Math.max(shapedTarget, smoothBarRatios[i] + barVelocities[i]);
+                    if (smoothBarRatios[i] <= shapedTarget) barVelocities[i] = 0;
+                }
+
+                // Floating Peak Cap Physics (pushes up with bar, falls down with gentle gravity)
+                if (smoothBarRatios[i] >= barPeakCaps[i]) {
+                    barPeakCaps[i] = smoothBarRatios[i];
+                    barPeakCapVel[i] = 0;
+                } else {
+                    barPeakCapVel[i] += 0.0022;
+                    barPeakCaps[i] = Math.max(0, barPeakCaps[i] - barPeakCapVel[i]);
+                }
+            }
+
+            // 4A. RECTANGULAR AROUND-BOX WAVEFORM VISUALIZER (Full Song Mode)
             if (isFullModeActive) {
                 const rectW = aRect.width + 4;
                 const rectH = aRect.height + 4;
@@ -2125,14 +2282,22 @@
                 const stepLen = totalPerimeter / bars;
 
                 for(let i=0; i<bars; i++) {
-                    const value = dataArray[i];
-                    const barHeight = (value / 255) * maxBarHeight;
-                    const hue = (i / bars) * 360 + baseHue;
+                    const symIdx = i < bars / 2 ? i : (bars - 1 - i);
+                    const rawVal = dataArray[symIdx];
+                    const barDelta = rawVal - prevBarValues[i];
+                    prevBarValues[i] = rawVal * 0.4 + prevBarValues[i] * 0.6;
+
+                    const ratio = smoothBarRatios[i];
+                    const barHeight = Math.max(1.5, ratio * maxBarHeight);
+                    const capHeight = Math.max(barHeight, barPeakCaps[i] * maxBarHeight);
+
+                    // Color changes dynamically with the beat + bar intensity!
+                    const hue = (activeBeatHue + (symIdx / (bars / 2)) * 140 + ratio * 55) % 360;
+                    const lightnessBar = 52 + ratio * 28;
                     
                     let pos = i * stepLen;
                     let x=0, y=0, angle=0;
 
-                    // Map perimeter to all 4 sides around the rectangle
                     if (pos < rectW) { x = -rectW/2 + pos; y = -rectH/2; angle = -Math.PI/2; } // Top
                     else if (pos < rectW + rectH) { x = rectW/2; y = -rectH/2 + (pos - rectW); angle = 0; } // Right
                     else if (pos < (rectW*2) + rectH) { x = rectW/2 - (pos - (rectW + rectH)); y = rectH/2; angle = Math.PI/2; } // Bottom
@@ -2141,49 +2306,78 @@
                     canvasCtx.save();
                     canvasCtx.translate(x, y);
                     canvasCtx.rotate(angle);
+
+                    // Draw main waveform bar
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(0, 0);
                     canvasCtx.lineTo(barHeight, 0);
-                    canvasCtx.lineWidth = 3;
+                    canvasCtx.lineWidth = 2.8;
                     canvasCtx.lineCap = 'round';
-                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.85)`;
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, ${lightnessBar}%, 0.9)`;
                     canvasCtx.stroke();
+
+                    // Draw floating gravity peak-cap dot when bar is active
+                    if (capHeight > 4) {
+                        canvasCtx.fillStyle = `hsla(${(hue + 30) % 360}, 100%, 82%, ${0.45 + ratio * 0.55})`;
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(capHeight + 2.5, 0, 1.4, 0, Math.PI * 2);
+                        canvasCtx.fill();
+                    }
                     canvasCtx.restore();
 
-                    // SUBTLE PEAK-ONLY SPARKLE: Only when a waveform bar hits a true peak, emit a tiny light sparkle right from the bar tip!
-                    if (isPlayingAudio && value > 215 && (nowMs - lastSparkSpawnMs > 180) && waveformSparks.length < 18 && Math.random() < 0.25) {
+                    // LOW-TO-HIGH TRANSIENT SPARK PHYSICS: When audio suddenly jumps from low to high, launch a physics spark from the bar tip!
+                    if (isPlayingAudio && ((barDelta > 26 && rawVal > 145) || (energyJump > 16 && rawVal > 175)) && (nowMs - lastSparkSpawnMs > 55) && waveformSparks.length < 32) {
                         lastSparkSpawnMs = nowMs;
-                        const tipX = x + Math.cos(angle) * (barHeight + 2);
-                        const tipY = y + Math.sin(angle) * (barHeight + 2);
+                        const cosA = Math.cos(angle);
+                        const sinA = Math.sin(angle);
+                        const tipX = x + cosA * (barHeight + 3);
+                        const tipY = y + sinA * (barHeight + 3);
+                        const launchSpeed = 1.4 + (barDelta / 255) * 2.8 + Math.random() * 1.2;
+                        const spreadAngle = angle + (Math.random() - 0.5) * 0.55;
                         waveformSparks.push({
                             x: tipX,
                             y: tipY,
-                            vx: Math.cos(angle) * (0.4 + Math.random() * 0.6),
-                            vy: Math.sin(angle) * (0.4 + Math.random() * 0.6),
-                            r: 1.4 + Math.random() * 1.1,
-                            alpha: 0.9,
-                            hue: hue
+                            prevX: tipX,
+                            prevY: tipY,
+                            vx: Math.cos(spreadAngle) * launchSpeed,
+                            vy: Math.sin(spreadAngle) * launchSpeed,
+                            gravity: 0.045,
+                            r: 1.5 + Math.random() * 1.3,
+                            alpha: 1.0,
+                            hue: (hue + 25) % 360
                         });
                     }
                 }
 
-                // Render subtle peak micro-sparkles around the waveform
+                // Render & update physics sparks around the rectangle
                 for (let s = waveformSparks.length - 1; s >= 0; s--) {
                     const sp = waveformSparks[s];
+                    sp.prevX = sp.x;
+                    sp.prevY = sp.y;
+                    sp.vx *= 0.96; // Air drag
+                    sp.vy = sp.vy * 0.96 + sp.gravity; // Gravity arc
                     sp.x += sp.vx;
                     sp.y += sp.vy;
-                    sp.alpha -= 0.032;
+                    sp.alpha -= 0.028;
                     if (sp.alpha <= 0.02) {
                         waveformSparks.splice(s, 1);
                         continue;
                     }
                     canvasCtx.save();
                     canvasCtx.globalAlpha = sp.alpha;
-                    canvasCtx.fillStyle = `hsla(${sp.hue}, 100%, 80%, 1)`;
-                    canvasCtx.shadowColor = `hsla(${sp.hue}, 100%, 65%, 0.8)`;
-                    canvasCtx.shadowBlur = 6;
+                    canvasCtx.strokeStyle = `hsla(${sp.hue}, 100%, 75%, 1)`;
+                    canvasCtx.shadowColor = `hsla(${sp.hue}, 100%, 65%, 0.9)`;
+                    canvasCtx.shadowBlur = 8;
+                    canvasCtx.lineWidth = sp.r;
+                    canvasCtx.lineCap = 'round';
                     canvasCtx.beginPath();
-                    canvasCtx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+                    canvasCtx.moveTo(sp.prevX, sp.prevY);
+                    canvasCtx.lineTo(sp.x, sp.y);
+                    canvasCtx.stroke();
+
+                    canvasCtx.fillStyle = '#ffffff';
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(sp.x, sp.y, sp.r * 0.55, 0, Math.PI * 2);
                     canvasCtx.fill();
                     canvasCtx.restore();
                 }
@@ -2191,9 +2385,9 @@
                 canvasCtx.restore();
 
             } else {
-                // 2. DEFAULT CIRCULAR WAVEFORM VISUALIZER (30s Drop & Default View)
+                // 4B. CIRCULAR WAVEFORM VISUALIZER (30s Drop & Default View)
                 const radius = (aRect.width / 2) + 4; 
-                rotationAngle += 0.002;
+                rotationAngle += 0.002 + (bassAvg / 255) * 0.004;
                 const step = (Math.PI * 2) / bars;
 
                 canvasCtx.save();
@@ -2201,58 +2395,93 @@
                 canvasCtx.rotate(rotationAngle);
 
                 for (let i = 0; i < bars; i++) {
-                    const value = dataArray[i];
-                    const barHeight = (value / 255) * 60; 
-                    const hue = (i / bars) * 360 + baseHue;
+                    const symIdx = i < bars / 2 ? i : (bars - 1 - i);
+                    const rawVal = dataArray[symIdx];
+                    const barDelta = rawVal - prevBarValues[i];
+                    prevBarValues[i] = rawVal * 0.4 + prevBarValues[i] * 0.6;
+
+                    const ratio = smoothBarRatios[i];
+                    const barHeight = Math.max(2, ratio * 68); 
+                    const capHeight = Math.max(barHeight, barPeakCaps[i] * 68);
+
+                    const hue = (activeBeatHue + (symIdx / (bars / 2)) * 160 + ratio * 55) % 360;
+                    const lightnessBar = 52 + ratio * 28;
                     
                     const rads = i * step;
                     const cosR = Math.cos(rads);
                     const sinR = Math.sin(rads);
-                    const x = cosR * (radius + barHeight);
-                    const y = sinR * (radius + barHeight);
                     const xStart = cosR * radius;
                     const yStart = sinR * radius;
+                    const x = cosR * (radius + barHeight);
+                    const y = sinR * (radius + barHeight);
 
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(xStart, yStart);
                     canvasCtx.lineTo(x, y);
                     canvasCtx.lineWidth = 3;
                     canvasCtx.lineCap = 'round';
-                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, ${lightnessBar}%, 0.88)`;
                     canvasCtx.stroke();
 
-                    // Subtle peak-only micro-sparkle coming out of the circular waveform peak
-                    if (isPlayingAudio && value > 215 && (nowMs - lastSparkSpawnMs > 180) && waveformSparks.length < 18 && Math.random() < 0.25) {
+                    // Floating gravity peak-cap dot
+                    if (capHeight > 5) {
+                        const capDist = radius + capHeight + 3;
+                        canvasCtx.fillStyle = `hsla(${(hue + 30) % 360}, 100%, 84%, ${0.45 + ratio * 0.55})`;
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(cosR * capDist, sinR * capDist, 1.5, 0, Math.PI * 2);
+                        canvasCtx.fill();
+                    }
+
+                    // LOW-TO-HIGH TRANSIENT SPARK PHYSICS
+                    if (isPlayingAudio && ((barDelta > 26 && rawVal > 145) || (energyJump > 16 && rawVal > 175)) && (nowMs - lastSparkSpawnMs > 55) && waveformSparks.length < 32) {
                         lastSparkSpawnMs = nowMs;
+                        const tipDist = radius + barHeight + 4;
+                        const launchSpeed = 1.5 + (barDelta / 255) * 3.0 + Math.random() * 1.2;
+                        const spreadAngle = rads + (Math.random() - 0.5) * 0.45;
                         waveformSparks.push({
-                            x: cosR * (radius + barHeight + 3),
-                            y: sinR * (radius + barHeight + 3),
-                            vx: cosR * (0.45 + Math.random() * 0.6),
-                            vy: sinR * (0.45 + Math.random() * 0.6),
-                            r: 1.5 + Math.random() * 1.1,
-                            alpha: 0.9,
-                            hue: hue
+                            x: cosR * tipDist,
+                            y: sinR * tipDist,
+                            prevX: cosR * tipDist,
+                            prevY: sinR * tipDist,
+                            vx: Math.cos(spreadAngle) * launchSpeed,
+                            vy: Math.sin(spreadAngle) * launchSpeed,
+                            gravity: 0.03,
+                            r: 1.6 + Math.random() * 1.3,
+                            alpha: 1.0,
+                            hue: (hue + 25) % 360
                         });
                     }
                 }
 
-                // Render subtle peak micro-sparkles
+                // Render & update physics sparks around the circle
                 for (let s = waveformSparks.length - 1; s >= 0; s--) {
                     const sp = waveformSparks[s];
+                    sp.prevX = sp.x;
+                    sp.prevY = sp.y;
+                    sp.vx *= 0.96;
+                    sp.vy = sp.vy * 0.96 + sp.gravity;
                     sp.x += sp.vx;
                     sp.y += sp.vy;
-                    sp.alpha -= 0.032;
+                    sp.alpha -= 0.028;
                     if (sp.alpha <= 0.02) {
                         waveformSparks.splice(s, 1);
                         continue;
                     }
                     canvasCtx.save();
                     canvasCtx.globalAlpha = sp.alpha;
-                    canvasCtx.fillStyle = `hsla(${sp.hue}, 100%, 80%, 1)`;
-                    canvasCtx.shadowColor = `hsla(${sp.hue}, 100%, 65%, 0.8)`;
-                    canvasCtx.shadowBlur = 6;
+                    canvasCtx.strokeStyle = `hsla(${sp.hue}, 100%, 75%, 1)`;
+                    canvasCtx.shadowColor = `hsla(${sp.hue}, 100%, 65%, 0.9)`;
+                    canvasCtx.shadowBlur = 8;
+                    canvasCtx.lineWidth = sp.r;
+                    canvasCtx.lineCap = 'round';
                     canvasCtx.beginPath();
-                    canvasCtx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+                    canvasCtx.moveTo(sp.prevX, sp.prevY);
+                    canvasCtx.lineTo(sp.x, sp.y);
+                    canvasCtx.stroke();
+
+                    canvasCtx.fillStyle = '#ffffff';
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(sp.x, sp.y, sp.r * 0.55, 0, Math.PI * 2);
                     canvasCtx.fill();
                     canvasCtx.restore();
                 }
@@ -2346,7 +2575,6 @@
                 const msg = snap.val();
                 if (!msg) return;
 
-                // Handle in-stream reaction packets (used when RTDB /pulse_chat_reactions is blocked by security rules!)
                 if (msg.type === 'react' && msg.targetMsgId && msg.reactorUid && msg.emoji) {
                     if (!localReactionsStore[msg.targetMsgId]) localReactionsStore[msg.targetMsgId] = {};
                     localReactionsStore[msg.targetMsgId][msg.reactorUid] = {
@@ -2365,14 +2593,12 @@
 
                 renderChatMessage(msg, snap.key);
 
-                // If message object itself contains nested reactions, apply them immediately
                 if (msg.reactions && typeof msg.reactions === 'object') {
                     localReactionsStore[snap.key] = Object.assign({}, localReactionsStore[snap.key] || {}, msg.reactions);
                     updateMessageReactions(snap.key, localReactionsStore[snap.key]);
                 }
             });
 
-            // Listen for direct updates to a message node (e.g. pulse_chat/${roomId}/${msgId}/reactions)
             chatChangedUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).on('child_changed', snap => {
                 const msg = snap.val();
                 if (msg && msg.reactions && typeof msg.reactions === 'object') {
@@ -2390,7 +2616,6 @@
             });
         }
 
-        // Displays actual chosen reaction emojis (❤️, 🔥, 😂, 😮, 😢, 🙏) inside the message bubble badge!
         function updateMessageReactions(msgId, reacts) {
             const row = document.getElementById(`msg-${msgId}`);
             if(!row) return;
@@ -2477,7 +2702,7 @@
             checkKeywords(text);
             popSound.play().catch(()=>{});
             
-            if(navigator.vibrate) navigator.vibrate(10); // Haptic tick
+            if(navigator.vibrate) navigator.vibrate(10);
 
             const payload = {
                 text: text,
@@ -2523,10 +2748,9 @@
 
         function renderChatMessage(msg, msgKey) {
             if (!msg || typeof msg.text !== 'string' || !msgContainer) return; 
-            if (msg.type === 'react') return; // Never render reaction packets as chat messages!
+            if (msg.type === 'react') return;
             if (document.getElementById(`msg-${msgKey}`)) return;
 
-            // Hide legacy "loved a message ❤️" system messages so reactions only ever show on the bubble itself
             if (msg.type === 'sys' && msg.text.includes('loved a message')) return;
 
             const safeText = escapeHtmlText(msg.text);
@@ -2561,7 +2785,6 @@
             const isJumbo = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 4 && emojiRegex.test(textNoSpaces);
             let bubbleStyle = isJumbo ? 'background:transparent; border:none; box-shadow:none; font-size:3rem; padding:0;' : '';
 
-            // Build Instagram-style highlighted quoted reply block if this message is a reply
             let quotedHtml = '';
             if (msg.replyTo && msg.replyTo.text) {
                 const safeReplySender = escapeHtmlText(msg.replyTo.senderName || 'Message');
@@ -2638,7 +2861,6 @@
                     clearTimeout(longPressTimer);
                 }
 
-                // Swipe right to reply
                 if (dx > 10 && dx > dy * 1.3) {
                     isSwiping = true;
                     currentX = Math.min(72, dx);
@@ -2675,7 +2897,6 @@
                 }
 
                 startX = 0;
-                // Check Double-Tap on bubble for instant Heart Reaction in the bubble
                 if (e.target.closest('.bubble') && !e.target.closest('.bubble-heart')) {
                     const now = Date.now();
                     if (now - lastTapTime < 350 && now - lastTapTime > 0) {
@@ -2688,7 +2909,6 @@
                 }
             });
 
-            // Desktop Double-Click & Right-Click support for testing on PC as well
             if (bubbleEl) {
                 bubbleEl.addEventListener('dblclick', (e) => {
                     if (e.target.closest('.bubble-heart')) return;
@@ -2701,7 +2921,6 @@
                 });
             }
 
-            // Click on the heart/reaction badge to see who reacted (Reaction Drawer)
             if (heartBadge) {
                 heartBadge.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2716,7 +2935,6 @@
             msgContainer.appendChild(div);
             scrollToBottom();
             
-            // Apply any reactions already known in localReactionsStore or Firestore
             if (localReactionsStore[msgKey]) {
                 updateMessageReactions(msgKey, localReactionsStore[msgKey]);
             } else if (latestRoomData && latestRoomData.chatReactions && latestRoomData.chatReactions[msgKey]) {
@@ -2734,7 +2952,6 @@
         function submitReaction(emoji) {
             if(!activeReactionMsgId) return;
             submitReactionForMsg(activeReactionMsgId, emoji);
-            // Close Panel
             const panel = document.getElementById('ig-reaction-panel');
             if (panel.classList.contains('active')) {
                 panel.classList.remove('active');
@@ -2742,7 +2959,6 @@
             }
         }
 
-        // FIXED: Saves reaction directly onto the message bubble & syncs via Firestore + permitted /pulse_chat path (NO permission_denied errors, NO separate chat message!)
         function submitReactionForMsg(msgId, emoji) {
             if (!roomId || !myUid || !msgId) return;
             particleEngine.spawn(emoji);
@@ -2755,12 +2971,10 @@
                 photo: myProfile && myProfile.photoURL ? myProfile.photoURL : ''
             };
 
-            // 1. Update UI immediately on the message bubble
             if (!localReactionsStore[msgId]) localReactionsStore[msgId] = {};
             localReactionsStore[msgId][myUid] = reactData;
             updateMessageReactions(msgId, localReactionsStore[msgId]);
 
-            // 2. Sync via Firestore pulse_rooms document (permitted for both users)
             if (roomRef) {
                 roomRef.set({
                     chatReactions: {
@@ -2771,9 +2985,7 @@
                 }, { merge: true }).catch(()=>{});
             }
 
-            // 3. Sync via permitted /pulse_chat/${roomId} stream so partner receives it in real time
             pulseRdb.ref(`pulse_chat/${roomId}/${msgId}/reactions/${myUid}`).set(reactData).catch(() => {
-                // Fallback if nested child write is restricted: push a hidden 'react' event packet into /pulse_chat/${roomId}
                 pulseRdb.ref(`pulse_chat/${roomId}`).push({
                     type: 'react',
                     targetMsgId: msgId,
@@ -2854,16 +3066,13 @@
                 };
             }
             
-            // Preview mode titles
             document.getElementById('active-song-title').innerText = song.trackName || 'Pulse Track';
             document.getElementById('active-song-artist').innerText = song.artistName || 'Artist';
 
-            // Full mode titles (with marquee logic)
             const fTitle = document.getElementById('full-song-title');
             fTitle.innerText = song.trackName || 'Pulse Track';
             document.getElementById('full-song-artist').innerText = song.artistName || 'Artist';
 
-            // Check if marquee is needed
             setTimeout(() => {
                 const wrap = fTitle.parentElement;
                 if(wrap && fTitle.scrollWidth > wrap.clientWidth) fTitle.classList.add('marquee');
@@ -2882,18 +3091,28 @@
             document.getElementById('full-song-title').classList.remove('marquee');
         }
 
+        // Coordinated Resume: When the blocked user clicks "TAP TO SYNC", clear syncNeededBy and reset timestamp so BOTH users start at 0:00 together!
         function resumeAudio() {
             unlockMobileAudio();
-            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            if (latestRoomData && latestRoomData.timestamp) {
-                const idealSeek = (getServerNow() - latestRoomData.timestamp) / 1000;
-                if (idealSeek > 0.5 && (!audio.duration || idealSeek < audio.duration - 1)) {
-                    try { audio.currentTime = idealSeek; } catch (e) {}
+            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+            try { audio.currentTime = 0; } catch (e) {}
+
+            const freshStartMs = getServerNow();
+            localTrackStartServerMs = freshStartMs;
+            lastSyncTime = freshStartMs;
+
+            audio.play().then(() => {
+                configureSyncOverlay('hidden');
+                if (roomRef && myUid) {
+                    roomRef.set({
+                        timestamp: freshStartMs,
+                        syncNeededBy: {
+                            [myUid]: firebase.firestore.FieldValue.delete()
+                        }
+                    }, { merge: true }).catch(()=>{});
                 }
-            }
-            audio.play().catch(()=>{});
+            }).catch(()=>{});
             requestWakeLock();
-            document.getElementById('sync-overlay').classList.remove('active');
         }
 
         function deactivatePulse() {
@@ -2951,7 +3170,6 @@
                     wakeLock.release().catch(()=>{});
                 }
 
-                // 1. Notify partner immediately via RTDB & Firestore 'ended' state
                 if (roomId && pulseRdb && myUid) {
                     await pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
                         state: 'explicit_exit',
@@ -2968,7 +3186,6 @@
                     }, { merge: true }).catch(()=>{});
                 }
 
-                // 2. Delete the entire room, chat, typing, and presence nodes completely from Firestore & RTDB!
                 await deleteEntireRoomFromDatabase();
             } catch(e) {
                 console.error("Cleanup error", e);
