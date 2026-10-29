@@ -102,6 +102,10 @@
             padding: calc(10px + var(--safe-top)) 24px 10px;
             display: flex; align-items: center; justify-content: space-between;
             z-index: 100;
+            pointer-events: none;
+        }
+        .top-nav > * {
+            pointer-events: auto;
         }
         
         .back-btn {
@@ -118,7 +122,7 @@
         .back-btn span { font-size: 20px; }
 
         /* ACTION BUTTONS (SWAP/DELETE) */
-        .action-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-right: auto; margin-left: 15px; }
+        .action-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-right: auto; margin-left: 0px; }
         .icon-action-btn {
             background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.1);
             width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -129,8 +133,8 @@
         #delete-track-btn:hover, #delete-track-btn:active { background: rgba(255, 69, 58, 0.2); color: #ff453a; border-color: rgba(255, 69, 58, 0.4); }
         #swap-turn-btn:hover, #swap-turn-btn:active { background: rgba(0, 255, 136, 0.2); color: var(--radio-color); border-color: var(--radio-color); }
 
-
-        .radio-switch-container { display: flex; align-items: center; gap: 8px; }
+        /* RADIO FEATURE DISABLED AS REQUESTED */
+        .radio-switch-container { display: none !important; align-items: center; gap: 8px; }
         .radio-switch {
             width: 50px; height: 28px; background: rgba(255,255,255,0.1);
             border-radius: 50px; position: relative; cursor: pointer;
@@ -233,24 +237,24 @@
         }
 
         .status-pill {
-            position: absolute; top: calc(15px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+            position: absolute; top: calc(18px + var(--safe-top)); left: 50%; transform: translateX(-50%);
             background: rgba(10,10,10,0.6); backdrop-filter: blur(10px);
             padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05);
             font-family: 'Orbitron', sans-serif; font-size: 9px; color: var(--accent);
             display: flex; align-items: center; gap: 6px; letter-spacing: 2px; font-weight: 700;
-            z-index: 110; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transition: color 0.3s;
+            z-index: 110; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transition: opacity 0.25s ease, transform 0.25s ease, color 0.3s;
         }
         .status-pill.radio-mode { color: var(--radio-color); }
         .status-dot { width: 5px; height: 5px; background: currentColor; border-radius: 50%; box-shadow: 0 0 8px currentColor; animation: blink 1.5s infinite; }
 
         .player-main-area {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: relative; width: 100%; max-height: 65vh; transition: 0.3s;
+            position: relative; width: 100%; max-height: 65vh; transition: all 0.3s var(--ease-smooth);
         }
 
         #visualizer {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 120vw; max-width: 450px; height: 120vw; max-height: 450px; 
+            width: 100%; height: 100%;
             z-index: 1; pointer-events: none; opacity: 1; transition: opacity 0.3s;
         }
 
@@ -345,11 +349,17 @@
 
         /* =========================================
            MODE SWITCHING (FULL vs PREVIEW) 
-           -- UPGRADED FOR ADVANCED CHAT DISPLAY --
+           -- UPGRADED FOR ADVANCED CHAT DISPLAY & KEYBOARD SHIFT --
            ========================================= */
-        /* In Full Mode, shrink album art and allocate massive space for chat */
-        .mode-full .bottom-cluster { flex: 1; height: auto; min-height: 0; justify-content: flex-start; padding-top: 20px; }
-        .mode-full .player-main-area { max-height: 15%; margin-top: calc(30px + var(--safe-top)); flex-shrink: 0; }
+        /* In Full Mode (default when NOT typing), sit comfortably below the top header */
+        .mode-full .bottom-cluster { flex: 1; height: auto; min-height: 0; justify-content: flex-start; padding-top: 10px; }
+        .mode-full .player-main-area {
+            flex: 0 0 auto;
+            height: 120px;
+            max-height: 130px;
+            margin-top: calc(68px + var(--safe-top));
+            flex-shrink: 0;
+        }
         .mode-full .duo-header { display: none; }
         .mode-full .controls-area { display: none; }
         .mode-full #chat-container { display: flex; flex: 1; min-height: 0; }
@@ -357,14 +367,43 @@
         
         /* NEW FULL MODE RECTANGLE STYLE */
         .mode-full .album-box {
-            width: 90vw; max-width: 400px; height: 70px; border-radius: 12px;
-            flex-direction: row; justify-content: flex-start; align-items: stretch;
-            padding: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 88vw; max-width: 380px; height: 70px; border-radius: 14px;
+            flex-direction: row; justify-content: flex-start; align-items: center;
+            padding: 8px; margin-bottom: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .mode-full .album-box img {
             position: relative; width: 54px; height: 54px; border-radius: 8px; flex-shrink: 0;
         }
+        .mode-full #default-art {
+            display: none !important;
+        }
         .mode-full .full-song-details { display: flex; }
+
+        /* WHEN TYPING / KEYBOARD IS OPEN IN FULL MODE: Move Rectangle + Visualizer right to the very top */
+        .mode-full.keyboard-open .status-pill {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -15px);
+        }
+        .mode-full.keyboard-open .player-main-area {
+            height: 86px;
+            max-height: 86px;
+            margin-top: calc(6px + var(--safe-top));
+        }
+        .mode-full.keyboard-open .album-box {
+            width: 62vw;
+            max-width: 260px;
+            height: 58px;
+            padding: 6px;
+        }
+        .mode-full.keyboard-open .album-box img {
+            width: 44px;
+            height: 44px;
+        }
+        .mode-full.keyboard-open .bottom-cluster {
+            padding-top: 2px;
+        }
+
         .full-song-details {
             display: none; flex-direction: column; justify-content: center; align-items: flex-start;
             margin-left: 12px; flex: 1; overflow: hidden; position: relative; z-index: 5;
@@ -439,6 +478,7 @@
         .typing-dot { width: 5px; height: 5px; background: #888; border-radius: 50%; animation: typingWave 1.4s ease-in-out infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingWave { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
 
         .input-area-container { flex: 0 0 auto; padding: 8px 15px calc(12px + var(--safe-bottom)); background: transparent; z-index: 50; width: 100%; }
         .input-capsule { display: flex; align-items: flex-end; gap: 8px; background: rgba(20,20,20,0.85); backdrop-filter: blur(15px); border-radius: 24px; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
@@ -513,11 +553,11 @@
         }
 
         /* =========================================
-           RADIO POPUP MODALS
+           RADIO POPUP MODALS (DISABLED AS REQUESTED)
            ========================================= */
         .radio-modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-            z-index: 1000; display: flex; align-items: center; justify-content: center;
+            z-index: 1000; display: none !important; align-items: center; justify-content: center;
             backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: 0.3s;
         }
         .radio-modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -861,6 +901,11 @@
 
         let targetUid = null, myUid = null, myProfile = null, targetProfile = null, roomRef = null;
         let roomUnsub = null, chatUnsub = null, roomId = null;
+        let heartbeatInterval = null;
+        let latestRoomData = null;
+        let isPartnerRdbOnline = false;
+        let chatInitialized = false;
+
         let audio = new Audio();
         audio.crossOrigin = "anonymous";
         audio.preload = "auto";
@@ -891,16 +936,43 @@
         const msgContainer = document.getElementById('messages-container');
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
 
-        // iOS Keyboard fix for Chat
+        // KEYBOARD & TYPING TOP-SHIFT HANDLERS FOR FULL SCREEN MODE
         let baseViewportHeight = window.innerHeight;
+        function updateKeyboardTopShift() {
+            const screenActive = document.getElementById('screen-active');
+            if (!screenActive) return;
+            const isInputFocused = (document.activeElement === chatInput);
+            const isViewportShrunk = window.visualViewport ? (window.visualViewport.height < baseViewportHeight - 100) : false;
+            const isTypingText = chatInput && chatInput.value.trim().length > 0;
+
+            if (isInputFocused || isViewportShrunk || isTypingText) {
+                screenActive.classList.add('keyboard-open');
+            } else {
+                screenActive.classList.remove('keyboard-open');
+            }
+        }
+
         if (window.visualViewport) {
-            baseViewportHeight = window.visualViewport.height;
+            baseViewportHeight = Math.max(window.innerHeight, window.visualViewport.height);
             window.visualViewport.addEventListener('resize', () => {
+                if (window.visualViewport.height > baseViewportHeight) {
+                    baseViewportHeight = window.visualViewport.height;
+                }
                 document.body.style.height = window.visualViewport.height + 'px';
                 window.scrollTo(0, 0);
+                updateKeyboardTopShift();
                 scrollToBottom(); 
             });
         }
+
+        chatInput.addEventListener('focus', () => {
+            updateKeyboardTopShift();
+            setTimeout(scrollToBottom, 150);
+        });
+
+        chatInput.addEventListener('blur', () => {
+            setTimeout(updateKeyboardTopShift, 150);
+        });
 
         // Global Chat Times Reveal
         let touchStartTimer = null;
@@ -981,20 +1053,35 @@
         
         document.addEventListener('visibilitychange', () => { 
             const state = document.hidden ? 'background' : 'active';
-            if (roomRef) roomRef.update({ [`screen_${myUid}`]: state }).catch(()=>{});
+            if (roomRef && myUid) roomRef.update({ [`screen_${myUid}`]: state }).catch(()=>{});
             
             if (document.hidden) {
                 // Background vibrate logic
                 if (isMyTurn && navigator.vibrate) navigator.vibrate([200, 100, 200]);
             } else {
                 requestWakeLock();
+                if (roomId && myUid) {
+                    pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
+                        state: 'online',
+                        ts: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(()=>{});
+                }
             }
         });
 
-        // NEW: Strict app closing/crashing safety handlers
-        window.addEventListener('beforeunload', cleanupSessionData); 
-        window.addEventListener('pagehide', cleanupSessionData);
-        window.addEventListener('unload', cleanupSessionData);
+        // SAFE UNLOAD HANDLER: Only mark *myself* offline on tab close, never nuke the whole room on minor mobile pagehide events
+        window.addEventListener('beforeunload', () => {
+            if (!isLeaving && roomId && myUid) {
+                const myField = (myUid < targetUid) ? 'userA' : 'userB';
+                pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
+                    state: 'offline',
+                    ts: firebase.database.ServerValue.TIMESTAMP
+                });
+                if (roomRef) {
+                    roomRef.update({ [myField]: 'offline' }).catch(()=>{});
+                }
+            }
+        });
 
         // -----------------------------------------------------------------
         // UI HELPERS
@@ -1038,59 +1125,126 @@
         }
 
         // -----------------------------------------------------------------
-        // CORE SESSION LOGIC
+        // CORE SESSION LOGIC (FIXED LOGIN HANDSHAKE & ANTI-KICKOUT)
         // -----------------------------------------------------------------
-        function initPulseSession() {
+        async function initPulseSession() {
             roomId = [myUid, targetUid].sort().join('_');
             roomRef = sessionDb.collection('pulse_rooms').doc(roomId);
 
             const myField = (myUid < targetUid) ? 'userA' : 'userB';
             const otherField = (myUid < targetUid) ? 'userB' : 'userA';
+            const joinTimestamp = Date.now();
             
-            // NEW: Set up RTDB onDisconnect to ensure safe crash exits
+            // 1. Set up RTDB Presence with heartbeat so stale Firestore flags never trick User A or User B
             const myPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`);
+            const partnerPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`);
+
             pulseRdb.ref('.info/connected').on('value', snap => {
-                if (snap.val() === true) {
-                    myPresenceRef.onDisconnect().set('offline');
-                    myPresenceRef.set('online');
+                if (snap.val() === true && !isLeaving) {
+                    myPresenceRef.onDisconnect().set({
+                        state: 'offline',
+                        ts: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    myPresenceRef.set({
+                        state: 'online',
+                        ts: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    if (roomRef) {
+                        roomRef.set({
+                            [myField]: 'online',
+                            [`hb_${myUid}`]: Date.now()
+                        }, { merge: true }).catch(()=>{});
+                    }
                 }
             });
 
-            // --- NEW KICKOUT FIX: Check if they were actually online this session before kicking ---
-            let hasConnectedOnce = false;
-            let disconnectTimeout = null; // Buffer to prevent random kicks on flaky internet
-            pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`).on('value', snap => {
-                if (snap.val() === 'online') {
-                    hasConnectedOnce = true;
-                    if(disconnectTimeout) {
+            // Periodic heartbeat every 5s to keep session rock-solid
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(() => {
+                if (!isLeaving && roomId && myUid) {
+                    myPresenceRef.set({
+                        state: 'online',
+                        ts: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(()=>{});
+                }
+            }, 5000);
+
+            // 2. Check existing room before attaching listener to clear stale dead rooms
+            try {
+                const partnerSnap = await partnerPresenceRef.once('value');
+                const pVal = partnerSnap.val();
+                const partnerActuallyHere = (pVal === 'online') || (pVal && pVal.state === 'online' && (Date.now() - (pVal.ts || 0) < 30000));
+                isPartnerRdbOnline = Boolean(partnerActuallyHere);
+
+                const existingDoc = await roomRef.get();
+                const existingData = existingDoc.exists ? (existingDoc.data() || {}) : {};
+
+                if (!existingDoc.exists || existingData.sessionStatus === 'ended' || !partnerActuallyHere) {
+                    const startingTurn = (myUid < targetUid) ? myUid : targetUid;
+                    await roomRef.set({
+                        [myField]: 'online',
+                        [otherField]: partnerActuallyHere ? 'online' : 'offline',
+                        [`screen_${myUid}`]: 'active',
+                        [`hb_${myUid}`]: Date.now(),
+                        sessionStatus: 'active',
+                        turn: existingData.turn || startingTurn,
+                        cycleStatus: partnerActuallyHere ? (existingData.cycleStatus || 'picking') : 'picking',
+                        currentSong: partnerActuallyHere ? (existingData.currentSong || null) : null,
+                        songType: partnerActuallyHere ? (existingData.songType || 'preview') : 'preview',
+                        emojis: {},
+                        ready: {},
+                        radioMode: false,
+                        radioRequest: null,
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } else {
+                    await roomRef.set({
+                        [myField]: 'online',
+                        [`screen_${myUid}`]: 'active',
+                        [`hb_${myUid}`]: Date.now(),
+                        sessionStatus: 'active',
+                        radioMode: false,
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                }
+            } catch (err) {
+                console.warn("Room init check error:", err);
+            }
+
+            // 3. Partner RTDB Presence Listener with 25-second grace period to prevent false kickouts
+            let hasConnectedTogether = false;
+            let disconnectTimeout = null;
+
+            partnerPresenceRef.on('value', snap => {
+                const val = snap.val();
+                const isOnlineNow = (val === 'online') || (val && val.state === 'online');
+
+                if (isOnlineNow) {
+                    isPartnerRdbOnline = true;
+                    hasConnectedTogether = true;
+                    if (disconnectTimeout) {
                         clearTimeout(disconnectTimeout);
                         disconnectTimeout = null;
                     }
-                }
-                if (snap.val() === 'offline' && hasConnectedOnce) {
-                    disconnectTimeout = setTimeout(() => {
-                        deactivatePulse();
-                        showError("Partner disconnected.");
-                        setTimeout(() => handleExit('back'), 3000);
-                    }, 15000); // Wait 15 seconds to see if they reconnect
-                }
-            });
-
-            // --- NEW STALE ROOM FIX: Recreate cleanly if it was dead or partner missing ---
-            let sessionInitialized = false;
-            roomRef.set({ 
-                [myField]: 'online',
-                [`screen_${myUid}`]: 'active',
-                sessionStatus: 'active', 
-                lastActive: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }).then(() => {
-                sessionInitialized = true;
-                roomRef.get().then(doc => {
-                    const data = doc.data() || {};
-                    if (!doc.exists || !data.cycleStatus || data[otherField] !== 'online') {
-                        cleanSessionStart();
+                    // Ensure Firestore knows partner is online too
+                    if (latestRoomData && latestRoomData[otherField] !== 'online') {
+                        roomRef.update({ [otherField]: 'online' }).catch(()=>{});
                     }
-                });
+                    evaluateConnectionState(otherField);
+                } else {
+                    isPartnerRdbOnline = false;
+                    evaluateConnectionState(otherField);
+                    if (hasConnectedTogether && !isLeaving) {
+                        if (disconnectTimeout) clearTimeout(disconnectTimeout);
+                        disconnectTimeout = setTimeout(() => {
+                            if (!isPartnerRdbOnline && !isLeaving) {
+                                deactivatePulse();
+                                showError("Partner left the session.");
+                                setTimeout(() => handleExit('back'), 2500);
+                            }
+                        }, 25000); // 25s grace period for mobile network switches
+                    }
+                }
             });
 
             requestWakeLock();
@@ -1116,16 +1270,26 @@
                 if(em) handleEmojiSelection(em);
             });
 
-            // REALTIME LISTENER
+            // 4. REALTIME FIRESTORE LISTENER
             roomUnsub = roomRef.onSnapshot(snapshot => {
                 if (!snapshot.exists) return;
                 const data = snapshot.data();
+                latestRoomData = data;
                 
-                // --- NEW FIX: Don't kick if the cache sent 'ended' before our .set() finished! ---
-                if (data.sessionStatus === 'ended' && sessionInitialized) {
-                    audio.pause();
-                    window.location.replace("pulseLobby.html");
+                // Only honor 'ended' if it was explicitly triggered by partner after we joined
+                if (data.sessionStatus === 'ended' && data.endedBy && data.endedBy !== myUid && (data.endedAt || 0) > joinTimestamp) {
+                    if (!isLeaving) {
+                        isLeaving = true;
+                        audio.pause();
+                        showError("Partner ended the session.");
+                        setTimeout(() => window.location.replace("pulseLobby.html"), 1800);
+                    }
                     return;
+                }
+
+                // Make sure our own field stays 'online' while we are in the room
+                if (data[myField] !== 'online' && !isLeaving) {
+                    roomRef.update({ [myField]: 'online' }).catch(()=>{});
                 }
 
                 // Presence Dots Logic (Green = active, Purple = background)
@@ -1139,24 +1303,36 @@
                 document.getElementById('their-presence-active').className = `presence-indicator ${theirState}`;
 
                 handleRadioUpdates(data);
+                evaluateConnectionState(otherField);
+            });
+        }
 
-                if (data[otherField] === 'online') {
-                    document.getElementById('target-group').classList.add('active');
-                    document.querySelector('.s-line').classList.add('connected');
-                    
-                    if (!document.getElementById('screen-active').classList.contains('active')) {
-                         showScreen('screen-active');
-                         setupVisualizer(); 
-                         requestWakeLock();
-                         initChatListener(); // Initialize Chat
-                    }
-                    syncCycle(data);
-                } else {
-                    document.getElementById('target-group').classList.remove('active');
-                    document.querySelector('.s-line').classList.remove('connected');
+        function evaluateConnectionState(otherField) {
+            if (!latestRoomData) return;
+            const partnerOnlineInFirestore = (latestRoomData[otherField] === 'online');
+            const bothConnected = isPartnerRdbOnline || partnerOnlineInFirestore;
+
+            if (bothConnected && isPartnerRdbOnline) {
+                document.getElementById('target-group').classList.add('active');
+                document.querySelector('.s-line').classList.add('connected');
+                
+                if (!document.getElementById('screen-active').classList.contains('active')) {
+                     showScreen('screen-active');
+                     setupVisualizer(); 
+                     requestWakeLock();
+                     if (!chatInitialized) {
+                         chatInitialized = true;
+                         initChatListener(); // Initialize Chat once
+                     }
+                }
+                syncCycle(latestRoomData);
+            } else {
+                document.getElementById('target-group').classList.remove('active');
+                document.querySelector('.s-line').classList.remove('connected');
+                if (document.getElementById('screen-active').classList.contains('active') && !isPartnerRdbOnline) {
                     deactivatePulse();
                 }
-            });
+            }
         }
 
         function cleanSessionStart() {
@@ -1174,20 +1350,21 @@
         }
 
         function syncCycle(data) {
-            currentTurnUid = data.turn;
+            currentTurnUid = data.turn || ((myUid < targetUid) ? myUid : targetUid);
             isMyTurn = (myUid === currentTurnUid);
-            const status = data.cycleStatus;
+            const status = data.cycleStatus || 'picking';
             
             // Apply Song Type Mode (Full vs Preview UI layout toggles)
             currentSongType = data.songType || 'preview';
             const screenEl = document.getElementById('screen-active');
             
-            // BUG FIX: Only activate full chat mode if we are actively playing/buffering a full song!
-            // If status is 'picking', we remove mode-full so the DJ buttons appear.
+            // Activate full chat mode ONLY when actively playing/buffering a full song
             if (currentSongType === 'full' && status !== 'picking') {
                 screenEl.classList.add('mode-full');
+                updateKeyboardTopShift();
             } else {
                 screenEl.classList.remove('mode-full');
+                screenEl.classList.remove('keyboard-open');
             }
 
             document.getElementById('duo-me').classList.toggle('active', isMyTurn);
@@ -1216,26 +1393,21 @@
                 // Show Swap button if it's my turn
                 if(isMyTurn) document.getElementById('swap-turn-btn').style.display = 'flex';
 
-                if (isRadioMode) {
-                      document.getElementById('active-song-artist').innerText = "Loading next radio track...";
-                      controls.innerHTML = `<p style="font-size:12px; color:var(--radio-color); letter-spacing:1px; font-weight:700;">RADIO LIVE</p>`;
+                if (isMyTurn) {
+                    controls.innerHTML = `
+                        <button class="dj-btn" onclick="document.getElementById('song-picker').open()">
+                            <span class="material-icons-round">timer</span> 30s DROP
+                        </button>
+                        <button class="dj-btn" style="background:var(--accent); color:#fff;" onclick="document.getElementById('full-song-picker').open()">
+                            <span class="material-icons-round">library_music</span> FULL TRACK
+                        </button>
+                    `;
+                    document.getElementById('active-song-artist').innerText = "It's your turn to pick.";
                 } else {
-                    if (isMyTurn) {
-                        controls.innerHTML = `
-                            <button class="dj-btn" onclick="document.getElementById('song-picker').open()">
-                                <span class="material-icons-round">timer</span> 30s DROP
-                            </button>
-                            <button class="dj-btn" style="background:var(--accent); color:#fff;" onclick="document.getElementById('full-song-picker').open()">
-                                <span class="material-icons-round">library_music</span> FULL TRACK
-                            </button>
-                        `;
-                        document.getElementById('active-song-artist').innerText = "It's your turn to pick.";
-                    } else {
-                        const name = targetProfile ? targetProfile.name.split(' ')[0].toUpperCase() : 'THEM';
-                        const badge = (targetProfile && targetProfile.verified) ? `<span class="material-icons-round" style="font-size:12px; color:var(--verified-color); vertical-align:middle; margin-left:2px;">verified</span>` : '';
-                        controls.innerHTML = `<p style="font-size:12px; color:var(--text-secondary); font-weight:700; letter-spacing:1px; text-transform:uppercase;">${name} ${badge} IS CHOOSING...</p>`;
-                        document.getElementById('active-song-artist').innerText = "Waiting for track...";
-                    }
+                    const name = targetProfile ? targetProfile.name.split(' ')[0].toUpperCase() : 'THEM';
+                    const badge = (targetProfile && targetProfile.verified) ? `<span class="material-icons-round" style="font-size:12px; color:var(--verified-color); vertical-align:middle; margin-left:2px;">verified</span>` : '';
+                    controls.innerHTML = `<p style="font-size:12px; color:var(--text-secondary); font-weight:700; letter-spacing:1px; text-transform:uppercase;">${name} ${badge} IS CHOOSING...</p>`;
+                    document.getElementById('active-song-artist').innerText = "Waiting for track...";
                 }
             }
             
@@ -1245,7 +1417,7 @@
                 updateSongDisplay(song);
                 document.getElementById('album-container').classList.add('buffering'); 
 
-                if(isMyTurn || (isRadioMode && isRadioHost)) {
+                if(isMyTurn) {
                     document.getElementById('swap-turn-btn').style.display = 'flex';
                     document.getElementById('delete-track-btn').style.display = 'flex';
                 }
@@ -1270,32 +1442,29 @@
                     resetEmojiState();
 
                     audio.oncanplaythrough = () => { 
-                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
+                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
                     };
                     
-                    // --- NEW FIX: AVOID DELAY ON FULL LONG SONGS ---
+                    // --- AVOID DELAY ON FULL LONG SONGS ---
                     audio.oncanplay = () => { 
-                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
+                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
                     };
                     audio.onloadeddata = () => { 
-                        if(currentSongType === 'full' && !readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }); 
+                        if(currentSongType === 'full' && !readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
                     };
-                    // -----------------------------------------------
                     
                     if(audio.readyState >= 3 && !readyMap[myUid]) { 
-                        roomRef.update({ [`ready.${myUid}`]: true }); 
+                        roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
                     }
                     
-                    // --- NEW FIX: BYPASS STRICT READY STATE FOR FULL SONGS ---
                     if(currentSongType === 'full' && audio.readyState >= 2 && !readyMap[myUid]) {
-                        roomRef.update({ [`ready.${myUid}`]: true }); 
+                        roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
                     }
-                    // ---------------------------------------------------------
                 }
 
-                if (isMyTurn || isRadioHost) {
+                if (isMyTurn) {
                     const elapsed = Date.now() - (data.timestamp || Date.now());
-                    const TIMEOUT_LIMIT = 15000; 
+                    const TIMEOUT_LIMIT = 10000; 
                     const bothReady = (readyMap[myUid] && readyMap[targetUid]);
                     const timedOut = elapsed > TIMEOUT_LIMIT;
 
@@ -1303,7 +1472,7 @@
                         roomRef.update({ 
                             cycleStatus: 'playing',
                             timestamp: Date.now() 
-                        });
+                        }).catch(()=>{});
                         
                         // System Message for Full Song
                         if(currentSongType === 'full') {
@@ -1328,29 +1497,25 @@
                 document.getElementById('album-container').classList.remove('buffering');
                 document.getElementById('album-container').classList.add('playing');
                 
-                if(isMyTurn || (isRadioMode && isRadioHost)) {
+                if(isMyTurn) {
                     document.getElementById('swap-turn-btn').style.display = 'flex';
                     document.getElementById('delete-track-btn').style.display = 'flex';
                 }
 
-                if (isRadioMode) {
-                      document.getElementById('controls-container').innerHTML = `<p style="font-size:10px; color:var(--radio-color); letter-spacing:2px; font-weight:800;">AUTO-LOOP ACTIVE</p>`;
-                } else {
-                      document.getElementById('controls-container').innerHTML = '';
-                }
+                document.getElementById('controls-container').innerHTML = '';
 
-                const hue = (data.currentSong.artistName.length * 40) % 360;
+                const hue = ((data.currentSong.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
 
                 if (audio.paused) {
                     audio.play().then(() => {
                         resumeAudio(); 
                     }).catch(() => {
-                        if(!isMyTurn && !isRadioHost) document.getElementById('sync-overlay').classList.add('active');
+                        if(!isMyTurn) document.getElementById('sync-overlay').classList.add('active');
                     });
                     
                     // Auto-end turn ONLY for 30s Preview Mode
-                    if (currentSongType === 'preview' && !isRadioMode) {
+                    if (currentSongType === 'preview') {
                         clearTimeout(turnTimer);
                         turnTimer = setTimeout(() => { if (isMyTurn) swapTurn(); }, 30000); 
                     }
@@ -1361,7 +1526,7 @@
                         const serverStart = data.timestamp;
                         const now = Date.now();
                         const idealTime = (now - serverStart) / 1000;
-                        if (serverStart && Math.abs(audio.currentTime - idealTime) > 4.0) {
+                        if (serverStart && idealTime >= 0 && Math.abs(audio.currentTime - idealTime) > 4.0) {
                             audio.currentTime = idealTime;
                         }
                     }
@@ -1392,8 +1557,8 @@
                 currentSong: firebase.firestore.FieldValue.delete(), 
                 emojis: {},
                 ready: {},
-                songType: 'preview' // BUG FIX: Reset state to properly unhide buttons
-            });
+                songType: 'preview'
+            }).catch(()=>{});
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} passed the turn.`);
         }
 
@@ -1403,8 +1568,8 @@
                 currentSong: firebase.firestore.FieldValue.delete(), 
                 emojis: {},
                 ready: {},
-                songType: 'preview' // BUG FIX: Reset state to properly unhide buttons
-            });
+                songType: 'preview'
+            }).catch(()=>{});
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} cleared the track.`);
         }
 
@@ -1414,142 +1579,63 @@
         // =================================================================
         // Preview Picker
         document.getElementById('song-picker').addEventListener('song-selected', (e) => {
-            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'preview' });
+            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'preview' }).catch(()=>{});
             if(navigator.vibrate) navigator.vibrate(20);
         });
 
         // Full Track Picker
         document.getElementById('full-song-picker').addEventListener('song-selected', (e) => {
-            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'full' });
+            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'full' }).catch(()=>{});
             if(navigator.vibrate) navigator.vibrate(20);
         });
 
 
         // =================================================================
-        // PULSE RADIO LOGIC 
+        // PULSE RADIO LOGIC (SAFELY DISABLED AS REQUESTED)
         // =================================================================
         function toggleRadioSetup() {
-            if (isRadioMode) {
-                if (confirm("Disconnect Radio Stream?")) {
-                    roomRef.update({ radioMode: false, radioQueue: [], radioHost: null, cycleStatus: 'picking' });
-                }
-            } else {
-                document.getElementById('radio-setup-modal').classList.add('active');
-            }
+            return;
         }
 
-        function closeRadioModals() { document.querySelectorAll('.radio-modal-overlay').forEach(el => el.classList.remove('active')); }
+        function closeRadioModals() {
+            document.querySelectorAll('.radio-modal-overlay').forEach(el => el.classList.remove('active'));
+        }
 
         function sendRadioRequest() {
-            const input = document.getElementById('radio-keywords').value;
-            if (!input.trim()) return;
-            closeRadioModals();
-            roomRef.update({ radioRequest: { from: myUid, keywords: input.trim(), timestamp: Date.now(), status: 'pending' } });
+            return;
         }
 
         function handleRadioUpdates(data) {
-            const toggleBtn = document.getElementById('radio-toggle-btn');
+            isRadioMode = false;
+            isRadioHost = false;
             const statusPill = document.getElementById('live-status-pill');
-
-            isRadioMode = data.radioMode || false;
-            isRadioHost = (data.radioHost === myUid);
-            
-            if (isRadioMode) {
-                toggleBtn.classList.add('active');
-                statusPill.innerHTML = `<div class="status-dot"></div> RADIO`;
-                statusPill.classList.add('radio-mode');
-            } else {
-                toggleBtn.classList.remove('active');
+            if (statusPill) {
                 statusPill.innerHTML = `<div class="status-dot"></div> LIVE`;
                 statusPill.classList.remove('radio-mode');
-            }
-
-            if (data.radioRequest && data.radioRequest.status === 'pending' && data.radioRequest.from !== myUid) {
-                const reqModal = document.getElementById('radio-incoming-modal');
-                if (!reqModal.classList.contains('active')) {
-                    const name = targetProfile ? targetProfile.name : "User";
-                    const badge = (targetProfile && targetProfile.verified) ? "Verified" : "";
-                    document.getElementById('req-avatar-img').src = targetProfile ? targetProfile.photoURL : "";
-                    document.getElementById('req-title').innerText = `${name.toUpperCase()} WANTS RADIO`;
-                    document.getElementById('req-desc').innerText = `${name} ${badge ? '(Verified)' : ''} wants to start a radio station based on: "${data.radioRequest.keywords}"`;
-                    reqModal.classList.add('active');
-                }
-            } else {
-                document.getElementById('radio-incoming-modal').classList.remove('active');
-            }
-
-            if (data.radioRequest && data.radioRequest.status === 'accepted' && data.radioRequest.from === myUid && !isRadioMode) {
-                startRadioEngine(data.radioRequest.keywords);
             }
         }
 
         function respondToRadio(accept) {
             closeRadioModals();
-            if (accept) roomRef.update({ 'radioRequest.status': 'accepted' });
-            else roomRef.update({ radioRequest: null });
         }
 
         async function startRadioEngine(keywords) {
-            await roomRef.update({ radioMode: true, radioHost: myUid, radioRequest: null, radioIndex: 0 });
-            const terms = keywords.split(',').map(k => k.trim()).join('+');
-            const url = `https://itunes.apple.com/search?term=${terms}&limit=60&entity=song&explicit=Yes`;
-            
-            try {
-                const res = await fetch(url);
-                const json = await res.json();
-                if (json.resultCount > 0) {
-                    let tracks = json.results;
-                    const seen = new Set();
-                    tracks = tracks.filter(t => {
-                        const duplicate = seen.has(t.trackId);
-                        seen.add(t.trackId);
-                        return !duplicate && t.previewUrl; 
-                    });
-
-                    for (let i = tracks.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-                    }
-
-                    const minimalQueue = tracks.map(t => ({
-                        id: t.trackId, trackName: t.trackName, artistName: t.artistName, artworkUrl100: t.artworkUrl100, previewUrl: t.previewUrl
-                    }));
-
-                    await roomRef.update({ radioQueue: minimalQueue, cycleStatus: 'picking', songType: 'preview' });
-                    playNextRadioTrack(minimalQueue, 0);
-
-                } else {
-                    alert("No songs found for these keywords.");
-                    roomRef.update({ radioMode: false });
-                }
-            } catch(e) {
-                alert("Could not start radio.");
-                roomRef.update({ radioMode: false });
-            }
+            return;
         }
 
         function playNextRadioTrack(queue, index) {
-            if (!queue || queue.length === 0) return;
-            let nextIndex = index;
-            if (nextIndex >= queue.length) nextIndex = 0;
-            const song = queue[nextIndex];
-            roomRef.update({ currentSong: song, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, emojis: {}, radioIndex: nextIndex + 1, songType: 'preview' });
+            return;
         }
 
         // AUTO ADVANCE
         audio.onended = () => {
-             if (isRadioMode && isRadioHost) {
-                 roomRef.get().then(doc => {
-                     const data = doc.data();
-                     if (data.radioQueue) playNextRadioTrack(data.radioQueue, data.radioIndex || 0);
-                 });
-             } else if (isMyTurn && !isRadioMode) {
+             if (isMyTurn) {
                  swapTurn(); // Automatically goes back to picking for both Full and Preview
              }
         };
 
         // =================================================================
-        // VISUALIZER & DYNAMIC BEAT COLORS
+        // VISUALIZER & DYNAMIC BEAT COLORS (DYNAMICALLY SYNCED TO ALBUM BOX)
         // =================================================================
         function setupVisualizer() {
             if (audioCtx) return; 
@@ -1570,29 +1656,20 @@
                 canvas = document.getElementById('visualizer');
                 canvasCtx = canvas.getContext('2d');
                 
-                const dpr = window.devicePixelRatio || 1;
-                const rect = canvas.getBoundingClientRect();
-                
-                if (rect.width > 0) {
-                    canvas.width = rect.width * dpr;
-                    canvas.height = rect.height * dpr;
-                    canvasCtx.scale(dpr, dpr);
-                }
-                
                 drawVisualizer();
             } catch(e) {}
         }
 
         function drawVisualizer() {
             visualizerAnimation = requestAnimationFrame(drawVisualizer);
-            if (!analyser) return;
+            if (!analyser || !canvas || !canvasCtx) return;
             analyser.getByteFrequencyData(dataArray);
             
             let bassTotal = 0;
             for(let i=0; i<8; i++) { bassTotal += dataArray[i]; }
             const bassAvg = bassTotal / 8;
             
-            const baseHue = document.body.dataset.baseHue || 200;
+            const baseHue = Number(document.body.dataset.baseHue) || 200;
             const lightness = 5 + (bassAvg / 255) * 15; 
             document.body.style.background = `radial-gradient(circle at center, hsla(${baseHue}, 60%, ${lightness}%, 1), #000 90%)`;
 
@@ -1600,32 +1677,51 @@
             const beatTint = `hsla(${baseHue}, 70%, 50%, ${(bassAvg / 255) * 0.15})`;
             document.documentElement.style.setProperty('--beat-chat-tint', beatTint);
 
-            const scale = 0.95 + (bassAvg / 255) * 0.15; 
+            const isFullModeActive = document.getElementById('screen-active').classList.contains('mode-full');
+            const scale = isFullModeActive
+                ? (0.98 + (bassAvg / 255) * 0.05)
+                : (0.95 + (bassAvg / 255) * 0.15);
             const albumEl = document.getElementById('album-container');
-            albumEl.style.transform = `scale(${scale})`;
+            if (albumEl) albumEl.style.transform = `scale(${scale})`;
 
-            canvasCtx.clearRect(0, 0, canvas.width, canvas.height); 
-            
-            const w = canvas.width / (window.devicePixelRatio || 1);
-            const h = canvas.height / (window.devicePixelRatio || 1);
-            const cx = w / 2; const cy = h / 2;
+            // Dynamically keep canvas buffer matched to its current CSS box size (even when keyboard shifts layout!)
+            const dpr = window.devicePixelRatio || 1;
+            const cRect = canvas.getBoundingClientRect();
+            if (cRect.width === 0 || cRect.height === 0) return;
+
+            const targetW = Math.round(cRect.width * dpr);
+            const targetH = Math.round(cRect.height * dpr);
+            if (canvas.width !== targetW || canvas.height !== targetH) {
+                canvas.width = targetW;
+                canvas.height = targetH;
+            }
+
+            canvasCtx.save();
+            canvasCtx.scale(dpr, dpr);
+            canvasCtx.clearRect(0, 0, cRect.width, cRect.height);
+
+            // Calculate exact center of #album-container relative to #visualizer canvas
+            const aRect = albumEl.getBoundingClientRect();
+            const cx = (aRect.left + aRect.width / 2) - cRect.left;
+            const cy = (aRect.top + aRect.height / 2) - cRect.top;
             const bars = dataArray.length; 
 
-            // NEW RECTANGULAR VISUALIZER FOR FULL SONG MODE
-            if (currentSongType === 'full') {
-                const rectW = 280; // approximate width of the rectangle container
-                const rectH = 80;
+            // RECTANGULAR VISUALIZER LOCKED TO ALBUM BOX IN FULL SONG MODE
+            if (isFullModeActive) {
+                const rectW = aRect.width + 6;
+                const rectH = aRect.height + 6;
+                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 18 : 28;
                 
                 canvasCtx.save();
                 canvasCtx.translate(cx, cy);
                 
-                // Draw a wave around the rectangle
+                // Draw a wave around the exact rectangle dimensions
                 const totalPerimeter = (rectW * 2) + (rectH * 2);
                 const stepLen = totalPerimeter / bars;
 
                 for(let i=0; i<bars; i++) {
                     const value = dataArray[i];
-                    const barHeight = (value / 255) * 40;
+                    const barHeight = (value / 255) * maxBarHeight;
                     const hue = (i / bars) * 360 + baseHue;
                     
                     let pos = i * stepLen;
@@ -1643,9 +1739,9 @@
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(0, 0);
                     canvasCtx.lineTo(barHeight, 0);
-                    canvasCtx.lineWidth = 3;
+                    canvasCtx.lineWidth = 2.5;
                     canvasCtx.lineCap = 'round';
-                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.85)`;
                     canvasCtx.stroke();
                     canvasCtx.restore();
                 }
@@ -1653,7 +1749,7 @@
 
             } else {
                 // Default Circular Visualizer
-                const radius = w * 0.28; 
+                const radius = (aRect.width / 2) + 4; 
                 rotationAngle += 0.002;
                 const step = (Math.PI * 2) / bars;
 
@@ -1683,6 +1779,8 @@
                 }
                 canvasCtx.restore();
             }
+
+            canvasCtx.restore();
         }
 
         document.body.addEventListener('click', () => {
@@ -1715,7 +1813,7 @@
             hasPickedEmoji = true;
             closeEmojiModal();
             lastSyncTime = Date.now() + 5000;
-            roomRef.set({ emojis: { [myUid]: emoji } }, { merge: true });
+            roomRef.set({ emojis: { [myUid]: emoji } }, { merge: true }).catch(()=>{});
         }
 
         function handleIncomingReaction(who, emoji) {
@@ -1814,16 +1912,17 @@
             this.style.height = 'auto'; 
             this.style.height = (this.scrollHeight) + 'px';
             const val = this.value.trim();
+            updateKeyboardTopShift();
             if (val.length > 0) {
                 sendBtn.classList.add('show');
-                pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(true);
+                if (roomId && myUid) pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(true);
             } else {
                 sendBtn.classList.remove('show');
-                pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
+                if (roomId && myUid) pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
             }
         });
 
-        // --- NEW FIX: THROTTLE TO PREVENT DOUBLE FIRING ---
+        // --- THROTTLE TO PREVENT DOUBLE FIRING ---
         let isSendingChat = false;
         function sendChat() {
             if (isSendingChat) return;
@@ -1842,28 +1941,31 @@
             if(navigator.vibrate) navigator.vibrate(10); // Haptic tick
 
             chatInput.value = ''; 
-            // --- NEW FIX: LOCK HEIGHT TO PREVENT JUMPING ---
+            // --- LOCK HEIGHT TO PREVENT JUMPING ---
             chatInput.style.height = '41px';
-            // -----------------------------------------------
+            // --------------------------------------
             sendBtn.classList.remove('show');
-            pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
+            if (roomId && myUid) pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
 
             pulseRdb.ref(`pulse_chat/${roomId}`).push({
                 text: text, sender: myUid, ts: firebase.database.ServerValue.TIMESTAMP, type: 'msg'
             });
             chatInput.focus();
+            updateKeyboardTopShift();
             
-            // --- NEW FIX: FORCE SCROLL AFTER UI UPDATE ---
+            // --- FORCE SCROLL AFTER UI UPDATE ---
             setTimeout(scrollToBottom, 50);
-            // ---------------------------------------------
+            // ------------------------------------
         }
 
         function sendSystemMessage(text) {
+            if (!roomId) return;
             pulseRdb.ref(`pulse_chat/${roomId}`).push({ text: text, type: 'sys', ts: firebase.database.ServerValue.TIMESTAMP });
         }
 
         function renderChatMessage(msg, msgKey) {
             if (!msg || typeof msg.text !== 'string' || !msgContainer) return; 
+            if (document.getElementById(`msg-${msgKey}`)) return;
             const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
             
             const d = new Date(msg.ts || Date.now());
@@ -1872,6 +1974,7 @@
             if (msg.type === 'sys') {
                 const div = document.createElement('div');
                 div.className = "system-msg";
+                div.id = `msg-${msgKey}`;
                 div.innerText = msg.text; 
                 msgContainer.appendChild(div);
                 scrollToBottom();
@@ -2108,7 +2211,7 @@
 
         function resumeAudio() {
             if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            audio.play();
+            audio.play().catch(()=>{});
             requestWakeLock();
             document.getElementById('sync-overlay').classList.remove('active');
         }
@@ -2117,7 +2220,6 @@
             showScreen('screen-waiting');
             audio.pause(); audio.src = "";
             document.body.style.background = "#050505";
-            if(visualizerAnimation) cancelAnimationFrame(visualizerAnimation);
             isRadioMode = false;
         }
 
@@ -2128,17 +2230,31 @@
 
         function cleanupSessionData() {
             try {
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+                if (roomUnsub) {
+                    roomUnsub();
+                    roomUnsub = null;
+                }
+
                 // 1. Instantly notify RTDB for fast remote disconnect
                 if(roomId && pulseRdb && myUid) {
-                    pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set('offline');
+                    pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
+                        state: 'offline',
+                        ts: firebase.database.ServerValue.TIMESTAMP
+                    });
                 }
                 
-                // 2. End the room in Firestore
-                if(roomRef) {
+                // 2. End the room in Firestore cleanly
+                if(roomRef && myUid) {
+                    const myField = (myUid < targetUid) ? 'userA' : 'userB';
                     roomRef.update({ 
                         sessionStatus: 'ended',
-                        [`userA`]: 'offline', 
-                        [`userB`]: 'offline' 
+                        endedBy: myUid,
+                        endedAt: Date.now(),
+                        [myField]: 'offline'
                     }).catch(e => console.log("Offline update skipped"));
                 }
 
@@ -2146,9 +2262,9 @@
                 if (roomId && pulseRdb) {
                     setTimeout(() => {
                         pulseRdb.ref(`pulse_chat/${roomId}`).remove().catch(()=>{});
+                        pulseRdb.ref(`pulse_chat_reactions/${roomId}`).remove().catch(()=>{});
                         pulseRdb.ref(`typing/pulse_${roomId}`).remove().catch(()=>{});
-                        sessionDb.collection('pulse_rooms').doc(roomId).delete().catch(()=>{}); 
-                    }, 200); // --- NEW FIX: REDUCED TIMEOUT SO IT FIRES BEFORE REDIRECT ---
+                    }, 150);
                 }
 
                 if(audio) audio.pause();
