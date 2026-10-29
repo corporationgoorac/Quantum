@@ -2246,6 +2246,15 @@ box-shadow: var(--received-shadow);
     setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
     window.isUnsendingMsg = false;
+    window.unsendLockTimer = null;
+    window.lockUnsendScroll = function(duration = 380) {
+        window.isUnsendingMsg = true;
+        if (window.unsendLockTimer) clearTimeout(window.unsendLockTimer);
+        window.unsendLockTimer = setTimeout(() => {
+            window.isUnsendingMsg = false;
+            window.unsendLockTimer = null;
+        }, duration);
+    };
     let lastObservedChatHeight = 0;
     const msgResizeObserver = new ResizeObserver((entries) => {
         const currentHeight = entries[0]?.contentRect?.height || container.offsetHeight;
@@ -3006,9 +3015,9 @@ box-shadow: var(--received-shadow);
             .orderBy("timestamp", "desc")
             .limit(20)
             .onSnapshot(snapshot => {
-                if (snapshot.empty) return;
+                if (snapshot.empty && snapshot.docChanges().length === 0) return;
                 
-                if (!lastVisible) lastVisible = snapshot.docs[snapshot.docs.length - 1];
+                if (!lastVisible && !snapshot.empty) lastVisible = snapshot.docs[snapshot.docs.length - 1];
                 let isNewIncoming = false;
                 let hasVisualChanges = false;
                 let reactionOnlyUpdates = false;
@@ -3084,19 +3093,21 @@ box-shadow: var(--received-shadow);
                     } 
                     else if (change.type === "removed") {
                         // FIX FOR DISAPPEARING MESSAGES: Safely and reliably clean up unsent messages
+                        if (lastVisible && lastVisible.id === msgId) {
+                            lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+                        }
                         if (messagesMap.has(msgId)) {
-                            window.isUnsendingMsg = true;
+                            window.lockUnsendScroll(380);
                             messagesMap.delete(msgId);
                             const el = document.getElementById(msgId);
                             if(el) el.remove();
                             didRemoveMessage = true;
                             hasVisualChanges = true; 
-                            setTimeout(() => { window.isUnsendingMsg = false; }, 350);
                         }
                     }
                     
-                    // Mark read logic
-                    if(msgData.sender !== myUid && !msgData.seen) {
+                    // Mark read logic (only if not removed)
+                    if(change.type !== "removed" && msgData.sender !== myUid && !msgData.seen) {
                         db.collection("chats").doc(chatId).collection("messages").doc(msgId).update({ 
                             seen: true,
                             seenAt: firebase.firestore.FieldValue.serverTimestamp() 
@@ -3382,6 +3393,12 @@ box-shadow: var(--received-shadow);
 
                 if (newChild.id && existingById.has(newChild.id)) {
                     let oldChild = existingById.get(newChild.id);
+                    // Sweep any orphaned dividers (nodes without IDs) sitting before oldChild
+                    while (cursor && cursor !== oldChild && !cursor.id) {
+                        let nextCursor = cursor.nextSibling;
+                        container.removeChild(cursor);
+                        cursor = nextCursor;
+                    }
                     if (oldChild !== cursor) {
                         container.insertBefore(oldChild, cursor);
                     } else {
@@ -4563,10 +4580,12 @@ box-shadow: var(--received-shadow);
 
     async function unsendMsg() { 
         const idToDelete = activeMenuId; closeMenu();
+        if (editModeId === idToDelete) cancelInteraction();
+        if (lastVisible && lastVisible.id === idToDelete) lastVisible = null;
         
         // Optimistic Remove with anti-jitter scroll lock & surgical keyed diffing
         if (messagesMap.has(idToDelete)) { 
-            window.isUnsendingMsg = true;
+            window.lockUnsendScroll(380);
             const prevScrollTop = chatFlow.scrollTop;
             chatFlow.style.overflowAnchor = 'none';
 
@@ -4580,7 +4599,6 @@ box-shadow: var(--received-shadow);
             chatFlow.scrollTop = Math.min(prevScrollTop, maxScroll);
             requestAnimationFrame(() => {
                 chatFlow.style.overflowAnchor = 'auto';
-                setTimeout(() => { window.isUnsendingMsg = false; }, 350);
             });
         }
         
