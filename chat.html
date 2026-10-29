@@ -2245,7 +2245,13 @@ box-shadow: var(--received-shadow);
     window.isInitialLoadScroll = true;
     setTimeout(() => { window.isInitialLoadScroll = false; }, 4000); // Allow 4s for all images to settle
 
-    const msgResizeObserver = new ResizeObserver(() => {
+    window.isUnsendingMsg = false;
+    let lastObservedChatHeight = 0;
+    const msgResizeObserver = new ResizeObserver((entries) => {
+        const currentHeight = entries[0]?.contentRect?.height || container.offsetHeight;
+        const heightDecreased = currentHeight < lastObservedChatHeight;
+        lastObservedChatHeight = currentHeight;
+        if (window.isUnsendingMsg || heightDecreased) return;
         if (!window.isLoadingMore && (window.isInitialLoadScroll || (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight < 150))) {
             window.scrollToBottom();
         }
@@ -3079,11 +3085,13 @@ box-shadow: var(--received-shadow);
                     else if (change.type === "removed") {
                         // FIX FOR DISAPPEARING MESSAGES: Safely and reliably clean up unsent messages
                         if (messagesMap.has(msgId)) {
+                            window.isUnsendingMsg = true;
                             messagesMap.delete(msgId);
                             const el = document.getElementById(msgId);
                             if(el) el.remove();
                             didRemoveMessage = true;
                             hasVisualChanges = true; 
+                            setTimeout(() => { window.isUnsendingMsg = false; }, 350);
                         }
                     }
                     
@@ -3130,16 +3138,25 @@ box-shadow: var(--received-shadow);
                             typingRow.classList.remove('typing-active');
                             requestAnimationFrame(() => { typingRow.style.transition = ''; });
                         }
-                        renderAll();
-                        
-                        if (isNearBottom) {
-                            requestAnimationFrame(() => window.scrollToBottom(false));
+                        if (didRemoveMessage && !isNewIncoming) {
+                            const prevScrollTop = chatFlow.scrollTop;
+                            chatFlow.style.overflowAnchor = 'none';
+                            renderAll();
+                            const maxScroll = Math.max(0, chatFlow.scrollHeight - chatFlow.clientHeight);
+                            chatFlow.scrollTop = Math.min(prevScrollTop, maxScroll);
+                            requestAnimationFrame(() => { chatFlow.style.overflowAnchor = 'auto'; });
                         } else {
-                            // Maintain scroll position if up high
-                            chatFlow.style.overflowAnchor = 'auto'; 
-                            if (isNewIncoming) {
-                                scrollBtn.classList.add('new-msg');
-                                scrollBtn.style.display = 'flex';
+                            renderAll();
+                            
+                            if (isNearBottom) {
+                                requestAnimationFrame(() => window.scrollToBottom(false));
+                            } else {
+                                // Maintain scroll position if up high
+                                chatFlow.style.overflowAnchor = 'auto'; 
+                                if (isNewIncoming) {
+                                    scrollBtn.classList.add('new-msg');
+                                    scrollBtn.style.display = 'flex';
+                                }
                             }
                         }
                     }
@@ -3335,22 +3352,42 @@ box-shadow: var(--received-shadow);
         // Restore original container reference
         container = originalContainer;
 
-        // Perform DOM Diff
+        // Perform Keyed DOM Diff (Prevents index-shift cascading re-renders & media reload jitter on unsend)
         if (container.children.length === 0) {
             // First load: just dump everything in
             while (tempContainer.firstChild) container.appendChild(tempContainer.firstChild);
         } else {
-            let newChildren = Array.from(tempContainer.children);
-            let oldChildren = Array.from(container.children);
+            const existingById = new Map();
+            Array.from(container.children).forEach(el => {
+                if (el.id) existingById.set(el.id, el);
+            });
 
+            let newChildren = Array.from(tempContainer.children);
+            const newIds = new Set();
+            newChildren.forEach(el => {
+                if (el.id) newIds.add(el.id);
+            });
+
+            // 1. Surgically remove deleted message nodes first so indices don't shift
+            existingById.forEach((el, id) => {
+                if (!newIds.has(id) && el.parentNode === container) {
+                    container.removeChild(el);
+                }
+            });
+
+            // 2. Align and update remaining & new nodes in exact order without destroying existing media
+            let cursor = container.firstChild;
             for (let i = 0; i < newChildren.length; i++) {
                 let newChild = newChildren[i];
-                let oldChild = oldChildren[i];
 
-                if (!oldChild) {
-                    // It's a brand new appended message
-                    container.appendChild(newChild);
-                } else if (newChild.id && oldChild.id === newChild.id) {
+                if (newChild.id && existingById.has(newChild.id)) {
+                    let oldChild = existingById.get(newChild.id);
+                    if (oldChild !== cursor) {
+                        container.insertBefore(oldChild, cursor);
+                    } else {
+                        cursor = cursor.nextSibling;
+                    }
+
                     // The IDs match. Only update if the content or classes actually changed
                     if (oldChild.innerHTML !== newChild.innerHTML || oldChild.className !== newChild.className) {
                         let audio = oldChild.querySelector('audio');
@@ -3360,31 +3397,73 @@ box-shadow: var(--received-shadow);
                             // Media is playing. To prevent stale data, we manually update just the reaction badge
                             let newMsgData = messagesMap.get(newChild.id);
                             if (newMsgData) updateReactionDOM(newChild.id, newMsgData.reactions);
-                        } else {
-                            oldChild.innerHTML = newChild.innerHTML;
+                        } else if (oldChild.innerHTML === newChild.innerHTML) {
+                            // Only row grouping class changed, update class cleanly without touching innerHTML
                             oldChild.className = newChild.className;
-                            oldChild.querySelectorAll('[data-listeners-attached]').forEach(el => el.dataset.listenersAttached = 'false');
-                            
-                            // Reattach Listeners for the updated node
-                            let msgData = messagesMap.get(newChild.id);
-                            let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`);
-                            if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
-                            
-                            let mediaEl = oldChild.querySelector('.msg-media-wrapper') || oldChild.querySelector('.msg-video-container');
-                            if(mediaEl) attachMessageListeners(mediaEl, newChild.id, msgData);
-                            
-                            let pill = oldChild.querySelector('.msg-audio-pill') || oldChild.querySelector('.msg-file-pill');
-                            if(pill) attachMessageListeners(pill, newChild.id, msgData);
+                        } else {
+                            // Check if only bubble grouping classes or seen-status changed to preserve loaded <img>/<video> elements
+                            let oldBubble = oldChild.querySelector(`#bubble-${newChild.id}`);
+                            let newBubble = newChild.querySelector(`#bubble-${newChild.id}`);
+                            let oldMedia = oldChild.querySelector('.msg-media-wrapper');
+                            let newMedia = newChild.querySelector('.msg-media-wrapper');
+                            let oldAvatar = oldChild.querySelector('.msg-avatar');
+                            let newAvatar = newChild.querySelector('.msg-avatar');
+
+                            // Surgically sync classes on sub-elements first
+                            if (oldBubble && newBubble && oldBubble.innerHTML === newBubble.innerHTML) {
+                                oldBubble.className = newBubble.className;
+                            }
+                            if (oldMedia && newMedia) {
+                                oldMedia.className = newMedia.className;
+                            }
+                            if (oldAvatar && newAvatar) {
+                                oldAvatar.className = newAvatar.className;
+                            }
+                            oldChild.className = newChild.className;
+
+                            // Sync seen-status without wiping the row
+                            let oldSeen = oldChild.querySelector('.seen-status');
+                            let newSeen = newChild.querySelector('.seen-status');
+                            if (oldSeen && !newSeen) oldSeen.remove();
+                            else if (!oldSeen && newSeen) oldChild.appendChild(newSeen.cloneNode(true));
+                            else if (oldSeen && newSeen && oldSeen.innerHTML !== newSeen.innerHTML) oldSeen.innerHTML = newSeen.innerHTML;
+
+                            // If core content (like text edit) still differs, do full innerHTML replacement
+                            if (oldChild.innerHTML !== newChild.innerHTML) {
+                                oldChild.innerHTML = newChild.innerHTML;
+                                oldChild.querySelectorAll('[data-listeners-attached]').forEach(el => el.dataset.listenersAttached = 'false');
+                                
+                                // Reattach Listeners for the updated node
+                                let msgData = messagesMap.get(newChild.id);
+                                let bubbleEl = oldChild.querySelector(`#bubble-${newChild.id}`);
+                                if(bubbleEl && bubbleEl.style.display !== 'none') attachMessageListeners(bubbleEl, newChild.id, msgData);
+                                
+                                let mediaEl = oldChild.querySelector('.msg-media-wrapper') || oldChild.querySelector('.msg-video-container');
+                                if(mediaEl) attachMessageListeners(mediaEl, newChild.id, msgData);
+                                
+                                let pill = oldChild.querySelector('.msg-audio-pill') || oldChild.querySelector('.msg-file-pill');
+                                if(pill) attachMessageListeners(pill, newChild.id, msgData);
+                            }
                         }
                     }
                 } else {
-                    // Fallback for mismatch (e.g. dividers adjusting)
-                    container.replaceChild(newChild, oldChild);
+                    // Divider or brand new message
+                    if (cursor && !cursor.id && !newChild.id && cursor.className === newChild.className) {
+                        if (cursor.innerHTML !== newChild.innerHTML) {
+                            cursor.innerHTML = newChild.innerHTML;
+                        }
+                        cursor = cursor.nextSibling;
+                    } else {
+                        container.insertBefore(newChild, cursor);
+                    }
                 }
             }
-            // Remove any trailing messages that got deleted from DB
-            while (container.children.length > newChildren.length) {
-                container.removeChild(container.lastChild);
+
+            // Remove any leftover trailing nodes (such as orphaned dividers)
+            while (cursor) {
+                let next = cursor.nextSibling;
+                container.removeChild(cursor);
+                cursor = next;
             }
         }
         // ========================================================================================
@@ -4485,13 +4564,24 @@ box-shadow: var(--received-shadow);
     async function unsendMsg() { 
         const idToDelete = activeMenuId; closeMenu();
         
-        // Optimistic Remove ensuring local storage properly reflects immediately 
+        // Optimistic Remove with anti-jitter scroll lock & surgical keyed diffing
         if (messagesMap.has(idToDelete)) { 
+            window.isUnsendingMsg = true;
+            const prevScrollTop = chatFlow.scrollTop;
+            chatFlow.style.overflowAnchor = 'none';
+
             messagesMap.delete(idToDelete); 
             const el = document.getElementById(idToDelete);
             if(el) el.remove();
             saveMessagesToCache(); 
             renderAll(); 
+
+            const maxScroll = Math.max(0, chatFlow.scrollHeight - chatFlow.clientHeight);
+            chatFlow.scrollTop = Math.min(prevScrollTop, maxScroll);
+            requestAnimationFrame(() => {
+                chatFlow.style.overflowAnchor = 'auto';
+                setTimeout(() => { window.isUnsendingMsg = false; }, 350);
+            });
         }
         
         try {
