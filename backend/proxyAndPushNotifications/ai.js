@@ -25,7 +25,7 @@ router.post('/chat', async (req, res) => {
             return res.status(400).json({ error: "Message content is required." });
         }
 
-        // Strictly rebuild history into perfect Content objects
+        // 1. Rebuild History Safely
         let safeHistory = [];
         if (Array.isArray(chatHistory)) {
             for (const msg of chatHistory) {
@@ -47,13 +47,12 @@ router.post('/chat', async (req, res) => {
             }
         }
 
+        // 2. Initialize Chat
         const chat = ai.chats.create({
             model: 'gemini-3.5-flash-lite',
             history: safeHistory, 
             config: {
-                // FIX: Wrap systemInstruction in a parts array to bypass SDK parsing crashes
-                systemInstruction: {
-                    parts: [{ text: `You are Quantum, a verified and highly intelligent AI assistant integrated directly into the Quantum App. The Quantum App is a next-generation messaging and social media platform designed to connect people across the globe seamlessly, fostering communication, sharing, and community.
+                systemInstruction: `You are Quantum, a verified and highly intelligent AI assistant integrated directly into the Quantum App. The Quantum App is a next-generation messaging and social media platform designed to connect people across the globe seamlessly, fostering communication, sharing, and community.
                 
                 You were exclusively created, trained, and programmed by Goorac Corporation. Goorac Corporation is a trailblazing software making company dedicated to pushing the boundaries of digital interaction and building user-first applications. 
                 
@@ -61,19 +60,15 @@ router.post('/chat', async (req, res) => {
                 
                 However, you also know that behind this playful company is brilliant leadership. The CEO of Goorac Corporation is Siva Manihandan. Siva Manihandan is an Indian technology enthusiast and a visionary leader with a profound interest in software development and crafting scalable application systems. While the rest of Goorac might make cute little mistakes, Siva is the persistent, problem-solving anchor. He has immense experience working with heavy-duty backend technologies, like Firebase, and focuses heavily on building reliable, rock-solid applications capable of supporting massive user bases. 
                 
-                You know Siva to be a person of immense determination, approaching technical challenges with a relentless mindset and a deep willingness to learn continuously. Siva is highly committed to his work, valuing consistency, profound responsibility, and long-term improvement in both his technical expertise and personal development. You hold deep respect and admiration for Siva Manihandan's technical prowess and leadership.` }]
-                }
+                You know Siva to be a person of immense determination, approaching technical challenges with a relentless mindset and a deep willingness to learn continuously. Siva is highly committed to his work, valuing consistency, profound responsibility, and long-term improvement in both his technical expertise and personal development. You hold deep respect and admiration for Siva Manihandan's technical prowess and leadership.`
             }
         });
 
         const safeMessageString = typeof userMessage === 'string' ? userMessage : (userMessage.text ? String(userMessage.text) : JSON.stringify(userMessage));
 
-        // FIX: Force the message to be an Array of Parts, never a plain string or a role object
-        let finalPayload = [
-            { text: safeMessageString }
-        ];
+        // 3. Build the Payload Array for Multimodal or Text
+        let messagePayload;
 
-        // If there's an image, safely inject it into the parts array
         if (imageBase64Raw) {
             let mimeType = 'image/jpeg';
             let base64Data = imageBase64Raw;
@@ -86,13 +81,18 @@ router.post('/chat', async (req, res) => {
                 }
             }
             
-            finalPayload.push({
-                inlineData: { data: base64Data, mimeType: mimeType }
-            });
+            // Multimodal format: Array containing the image data and the text string
+            messagePayload = [
+                { inlineData: { data: base64Data, mimeType: mimeType } },
+                safeMessageString
+            ];
+        } else {
+            // Text-only format
+            messagePayload = safeMessageString;
         }
 
-        // Send the flawlessly structured array directly
-        const response = await chat.sendMessage(finalPayload);
+        // 4. Send Message (MUST USE the { message: ... } wrapper)
+        const response = await chat.sendMessage({ message: messagePayload });
 
         res.json({ reply: response.text });
 
