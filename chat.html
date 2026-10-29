@@ -5451,6 +5451,288 @@ box-shadow: var(--received-shadow);
     });
 </script>
 
+
+<script>
+    // =========================================================================
+    //  23. QUANTUM VIEWPORT LOCK & ZERO-SHATTER TRAY HANDOFF ENGINE (PRO GRADE)
+    // =========================================================================
+    (function initQuantumStabilityEngine() {
+        const chatFlowEl = document.getElementById('chat-flow');
+        const mainAppEl = document.getElementById('main-app');
+        const mInputEl = document.getElementById('m-input');
+        const emojiTrayEl = document.getElementById('emoji-tray');
+        const gifTrayEl = document.getElementById('gif-tray');
+        const inputAreaEl = document.querySelector('.input-area');
+
+        if (!chatFlowEl || !mainAppEl || !mInputEl) return;
+
+        // Track previous viewport height & bottom proximity BEFORE resize begins
+        let lastViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        let wasPinnedNearBottom = true;
+        window.isTrayHandingOff = false;
+        let trayHandoffTimer = null;
+
+        function checkBottomProximity(threshold = 280) {
+            const dist = chatFlowEl.scrollHeight - chatFlowEl.scrollTop - chatFlowEl.clientHeight;
+            return dist <= threshold;
+        }
+
+        // Keep bottom proximity updated during user scroll
+        chatFlowEl.addEventListener('scroll', () => {
+            wasPinnedNearBottom = checkBottomProximity(280);
+        }, { passive: true });
+
+        // 1. INSTANT ZERO-JITTER SCROLL TO BOTTOM OVERRIDE
+        // During keyboard open/focus/tray handoff or sending, force instant frame-locked snap
+        // so smooth-scroll animations never fight the mobile keyboard resize.
+        let instantScrollRaf = null;
+        window.snapToBottomInstant = function() {
+            if (instantScrollRaf) cancelAnimationFrame(instantScrollRaf);
+            chatFlowEl.style.scrollBehavior = 'auto';
+            chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+            instantScrollRaf = requestAnimationFrame(() => {
+                chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+                instantScrollRaf = null;
+            });
+        };
+
+        // Override window.scrollToBottom so that whenever the keyboard is opening, focused,
+        // or a tray is handing off, any `scrollToBottom(true)` call is automatically upgraded
+        // to an instant, zero-jitter pin instead of a stuttering smooth scroll.
+        const originalScrollToBottom = window.scrollToBottom;
+        window.scrollToBottom = function(smooth = false) {
+            const isKeyboardOrTrayActive = (document.activeElement === mInputEl) || window.isEmojiTrayOpen || window.isGifTrayOpen || window.isTrayHandingOff || window.isInitialLoadScroll;
+            if (!smooth || isKeyboardOrTrayActive) {
+                window.snapToBottomInstant();
+            } else if (typeof originalScrollToBottom === 'function') {
+                originalScrollToBottom(smooth);
+            }
+        };
+
+        // 2. FRAME-PERFECT VISUAL VIEWPORT SYNC (SNAPS CHAT INSTANTLY WITH KEYBOARD)
+        function syncViewportFrame() {
+            const currentVh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            const heightDelta = lastViewportHeight - currentVh; // Positive when keyboard slides UP
+
+            mainAppEl.style.height = currentVh + 'px';
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+
+            // If we are handing off from Emoji/GIF tray to the native keyboard,
+            // once the native keyboard has risen by >100px, release the tray cleanly in the exact same frame!
+            if (window.isTrayHandingOff && heightDelta > 80) {
+                completeTrayHandoffNow();
+            }
+
+            // If keyboard is opening (heightDelta > 0) or user was near the bottom, pin scrollTop immediately
+            if (heightDelta > 0 && (wasPinnedNearBottom || checkBottomProximity(800))) {
+                chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+            } else if (heightDelta !== 0 && wasPinnedNearBottom) {
+                chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+            }
+
+            lastViewportHeight = currentVh;
+        }
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncViewportFrame);
+            window.visualViewport.addEventListener('scroll', syncViewportFrame);
+        }
+        window.addEventListener('resize', syncViewportFrame);
+
+        // 3. ZERO-SHATTER EMOJI & GIF TRAY HANDOFF ENGINE
+        function completeTrayHandoffNow() {
+            if (trayHandoffTimer) {
+                clearTimeout(trayHandoffTimer);
+                trayHandoffTimer = null;
+            }
+            window.isTrayHandingOff = false;
+            if (!window.isEmojiTrayOpen && emojiTrayEl) emojiTrayEl.style.display = 'none';
+            if (!window.isGifTrayOpen && gifTrayEl) gifTrayEl.style.display = 'none';
+            window.snapToBottomInstant();
+        }
+
+        // Replace toggleEmojiKeyboard with Zero-Shatter Handoff version
+        window.toggleEmojiKeyboard = function() {
+            if (window.isEmojiTrayOpen) {
+                // Switching from Emoji Tray -> Native Keyboard (Seamless Handoff)
+                window.isEmojiTrayOpen = false;
+                window.isTrayHandingOff = true;
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                // Focus native input FIRST while keeping tray height locked until keyboard rises
+                mInputEl.focus({ preventScroll: true });
+                window.snapToBottomInstant();
+
+                if (trayHandoffTimer) clearTimeout(trayHandoffTimer);
+                trayHandoffTimer = setTimeout(() => {
+                    completeTrayHandoffNow();
+                    if (history.state && history.state.modal === 'emoji') history.back();
+                }, 260);
+            } else {
+                // Switching from Native Keyboard/Closed -> Emoji Tray
+                const wasFocused = (document.activeElement === mInputEl);
+                window.isEmojiTrayOpen = true;
+                window.isTrayHandingOff = false;
+                if (trayHandoffTimer) clearTimeout(trayHandoffTimer);
+
+                if (window.isGifTrayOpen) {
+                    window.isGifTrayOpen = false;
+                    if (gifTrayEl) gifTrayEl.style.display = 'none';
+                    document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                }
+
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                if (emojiTrayEl) emojiTrayEl.style.display = 'block';
+                if (wasFocused) mInputEl.blur();
+
+                window.snapToBottomInstant();
+                pushModalState('emoji');
+            }
+        };
+
+        // Replace toggleGifKeyboard with Zero-Shatter Handoff version
+        window.toggleGifKeyboard = function() {
+            if (window.isGifTrayOpen) {
+                // Switching from GIF Tray -> Native Keyboard (Seamless Handoff)
+                window.isGifTrayOpen = false;
+                window.isTrayHandingOff = true;
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                mInputEl.focus({ preventScroll: true });
+                window.snapToBottomInstant();
+
+                if (trayHandoffTimer) clearTimeout(trayHandoffTimer);
+                trayHandoffTimer = setTimeout(() => {
+                    completeTrayHandoffNow();
+                    if (history.state && history.state.modal === 'gif') history.back();
+                }, 260);
+            } else {
+                // Switching from Native Keyboard/Closed -> GIF Tray
+                const wasFocused = (document.activeElement === mInputEl);
+                window.isGifTrayOpen = true;
+                window.isTrayHandingOff = false;
+                if (trayHandoffTimer) clearTimeout(trayHandoffTimer);
+
+                if (window.isEmojiTrayOpen) {
+                    window.isEmojiTrayOpen = false;
+                    if (emojiTrayEl) emojiTrayEl.style.display = 'none';
+                    document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                    document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                }
+
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                if (gifTrayEl) gifTrayEl.style.display = 'block';
+                if (wasFocused) mInputEl.blur();
+
+                window.snapToBottomInstant();
+                pushModalState('gif');
+            }
+        };
+
+        // 4. ZERO-SHATTER SEND MSG & SEND GIF OVERRIDES
+        // When sending a text/emoji while Emoji tray is open, or sending a GIF while GIF tray is open,
+        // we DO NOT collapse the tray and force-open the native keyboard simultaneously (which shatters the screen).
+        window.sendGifMessage = async function(gifUrl) {
+            popSound.play().catch(e => {});
+            if (window.isGifTrayOpen) {
+                window.isGifTrayOpen = false;
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                if (gifTrayEl) gifTrayEl.style.display = 'none';
+                if (inputAreaEl && document.activeElement !== mInputEl) inputAreaEl.classList.remove('force-expand');
+                if (history.state && history.state.modal === 'gif') history.back();
+            }
+            window.snapToBottomInstant();
+
+            let msgData = {
+                text: "", 
+                sender: myUid, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                replyTo: replyingTo, 
+                seen: false, 
+                reactions: {},
+                imageUrl: gifUrl,
+                isGif: true
+            };
+            cancelInteraction();
+            db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error(e));
+            updateLastMsg("🎞️ GIF");
+            sendPushNotification("🎞️ Sent you a GIF");
+            window.snapToBottomInstant();
+        };
+
+        window.sendMsg = function() {
+            const text = mInputEl.value.trim();
+            if (!text) {
+                inputBox.classList.add('shake-anim');
+                setTimeout(() => inputBox.classList.remove('shake-anim'), 400);
+                return;
+            }
+
+            const wasEmojiOpen = window.isEmojiTrayOpen;
+            const wasInputFocused = (document.activeElement === mInputEl);
+
+            window.playCrispSnap('send');
+            popSound.play().catch(e => {});
+            vibrate(50);
+            checkKeywords(text);
+
+            clearTimeout(typingDebounceTimer);
+            clearTimeout(typingIdleClearTimer);
+            lastSyncedLiveText = "";
+
+            mInputEl.value = "";
+            mInputEl.style.height = 'auto';
+            sendBtnUI.classList.remove('active');
+            micWrapper.style.display = 'flex';
+            document.querySelector('.plus-btn').style.display = 'flex';
+            document.getElementById('emoji-toggle-left').style.display = 'none';
+            document.getElementById('emoji-toggle-right').style.display = 'flex';
+            document.getElementById('gif-toggle-right').style.display = 'flex';
+
+            attachmentMenu.style.display = 'none';
+            if (chatId && myUid) rdb.ref(`typing/${chatId}/${myUid}`).set(false);
+
+            // CRITICAL ANTI-SHATTER FIX:
+            // If the Emoji tray was open when the user hit Send, keep the Emoji tray smoothly open
+            // (or if native keyboard was open, keep native keyboard open) instead of hiding tray + focusing keyboard simultaneously!
+            if (wasEmojiOpen) {
+                if (emojiTrayEl) emojiTrayEl.style.display = 'block';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+            } else if (wasInputFocused) {
+                mInputEl.focus({ preventScroll: true });
+            }
+
+            if (editModeId) {
+                const idToEdit = editModeId; editModeId = null;
+                cancelInteraction();
+                db.collection("chats").doc(chatId).collection("messages").doc(idToEdit).update({ text, edited: true }).catch(e => console.error(e));
+                updateLastMsg(text);
+            } else {
+                const rText = replyingTo; cancelInteraction();
+                window.snapToBottomInstant();
+                let msgData = {
+                    text, sender: myUid, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    replyTo: rText, seen: false, reactions: {}
+                };
+                db.collection("chats").doc(chatId).collection("messages").add(msgData).catch(e => console.error("Send error:", e));
+                updateLastMsg(text);
+                sendPushNotification(text);
+            }
+            window.snapToBottomInstant();
+        };
+    })();
+</script>
+
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
 
