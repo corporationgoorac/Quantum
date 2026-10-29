@@ -434,14 +434,45 @@
         }
         #chat-flow::-webkit-scrollbar { display: none; }
 
-        .msg-row { display: flex; width: 100%; margin-bottom: 12px; flex-direction: column; position: relative; transition: transform 0.2s ease-out; }
+        .msg-row { display: flex; width: 100%; margin-bottom: 14px; flex-direction: column; position: relative; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.4s ease; border-radius: 14px; }
         .msg-row.sent { align-items: flex-end; }
         .msg-row.received { align-items: flex-start; }
-        .received-inner-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+        .msg-row.reply-highlight-flash { background-color: rgba(0, 255, 136, 0.16); }
+        .received-inner-row { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; position: relative; }
         .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); }
         .msg-bubble-box { max-width: 75vw; display: flex; flex-direction: column; position: relative; }
         .sent .msg-bubble-box { align-items: flex-end; }
         .received .msg-bubble-box { align-items: flex-start; }
+
+        /* Swipe-to-Reply Visual Indicator Icon */
+        .swipe-reply-indicator {
+            position: absolute; left: -38px; top: 50%; transform: translateY(-50%) scale(0.4);
+            width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; opacity: 0; pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease, background 0.2s ease;
+        }
+        .swipe-reply-indicator.ready {
+            background: var(--radio-color); color: #000; border-color: var(--radio-color);
+            transform: translateY(-50%) scale(1.05);
+        }
+        .swipe-reply-indicator span { font-size: 16px; }
+
+        /* Instagram-style Quoted Reply Header inside Message Bubble */
+        .quoted-msg-block {
+            display: flex; flex-direction: column; gap: 2px;
+            padding: 6px 10px; margin-bottom: 4px; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-left: 3px solid var(--radio-color);
+            max-width: 68vw; cursor: pointer;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+        .quoted-msg-block:active { transform: scale(0.97); background: rgba(255, 255, 255, 0.15); }
+        .sent .quoted-msg-block { border-left-color: #ff9500; background: rgba(255, 255, 255, 0.1); }
+        .quoted-sender { font-size: 10px; font-weight: 800; color: var(--radio-color); letter-spacing: 0.4px; text-transform: uppercase; }
+        .sent .quoted-sender { color: #ffb340; }
+        .quoted-text { font-size: 12px; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
 
         .bubble { 
             padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; 
@@ -453,11 +484,20 @@
         /* Apply dynamic beat tint to received messages */
         .received .bubble { background: linear-gradient(135deg, var(--received-bg), var(--beat-chat-tint)); color: var(--received-text); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
         
+        /* FIXED REACTION PILL: Interactive, supports all emojis + counts */
         .bubble-heart {
-            position: absolute; bottom: -8px; right: -8px; font-size: 16px; background: #222; border-radius: 50%; padding: 2px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); transform: scale(0); transition: 0.3s var(--ease-out-back); opacity: 0; pointer-events: none;
+            position: absolute; bottom: -10px; right: -6px; font-size: 13px;
+            background: #1f1f1f; border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 20px; padding: 2px 6px;
+            display: inline-flex; align-items: center; gap: 3px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+            transform: scale(0); transition: 0.25s var(--ease-out-back);
+            opacity: 0; pointer-events: none; z-index: 15; color: #fff; font-weight: 700;
         }
-        .bubble-heart.liked { transform: scale(1); opacity: 1; }
+        .received .bubble-heart { right: -10px; }
+        .sent .bubble-heart { right: auto; left: -10px; }
+        .bubble-heart.liked { transform: scale(1); opacity: 1; pointer-events: auto; cursor: pointer; }
+        .bubble-heart.liked:active { transform: scale(0.9); }
 
         /* NEW: Chat Timestamps & Global Reveal */
         .msg-ts { 
@@ -481,6 +521,33 @@
         @keyframes typingWave { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
 
         .input-area-container { flex: 0 0 auto; padding: 8px 15px calc(12px + var(--safe-bottom)); background: transparent; z-index: 50; width: 100%; }
+
+        /* Dedicated Instagram-style Reply Preview Banner above Input */
+        .reply-preview-banner {
+            display: none; align-items: center; justify-content: space-between;
+            background: rgba(22, 22, 22, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid var(--radio-color);
+            border-radius: 16px; padding: 8px 12px; margin-bottom: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+            animation: replySlideIn 0.2s var(--ease-out-back) forwards;
+        }
+        .reply-preview-banner.active { display: flex; }
+        @keyframes replySlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .reply-preview-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; margin-right: 10px; }
+        .reply-preview-title { font-size: 11px; font-weight: 800; color: var(--radio-color); letter-spacing: 0.3px; }
+        .reply-preview-text { font-size: 13px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .reply-cancel-btn {
+            background: rgba(255,255,255,0.1); border: none; color: #fff;
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; transition: background 0.2s, transform 0.15s;
+        }
+        .reply-cancel-btn:active { transform: scale(0.88); background: rgba(255,255,255,0.25); }
+        .reply-cancel-btn span { font-size: 16px; }
+
         .input-capsule { display: flex; align-items: flex-end; gap: 8px; background: rgba(20,20,20,0.85); backdrop-filter: blur(15px); border-radius: 24px; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
         .input-capsule:focus-within { border-color: var(--radio-color); background: rgba(30,30,30,0.95); }
         .msg-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 10px; font-size: 15px; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; }
@@ -723,6 +790,16 @@
                     </div>
 
                     <div class="input-area-container">
+                        <div class="reply-preview-banner" id="reply-preview-banner">
+                            <div class="reply-preview-info">
+                                <div class="reply-preview-title" id="reply-preview-title">Replying to User</div>
+                                <div class="reply-preview-text" id="reply-preview-text">...</div>
+                            </div>
+                            <button type="button" class="reply-cancel-btn" onclick="cancelReplyState()">
+                                <span class="material-icons-round">close</span>
+                            </button>
+                        </div>
+
                         <div class="input-capsule">
                             <textarea id="chat-input" class="msg-input" placeholder="Type to chat..." rows="1"></textarea>
                             <button class="send-btn" id="send-btn" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault(); this.click();" onclick="sendChat()">
@@ -904,11 +981,18 @@
         let heartbeatInterval = null;
         let latestRoomData = null;
         let isPartnerRdbOnline = false;
+        let hasEnteredActiveScreen = false;
         let chatInitialized = false;
+        let chatListenStartTime = 0;
 
+        // Audio configured WITHOUT global crossOrigin="anonymous" so external full tracks are NEVER blocked by CORS!
+        // Also decoupled from AudioContext destination so background/screen-off playback never mutes on iOS/Android.
         let audio = new Audio();
-        audio.crossOrigin = "anonymous";
         audio.preload = "auto";
+        audio.playsInline = true;
+        audio.setAttribute('playsinline', '');
+        audio.setAttribute('webkit-playsinline', '');
+        let audioUnlocked = false;
         
         let audioCtx, analyser, dataArray, canvas, canvasCtx, visualizerAnimation;
         let audioSourceNode = null; 
@@ -923,10 +1007,12 @@
         let emojiTimer = null, emojiCloseTimer = null, turnTimer = null; 
         let lastSyncTime = 0; 
         let ignoreAudioSync = false; 
+        let isAdvancingTrack = false;
 
         let isRadioMode = false, isRadioHost = false;
         let lastReactionMe = null, lastReactionThem = null, lastReactionTimeMe = 0, lastReactionTimeThem = 0;
         let activeReactionMsgId = null; // Track message ID for reactions
+        let pendingReply = null; // Stores { id, senderName, text } for Instagram-style reply
 
         // Chat Logic
         const chatInput = document.getElementById('chat-input');
@@ -935,6 +1021,21 @@
         const chatFlow = document.getElementById('chat-flow');
         const msgContainer = document.getElementById('messages-container');
         const popSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
+
+        // Unlock mobile audio autoplay on first user gesture anywhere in the document
+        function unlockMobileAudio() {
+            if (audioUnlocked) return;
+            audioUnlocked = true;
+            if (!audio.src) {
+                audio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => {});
+            }
+        }
+        document.addEventListener('touchstart', unlockMobileAudio, { once: true, passive: true });
+        document.addEventListener('click', unlockMobileAudio, { once: true });
 
         // KEYBOARD & TYPING TOP-SHIFT HANDLERS FOR FULL SCREEN MODE
         let baseViewportHeight = window.innerHeight;
@@ -974,10 +1075,22 @@
             setTimeout(updateKeyboardTopShift, 150);
         });
 
+        // Close Reaction Panel / Drawer when tapping outside
+        document.addEventListener('click', (e) => {
+            const igPanel = document.getElementById('ig-reaction-panel');
+            if (igPanel && igPanel.classList.contains('active') && !igPanel.contains(e.target) && !e.target.closest('.bubble')) {
+                igPanel.classList.remove('active');
+            }
+            const rDrawer = document.getElementById('reaction-drawer');
+            if (rDrawer && rDrawer.classList.contains('active') && !rDrawer.contains(e.target) && !e.target.closest('.bubble-heart')) {
+                rDrawer.classList.remove('active');
+            }
+        });
+
         // Global Chat Times Reveal
         let touchStartTimer = null;
         chatFlow.addEventListener('touchstart', (e) => {
-            if(e.target.closest('.bubble')) return; // Ignore on message bubbles
+            if(e.target.closest('.bubble') || e.target.closest('.quoted-msg-block')) return; // Ignore on message bubbles
             touchStartTimer = setTimeout(() => {
                 chatFlow.classList.add('chat-times-revealed');
                 if(navigator.vibrate) navigator.vibrate(20);
@@ -1040,7 +1153,7 @@
         });
 
         // -----------------------------------------------------------------
-        // WAKE LOCK, LIFECYCLE & DISCONNECT ENGINE
+        // WAKE LOCK, MEDIA SESSION & BACKGROUND SCREEN-OFF ENGINE
         // -----------------------------------------------------------------
         async function requestWakeLock() {
             if ('wakeLock' in navigator && document.visibilityState === 'visible') {
@@ -1050,35 +1163,59 @@
                 } catch (err) { console.warn("Wake Lock failed", err); }
             }
         }
+
+        function updateMediaSessionMetadata(song) {
+            if (!('mediaSession' in navigator) || !song) return;
+            try {
+                const artUrl = song.artworkUrl100 ? song.artworkUrl100.replace('100x100bb', '512x512bb') : '';
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: song.trackName || 'Pulse Track',
+                    artist: song.artistName || 'Pulse Session',
+                    album: 'Pulse Live Session',
+                    artwork: artUrl ? [
+                        { src: artUrl, sizes: '512x512', type: 'image/jpeg' }
+                    ] : []
+                });
+                navigator.mediaSession.setActionHandler('play', () => {
+                    audio.play().catch(()=>{});
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    // Keep stream synced in live session
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    if (isMyTurn) swapTurn();
+                });
+            } catch (e) {}
+        }
         
         document.addEventListener('visibilitychange', () => { 
             const state = document.hidden ? 'background' : 'active';
-            if (roomRef && myUid) roomRef.update({ [`screen_${myUid}`]: state }).catch(()=>{});
+            if (roomRef && myUid) {
+                roomRef.set({
+                    [`screen_${myUid}`]: state,
+                    [`hb_${myUid}`]: Date.now()
+                }, { merge: true }).catch(()=>{});
+            }
+            if (roomId && myUid) {
+                pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
+                    state: state === 'background' ? 'background' : 'online',
+                    ts: firebase.database.ServerValue.TIMESTAMP
+                }).catch(()=>{});
+            }
             
             if (document.hidden) {
-                // Background vibrate logic
-                if (isMyTurn && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                // Keep audio playing smoothly when screen is turned off or app is minimized
+                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.currentSong && audio.paused) {
+                    audio.play().catch(()=>{});
+                }
             } else {
                 requestWakeLock();
-                if (roomId && myUid) {
-                    pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
-                        state: 'online',
-                        ts: firebase.database.ServerValue.TIMESTAMP
-                    }).catch(()=>{});
-                }
-            }
-        });
-
-        // SAFE UNLOAD HANDLER: Only mark *myself* offline on tab close, never nuke the whole room on minor mobile pagehide events
-        window.addEventListener('beforeunload', () => {
-            if (!isLeaving && roomId && myUid) {
-                const myField = (myUid < targetUid) ? 'userA' : 'userB';
-                pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
-                    state: 'offline',
-                    ts: firebase.database.ServerValue.TIMESTAMP
-                });
-                if (roomRef) {
-                    roomRef.update({ [myField]: 'offline' }).catch(()=>{});
+                // Re-sync audio time immediately when returning to foreground
+                if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.timestamp && !audio.paused) {
+                    const idealTime = (Date.now() - latestRoomData.timestamp) / 1000;
+                    if (idealTime > 0 && Math.abs(audio.currentTime - idealTime) > 2.5) {
+                        audio.currentTime = idealTime;
+                    }
                 }
             }
         });
@@ -1125,7 +1262,7 @@
         }
 
         // -----------------------------------------------------------------
-        // CORE SESSION LOGIC (FIXED LOGIN HANDSHAKE & ANTI-KICKOUT)
+        // CORE SESSION LOGIC (FIXED LOGIN HANDSHAKE & BACKGROUND SAFE)
         // -----------------------------------------------------------------
         async function initPulseSession() {
             roomId = [myUid, targetUid].sort().join('_');
@@ -1135,45 +1272,46 @@
             const otherField = (myUid < targetUid) ? 'userB' : 'userA';
             const joinTimestamp = Date.now();
             
-            // 1. Set up RTDB Presence with heartbeat so stale Firestore flags never trick User A or User B
             const myPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`);
             const partnerPresenceRef = pulseRdb.ref(`pulse_presence/${roomId}/${targetUid}`);
 
             pulseRdb.ref('.info/connected').on('value', snap => {
                 if (snap.val() === true && !isLeaving) {
                     myPresenceRef.onDisconnect().set({
-                        state: 'offline',
+                        state: 'disconnected',
                         ts: firebase.database.ServerValue.TIMESTAMP
                     });
                     myPresenceRef.set({
-                        state: 'online',
+                        state: document.hidden ? 'background' : 'online',
                         ts: firebase.database.ServerValue.TIMESTAMP
                     });
                     if (roomRef) {
                         roomRef.set({
                             [myField]: 'online',
+                            [`screen_${myUid}`]: document.hidden ? 'background' : 'active',
                             [`hb_${myUid}`]: Date.now()
                         }, { merge: true }).catch(()=>{});
                     }
                 }
             });
 
-            // Periodic heartbeat every 5s to keep session rock-solid
+            // Periodic heartbeat every 5s
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             heartbeatInterval = setInterval(() => {
                 if (!isLeaving && roomId && myUid) {
                     myPresenceRef.set({
-                        state: 'online',
+                        state: document.hidden ? 'background' : 'online',
                         ts: firebase.database.ServerValue.TIMESTAMP
                     }).catch(()=>{});
                 }
             }, 5000);
 
-            // 2. Check existing room before attaching listener to clear stale dead rooms
+            // Check existing room before attaching listener to clear stale dead rooms
             try {
                 const partnerSnap = await partnerPresenceRef.once('value');
                 const pVal = partnerSnap.val();
-                const partnerActuallyHere = (pVal === 'online') || (pVal && pVal.state === 'online' && (Date.now() - (pVal.ts || 0) < 30000));
+                const partnerActuallyHere = (pVal === 'online' || pVal === 'background') ||
+                    (pVal && (pVal.state === 'online' || pVal.state === 'background') && (Date.now() - (pVal.ts || 0) < 60000));
                 isPartnerRdbOnline = Boolean(partnerActuallyHere);
 
                 const existingDoc = await roomRef.get();
@@ -1211,38 +1349,51 @@
                 console.warn("Room init check error:", err);
             }
 
-            // 3. Partner RTDB Presence Listener with 25-second grace period to prevent false kickouts
+            // Partner RTDB Presence Listener — Background & Screen-off safe!
             let hasConnectedTogether = false;
             let disconnectTimeout = null;
 
             partnerPresenceRef.on('value', snap => {
                 const val = snap.val();
-                const isOnlineNow = (val === 'online') || (val && val.state === 'online');
+                const stateStr = (typeof val === 'string') ? val : (val && val.state ? val.state : 'offline');
+                const isOnlineOrBg = (stateStr === 'online' || stateStr === 'background');
 
-                if (isOnlineNow) {
+                if (isOnlineOrBg) {
                     isPartnerRdbOnline = true;
                     hasConnectedTogether = true;
                     if (disconnectTimeout) {
                         clearTimeout(disconnectTimeout);
                         disconnectTimeout = null;
                     }
-                    // Ensure Firestore knows partner is online too
                     if (latestRoomData && latestRoomData[otherField] !== 'online') {
-                        roomRef.update({ [otherField]: 'online' }).catch(()=>{});
+                        roomRef.set({ [otherField]: 'online' }, { merge: true }).catch(()=>{});
                     }
                     evaluateConnectionState(otherField);
+                } else if (stateStr === 'explicit_exit') {
+                    // Partner explicitly clicked Exit button
+                    isPartnerRdbOnline = false;
+                    if (!isLeaving) {
+                        isLeaving = true;
+                        audio.pause();
+                        showError("Partner left the session.");
+                        setTimeout(() => window.location.replace("pulseLobby.html"), 1800);
+                    }
                 } else {
+                    // Socket dropped (could be screen turned off or brief network switch)
                     isPartnerRdbOnline = false;
                     evaluateConnectionState(otherField);
                     if (hasConnectedTogether && !isLeaving) {
                         if (disconnectTimeout) clearTimeout(disconnectTimeout);
                         disconnectTimeout = setTimeout(() => {
-                            if (!isPartnerRdbOnline && !isLeaving) {
+                            const partnerInBg = latestRoomData && latestRoomData[`screen_${targetUid}`] === 'background';
+                            const musicPlaying = latestRoomData && latestRoomData.cycleStatus === 'playing';
+                            // Do NOT kick if partner simply locked their screen in background or while music is playing
+                            if (!isPartnerRdbOnline && !isLeaving && !partnerInBg && !musicPlaying) {
                                 deactivatePulse();
                                 showError("Partner left the session.");
                                 setTimeout(() => handleExit('back'), 2500);
                             }
-                        }, 25000); // 25s grace period for mobile network switches
+                        }, 45000);
                     }
                 }
             });
@@ -1270,13 +1421,13 @@
                 if(em) handleEmojiSelection(em);
             });
 
-            // 4. REALTIME FIRESTORE LISTENER
+            // REALTIME FIRESTORE LISTENER
             roomUnsub = roomRef.onSnapshot(snapshot => {
                 if (!snapshot.exists) return;
                 const data = snapshot.data();
                 latestRoomData = data;
                 
-                // Only honor 'ended' if it was explicitly triggered by partner after we joined
+                // Honor explicit 'ended' triggered by partner after we joined
                 if (data.sessionStatus === 'ended' && data.endedBy && data.endedBy !== myUid && (data.endedAt || 0) > joinTimestamp) {
                     if (!isLeaving) {
                         isLeaving = true;
@@ -1289,7 +1440,7 @@
 
                 // Make sure our own field stays 'online' while we are in the room
                 if (data[myField] !== 'online' && !isLeaving) {
-                    roomRef.update({ [myField]: 'online' }).catch(()=>{});
+                    roomRef.set({ [myField]: 'online' }, { merge: true }).catch(()=>{});
                 }
 
                 // Presence Dots Logic (Green = active, Purple = background)
@@ -1310,9 +1461,10 @@
         function evaluateConnectionState(otherField) {
             if (!latestRoomData) return;
             const partnerOnlineInFirestore = (latestRoomData[otherField] === 'online');
-            const bothConnected = isPartnerRdbOnline || partnerOnlineInFirestore;
 
-            if (bothConnected && isPartnerRdbOnline) {
+            // Once both users have entered #screen-active, keep them locked in #screen-active so neither user gets stranded on waiting screen!
+            if ((partnerOnlineInFirestore && isPartnerRdbOnline) || hasEnteredActiveScreen) {
+                hasEnteredActiveScreen = true;
                 document.getElementById('target-group').classList.add('active');
                 document.querySelector('.s-line').classList.add('connected');
                 
@@ -1322,16 +1474,13 @@
                      requestWakeLock();
                      if (!chatInitialized) {
                          chatInitialized = true;
-                         initChatListener(); // Initialize Chat once
+                         initChatListener();
                      }
                 }
                 syncCycle(latestRoomData);
             } else {
                 document.getElementById('target-group').classList.remove('active');
                 document.querySelector('.s-line').classList.remove('connected');
-                if (document.getElementById('screen-active').classList.contains('active') && !isPartnerRdbOnline) {
-                    deactivatePulse();
-                }
             }
         }
 
@@ -1349,17 +1498,36 @@
             }, { merge: true });
         }
 
+        // Helper to normalize song objects from either <song-picker> or <full-song-picker> so Firestore NEVER fails on undefined properties
+        function normalizePickedSong(raw, type) {
+            if (!raw) return null;
+            const streamUrl = raw.previewUrl || raw.url || raw.audioUrl || raw.streamUrl || raw.downloadUrl || raw.src || '';
+            const trackName = raw.trackName || raw.title || raw.name || 'Unknown Track';
+            const artistName = raw.artistName || raw.artist || raw.subtitle || raw.uploader || 'Unknown Artist';
+            const artworkUrl100 = raw.artworkUrl100 || raw.artwork || raw.image || raw.thumbnail || raw.cover || '';
+            const id = String(raw.id || raw.trackId || raw.videoId || (trackName + '_' + artistName + '_' + Date.now()));
+            return {
+                id: id,
+                trackName: String(trackName),
+                artistName: String(artistName),
+                artworkUrl100: String(artworkUrl100),
+                previewUrl: String(streamUrl),
+                songType: type || 'preview'
+            };
+        }
+
         function syncCycle(data) {
             currentTurnUid = data.turn || ((myUid < targetUid) ? myUid : targetUid);
             isMyTurn = (myUid === currentTurnUid);
             const status = data.cycleStatus || 'picking';
+            const hasValidSong = Boolean(data.currentSong && data.currentSong.previewUrl);
             
             // Apply Song Type Mode (Full vs Preview UI layout toggles)
-            currentSongType = data.songType || 'preview';
+            currentSongType = data.songType || (data.currentSong && data.currentSong.songType) || 'preview';
             const screenEl = document.getElementById('screen-active');
             
-            // Activate full chat mode ONLY when actively playing/buffering a full song
-            if (currentSongType === 'full' && status !== 'picking') {
+            // Both users enter .mode-full together whenever a full song is active
+            if (currentSongType === 'full' && status !== 'picking' && hasValidSong) {
                 screenEl.classList.add('mode-full');
                 updateKeyboardTopShift();
             } else {
@@ -1375,10 +1543,13 @@
             document.getElementById('swap-turn-btn').style.display = 'none';
 
             // 1. PICKING PHASE
-            if (status === 'picking') {
+            if (status === 'picking' || !hasValidSong) {
+                isAdvancingTrack = false;
                 if (currentSongId !== null) {
                     currentSongId = null;
-                    audio.pause(); audio.src = "";
+                    audio.pause();
+                    audio.removeAttribute('src');
+                    audio.load();
                     resetSongDisplay();
                     resetEmojiState();
                 }
@@ -1411,92 +1582,19 @@
                 }
             }
             
-            // 2. BUFFERING PHASE
-            else if (status === 'buffering' && data.currentSong) {
+            // 2. BUFFERING OR PLAYING PHASE — UNIFIED ZERO-DEADLOCK STREAMING ENGINE
+            else if ((status === 'buffering' || status === 'playing') && hasValidSong) {
                 const song = data.currentSong;
-                updateSongDisplay(song);
-                document.getElementById('album-container').classList.add('buffering'); 
+                const songUniqueId = String(song.id || song.previewUrl);
 
-                if(isMyTurn) {
-                    document.getElementById('swap-turn-btn').style.display = 'flex';
-                    document.getElementById('delete-track-btn').style.display = 'flex';
-                }
-                
-                const readyMap = data.ready || {};
-                const amIReady = readyMap[myUid];
-                const isThemReady = readyMap[targetUid];
-
-                if (!amIReady) {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--accent); animation: pulse 1s infinite;">BUFFERING MEDIA...</p>`;
-                } else if (!isThemReady) {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:#fff;">WAITING FOR PARTNER...</p>`;
-                } else {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--radio-color);">STARTING...</p>`;
-                }
-                
-                if (currentSongId !== song.id) {
-                    currentSongId = song.id;
-                    audio.src = song.previewUrl;
-                    audio.load(); 
-                    
-                    resetEmojiState();
-
-                    audio.oncanplaythrough = () => { 
-                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
-                    };
-                    
-                    // --- AVOID DELAY ON FULL LONG SONGS ---
-                    audio.oncanplay = () => { 
-                        if(!readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
-                    };
-                    audio.onloadeddata = () => { 
-                        if(currentSongType === 'full' && !readyMap[myUid]) roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
-                    };
-                    
-                    if(audio.readyState >= 3 && !readyMap[myUid]) { 
-                        roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
-                    }
-                    
-                    if(currentSongType === 'full' && audio.readyState >= 2 && !readyMap[myUid]) {
-                        roomRef.update({ [`ready.${myUid}`]: true }).catch(()=>{}); 
-                    }
+                // If room was in legacy 'buffering' status, immediately promote to 'playing' so neither user ever hangs
+                if (status === 'buffering' && isMyTurn) {
+                    roomRef.set({
+                        cycleStatus: 'playing',
+                        timestamp: data.timestamp || Date.now()
+                    }, { merge: true }).catch(()=>{});
                 }
 
-                if (isMyTurn) {
-                    const elapsed = Date.now() - (data.timestamp || Date.now());
-                    const TIMEOUT_LIMIT = 10000; 
-                    const bothReady = (readyMap[myUid] && readyMap[targetUid]);
-                    const timedOut = elapsed > TIMEOUT_LIMIT;
-
-                    if (bothReady || timedOut) {
-                        roomRef.update({ 
-                            cycleStatus: 'playing',
-                            timestamp: Date.now() 
-                        }).catch(()=>{});
-                        
-                        // System Message for Full Song
-                        if(currentSongType === 'full') {
-                            const pName = isMyTurn ? "You" : (targetProfile ? targetProfile.name.split(' ')[0] : 'Them');
-                            sendSystemMessage(`${pName} played: ${song.trackName}`);
-                        }
-                    }
-                }
-            }
-
-            // 3. PLAYING PHASE
-            else if (status === 'playing' && data.currentSong) {
-                if (currentSongId !== data.currentSong.id) {
-                    currentSongId = data.currentSong.id;
-                    audio.src = data.currentSong.previewUrl;
-                    audio.load();
-                    updateSongDisplay(data.currentSong);
-                    resetEmojiState();
-                    lastSyncTime = Date.now() + 5000;
-                }
-
-                document.getElementById('album-container').classList.remove('buffering');
-                document.getElementById('album-container').classList.add('playing');
-                
                 if(isMyTurn) {
                     document.getElementById('swap-turn-btn').style.display = 'flex';
                     document.getElementById('delete-track-btn').style.display = 'flex';
@@ -1504,30 +1602,82 @@
 
                 document.getElementById('controls-container').innerHTML = '';
 
-                const hue = ((data.currentSong.artistName || 'Pulse').length * 40) % 360;
+                const hue = ((song.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
 
-                if (audio.paused) {
-                    audio.play().then(() => {
-                        resumeAudio(); 
-                    }).catch(() => {
-                        if(!isMyTurn) document.getElementById('sync-overlay').classList.add('active');
-                    });
-                    
-                    // Auto-end turn ONLY for 30s Preview Mode
+                if (currentSongId !== songUniqueId) {
+                    currentSongId = songUniqueId;
+                    isAdvancingTrack = false;
+                    updateSongDisplay(song);
+                    updateMediaSessionMetadata(song);
+                    resetEmojiState();
+
+                    document.getElementById('album-container').classList.add('buffering');
+                    document.getElementById('album-container').classList.remove('playing');
+
+                    audio.src = song.previewUrl;
+                    audio.load();
+
+                    const startPlaybackNow = () => {
+                        document.getElementById('album-container').classList.remove('buffering');
+                        document.getElementById('album-container').classList.add('playing');
+
+                        if (data.timestamp) {
+                            const idealSeek = (Date.now() - data.timestamp) / 1000;
+                            if (idealSeek > 1.2 && (!audio.duration || idealSeek < audio.duration - 1)) {
+                                try { audio.currentTime = idealSeek; } catch (e) {}
+                            }
+                        }
+
+                        audio.play().then(() => {
+                            document.getElementById('sync-overlay').classList.remove('active');
+                        }).catch(() => {
+                            document.getElementById('sync-overlay').classList.add('active');
+                        });
+                    };
+
+                    audio.oncanplay = () => {
+                        audio.oncanplay = null;
+                        startPlaybackNow();
+                    };
+
+                    // Fallback start if browser already buffered or takes a moment
+                    setTimeout(() => {
+                        if (currentSongId === songUniqueId && audio.paused) {
+                            startPlaybackNow();
+                        }
+                    }, 600);
+
+                    lastSyncTime = Date.now() + 3000;
+
+                    // Auto-end turn timer fallback for 30s Preview Mode
+                    clearTimeout(turnTimer);
                     if (currentSongType === 'preview') {
-                        clearTimeout(turnTimer);
-                        turnTimer = setTimeout(() => { if (isMyTurn) swapTurn(); }, 30000); 
+                        turnTimer = setTimeout(() => {
+                            if (currentSongId === songUniqueId && isMyTurn) swapTurn();
+                        }, 31000);
                     }
                 } else {
-                    const SYNC_THROTTLE = 2000; 
-                    if (!ignoreAudioSync && (Date.now() - lastSyncTime > SYNC_THROTTLE)) {
-                        lastSyncTime = Date.now();
-                        const serverStart = data.timestamp;
-                        const now = Date.now();
-                        const idealTime = (now - serverStart) / 1000;
-                        if (serverStart && idealTime >= 0 && Math.abs(audio.currentTime - idealTime) > 4.0) {
-                            audio.currentTime = idealTime;
+                    document.getElementById('album-container').classList.remove('buffering');
+                    document.getElementById('album-container').classList.add('playing');
+
+                    if (audio.paused && !isAdvancingTrack) {
+                        audio.play().then(() => {
+                            document.getElementById('sync-overlay').classList.remove('active');
+                        }).catch(() => {
+                            document.getElementById('sync-overlay').classList.add('active');
+                        });
+                    } else if (!audio.paused) {
+                        // Tight 2.2s drift synchronization between User A and User B
+                        const SYNC_THROTTLE = 2500; 
+                        if (!ignoreAudioSync && (Date.now() - lastSyncTime > SYNC_THROTTLE)) {
+                            lastSyncTime = Date.now();
+                            const serverStart = data.timestamp;
+                            const now = Date.now();
+                            const idealTime = (now - serverStart) / 1000;
+                            if (serverStart && idealTime >= 0 && (!audio.duration || idealTime < audio.duration - 1) && Math.abs(audio.currentTime - idealTime) > 2.2) {
+                                try { audio.currentTime = idealTime; } catch (e) {}
+                            }
                         }
                     }
                 }
@@ -1550,42 +1700,75 @@
         // ACTION HELPERS (SWAP & DELETE)
         // =================================================================
         function swapTurn() {
-            const nextDj = targetUid; 
-            roomRef.update({
+            if (!roomRef) return;
+            const nextDj = (currentTurnUid === myUid) ? targetUid : myUid; 
+            roomRef.set({
                 turn: nextDj,
                 cycleStatus: 'picking',
-                currentSong: firebase.firestore.FieldValue.delete(), 
+                currentSong: null, 
                 emojis: {},
                 ready: {},
-                songType: 'preview'
-            }).catch(()=>{});
+                songType: 'preview',
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(()=>{});
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} passed the turn.`);
         }
 
         function clearTrack() {
-            roomRef.update({
+            if (!roomRef) return;
+            roomRef.set({
                 cycleStatus: 'picking',
-                currentSong: firebase.firestore.FieldValue.delete(), 
+                currentSong: null, 
                 emojis: {},
                 ready: {},
-                songType: 'preview'
-            }).catch(()=>{});
+                songType: 'preview',
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(()=>{});
             sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} cleared the track.`);
         }
 
 
         // =================================================================
-        // PICKER EVENTS
+        // PICKER EVENTS (SANITIZED & INSTANT SYNC FOR BOTH USERS)
         // =================================================================
         // Preview Picker
         document.getElementById('song-picker').addEventListener('song-selected', (e) => {
-            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'preview' }).catch(()=>{});
+            unlockMobileAudio();
+            const cleanSong = normalizePickedSong(e.detail, 'preview');
+            if (!cleanSong || !cleanSong.previewUrl || !roomRef) return;
+
+            roomRef.set({
+                currentSong: cleanSong,
+                cycleStatus: 'playing',
+                timestamp: Date.now(),
+                ready: { [myUid]: true },
+                emojis: {},
+                songType: 'preview',
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(err => console.error("Preview song sync error:", err));
+
             if(navigator.vibrate) navigator.vibrate(20);
         });
 
         // Full Track Picker
         document.getElementById('full-song-picker').addEventListener('song-selected', (e) => {
-            roomRef.update({ currentSong: e.detail, cycleStatus: 'buffering', timestamp: Date.now(), ready: {}, songType: 'full' }).catch(()=>{});
+            unlockMobileAudio();
+            const cleanSong = normalizePickedSong(e.detail, 'full');
+            if (!cleanSong || !cleanSong.previewUrl || !roomRef) return;
+
+            roomRef.set({
+                currentSong: cleanSong,
+                cycleStatus: 'playing',
+                timestamp: Date.now(),
+                ready: { [myUid]: true },
+                emojis: {},
+                songType: 'full',
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).then(() => {
+                const pName = myProfile ? myProfile.name.split(' ')[0] : 'DJ';
+                sendSystemMessage(`${pName} played: ${cleanSong.trackName}`);
+            }).catch(err => console.error("Full song sync error:", err));
+
             if(navigator.vibrate) navigator.vibrate(20);
         });
 
@@ -1627,43 +1810,61 @@
             return;
         }
 
-        // AUTO ADVANCE
+        // AUTO ADVANCE (Works even when one user has their screen turned off!)
         audio.onended = () => {
-             if (isMyTurn) {
-                 swapTurn(); // Automatically goes back to picking for both Full and Preview
-             }
+            if (isAdvancingTrack) return;
+            isAdvancingTrack = true;
+            if (isMyTurn) {
+                swapTurn();
+            } else {
+                // If DJ's phone screen is off and throttled, partner's phone advances the turn after 2.5s grace
+                setTimeout(() => {
+                    if (latestRoomData && latestRoomData.cycleStatus === 'playing' && currentSongId) {
+                        swapTurn();
+                    }
+                }, 2500);
+            }
         };
 
+        // Background-safe timeupdate check for 30s drops
+        audio.addEventListener('timeupdate', () => {
+            if (currentSongType === 'preview' && audio.currentTime >= 29.8 && !isAdvancingTrack) {
+                audio.onended();
+            }
+        });
+
         // =================================================================
-        // VISUALIZER & DYNAMIC BEAT COLORS (DYNAMICALLY SYNCED TO ALBUM BOX)
+        // VISUALIZER & DYNAMIC BEAT COLORS (CORS-SAFE & SCREEN-OFF SAFE)
         // =================================================================
         function setupVisualizer() {
-            if (audioCtx) return; 
+            if (visualizerAnimation) return;
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                analyser = audioCtx.createAnalyser();
-                
-                if (!audioSourceNode) {
-                    audioSourceNode = audioCtx.createMediaElementSource(audio);
-                    audioSourceNode.connect(analyser);
-                    analyser.connect(audioCtx.destination);
-                }
-
-                analyser.fftSize = 256; 
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-                
                 canvas = document.getElementById('visualizer');
                 canvasCtx = canvas.getContext('2d');
-                
+                dataArray = new Uint8Array(128);
                 drawVisualizer();
             } catch(e) {}
         }
 
         function drawVisualizer() {
             visualizerAnimation = requestAnimationFrame(drawVisualizer);
-            if (!analyser || !canvas || !canvasCtx) return;
-            analyser.getByteFrequencyData(dataArray);
+            if (!canvas || !canvasCtx || !dataArray) return;
+
+            const isPlayingAudio = !audio.paused && audio.currentTime > 0 && !audio.ended;
+            const nowSec = performance.now() / 1000;
+
+            // Populate frequency data with smooth harmonic beat synthesis so audio never needs AudioContext hijack (preserving screen-off background playback!)
+            for (let i = 0; i < dataArray.length; i++) {
+                if (isPlayingAudio) {
+                    const pulse1 = Math.sin(nowSec * 6.5 + i * 0.18) * 0.5 + 0.5;
+                    const pulse2 = Math.cos(nowSec * 3.2 - i * 0.09) * 0.5 + 0.5;
+                    const bassBoost = i < 16 ? (Math.sin(nowSec * 8.0) * 0.5 + 0.5) * 95 : 0;
+                    const env = Math.max(0.15, 1 - (i / dataArray.length) * 0.65);
+                    dataArray[i] = Math.min(255, Math.floor(((pulse1 * 110 + pulse2 * 70) * env) + bassBoost));
+                } else {
+                    dataArray[i] = Math.max(0, Math.floor(dataArray[i] * 0.85));
+                }
+            }
             
             let bassTotal = 0;
             for(let i=0; i<8; i++) { bassTotal += dataArray[i]; }
@@ -1679,7 +1880,7 @@
 
             const isFullModeActive = document.getElementById('screen-active').classList.contains('mode-full');
             const scale = isFullModeActive
-                ? (0.98 + (bassAvg / 255) * 0.05)
+                ? (0.98 + (bassAvg / 255) * 0.04)
                 : (0.95 + (bassAvg / 255) * 0.15);
             const albumEl = document.getElementById('album-container');
             if (albumEl) albumEl.style.transform = `scale(${scale})`;
@@ -1710,7 +1911,7 @@
             if (isFullModeActive) {
                 const rectW = aRect.width + 6;
                 const rectH = aRect.height + 6;
-                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 18 : 28;
+                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 16 : 26;
                 
                 canvasCtx.save();
                 canvasCtx.translate(cx, cy);
@@ -1783,10 +1984,6 @@
             canvasCtx.restore();
         }
 
-        document.body.addEventListener('click', () => {
-             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        }, { once: false });
-
         // =================================================================
         // EMOJI CONTROLS (Preview Only)
         // =================================================================
@@ -1856,13 +2053,14 @@
         }
 
         // ==========================================================================
-        // CHAT ENGINE (Full Song Mode) - ADVANCED ENHANCEMENTS
+        // CHAT ENGINE (Full Song Mode) - INSTAGRAM REPLIES & FIXED REACTIONS
         // ==========================================================================
         function initChatListener() {
             if (chatUnsub && roomId) pulseRdb.ref(`pulse_chat/${roomId}`).off('child_added', chatUnsub);
             if (msgContainer) msgContainer.innerHTML = ''; 
 
             if(!roomId) return;
+            chatListenStartTime = Date.now();
 
             chatUnsub = pulseRdb.ref(`pulse_chat/${roomId}`).limitToLast(30).on('child_added', snap => {
                 const msg = snap.val();
@@ -1877,35 +2075,73 @@
                 }
             });
 
-            // Listen for message reactions
+            // Listen for message reactions (added, changed, and removed)
             pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_changed', snap => {
-                const msgId = snap.key;
-                const reacts = snap.val();
-                updateMessageReactions(msgId, reacts);
+                updateMessageReactions(snap.key, snap.val());
             });
             pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_added', snap => {
-                const msgId = snap.key;
-                const reacts = snap.val();
-                updateMessageReactions(msgId, reacts);
+                updateMessageReactions(snap.key, snap.val());
+            });
+            pulseRdb.ref(`pulse_chat_reactions/${roomId}`).on('child_removed', snap => {
+                updateMessageReactions(snap.key, null);
             });
         }
 
+        // FIXED: Dynamically displays actual chosen reaction emojis (❤️, 🔥, 😂, etc.) + count
         function updateMessageReactions(msgId, reacts) {
             const row = document.getElementById(`msg-${msgId}`);
             if(!row) return;
             const bubbleEl = row.querySelector('.bubble-heart');
             if(bubbleEl) {
-                // Just display a default heart if there are any reactions
-                const hasReacts = reacts && Object.keys(reacts).length > 0;
-                if(hasReacts) {
+                const reactList = reacts ? Object.values(reacts).filter(r => r && r.emoji) : [];
+                if(reactList.length > 0) {
+                    const uniqueEmojis = [...new Set(reactList.map(r => r.emoji))];
+                    const countLabel = reactList.length > 1 ? ` <span style="font-size:10px; opacity:0.85;">${reactList.length}</span>` : '';
+                    bubbleEl.innerHTML = `${uniqueEmojis.join('')}${countLabel}`;
                     bubbleEl.classList.add('liked');
-                    // Store reacts for drawer
                     bubbleEl.dataset.reacts = JSON.stringify(reacts);
                 } else {
+                    bubbleEl.innerHTML = '❤️';
                     bubbleEl.classList.remove('liked');
                     bubbleEl.dataset.reacts = "{}";
                 }
             }
+        }
+
+        // INSTAGRAM-STYLE REPLY BANNER HELPERS
+        function activateReplyState(msgKey, senderName, text) {
+            pendingReply = {
+                id: msgKey,
+                senderName: senderName || 'User',
+                text: text || ''
+            };
+            const banner = document.getElementById('reply-preview-banner');
+            const titleEl = document.getElementById('reply-preview-title');
+            const textEl = document.getElementById('reply-preview-text');
+
+            if (titleEl) titleEl.innerText = `Replying to ${pendingReply.senderName}`;
+            if (textEl) textEl.innerText = pendingReply.text;
+            if (banner) banner.classList.add('active');
+
+            chatInput.focus();
+            updateKeyboardTopShift();
+            scrollToBottom();
+        }
+
+        function cancelReplyState() {
+            pendingReply = null;
+            const banner = document.getElementById('reply-preview-banner');
+            if (banner) banner.classList.remove('active');
+        }
+
+        function scrollToQuotedMessage(targetMsgId) {
+            const targetRow = document.getElementById(`msg-${targetMsgId}`);
+            if (!targetRow) return;
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetRow.classList.remove('reply-highlight-flash');
+            void targetRow.offsetWidth;
+            targetRow.classList.add('reply-highlight-flash');
+            setTimeout(() => targetRow.classList.remove('reply-highlight-flash'), 1400);
         }
 
         chatInput.addEventListener('input', function() {
@@ -1927,7 +2163,7 @@
         function sendChat() {
             if (isSendingChat) return;
             isSendingChat = true;
-            setTimeout(() => isSendingChat = false, 300);
+            setTimeout(() => isSendingChat = false, 250);
 
             const text = chatInput.value.trim();
             if (!text) {
@@ -1940,22 +2176,32 @@
             
             if(navigator.vibrate) navigator.vibrate(10); // Haptic tick
 
+            const payload = {
+                text: text,
+                sender: myUid,
+                ts: firebase.database.ServerValue.TIMESTAMP,
+                type: 'msg'
+            };
+
+            if (pendingReply) {
+                payload.replyTo = {
+                    id: pendingReply.id,
+                    senderName: pendingReply.senderName,
+                    text: pendingReply.text
+                };
+                cancelReplyState();
+            }
+
             chatInput.value = ''; 
-            // --- LOCK HEIGHT TO PREVENT JUMPING ---
             chatInput.style.height = '41px';
-            // --------------------------------------
             sendBtn.classList.remove('show');
             if (roomId && myUid) pulseRdb.ref(`typing/pulse_${roomId}/${myUid}`).set(false);
 
-            pulseRdb.ref(`pulse_chat/${roomId}`).push({
-                text: text, sender: myUid, ts: firebase.database.ServerValue.TIMESTAMP, type: 'msg'
-            });
+            pulseRdb.ref(`pulse_chat/${roomId}`).push(payload);
             chatInput.focus();
             updateKeyboardTopShift();
             
-            // --- FORCE SCROLL AFTER UI UPDATE ---
             setTimeout(scrollToBottom, 50);
-            // ------------------------------------
         }
 
         function sendSystemMessage(text) {
@@ -1963,13 +2209,23 @@
             pulseRdb.ref(`pulse_chat/${roomId}`).push({ text: text, type: 'sys', ts: firebase.database.ServerValue.TIMESTAMP });
         }
 
+        function escapeHtmlText(str) {
+            return String(str || '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function renderChatMessage(msg, msgKey) {
             if (!msg || typeof msg.text !== 'string' || !msgContainer) return; 
             if (document.getElementById(`msg-${msgKey}`)) return;
-            const safeText = msg.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            const safeText = escapeHtmlText(msg.text);
+            const isRecentMsg = (msg.ts || 0) >= (chatListenStartTime - 2000);
             
             const d = new Date(msg.ts || Date.now());
-            const timeString = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }); // Indian 12-hour format
+            const timeString = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
             if (msg.type === 'sys') {
                 const div = document.createElement('div');
@@ -1983,16 +2239,33 @@
 
             const isMine = (msg.sender === myUid);
             const rowClass = isMine ? 'sent' : 'received';
+            const senderDisplayName = isMine
+                ? 'You'
+                : (targetProfile && targetProfile.name ? targetProfile.name.split(' ')[0] : 'Partner');
             
-            if (!isMine) {
+            if (!isMine && isRecentMsg) {
                 checkKeywords(msg.text);
-                try { if (navigator.vibrate) navigator.vibrate([100]); } catch(e){}
+                try { if (navigator.vibrate) navigator.vibrate([80]); } catch(e){}
             }
             
             const textNoSpaces = msg.text.replace(/\s/g, '');
             const emojiRegex = /^[\p{Extended_Pictographic}]+$/u;
             const isJumbo = textNoSpaces.length > 0 && Array.from(textNoSpaces).length <= 4 && emojiRegex.test(textNoSpaces);
             let bubbleStyle = isJumbo ? 'background:transparent; border:none; box-shadow:none; font-size:3rem; padding:0;' : '';
+
+            // Build Instagram-style highlighted quoted reply block if this message is a reply
+            let quotedHtml = '';
+            if (msg.replyTo && msg.replyTo.text) {
+                const safeReplySender = escapeHtmlText(msg.replyTo.senderName || 'Message');
+                const safeReplyText = escapeHtmlText(msg.replyTo.text);
+                const safeReplyId = escapeHtmlText(msg.replyTo.id || '');
+                quotedHtml = `
+                    <div class="quoted-msg-block" onclick="scrollToQuotedMessage('${safeReplyId}')">
+                        <div class="quoted-sender">${safeReplySender}</div>
+                        <div class="quoted-text">${safeReplyText}</div>
+                    </div>
+                `;
+            }
 
             const div = document.createElement('div');
             div.className = `msg-row ${rowClass}`;
@@ -2001,8 +2274,10 @@
             if (!isMine) {
                 div.innerHTML = `
                     <div class="received-inner-row">
+                        <div class="swipe-reply-indicator"><span class="material-icons-round">reply</span></div>
                         <img src="${targetProfile ? targetProfile.photoURL : ''}" class="msg-avatar">
                         <div class="msg-bubble-box">
+                            ${quotedHtml}
                             <div class="bubble" style="${bubbleStyle}">${safeText}<div class="bubble-heart" data-reacts="{}">❤️</div></div>
                             <div class="msg-ts">${timeString}</div>
                         </div>
@@ -2011,76 +2286,119 @@
             } else {
                 div.innerHTML = `
                     <div class="msg-bubble-box">
+                        <div class="swipe-reply-indicator"><span class="material-icons-round">reply</span></div>
+                        ${quotedHtml}
                         <div class="bubble" style="${bubbleStyle}">${safeText}<div class="bubble-heart" data-reacts="{}">❤️</div></div>
                         <div class="msg-ts">${timeString}</div>
                     </div>
                 `;
             }
 
-            // Swipe to reply logic
-            let startX = 0, isSwiping = false;
-            div.addEventListener('touchstart', e => { 
-                if (e.target.closest('.bubble-heart')) return;
-                startX = e.touches[0].clientX; 
-                isSwiping = true;
-            });
-            div.addEventListener('touchmove', e => {
-                if (!isSwiping) return;
-                let diffX = e.touches[0].clientX - startX;
-                if(diffX > 0 && diffX < 80) { // Swipe right to reply
-                    div.style.transform = `translateX(${diffX}px)`;
-                }
-            });
-            div.addEventListener('touchend', e => {
-                if (!isSwiping) return;
-                isSwiping = false;
-                div.style.transform = '';
-                let diffX = e.changedTouches[0].clientX - startX;
-                if(diffX > 50) {
-                    if(navigator.vibrate) navigator.vibrate(20);
-                    // Quote text to reply
-                    let shortQuote = safeText.length > 20 ? safeText.substring(0,20)+'...' : safeText;
-                    chatInput.value = `> Replying: "${shortQuote}" \n` + chatInput.value;
-                    chatInput.style.height = 'auto'; chatInput.style.height = (chatInput.scrollHeight) + 'px';
-                    chatInput.focus();
-                }
-            });
-
             const bubbleEl = div.querySelector('.bubble');
             const heartBadge = div.querySelector('.bubble-heart');
-            
-            // Double-tap to like on bubble
-            if (bubbleEl) {
-                let lastTap = 0;
-                bubbleEl.addEventListener('touchend', (e) => {
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - lastTap;
-                    if (tapLength < 500 && tapLength > 0) {
+            const swipeIndicator = div.querySelector('.swipe-reply-indicator');
+
+            // UNIFIED GESTURE ENGINE: Swipe-to-Reply + Double-Tap/Click to Like + Long-Press Reaction Bar
+            let startX = 0, startY = 0, currentX = 0;
+            let isSwiping = false;
+            let longPressTimer = null;
+            let lastTapTime = 0;
+
+            div.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.bubble-heart') || e.target.closest('.quoted-msg-block')) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                currentX = 0;
+                isSwiping = false;
+
+                if (e.target.closest('.bubble')) {
+                    longPressTimer = setTimeout(() => {
+                        if (!isSwiping) {
+                            if (navigator.vibrate) navigator.vibrate(30);
+                            openIgReactionPanel(msgKey);
+                        }
+                    }, 520);
+                }
+            }, { passive: true });
+
+            div.addEventListener('touchmove', (e) => {
+                if (!startX) return;
+                const dx = e.touches[0].clientX - startX;
+                const dy = Math.abs(e.touches[0].clientY - startY);
+
+                if (Math.abs(dx) > 8 || dy > 8) {
+                    clearTimeout(longPressTimer);
+                }
+
+                // Swipe right to reply
+                if (dx > 10 && dx > dy * 1.3) {
+                    isSwiping = true;
+                    currentX = Math.min(72, dx);
+                    div.style.transform = `translateX(${currentX}px)`;
+                    if (swipeIndicator) {
+                        swipeIndicator.style.opacity = String(Math.min(1, currentX / 45));
+                        if (currentX >= 48) {
+                            if (!swipeIndicator.classList.contains('ready')) {
+                                swipeIndicator.classList.add('ready');
+                                if (navigator.vibrate) navigator.vibrate(12);
+                            }
+                        } else {
+                            swipeIndicator.classList.remove('ready');
+                        }
+                    }
+                }
+            }, { passive: true });
+
+            div.addEventListener('touchend', (e) => {
+                clearTimeout(longPressTimer);
+                if (isSwiping) {
+                    div.style.transform = '';
+                    if (swipeIndicator) {
+                        swipeIndicator.style.opacity = '0';
+                        swipeIndicator.classList.remove('ready');
+                    }
+                    if (currentX >= 48) {
+                        activateReplyState(msgKey, senderDisplayName, msg.text);
+                    }
+                    startX = 0;
+                    currentX = 0;
+                    isSwiping = false;
+                    return;
+                }
+
+                startX = 0;
+                // Check Double-Tap on bubble for instant Heart Reaction
+                if (e.target.closest('.bubble') && !e.target.closest('.bubble-heart')) {
+                    const now = Date.now();
+                    if (now - lastTapTime < 350 && now - lastTapTime > 0) {
                         e.preventDefault();
                         submitReactionForMsg(msgKey, '❤️');
-                        if (!isMine) sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} loved a message ❤️`);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
                     }
-                    lastTap = currentTime;
-                });
-                
-                // Long press to open Reaction Panel
-                let longPressTimer;
-                bubbleEl.addEventListener('touchstart', (e) => {
-                    longPressTimer = setTimeout(() => {
-                        if(navigator.vibrate) navigator.vibrate(30);
-                        openIgReactionPanel(msgKey);
-                    }, 600);
-                });
-                bubbleEl.addEventListener('touchend', () => clearTimeout(longPressTimer));
-                bubbleEl.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-
-                // Click on the heart badge to see who reacted (Reaction Drawer)
-                if (heartBadge) {
-                    heartBadge.addEventListener('click', (e) => {
-                        e.stopPropagation(); // prevent bubble click
-                        openReactionDrawer(heartBadge.dataset.reacts);
-                    });
                 }
+            });
+
+            // Desktop Double-Click & Right-Click support for testing on PC as well
+            if (bubbleEl) {
+                bubbleEl.addEventListener('dblclick', (e) => {
+                    if (e.target.closest('.bubble-heart')) return;
+                    e.preventDefault();
+                    submitReactionForMsg(msgKey, '❤️');
+                });
+            }
+
+            // Click on the heart/reaction badge to see who reacted (Reaction Drawer)
+            if (heartBadge) {
+                heartBadge.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openReactionDrawer(heartBadge.dataset.reacts);
+                });
+                heartBadge.addEventListener('touchend', (e) => {
+                    e.stopPropagation();
+                    openReactionDrawer(heartBadge.dataset.reacts);
+                });
             }
 
             msgContainer.appendChild(div);
@@ -2109,13 +2427,16 @@
             }
         }
         function submitReactionForMsg(msgId, emoji) {
+            if (!roomId || !myUid || !msgId) return;
             particleEngine.spawn(emoji);
             if(navigator.vibrate) navigator.vibrate(20);
             
             const reactRef = pulseRdb.ref(`pulse_chat_reactions/${roomId}/${msgId}/${myUid}`);
             const reactData = {
-                emoji: emoji, ts: firebase.database.ServerValue.TIMESTAMP, 
-                name: myProfile ? myProfile.name : 'User', photo: myProfile ? myProfile.photoURL : ''
+                emoji: emoji,
+                ts: firebase.database.ServerValue.TIMESTAMP, 
+                name: myProfile && myProfile.name ? myProfile.name : 'User',
+                photo: myProfile && myProfile.photoURL ? myProfile.photoURL : ''
             };
             reactRef.set(reactData);
         }
@@ -2138,7 +2459,7 @@
                         <div class="drawer-row">
                             <img src="${imgUrl}">
                             <div class="drawer-info">
-                                <div class="drawer-name">${r.name}</div>
+                                <div class="drawer-name">${escapeHtmlText(r.name)}</div>
                                 <div class="drawer-time">${timeString}</div>
                             </div>
                             <div class="drawer-emoji">${r.emoji}</div>
@@ -2173,27 +2494,34 @@
             const img = document.getElementById('active-album-art');
             const def = document.getElementById('default-art');
             
-            const temp = new Image();
-            temp.src = highRes;
-            temp.onload = () => {
-                img.src = highRes;
-                img.classList.add('loaded');
-                def.style.display = 'none';
-            };
+            if (highRes) {
+                const temp = new Image();
+                temp.src = highRes;
+                temp.onload = () => {
+                    img.src = highRes;
+                    img.classList.add('loaded');
+                    def.style.display = 'none';
+                };
+                temp.onerror = () => {
+                    img.src = song.artworkUrl100 || '';
+                    img.classList.add('loaded');
+                    def.style.display = 'none';
+                };
+            }
             
             // Preview mode titles
-            document.getElementById('active-song-title').innerText = song.trackName;
-            document.getElementById('active-song-artist').innerText = song.artistName;
+            document.getElementById('active-song-title').innerText = song.trackName || 'Pulse Track';
+            document.getElementById('active-song-artist').innerText = song.artistName || 'Artist';
 
             // Full mode titles (with marquee logic)
             const fTitle = document.getElementById('full-song-title');
-            fTitle.innerText = song.trackName;
-            document.getElementById('full-song-artist').innerText = song.artistName;
+            fTitle.innerText = song.trackName || 'Pulse Track';
+            document.getElementById('full-song-artist').innerText = song.artistName || 'Artist';
 
             // Check if marquee is needed
             setTimeout(() => {
                 const wrap = fTitle.parentElement;
-                if(fTitle.scrollWidth > wrap.clientWidth) fTitle.classList.add('marquee');
+                if(wrap && fTitle.scrollWidth > wrap.clientWidth) fTitle.classList.add('marquee');
                 else fTitle.classList.remove('marquee');
             }, 100);
         }
@@ -2210,7 +2538,14 @@
         }
 
         function resumeAudio() {
+            unlockMobileAudio();
             if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (latestRoomData && latestRoomData.timestamp) {
+                const idealSeek = (Date.now() - latestRoomData.timestamp) / 1000;
+                if (idealSeek > 1 && (!audio.duration || idealSeek < audio.duration - 1)) {
+                    try { audio.currentTime = idealSeek; } catch (e) {}
+                }
+            }
             audio.play().catch(()=>{});
             requestWakeLock();
             document.getElementById('sync-overlay').classList.remove('active');
@@ -2224,7 +2559,7 @@
         }
 
         // =================================================================
-        // CLEANUP & EXIT (ENHANCED BULLETPROOF LOGIC)
+        // CLEANUP & EXIT (EXPLICIT EXIT ONLY — SAFE FOR BACKGROUND PLAY)
         // =================================================================
         let isLeaving = false;
 
@@ -2239,10 +2574,10 @@
                     roomUnsub = null;
                 }
 
-                // 1. Instantly notify RTDB for fast remote disconnect
+                // 1. Instantly notify RTDB of explicit exit
                 if(roomId && pulseRdb && myUid) {
                     pulseRdb.ref(`pulse_presence/${roomId}/${myUid}`).set({
-                        state: 'offline',
+                        state: 'explicit_exit',
                         ts: firebase.database.ServerValue.TIMESTAMP
                     });
                 }
@@ -2250,12 +2585,12 @@
                 // 2. End the room in Firestore cleanly
                 if(roomRef && myUid) {
                     const myField = (myUid < targetUid) ? 'userA' : 'userB';
-                    roomRef.update({ 
+                    roomRef.set({ 
                         sessionStatus: 'ended',
                         endedBy: myUid,
                         endedAt: Date.now(),
                         [myField]: 'offline'
-                    }).catch(e => console.log("Offline update skipped"));
+                    }, { merge: true }).catch(e => console.log("Offline update skipped"));
                 }
 
                 // 3. DELETE CHAT AND TYPING DATA FROM DATABASE
