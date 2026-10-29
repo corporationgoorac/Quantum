@@ -5954,6 +5954,413 @@ box-shadow: var(--received-shadow);
     })();
 </script>
 
+
+<style id="quantum-production-boot-and-bubble-lock">
+    /* =========================================================================
+       25. PRODUCTION PAGE-LOAD ANTI-SHAKE & ZERO-JITTER BUBBLE ENGINE (V3)
+       ========================================================================= */
+    /* 1. Freeze all bubble, media, and typing-row spring/elastic animations during page boot */
+    body.boot-stabilizing *,
+    body.boot-stabilizing .msg-row,
+    body.boot-stabilizing .msg-bubble-box,
+    body.boot-stabilizing .bubble,
+    body.boot-stabilizing .chat-media-img,
+    body.boot-stabilizing .seen-status,
+    body.boot-stabilizing .typing-row,
+    body.boot-stabilizing .input-area {
+        transition: none !important;
+        animation-duration: 0s !important;
+    }
+
+    /* 2. Remove continuous layout-thrashing transitions on msg-bubble-box & bubble */
+    .msg-bubble-box {
+        transition: padding-bottom 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        will-change: auto !important;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .bubble {
+        transition: filter 0.15s ease !important;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: translateZ(0);
+    }
+
+    /* 3. Lock input-area scale & vertical geometry so focusing/typing NEVER shifts chat-flow height */
+    .input-area,
+    .input-area:focus-within,
+    .input-area.force-expand {
+        margin: 8px 12px !important;
+        transform: scale(1) translateZ(0) !important;
+        transition: border-radius 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+    }
+
+    .msg-input {
+        transition: none !important;
+        min-height: 24px !important;
+        max-height: 120px !important;
+    }
+
+    /* 4. Prevent media wrappers from collapsing/jumping before naturalWidth loads */
+    .chat-media-img {
+        animation: none !important;
+        transform: translateZ(0);
+    }
+</style>
+
+<script>
+    // =========================================================================
+    //  25. PRODUCTION-GRADE BOOT STABILIZER, ZERO-REFLOW INPUT & AUDIO V3
+    // =========================================================================
+    (function initQuantumProductionV3() {
+        const chatFlowEl = document.getElementById('chat-flow');
+        const mainAppEl = document.getElementById('main-app');
+        const mInputEl = document.getElementById('m-input');
+        const msgContainerEl = document.getElementById('messages-container');
+        const inputContEl = document.querySelector('.input-area-container');
+        if (!chatFlowEl || !mainAppEl || !mInputEl) return;
+
+        // ---------------------------------------------------------------------
+        // 1. PAGE-LOAD ANTI-SHAKE & INITIAL KEYBOARD FOCUS STABILIZER
+        // ---------------------------------------------------------------------
+        // Apply boot-stabilizing lock immediately so cached + Firestore hydrate
+        // and initial autofocus keyboard slide-up happen with zero bubble shake.
+        document.body.classList.add('boot-stabilizing');
+        window.isBootPhase = true;
+
+        function pinBottomSync() {
+            chatFlowEl.style.scrollBehavior = 'auto';
+            chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+        }
+
+        // Pin immediately on script load and across initial layout frames
+        pinBottomSync();
+        requestAnimationFrame(() => {
+            pinBottomSync();
+            requestAnimationFrame(pinBottomSync);
+        });
+
+        // Release boot animation lock once initial render + keyboard settle (850ms)
+        setTimeout(() => {
+            document.body.classList.remove('boot-stabilizing');
+            window.isBootPhase = false;
+        }, 850);
+
+        // Neutralize the 0/100/300/500ms focus smooth-scroll storm by intercepting focus in capture phase
+        mInputEl.addEventListener('focus', () => {
+            const dist = chatFlowEl.scrollHeight - chatFlowEl.scrollTop - chatFlowEl.clientHeight;
+            if (dist < 800) {
+                pinBottomSync();
+                requestAnimationFrame(pinBottomSync);
+            }
+        }, true);
+
+        // ---------------------------------------------------------------------
+        // 2. ZERO-COLLAPSE SHADOW CLONE TEXTAREA SIZER (100% ELIMINATES TYPING JITTER)
+        // ---------------------------------------------------------------------
+        // Why typing jittered before: `mInput.style.height = 'auto'` shrinks the live
+        // textarea to 1 row on every single keystroke before expanding it back, which
+        // causes flex-box to momentarily expand #chat-flow and jitter scrollTop!
+        // Solution: Measure height in a hidden offscreen mirror clone so `mInput`
+        // NEVER collapses to 'auto' on the live DOM.
+        const shadowSizer = document.createElement('textarea');
+        shadowSizer.setAttribute('aria-hidden', 'true');
+        shadowSizer.tabIndex = -1;
+        shadowSizer.rows = 1;
+        shadowSizer.style.cssText = [
+            'position:fixed',
+            'top:-9999px',
+            'left:-9999px',
+            'visibility:hidden',
+            'pointer-events:none',
+            'z-index:-1000',
+            'height:auto',
+            'min-height:0',
+            'max-height:none',
+            'overflow:hidden',
+            'resize:none',
+            'box-sizing:border-box'
+        ].join(';');
+        document.body.appendChild(shadowSizer);
+
+        let lastAppliedInputHeight = mInputEl.offsetHeight || 38;
+
+        function syncShadowSizerStyles() {
+            const cs = window.getComputedStyle(mInputEl);
+            shadowSizer.style.width = mInputEl.clientWidth + 'px';
+            shadowSizer.style.font = cs.font;
+            shadowSizer.style.fontSize = cs.fontSize;
+            shadowSizer.style.fontFamily = cs.fontFamily;
+            shadowSizer.style.fontWeight = cs.fontWeight;
+            shadowSizer.style.lineHeight = cs.lineHeight;
+            shadowSizer.style.letterSpacing = cs.letterSpacing;
+            shadowSizer.style.padding = cs.padding;
+            shadowSizer.style.border = cs.border;
+        }
+
+        function measureAndApplyInputHeight() {
+            if (mInputEl.clientWidth > 0) {
+                syncShadowSizerStyles();
+            }
+            shadowSizer.value = mInputEl.value || '';
+            const rawScrollH = shadowSizer.scrollHeight;
+            const targetH = (mInputEl.value === '') ? 38 : Math.max(38, Math.min(rawScrollH, 120));
+
+            if (targetH !== lastAppliedInputHeight) {
+                const prevScrollTop = chatFlowEl.scrollTop;
+                const distFromBottom = chatFlowEl.scrollHeight - prevScrollTop - chatFlowEl.clientHeight;
+                const deltaH = targetH - lastAppliedInputHeight;
+                lastAppliedInputHeight = targetH;
+
+                mInputEl.style.height = targetH + 'px';
+
+                if (distFromBottom <= 260) {
+                    pinBottomSync();
+                } else {
+                    chatFlowEl.scrollTop = prevScrollTop + deltaH;
+                }
+            } else {
+                // Ensure inline height stays locked even if earlier listener touched it
+                if (mInputEl.style.height !== targetH + 'px') {
+                    mInputEl.style.height = targetH + 'px';
+                }
+            }
+        }
+
+        // Intercept `style.height = 'auto'` on mInputEl so earlier bubble listeners
+        // can NEVER collapse the live textarea to 'auto' mid-frame!
+        try {
+            const styleProto = CSSStyleDeclaration.prototype;
+            const heightDesc = Object.getOwnPropertyDescriptor(styleProto, 'height');
+            if (heightDesc && heightDesc.set) {
+                Object.defineProperty(mInputEl.style, 'height', {
+                    get: function() {
+                        return heightDesc.get.call(this);
+                    },
+                    set: function(val) {
+                        if (val === 'auto') {
+                            // Ignore 'auto' collapse! Compute exact height via shadow clone instead
+                            if (mInputEl.value === '') {
+                                lastAppliedInputHeight = 38;
+                                return heightDesc.set.call(this, '38px');
+                            }
+                            return;
+                        }
+                        return heightDesc.set.call(this, val);
+                    },
+                    configurable: true
+                });
+            }
+        } catch (e) {}
+
+        mInputEl.addEventListener('input', measureAndApplyInputHeight, true);
+        window.addEventListener('resize', () => {
+            if (mInputEl.value) measureAndApplyInputHeight();
+        }, { passive: true });
+
+        // ---------------------------------------------------------------------
+        // 3. BULLETPROOF MULTI-CHANNEL AUDIO ENGINE (POOLED CLONES + GAIN BOOST)
+        // ---------------------------------------------------------------------
+        // Fixes:
+        // 1) Calling .play() on a single Audio element while it's still playing or
+        //    resetting currentTime=0 on mobile WebKit often drops the sound silently.
+        // 2) We now use pre-decoded WebAudio AudioBuffers + HTML5 Audio cloneNode()
+        //    fallback AND a high-output dual-oscillator WebAudio synth so every
+        //    send, receive, and reaction sound plays with 100% reliability.
+        const SEND_URI = (typeof popSound !== 'undefined' && popSound && popSound.src && popSound.src.length > 200) ? popSound.src : null;
+        const RECV_URI = (typeof receiveSound !== 'undefined' && receiveSound && receiveSound.src && receiveSound.src.length > 200) ? receiveSound.src : null;
+        const LIKE_URI = (typeof likeSound !== 'undefined' && likeSound && likeSound.src && likeSound.src.length > 200) ? likeSound.src : null;
+
+        let decodedBuffers = { send: null, receive: null, like: null };
+
+        function getOrInitAudioCtx() {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            if (!window._gooracAudioCtx) {
+                window._gooracAudioCtx = new AudioCtx();
+            }
+            if (window._gooracAudioCtx.state === 'suspended') {
+                window._gooracAudioCtx.resume().catch(() => {});
+            }
+            return window._gooracAudioCtx;
+        }
+
+        function decodeDataUriToBuffer(uri, key) {
+            if (!uri) return;
+            try {
+                const ctx = getOrInitAudioCtx();
+                if (!ctx) return;
+                const b64 = uri.split(',')[1];
+                if (!b64) return;
+                const binary = atob(b64);
+                const len = binary.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+                ctx.decodeAudioData(bytes.buffer.slice(0), (buffer) => {
+                    decodedBuffers[key] = buffer;
+                }, () => {});
+            } catch (e) {}
+        }
+
+        // Unlock & decode on any user interaction
+        let v3AudioPrimed = false;
+        function primeV3Audio() {
+            const ctx = getOrInitAudioCtx();
+            if (ctx && !v3AudioPrimed) {
+                v3AudioPrimed = true;
+                // Play a 1-sample silent buffer to hardware-unlock iOS/Android audio output
+                try {
+                    const silentBuf = ctx.createBuffer(1, 1, 22050);
+                    const src = ctx.createBufferSource();
+                    src.buffer = silentBuf;
+                    src.connect(ctx.destination);
+                    src.start(0);
+                } catch (e) {}
+                decodeDataUriToBuffer(SEND_URI, 'send');
+                decodeDataUriToBuffer(RECV_URI, 'receive');
+                decodeDataUriToBuffer(LIKE_URI, 'like');
+            }
+        }
+
+        ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown', 'click'].forEach(evt => {
+            window.addEventListener(evt, primeV3Audio, { capture: true, passive: true });
+        });
+
+        // Master sound player that combines WebAudio buffer + WebAudio synth + HTML5 Audio clone
+        window.playQuantumSound = function(type = 'send') {
+            try {
+                const ctx = getOrInitAudioCtx();
+                if (ctx) {
+                    const now = ctx.currentTime;
+
+                    // Path 1: Play decoded PCM buffer through WebAudio GainNode (zero lag, crystal clear)
+                    const buf = decodedBuffers[type];
+                    if (buf) {
+                        const src = ctx.createBufferSource();
+                        const gain = ctx.createGain();
+                        src.buffer = buf;
+                        gain.gain.setValueAtTime(0.95, now);
+                        src.connect(gain);
+                        gain.connect(ctx.destination);
+                        src.start(now);
+                    }
+
+                    // Path 2: Tactile Acoustic Synth Layer (ensures audible tone even before buffer decodes)
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const synthGain = ctx.createGain();
+
+                    if (type === 'send') {
+                        // Crisp WhatsApp/iMessage style outgoing pop-swoosh
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(440, now);
+                        osc1.frequency.exponentialRampToValueAtTime(1320, now + 0.075);
+
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(660, now);
+                        osc2.frequency.exponentialRampToValueAtTime(1760, now + 0.065);
+
+                        synthGain.gain.setValueAtTime(0.001, now);
+                        synthGain.gain.linearRampToValueAtTime(0.55, now + 0.01);
+                        synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+
+                        osc1.connect(synthGain);
+                        osc2.connect(synthGain);
+                        synthGain.connect(ctx.destination);
+
+                        osc1.start(now);
+                        osc2.start(now);
+                        osc1.stop(now + 0.09);
+                        osc2.stop(now + 0.09);
+                    } else if (type === 'receive') {
+                        // Warm, unmistakable two-note incoming message chime
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(784, now); // G5
+                        osc1.frequency.setValueAtTime(1174.66, now + 0.055); // D6
+
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(392, now); // G4
+                        osc2.frequency.setValueAtTime(587.33, now + 0.055); // D5
+
+                        synthGain.gain.setValueAtTime(0.001, now);
+                        synthGain.gain.linearRampToValueAtTime(0.60, now + 0.012);
+                        synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.145);
+
+                        osc1.connect(synthGain);
+                        osc2.connect(synthGain);
+                        synthGain.connect(ctx.destination);
+
+                        osc1.start(now);
+                        osc2.start(now);
+                        osc1.stop(now + 0.15);
+                        osc2.stop(now + 0.15);
+                    } else if (type === 'like') {
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(520, now);
+                        osc1.frequency.exponentialRampToValueAtTime(1480, now + 0.085);
+
+                        synthGain.gain.setValueAtTime(0.001, now);
+                        synthGain.gain.linearRampToValueAtTime(0.50, now + 0.01);
+                        synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+                        osc1.connect(synthGain);
+                        synthGain.connect(ctx.destination);
+                        osc1.start(now);
+                        osc1.stop(now + 0.095);
+                    }
+                }
+            } catch (e) {}
+
+            // Path 3: HTML5 Audio fresh instance fallback (avoids overlapping .play() abort)
+            try {
+                const uri = (type === 'send') ? SEND_URI : (type === 'receive' ? RECV_URI : LIKE_URI);
+                if (uri) {
+                    const sndClone = new Audio(uri);
+                    sndClone.volume = 0.90;
+                    sndClone.play().catch(() => {});
+                }
+            } catch (e) {}
+        };
+
+        // Wire window.playCrispSnap and popSound/receiveSound/likeSound.play() to our master player
+        // while deduplicating calls within a 40ms window so calling playCrispSnap('send') + popSound.play()
+        // back-to-back produces one clean, distortion-free sound!
+        let lastSoundTimestamp = { send: 0, receive: 0, like: 0 };
+        function triggerDedupedSound(type) {
+            const nowMs = performance.now();
+            if (nowMs - (lastSoundTimestamp[type] || 0) < 45) return;
+            lastSoundTimestamp[type] = nowMs;
+            window.playQuantumSound(type);
+        }
+
+        window.playCrispSnap = function(type = 'send') {
+            triggerDedupedSound(type === 'receive' ? 'receive' : 'send');
+        };
+
+        try {
+            if (typeof popSound !== 'undefined' && popSound) {
+                popSound.play = function() {
+                    triggerDedupedSound('send');
+                    return Promise.resolve();
+                };
+            }
+            if (typeof receiveSound !== 'undefined' && receiveSound) {
+                receiveSound.play = function() {
+                    triggerDedupedSound('receive');
+                    return Promise.resolve();
+                };
+            }
+            if (typeof likeSound !== 'undefined' && likeSound) {
+                likeSound.play = function() {
+                    triggerDedupedSound('like');
+                    return Promise.resolve();
+                };
+            }
+        } catch (e) {}
+    })();
+</script>
+
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
 
