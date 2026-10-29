@@ -24,7 +24,7 @@ router.post('/chat', async (req, res) => {
 
         // Initialize a Chat Session with Memory and Personality
         const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             history: chatHistory, // Pass the previous messages to give Quantum memory
             config: {
                 // This is Quantum's permanent personality and background
