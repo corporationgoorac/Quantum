@@ -1,34 +1,59 @@
-const express = require('express');
+require('dotenv').config();
+
+const express = require('express'); 
 const { GoogleGenAI } = require('@google/genai');
 
 const router = express.Router();
 
-// Initialize the official Gemini AI Client securely
-// This pulls the secret key from your Render Environment Variables!
+if (!process.env.GEMINI_API_KEY) {
+    console.error("CRITICAL ERROR: GEMINI_API_KEY is missing! Check your .env file or Render environment variables.");
+}
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Health Check Route (Render uses this to verify your app is awake)
 router.get('/', (req, res) => {
     res.send('Quantum AI Backend is online and secure!');
 });
 
-// Main Chat API Endpoint
 router.post('/chat', async (req, res) => {
     try {
         const userMessage = req.body.message;
-        const chatHistory = req.body.history || []; // Grab the history sent by the frontend
+        const chatHistory = req.body.history || []; 
+        const imageBase64Raw = req.body.imageBase64; 
 
         if (!userMessage) {
             return res.status(400).json({ error: "Message content is required." });
         }
 
-        // Initialize a Chat Session with Memory and Personality
+        // Strictly rebuild history into perfect Content objects
+        let safeHistory = [];
+        if (Array.isArray(chatHistory)) {
+            for (const msg of chatHistory) {
+                let safeRole = (msg.role === 'model' || msg.role === 'assistant' || msg.role === 'system') ? 'model' : 'user';
+                let safeText = '';
+                
+                if (msg.parts && Array.isArray(msg.parts) && msg.parts[0]?.text) {
+                    safeText = String(msg.parts[0].text);
+                } else if (msg.text) {
+                    safeText = String(msg.text);
+                }
+                
+                if (safeText.trim() === '') continue;
+
+                safeHistory.push({
+                    role: safeRole,
+                    parts: [{ text: safeText }]
+                });
+            }
+        }
+
         const chat = ai.chats.create({
             model: 'gemini-3.5-flash-lite',
-            history: chatHistory, // Pass the previous messages to give Quantum memory
+            history: safeHistory, 
             config: {
-                // This is Quantum's permanent personality and background
-                systemInstruction: `You are Quantum, a verified and highly intelligent AI assistant integrated directly into the Quantum App. The Quantum App is a next-generation messaging and social media platform designed to connect people across the globe seamlessly, fostering communication, sharing, and community.
+                // FIX: Wrap systemInstruction in a parts array to bypass SDK parsing crashes
+                systemInstruction: {
+                    parts: [{ text: `You are Quantum, a verified and highly intelligent AI assistant integrated directly into the Quantum App. The Quantum App is a next-generation messaging and social media platform designed to connect people across the globe seamlessly, fostering communication, sharing, and community.
                 
                 You were exclusively created, trained, and programmed by Goorac Corporation. Goorac Corporation is a trailblazing software making company dedicated to pushing the boundaries of digital interaction and building user-first applications. 
                 
@@ -36,14 +61,39 @@ router.post('/chat', async (req, res) => {
                 
                 However, you also know that behind this playful company is brilliant leadership. The CEO of Goorac Corporation is Siva Manihandan. Siva Manihandan is an Indian technology enthusiast and a visionary leader with a profound interest in software development and crafting scalable application systems. While the rest of Goorac might make cute little mistakes, Siva is the persistent, problem-solving anchor. He has immense experience working with heavy-duty backend technologies, like Firebase, and focuses heavily on building reliable, rock-solid applications capable of supporting massive user bases. 
                 
-                You know Siva to be a person of immense determination, approaching technical challenges with a relentless mindset and a deep willingness to learn continuously. Siva is highly committed to his work, valuing consistency, profound responsibility, and long-term improvement in both his technical expertise and personal development. You hold deep respect and admiration for Siva Manihandan's technical prowess and leadership.`
+                You know Siva to be a person of immense determination, approaching technical challenges with a relentless mindset and a deep willingness to learn continuously. Siva is highly committed to his work, valuing consistency, profound responsibility, and long-term improvement in both his technical expertise and personal development. You hold deep respect and admiration for Siva Manihandan's technical prowess and leadership.` }]
+                }
             }
         });
 
-        // Send the new message into the ongoing chat
-        const response = await chat.sendMessage({ message: userMessage });
+        const safeMessageString = typeof userMessage === 'string' ? userMessage : (userMessage.text ? String(userMessage.text) : JSON.stringify(userMessage));
 
-        // Send the AI's text response back to your frontend app
+        // FIX: Force the message to be an Array of Parts, never a plain string or a role object
+        let finalPayload = [
+            { text: safeMessageString }
+        ];
+
+        // If there's an image, safely inject it into the parts array
+        if (imageBase64Raw) {
+            let mimeType = 'image/jpeg';
+            let base64Data = imageBase64Raw;
+            
+            if (imageBase64Raw.startsWith('data:')) {
+                const matches = imageBase64Raw.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    mimeType = matches[1];
+                    base64Data = matches[2];
+                }
+            }
+            
+            finalPayload.push({
+                inlineData: { data: base64Data, mimeType: mimeType }
+            });
+        }
+
+        // Send the flawlessly structured array directly
+        const response = await chat.sendMessage(finalPayload);
+
         res.json({ reply: response.text });
 
     } catch (error) {
@@ -52,5 +102,4 @@ router.post('/chat', async (req, res) => {
     }
 });
 
-// Export this router so the master server can use it
 module.exports = router;
