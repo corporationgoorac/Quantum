@@ -1171,6 +1171,9 @@
             item.setAttribute("ontouchstart", `startLongPress(this, '${id}', ${isPinned}, '${safeUserStr}')`);
             item.setAttribute("ontouchend", "endLongPress(this)");
             item.setAttribute("ontouchmove", "cancelLongPress(this)"); 
+            item.setAttribute("onmousedown", `startLongPress(this, '${id}', ${isPinned}, '${safeUserStr}')`);
+            item.setAttribute("onmouseup", "endLongPress(this)");
+            item.setAttribute("onmouseleave", "cancelLongPress(this)");
             item.setAttribute("onclick", `enterChat(event, '${chatLinkUser}', ${isGroup})`); 
 
             item.innerHTML = `
@@ -1334,7 +1337,7 @@
         if(!activeChatId) return;
         const cid = activeChatId; 
         const isGroup = this.dataset.isGroup === "true";
-        closeDeleteMenu(true); // Close the context menu
+        closeDeleteMenu(false); // Close the context menu without back nav
         
         openConfirmModal(cid, isGroup); // Open the HTML modal
     };
@@ -1343,7 +1346,7 @@
         document.getElementById('confirm-overlay').style.display = 'block';
         const modal = document.getElementById('confirm-modal');
         modal.style.bottom = '0';
-        history.pushState({ modal: 'confirm' }, "", "#confirm");
+        history.replaceState({ modal: 'confirm' }, "", "#confirm");
         
         document.getElementById('execute-confirm-delete').onclick = async function() {
             closeConfirmModal(true);
