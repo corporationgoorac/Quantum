@@ -264,7 +264,7 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.6); transform: scale(0.95); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             overflow: hidden; border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
         }
-        .album-box.playing { border-color: rgba(255,255,255,0.2); }
+        .album-box.playing { border-color: rgba(255,255,255,0.25); }
         .album-box.buffering { animation: breathe 2s infinite ease-in-out; }
         @keyframes breathe { 0%, 100% { opacity: 1; transform: scale(0.95); } 50% { opacity: 0.7; transform: scale(0.93); } }
 
@@ -327,11 +327,12 @@
             background: #fff; color: #000; border: none; padding: 14px 24px; border-radius: 100px;
             font-weight: 700; font-size: 13px; letter-spacing: 0.5px; box-shadow: 0 10px 40px rgba(255,255,255,0.15);
             display: flex; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-            animation: popIn 0.4s var(--ease-out-back); white-space: nowrap;
+            animation: popIn 0.35s var(--ease-out-back) forwards; white-space: nowrap;
+            will-change: transform, opacity;
         }
         .dj-btn:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255,255,255,0.1); }
         .dj-btn span { font-size: 18px; }
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
         /* Sync Overlay */
         #sync-overlay {
@@ -730,7 +731,7 @@
                     <button class="icon-action-btn" id="delete-track-btn" onclick="clearTrack()" style="display:none;" title="Clear Track">
                         <span class="material-icons-round">delete_outline</span>
                     </button>
-                    <button class="icon-action-btn" id="swap-turn-btn" onclick="swapTurn()" style="display:none;" title="Pass Turn">
+                    <button class="icon-action-btn" id="swap-turn-btn" onclick="swapTurn(true)" style="display:none;" title="Pass Turn">
                         <span class="material-icons-round">swap_horiz</span>
                     </button>
                  </div>
@@ -870,7 +871,7 @@
 
     <script>
         // =================================================================
-        // UPGRADED PARTICLE ENGINE
+        // UPGRADED PARTICLE ENGINE (EMOJIS + BEAT SPARKS + MELODY STARDUST)
         // =================================================================
         class ParticleEngine {
             constructor() {
@@ -905,6 +906,23 @@
                 }
             }
 
+            // Heavy Beat Drop: Loud spark burst that rains/drops down all over the screen
+            spawnBeatDrop(originX, originY, hue, intensity) {
+                if (this.particles.length > 140) return;
+                const count = Math.min(18, Math.floor(8 + intensity * 10));
+                for (let i = 0; i < count; i++) {
+                    const sparkHue = (hue + (Math.random() * 80 - 40) + 360) % 360;
+                    this.particles.push(new Particle(this.canvas.width, this.canvas.height, null, 'beat-spark', originX, originY, sparkHue));
+                }
+            }
+
+            // Smooth Melody: Gentle, hypnotic floating stardust notes/orbs
+            spawnMelodySparkle(originX, originY, hue) {
+                if (this.particles.length > 120) return;
+                const melodyHue = (hue + (Math.random() * 60 - 30) + 360) % 360;
+                this.particles.push(new Particle(this.canvas.width, this.canvas.height, null, 'melody-star', originX, originY, melodyHue));
+            }
+
             animate() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 for (let i = 0; i < this.particles.length; i++) {
@@ -918,8 +936,8 @@
         }
 
         class Particle {
-            constructor(w, h, emoji, type, startX, startY) {
-                this.emoji = emoji; this.type = type; this.w = w; this.h = h;
+            constructor(w, h, emoji, type, startX, startY, hue = 200) {
+                this.emoji = emoji; this.type = type; this.w = w; this.h = h; this.hue = hue;
                 if (type === 'burst') {
                     this.x = startX; this.y = startY;
                     const angle = Math.random() * Math.PI * 2;
@@ -927,6 +945,30 @@
                     this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
                     this.size = Math.random() * 40 + 40; 
                     this.decay = 0.02; this.gravity = 0;
+                } else if (type === 'beat-spark') {
+                    // Launches outward from the player/top and drops down like glowing fireworks across the screen
+                    this.x = startX + (Math.random() - 0.5) * 60;
+                    this.y = startY + (Math.random() - 0.5) * 40;
+                    const angle = -Math.PI + Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 9 + 3.5;
+                    this.vx = Math.cos(angle) * speed * 1.1;
+                    this.vy = Math.sin(angle) * speed - 2.5;
+                    this.prevX = this.x;
+                    this.prevY = this.y;
+                    this.size = Math.random() * 3.2 + 1.8;
+                    this.decay = Math.random() * 0.01 + 0.009;
+                    this.gravity = 0.22;
+                } else if (type === 'melody-star') {
+                    // Softly drifts across the screen with a gentle sine wave & twinkle
+                    this.x = Math.random() * w;
+                    this.y = startY + (Math.random() - 0.5) * (h * 0.45);
+                    this.vx = (Math.random() - 0.5) * 0.8;
+                    this.vy = -(Math.random() * 1.1 + 0.35);
+                    this.size = Math.random() * 2.8 + 1.2;
+                    this.decay = 0.0065;
+                    this.gravity = 0;
+                    this.twinkleSpeed = Math.random() * 0.12 + 0.05;
+                    this.twinklePhase = Math.random() * Math.PI * 2;
                 } else {
                     this.x = w / 2; this.y = h - 80; 
                     this.vx = (Math.random() - 0.5) * 1.5; this.vy = -3; 
@@ -936,19 +978,70 @@
             }
 
             update() {
-                this.x += this.vx; this.y += this.vy;
-                if (this.type === 'burst') { this.vx *= 0.95; this.vy *= 0.95; this.size *= 1.02; } 
-                else { this.x += Math.sin(this.y * this.swaySpeed + this.swayOffset) * 0.5; this.size *= 1.002; }
-                this.alpha -= this.decay;
+                if (this.type === 'beat-spark') {
+                    this.prevX = this.x;
+                    this.prevY = this.y;
+                    this.vx *= 0.98;
+                    this.vy += this.gravity;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= this.decay;
+                } else if (this.type === 'melody-star') {
+                    this.twinklePhase += this.twinkleSpeed;
+                    this.x += this.vx + Math.sin(this.twinklePhase) * 0.45;
+                    this.y += this.vy;
+                    this.alpha -= this.decay;
+                } else {
+                    this.x += this.vx; this.y += this.vy;
+                    if (this.type === 'burst') { this.vx *= 0.95; this.vy *= 0.95; this.size *= 1.02; } 
+                    else { this.x += Math.sin(this.y * this.swaySpeed + this.swayOffset) * 0.5; this.size *= 1.002; }
+                    this.alpha -= this.decay;
+                }
             }
 
             draw(ctx) {
                 if(!ctx) return;
-                ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = Math.max(0, this.alpha);
-                ctx.font = `${this.size}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", Arial, sans-serif`;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 10;
-                ctx.fillText(this.emoji, 0, 0); ctx.restore();
+                ctx.save();
+                if (this.type === 'beat-spark') {
+                    ctx.globalAlpha = Math.max(0, this.alpha * 0.85);
+                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 72%, 1)`;
+                    ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, 0.9)`;
+                    ctx.shadowBlur = 12;
+                    ctx.lineWidth = this.size;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(this.prevX, this.prevY);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * 0.55, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'melody-star') {
+                    const twinkle = 0.55 + 0.45 * Math.sin(this.twinklePhase);
+                    ctx.globalAlpha = Math.max(0, this.alpha * twinkle * 0.75);
+                    ctx.translate(this.x, this.y);
+                    ctx.fillStyle = `hsla(${this.hue}, 95%, 80%, 1)`;
+                    ctx.shadowColor = `hsla(${this.hue}, 100%, 70%, 0.9)`;
+                    ctx.shadowBlur = 10;
+                    // Draw 4-point diamond star
+                    const r = this.size * (0.9 + twinkle * 0.4);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r * 1.8);
+                    ctx.quadraticCurveTo(0, 0, r * 1.8, 0);
+                    ctx.quadraticCurveTo(0, 0, 0, r * 1.8);
+                    ctx.quadraticCurveTo(0, 0, -r * 1.8, 0);
+                    ctx.quadraticCurveTo(0, 0, 0, -r * 1.8);
+                    ctx.fill();
+                } else {
+                    ctx.translate(this.x, this.y); ctx.globalAlpha = Math.max(0, this.alpha);
+                    ctx.font = `${this.size}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", Arial, sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 10;
+                    ctx.fillText(this.emoji, 0, 0);
+                }
+                ctx.restore();
             }
         }
 
@@ -1009,6 +1102,10 @@
         let audioSourceNode = null; 
         let silentKeepAliveNode = null;
         let rotationAngle = 0; 
+        let prevBassAvg = 0;
+        let lastBeatDropMs = 0;
+        let lastMelodySparkleMs = 0;
+        const shockwaveRings = []; // Expanding beat rings around the visualizer
 
         // State
         let currentTurnUid = null;
@@ -1222,7 +1319,7 @@
                     audio.play().catch(()=>{});
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
-                    if (isMyTurn) swapTurn();
+                    if (isMyTurn) swapTurn(true);
                 });
             } catch (e) {}
         }
@@ -1334,7 +1431,7 @@
                 }
             });
 
-            // Periodic heartbeat every 5s
+            // Lightweight keep-alive every 45s (prevents unnecessary 5-second RTDB triggers that caused UI/button flicker!)
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             heartbeatInterval = setInterval(() => {
                 if (!isLeaving && roomId && myUid) {
@@ -1343,14 +1440,14 @@
                         ts: firebase.database.ServerValue.TIMESTAMP
                     }).catch(()=>{});
                 }
-            }, 5000);
+            }, 45000);
 
             // Check existing room before attaching listener to clear stale dead rooms
             try {
                 const partnerSnap = await partnerPresenceRef.once('value');
                 const pVal = partnerSnap.val();
                 const partnerActuallyHere = (pVal === 'online' || pVal === 'background') ||
-                    (pVal && (pVal.state === 'online' || pVal.state === 'background') && (getServerNow() - (pVal.ts || 0) < 60000));
+                    (pVal && (pVal.state === 'online' || pVal.state === 'background') && (getServerNow() - (pVal.ts || 0) < 90000));
                 isPartnerRdbOnline = Boolean(partnerActuallyHere);
 
                 const existingDoc = await roomRef.get();
@@ -1399,6 +1496,7 @@
                 const isOnlineOrBg = (stateStr === 'online' || stateStr === 'background');
 
                 if (isOnlineOrBg) {
+                    const wasPartnerOnline = isPartnerRdbOnline;
                     isPartnerRdbOnline = true;
                     hasConnectedTogether = true;
                     if (disconnectTimeout) {
@@ -1408,7 +1506,9 @@
                     if (latestRoomData && latestRoomData[otherField] !== 'online') {
                         roomRef.set({ [otherField]: 'online' }, { merge: true }).catch(()=>{});
                     }
-                    evaluateConnectionState(otherField);
+                    if (!wasPartnerOnline || !hasEnteredActiveScreen) {
+                        evaluateConnectionState(otherField);
+                    }
                 } else if (stateStr === 'explicit_exit') {
                     isPartnerRdbOnline = false;
                     if (!isLeaving) {
@@ -1563,6 +1663,15 @@
             };
         }
 
+        // Helper to update #controls-container ONLY when state actually changes (Eliminates button flickering!)
+        function setControlsContent(stateKey, htmlContent) {
+            const controls = document.getElementById('controls-container');
+            if (!controls) return;
+            if (controls.dataset.renderedState === stateKey) return;
+            controls.dataset.renderedState = stateKey;
+            controls.innerHTML = htmlContent;
+        }
+
         // -----------------------------------------------------------------
         // TWO-PLAYER BARRIER SYNC ENGINE (STARTS AT 0:00 FOR BOTH USERS!)
         // -----------------------------------------------------------------
@@ -1610,26 +1719,23 @@
                 clearTimeout(emojiTimer);
                 clearTimeout(turnTimer);
 
-                const controls = document.getElementById('controls-container');
-                controls.innerHTML = ''; 
-
                 // Show Swap button if it's my turn
                 if(isMyTurn) document.getElementById('swap-turn-btn').style.display = 'flex';
 
                 if (isMyTurn) {
-                    controls.innerHTML = `
+                    setControlsContent('picking_me', `
                         <button class="dj-btn" onclick="document.getElementById('song-picker').open()">
                             <span class="material-icons-round">timer</span> 30s DROP
                         </button>
                         <button class="dj-btn" style="background:var(--accent); color:#fff;" onclick="document.getElementById('full-song-picker').open()">
                             <span class="material-icons-round">library_music</span> FULL TRACK
                         </button>
-                    `;
+                    `);
                     document.getElementById('active-song-artist').innerText = "It's your turn to pick.";
                 } else {
                     const name = targetProfile ? targetProfile.name.split(' ')[0].toUpperCase() : 'THEM';
                     const badge = (targetProfile && targetProfile.verified) ? `<span class="material-icons-round" style="font-size:12px; color:var(--verified-color); vertical-align:middle; margin-left:2px;">verified</span>` : '';
-                    controls.innerHTML = `<p style="font-size:12px; color:var(--text-secondary); font-weight:700; letter-spacing:1px; text-transform:uppercase;">${name} ${badge} IS CHOOSING...</p>`;
+                    setControlsContent(`picking_them_${name}`, `<p style="font-size:12px; color:var(--text-secondary); font-weight:700; letter-spacing:1px; text-transform:uppercase;">${name} ${badge} IS CHOOSING...</p>`);
                     document.getElementById('active-song-artist').innerText = "Waiting for track...";
                 }
             }
@@ -1653,11 +1759,11 @@
                 const isThemReady = Boolean(readyMap[targetUid]);
 
                 if (!amIReady) {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--accent); font-weight:700; letter-spacing:1px;">BUFFERING MEDIA...</p>`;
+                    setControlsContent('buffering_me', `<p style="font-size:12px; color:var(--accent); font-weight:700; letter-spacing:1px;">BUFFERING MEDIA...</p>`);
                 } else if (!isThemReady) {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:#fff; font-weight:700; letter-spacing:1px;">SYNCING WITH PARTNER...</p>`;
+                    setControlsContent('buffering_them', `<p style="font-size:12px; color:#fff; font-weight:700; letter-spacing:1px;">SYNCING WITH PARTNER...</p>`);
                 } else {
-                    document.getElementById('controls-container').innerHTML = `<p style="font-size:12px; color:var(--radio-color); font-weight:700; letter-spacing:1px;">STARTING TOGETHER...</p>`;
+                    setControlsContent('buffering_start', `<p style="font-size:12px; color:var(--radio-color); font-weight:700; letter-spacing:1px;">STARTING TOGETHER...</p>`);
                 }
 
                 // Load the track and pause at 0:00 while waiting for both players to be ready
@@ -1763,7 +1869,7 @@
                     document.getElementById('delete-track-btn').style.display = 'flex';
                 }
 
-                document.getElementById('controls-container').innerHTML = '';
+                setControlsContent('playing_empty', '');
 
                 const hue = ((song.artistName || 'Pulse').length * 40) % 360;
                 document.body.dataset.baseHue = hue;
@@ -1795,7 +1901,7 @@
                     clearTimeout(turnTimer);
                     if (currentSongType === 'preview') {
                         turnTimer = setTimeout(() => {
-                            if (currentSongId === songUniqueId && isMyTurn) swapTurn();
+                            if (currentSongId === songUniqueId && isMyTurn) swapTurn(false);
                         }, 30500);
                     }
                 } else if (!audio.paused) {
@@ -1828,7 +1934,7 @@
         // =================================================================
         // ACTION HELPERS (SWAP & DELETE)
         // =================================================================
-        function swapTurn() {
+        function swapTurn(isManualPass = false) {
             if (!roomRef) return;
             const nextDj = (currentTurnUid === myUid) ? targetUid : myUid; 
             roomRef.set({
@@ -1840,7 +1946,9 @@
                 songType: 'preview',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).catch(()=>{});
-            sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} passed the turn.`);
+            if (isManualPass) {
+                sendSystemMessage(`${myProfile ? myProfile.name.split(' ')[0] : 'User'} passed the turn.`);
+            }
         }
 
         function clearTrack() {
@@ -1939,16 +2047,17 @@
             return;
         }
 
-        // AUTO ADVANCE (Works even when one user has their screen turned off!)
+        // AUTO ADVANCE (Works even when one user has their screen turned off, without double-swapping!)
         audio.onended = () => {
             if (isAdvancingTrack) return;
             isAdvancingTrack = true;
+            const turnAtEnd = currentTurnUid;
             if (isMyTurn) {
-                swapTurn();
+                swapTurn(false);
             } else {
                 setTimeout(() => {
-                    if (latestRoomData && latestRoomData.cycleStatus === 'playing' && currentSongId) {
-                        swapTurn();
+                    if (latestRoomData && latestRoomData.cycleStatus === 'playing' && latestRoomData.turn === turnAtEnd && currentSongId) {
+                        swapTurn(false);
                     }
                 }, 2500);
             }
@@ -1965,7 +2074,7 @@
         });
 
         // =================================================================
-        // VISUALIZER & DYNAMIC BEAT COLORS (REAL SONG FREQUENCY ANALYSER + SCREEN-OFF KEEP-ALIVE)
+        // MESMERIZING BEAT-DROP & MELODY VISUALIZER ENGINE
         // =================================================================
         function setupVisualizer() {
             if (audioCtx) return; 
@@ -1973,6 +2082,7 @@
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContext();
                 analyser = audioCtx.createAnalyser();
+                analyser.smoothingTimeConstant = 0.82;
                 
                 if (!audioSourceNode) {
                     audioSourceNode = audioCtx.createMediaElementSource(audio);
@@ -2007,29 +2117,69 @@
             visualizerAnimation = requestAnimationFrame(drawVisualizer);
             if (!analyser || !canvas || !canvasCtx) return;
 
-            // Read REAL frequency & wavelength data directly from the playing song!
+            // 1. Read REAL frequency & wavelength data directly from the playing song
             analyser.getByteFrequencyData(dataArray);
-            
-            let bassTotal = 0;
-            for(let i=0; i<8; i++) { bassTotal += dataArray[i]; }
-            const bassAvg = bassTotal / 8;
-            
-            const baseHue = Number(document.body.dataset.baseHue) || 200;
-            const lightness = 5 + (bassAvg / 255) * 15; 
-            document.body.style.background = `radial-gradient(circle at center, hsla(${baseHue}, 60%, ${lightness}%, 1), #000 90%)`;
+            const isPlayingAudio = !audio.paused && audio.currentTime > 0 && !audio.ended;
+            const nowMs = performance.now();
+            const nowSec = nowMs / 1000;
+
+            // Check if stream has real WebAudio data or if CORS fallback needs harmonic synthesis
+            let rawSum = 0;
+            for (let i = 0; i < 32; i++) rawSum += dataArray[i];
+            if (isPlayingAudio && rawSum === 0) {
+                for (let i = 0; i < dataArray.length; i++) {
+                    const beatPulse = Math.pow(Math.sin(nowSec * 3.8) * 0.5 + 0.5, 3);
+                    const melodyWave = Math.sin(nowSec * 5.2 + i * 0.14) * 0.5 + 0.5;
+                    const highShimmer = Math.cos(nowSec * 9.0 - i * 0.25) * 0.5 + 0.5;
+                    const env = Math.max(0.18, 1 - (i / dataArray.length) * 0.65);
+                    const bassKick = i < 12 ? beatPulse * 135 : 0;
+                    dataArray[i] = Math.min(255, Math.floor(((melodyWave * 105 + highShimmer * 45) * env) + bassKick));
+                }
+            }
+
+            // 2. Compute Bass (0-10), Melody Mids (12-50), and Shimmer Highs (50-95)
+            let bassTotal = 0, midTotal = 0, highTotal = 0;
+            for (let i = 0; i < 10; i++) bassTotal += dataArray[i];
+            for (let i = 12; i < 50; i++) midTotal += dataArray[i];
+            for (let i = 50; i < 95; i++) highTotal += dataArray[i];
+
+            const bassAvg = bassTotal / 10;
+            const midAvg = midTotal / 38;
+            const highAvg = highTotal / 45;
+            const bassDelta = bassAvg - prevBassAvg;
+            prevBassAvg = bassAvg * 0.65 + prevBassAvg * 0.35;
+
+            const baseHue = (Number(document.body.dataset.baseHue) + Math.floor(nowSec * 8)) % 360 || 200;
+            const bassRatio = bassAvg / 255;
+            const midRatio = midAvg / 255;
+
+            // Dynamic atmospheric dual-aura background that breathes with both bass and melody
+            const lightness1 = 6 + bassRatio * 22;
+            const lightness2 = 4 + midRatio * 14;
+            const melodyHue = (baseHue + 45) % 360;
+            document.body.style.background = `
+                radial-gradient(circle at 50% 42%, hsla(${baseHue}, 85%, ${lightness1}%, 0.95), transparent 65%),
+                radial-gradient(circle at 50% 65%, hsla(${melodyHue}, 75%, ${lightness2}%, 0.7), #030303 92%)
+            `;
 
             // Set Chat Tint dynamically for beat
-            const beatTint = `hsla(${baseHue}, 70%, 50%, ${(bassAvg / 255) * 0.15})`;
+            const beatTint = `hsla(${baseHue}, 75%, 50%, ${bassRatio * 0.18})`;
             document.documentElement.style.setProperty('--beat-chat-tint', beatTint);
 
             const isFullModeActive = document.getElementById('screen-active').classList.contains('mode-full');
             const scale = isFullModeActive
-                ? (0.98 + (bassAvg / 255) * 0.05)
-                : (0.95 + (bassAvg / 255) * 0.15);
+                ? (0.98 + bassRatio * 0.06)
+                : (0.94 + bassRatio * 0.18);
             const albumEl = document.getElementById('album-container');
-            if (albumEl) albumEl.style.transform = `scale(${scale})`;
+            if (albumEl) {
+                albumEl.style.transform = `scale(${scale})`;
+                if (isPlayingAudio) {
+                    const glowSpread = Math.round(25 + bassRatio * 55);
+                    albumEl.style.boxShadow = `0 0 ${glowSpread}px hsla(${baseHue}, 95%, 60%, ${0.25 + bassRatio * 0.45}), 0 10px 35px rgba(0,0,0,0.7)`;
+                }
+            }
 
-            // Dynamically keep canvas buffer matched to its current CSS box size (even when keyboard shifts layout!)
+            // Dynamically keep canvas buffer matched to its current CSS box size
             const dpr = window.devicePixelRatio || 1;
             const cRect = canvas.getBoundingClientRect();
             if (cRect.width === 0 || cRect.height === 0) return;
@@ -2041,38 +2191,82 @@
                 canvas.height = targetH;
             }
 
+            // Calculate exact center of #album-container relative to #visualizer canvas & viewport
+            const aRect = albumEl.getBoundingClientRect();
+            const cx = (aRect.left + aRect.width / 2) - cRect.left;
+            const cy = (aRect.top + aRect.height / 2) - cRect.top;
+            const screenCenterX = aRect.left + aRect.width / 2;
+            const screenCenterY = aRect.top + aRect.height / 2;
+
+            // 3. TRIGGER HEAVY BEAT SPARK DROPS & SHOCKWAVE RINGS ON BASS HITS
+            if (isPlayingAudio && ((bassDelta > 20 && bassAvg > 135) || bassAvg > 195) && (nowMs - lastBeatDropMs > 210)) {
+                lastBeatDropMs = nowMs;
+                const intensity = Math.min(1, (bassAvg - 120) / 135);
+                particleEngine.spawnBeatDrop(screenCenterX, screenCenterY, baseHue, intensity);
+                shockwaveRings.push({
+                    r: 0,
+                    maxR: isFullModeActive ? 110 : 185,
+                    alpha: 0.75 * intensity + 0.2,
+                    hue: baseHue
+                });
+            }
+
+            // 4. TRIGGER HYPNOTIC MELODY STARDUST ON VOCALS / MELODIC MIDS
+            if (isPlayingAudio && midAvg > 75 && (nowMs - lastMelodySparkleMs > 140)) {
+                lastMelodySparkleMs = nowMs;
+                particleEngine.spawnMelodySparkle(screenCenterX, screenCenterY, melodyHue);
+            }
+
             canvasCtx.save();
             canvasCtx.scale(dpr, dpr);
             canvasCtx.clearRect(0, 0, cRect.width, cRect.height);
 
-            // Calculate exact center of #album-container relative to #visualizer canvas
-            const aRect = albumEl.getBoundingClientRect();
-            const cx = (aRect.left + aRect.width / 2) - cRect.left;
-            const cy = (aRect.top + aRect.height / 2) - cRect.top;
-            const bars = dataArray.length; 
+            const bars = 96; // Smooth, dense harmonic spectrum
 
             // RECTANGULAR VISUALIZER LOCKED TO ALBUM BOX IN FULL SONG MODE
             if (isFullModeActive) {
-                const rectW = aRect.width + 6;
-                const rectH = aRect.height + 6;
-                const maxBarHeight = document.getElementById('screen-active').classList.contains('keyboard-open') ? 22 : 36;
+                const rectW = aRect.width + 8;
+                const rectH = aRect.height + 8;
+                const isKbOpen = document.getElementById('screen-active').classList.contains('keyboard-open');
+                const maxBarHeight = isKbOpen ? 26 : 46;
                 
                 canvasCtx.save();
                 canvasCtx.translate(cx, cy);
+
+                // Draw expanding Bass Shockwave Rectangles
+                for (let s = shockwaveRings.length - 1; s >= 0; s--) {
+                    const sw = shockwaveRings[s];
+                    sw.r += 2.6;
+                    sw.alpha *= 0.93;
+                    if (sw.alpha <= 0.02 || sw.r > sw.maxR) {
+                        shockwaveRings.splice(s, 1);
+                        continue;
+                    }
+                    canvasCtx.save();
+                    canvasCtx.strokeStyle = `hsla(${sw.hue}, 100%, 68%, ${sw.alpha})`;
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.shadowColor = `hsla(${sw.hue}, 100%, 60%, ${sw.alpha})`;
+                    canvasCtx.shadowBlur = 12;
+                    const swW = rectW + sw.r * 1.6;
+                    const swH = rectH + sw.r * 1.1;
+                    canvasCtx.strokeRect(-swW / 2, -swH / 2, swW, swH);
+                    canvasCtx.restore();
+                }
                 
-                // Draw a wave around the exact rectangle dimensions
+                // Draw multi-layered neon frequency bars + glowing tips around the rectangle
                 const totalPerimeter = (rectW * 2) + (rectH * 2);
                 const stepLen = totalPerimeter / bars;
 
                 for(let i=0; i<bars; i++) {
-                    const value = dataArray[i];
-                    const barHeight = (value / 255) * maxBarHeight;
-                    const hue = (i / bars) * 360 + baseHue;
+                    // Mirror spectrum symmetrically so bass & melody wrap evenly around all 4 sides
+                    const freqIndex = i < bars / 2 ? i : (bars - 1 - i);
+                    const value = dataArray[freqIndex];
+                    const barHeight = Math.max(3, Math.pow(value / 255, 1.15) * maxBarHeight);
+                    const hue = (freqIndex / (bars / 2)) * 180 + baseHue;
                     
                     let pos = i * stepLen;
                     let x=0, y=0, angle=0;
 
-                    // Map perimeter to sides
                     if (pos < rectW) { x = -rectW/2 + pos; y = -rectH/2; angle = -Math.PI/2; } // Top
                     else if (pos < rectW + rectH) { x = rectW/2; y = -rectH/2 + (pos - rectW); angle = 0; } // Right
                     else if (pos < (rectW*2) + rectH) { x = rectW/2 - (pos - (rectW + rectH)); y = rectH/2; angle = Math.PI/2; } // Bottom
@@ -2081,46 +2275,115 @@
                     canvasCtx.save();
                     canvasCtx.translate(x, y);
                     canvasCtx.rotate(angle);
+
+                    // Primary neon bar with bloom glow
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(0, 0);
                     canvasCtx.lineTo(barHeight, 0);
                     canvasCtx.lineWidth = 3;
                     canvasCtx.lineCap = 'round';
-                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.85)`;
+                    canvasCtx.shadowColor = `hsla(${hue}, 100%, 60%, 0.75)`;
+                    canvasCtx.shadowBlur = 8;
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 65%, 0.9)`;
                     canvasCtx.stroke();
+
+                    // Floating luminous pearl tip on active bars
+                    if (value > 95) {
+                        canvasCtx.fillStyle = '#ffffff';
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(barHeight + 4, 0, 1.7, 0, Math.PI * 2);
+                        canvasCtx.fill();
+                    }
                     canvasCtx.restore();
                 }
                 canvasCtx.restore();
 
             } else {
-                // Default Circular Visualizer
-                const radius = (aRect.width / 2) + 4; 
-                rotationAngle += 0.002;
+                // CIRCULAR HYPNOTIC MELODY & BEAT VISUALIZER (30s Drop & Default View)
+                const radius = (aRect.width / 2) + 6; 
+                rotationAngle += 0.0025 + (bassRatio * 0.006);
                 const step = (Math.PI * 2) / bars;
 
                 canvasCtx.save();
                 canvasCtx.translate(cx, cy);
-                canvasCtx.rotate(rotationAngle);
 
+                // 1. Expanding Bass Shockwave Rings
+                for (let s = shockwaveRings.length - 1; s >= 0; s--) {
+                    const sw = shockwaveRings[s];
+                    sw.r += 3.2;
+                    sw.alpha *= 0.94;
+                    if (sw.alpha <= 0.02 || sw.r > sw.maxR) {
+                        shockwaveRings.splice(s, 1);
+                        continue;
+                    }
+                    canvasCtx.save();
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(0, 0, radius + sw.r, 0, Math.PI * 2);
+                    canvasCtx.strokeStyle = `hsla(${sw.hue}, 100%, 70%, ${sw.alpha})`;
+                    canvasCtx.lineWidth = 2.5;
+                    canvasCtx.shadowColor = `hsla(${sw.hue}, 100%, 60%, ${sw.alpha})`;
+                    canvasCtx.shadowBlur = 15;
+                    canvasCtx.stroke();
+                    canvasCtx.restore();
+                }
+
+                // 2. Silky Melody Ribbon Wave (undulating outer aura driven by mids & highs)
+                canvasCtx.save();
+                canvasCtx.rotate(-rotationAngle * 0.7);
+                canvasCtx.beginPath();
+                for (let i = 0; i <= bars; i++) {
+                    const idx = i % bars;
+                    const freqIdx = idx < bars / 2 ? idx : (bars - 1 - idx);
+                    const val = dataArray[freqIdx];
+                    const melodyWaveR = radius + 12 + (val / 255) * 48 + Math.sin(nowSec * 4 + idx * 0.25) * 6;
+                    const rad = i * step;
+                    const mx = Math.cos(rad) * melodyWaveR;
+                    const my = Math.sin(rad) * melodyWaveR;
+                    if (i === 0) canvasCtx.moveTo(mx, my);
+                    else canvasCtx.lineTo(mx, my);
+                }
+                canvasCtx.closePath();
+                canvasCtx.strokeStyle = `hsla(${melodyHue}, 100%, 72%, 0.45)`;
+                canvasCtx.lineWidth = 2;
+                canvasCtx.shadowColor = `hsla(${melodyHue}, 100%, 65%, 0.7)`;
+                canvasCtx.shadowBlur = 14;
+                canvasCtx.stroke();
+                canvasCtx.restore();
+
+                // 3. Primary Symmetrical Frequency Bars + Luminous Starlight Tips
+                canvasCtx.rotate(rotationAngle);
                 for (let i = 0; i < bars; i++) {
-                    const value = dataArray[i];
-                    const barHeight = (value / 255) * 60; 
-                    const hue = (i / bars) * 360 + baseHue;
-                    canvasCtx.fillStyle = `hsla(${hue}, 80%, 60%, 0.8)`;
+                    const freqIndex = i < bars / 2 ? i : (bars - 1 - i);
+                    const value = dataArray[freqIndex];
+                    const barHeight = Math.max(4, Math.pow(value / 255, 1.2) * 82); 
+                    const hue = (freqIndex / (bars / 2)) * 200 + baseHue;
                     
                     const rads = i * step;
-                    const x = Math.cos(rads) * (radius + barHeight);
-                    const y = Math.sin(rads) * (radius + barHeight);
-                    const xStart = Math.cos(rads) * radius;
-                    const yStart = Math.sin(rads) * radius;
+                    const cosR = Math.cos(rads);
+                    const sinR = Math.sin(rads);
+                    const xStart = cosR * radius;
+                    const yStart = sinR * radius;
+                    const xEnd = cosR * (radius + barHeight);
+                    const yEnd = sinR * (radius + barHeight);
 
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(xStart, yStart);
-                    canvasCtx.lineTo(x, y);
-                    canvasCtx.lineWidth = 3;
+                    canvasCtx.lineTo(xEnd, yEnd);
+                    canvasCtx.lineWidth = 3.2;
                     canvasCtx.lineCap = 'round';
-                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    canvasCtx.shadowColor = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    canvasCtx.shadowBlur = 10;
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 65%, 0.92)`;
                     canvasCtx.stroke();
+
+                    // Glowing starlight tip that floats just above the bar peak
+                    if (value > 85) {
+                        const tipDist = radius + barHeight + 6 + (highAvg / 255) * 5;
+                        canvasCtx.fillStyle = '#ffffff';
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(cosR * tipDist, sinR * tipDist, 1.9, 0, Math.PI * 2);
+                        canvasCtx.fill();
+                    }
                 }
                 canvasCtx.restore();
             }
