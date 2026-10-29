@@ -126,7 +126,7 @@
         /* THE SEAMLESS COVER IMAGE FIX (NO YOUTUBE FLASH) */
         .video-cover {
             position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-            z-index: 5; transition: opacity 0.4s ease; pointer-events: none; background: #050505;
+            z-index: 5; transition: opacity 0.25s ease; pointer-events: none; background: #050505;
             filter: brightness(0.9);
         }
 
@@ -141,6 +141,18 @@
         .yt-player-container.active { z-index: 2; }
         
         iframe { width: 100%; height: 100%; border: none; pointer-events: none !important; }
+        /* CROP YOUTUBE TOP TITLE BAR, SHARE ICON, WATCH LATER & PLAY BUTTON OVERLAYS */
+        .yt-player-container iframe {
+            position: absolute !important;
+            top: -14% !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 128% !important;
+            transform: scale(1.04);
+            border: none !important;
+            pointer-events: none !important;
+            user-select: none !important;
+        }
 
         /* ==========================================================================
            BITES UI OVERLAY (ADVANCED TIKTOK STYLE)
@@ -233,7 +245,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* ==========================================================================
-           SEARCH DISCOVER MODAL
+           SEARCH DISCOVER MODAL & SUGGESTION GRID
            ========================================================================== */
         #discover-modal {
             position: fixed; top: 0; right: -100%; width: 100vw; height: 100vh;
@@ -245,19 +257,51 @@
 
         .modal-header {
             padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top));
-            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
             flex-shrink: 0; /* Ensures header does not squash when scrolling results */
         }
-        .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; }
+        .back-btn { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; padding: 0; }
+        .search-input-wrap {
+            flex: 1; position: relative; display: flex; align-items: center;
+        }
         .search-input-box {
-            flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px 16px;
+            width: 100%; flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px 38px 12px 16px;
             border-radius: 14px; color: #fff; font-size: 16px; outline: none; transition: 0.2s; font-weight: 500;
         }
         .search-input-box:focus { border-color: var(--accent); background: #222; box-shadow: 0 0 10px rgba(0,210,255,0.1); }
+        .clear-search-btn {
+            position: absolute; right: 10px; background: rgba(255,255,255,0.15); border: none; color: #fff;
+            width: 22px; height: 22px; border-radius: 50%; display: none; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px; padding: 0;
+        }
+
+        /* RECOMMENDATION SUGGESTION PILLS BAR */
+        .suggestion-pills-bar {
+            display: flex; align-items: center; gap: 8px; padding: 10px 15px;
+            overflow-x: auto; background: #080808; border-bottom: 1px solid var(--border);
+            scrollbar-width: none; -webkit-overflow-scrolling: touch; flex-shrink: 0;
+        }
+        .suggestion-pills-bar::-webkit-scrollbar { display: none; }
+        .suggestion-pill {
+            padding: 7px 14px; border-radius: 20px; background: #161616; border: 1px solid rgba(255,255,255,0.1);
+            color: #ccc; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer;
+            transition: 0.2s ease; display: flex; align-items: center; gap: 5px;
+        }
+        .suggestion-pill:active { transform: scale(0.94); }
+        .suggestion-pill.active {
+            background: rgba(0, 210, 255, 0.16); color: var(--accent); border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.2);
+        }
+
+        .grid-section-header {
+            grid-column: 1 / -1; padding: 12px 14px 8px; display: flex; align-items: center;
+            justify-content: space-between; font-size: 0.88rem; font-weight: 800; color: #bbb;
+            letter-spacing: 0.3px; background: #000;
+        }
 
         .grid-results {
             flex: 1; overflow-y: auto; padding: 2px;
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
             align-content: start; background: #000;
             -webkit-overflow-scrolling: touch; /* Added for smooth internal scrolling */
             overscroll-behavior-y: contain; /* Prevents scroll chaining to the background */
@@ -266,12 +310,23 @@
 
         .grid-item {
             aspect-ratio: 9 / 16; background: #111; position: relative; cursor: pointer; overflow: hidden;
+            border-radius: 4px;
         }
         .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
         .grid-item:active img { transform: scale(1.05); filter: brightness(0.8); }
+        .grid-item-gradient {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 45%, transparent 100%);
+            pointer-events: none;
+        }
+        .grid-item .title-overlay {
+            position: absolute; bottom: 26px; left: 6px; right: 6px; font-size: 0.72rem; font-weight: 600;
+            color: #f5f5f5; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 3px #000; pointer-events: none;
+        }
         .grid-item .views-overlay {
-            position: absolute; bottom: 5px; left: 5px; font-size: 0.75rem; font-weight: 800; color: #fff;
-            display: flex; align-items: center; gap: 3px; text-shadow: 0 1px 4px #000; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; backdrop-filter: blur(2px);
+            position: absolute; bottom: 5px; left: 5px; font-size: 0.72rem; font-weight: 800; color: #fff;
+            display: flex; align-items: center; gap: 3px; text-shadow: 0 1px 4px #000; background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px; backdrop-filter: blur(2px);
         }
 
         /* MULTI-PURPOSE INDICATOR (Play/Pause/Mute) */
@@ -381,8 +436,12 @@
 <div id="discover-modal">
     <div class="modal-header">
         <button class="back-btn" onclick="closeDiscoverModal(true)"><span class="material-icons-round">west</span></button>
-        <input type="text" id="search-input" class="search-input-box" placeholder="Search trending topics..." autocomplete="off">
+        <div class="search-input-wrap">
+            <input type="text" id="search-input" class="search-input-box" placeholder="Search trending topics..." autocomplete="off">
+            <button id="clear-search-btn" class="clear-search-btn" onclick="clearSearchInput()"><span class="material-icons-round" style="font-size:14px;">close</span></button>
+        </div>
     </div>
+    <div class="suggestion-pills-bar" id="suggestion-pills-bar"></div>
     <div class="grid-results" id="search-grid">
         <div style="grid-column: 1 / -1; text-align:center; padding: 60px 20px; color: #666;">
             <span class="material-icons-round" style="font-size: 56px; opacity:0.5; margin-bottom: 15px;">explore</span>
@@ -547,8 +606,9 @@
                     Object.assign(ints, decayedInts); 
                     myInterests = Object.keys(ints).sort((a,b) => ints[b] - ints[a]).slice(0, 6);
                     if(myInterests.length === 0) myInterests = ["tamil", "comedy", "music"]; 
+                    renderSuggestionPills();
                 }
-            });
+            }).catch(() => {});
         } 
         else { window.location.href = 'login.html'; }
     });
@@ -579,6 +639,7 @@
 
     let globalMuted = true; // Auto-play relies on initial mute
     let progressInterval = null; 
+    let coverHideTimer = null;
 
     // 🚀 DYNAMIC URL REDIRECTION: Check if user arrived via a shared link
     let sharedVidId = null;
@@ -721,16 +782,32 @@
     // YOUTUBE IFRAME API DYNAMIC INJECTION
     // ==========================================================================
     window.onYouTubeIframeAPIReady = function() {
-        const playerVars = { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'rel': 0, 'modestbranding': 1, 'playsinline': 1, 'mute': 1 };
+        const playerVars = {
+            'autoplay': 0,
+            'controls': 0,
+            'disablekb': 1,
+            'fs': 0,
+            'rel': 0,
+            'modestbranding': 1,
+            'iv_load_policy': 3,
+            'cc_load_policy': 0,
+            'playsinline': 1,
+            'mute': 1,
+            'origin': window.location.origin
+        };
         
         playerA = new YT.Player('yt-player-a', {
+            width: '100%',
+            height: '100%',
             playerVars: playerVars,
-            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
+            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
         });
         
         playerB = new YT.Player('yt-player-b', {
+            width: '100%',
+            height: '100%',
             playerVars: playerVars,
-            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange }
+            events: { 'onReady': checkPlayersReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
         });
     };
 
@@ -760,10 +837,19 @@
         }
     }
 
+    function onPlayerError() {
+        // Keep cover visible if a video fails or is restricted
+        const cover = document.getElementById(`cover-${currentIndex}`);
+        if (cover) cover.style.opacity = '1';
+    }
+
     window.initialUnmute = function() {
         globalMuted = false;
         const p = activePlayer === 'A' ? playerA : playerB;
         if(p && typeof p.unMute === 'function') p.unMute();
+        if (p && typeof p.getPlayerState === 'function' && p.getPlayerState() !== YT.PlayerState.PLAYING) {
+            p.playVideo();
+        }
         document.getElementById('tap-to-unmute-overlay').style.display = 'none';
         showCenterIcon('volume_up');
     }
@@ -775,6 +861,7 @@
         
         if (playersReady === 2 && bitesQueue.length > 0) {
             if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
+            swapPlayers();
             playActivePlayer();
             currentVideoStartTime = Date.now(); 
             cleanUpQueueAndCache(); 
@@ -816,13 +903,14 @@
             const isLiked = likedBites.includes(bite.videoId);
             const likeClass = isLiked ? "action-btn liked" : "action-btn";
             const likeIcon = isLiked ? "favorite" : "favorite_border";
+            const fallbackThumb = `https://img.youtube.com/vi/${bite.videoId}/hqdefault.jpg`;
 
             slide.innerHTML = `
-                <img src="${bite.imgUrl}" class="video-cover" id="cover-${i}">
+                <img src="${bite.imgUrl || fallbackThumb}" onerror="this.onerror=null;this.src='${fallbackThumb}';" class="video-cover" id="cover-${i}">
                 <div class="bite-ui-layer">
                     <div class="side-actions">
                         <div class="creator-pfp-wrap" onclick="event.stopPropagation()">
-                            <img src="${bite.imgUrl}" class="creator-pfp">
+                            <img src="${bite.imgUrl || fallbackThumb}" onerror="this.onerror=null;this.src='${fallbackThumb}';" class="creator-pfp">
                             <div class="follow-badge">+</div>
                         </div>
                         <div class="${likeClass}" id="like-btn-${i}" onclick="handleLike(event, ${i})">
@@ -968,6 +1056,8 @@
         } else {
             if (pA && typeof pA.unMute === 'function') pA.unMute();
             if (pB && typeof pB.unMute === 'function') pB.unMute();
+            const tapToUnmute = document.getElementById('tap-to-unmute-overlay');
+            if (tapToUnmute) tapToUnmute.style.display = 'none';
             showCenterIcon('volume_up');
         }
     }
@@ -1020,6 +1110,7 @@
                 swapPlayers();
                 if (hasStarted) currentVideoStartTime = Date.now();
             } else {
+                swapPlayers();
                 if (hasStarted) {
                     if(bitesQueue[currentIndex]) markAsViewed(bitesQueue[currentIndex].videoId);
                     playActivePlayer();
@@ -1052,7 +1143,7 @@
                 lastScrollDir = 'up';
                 inactiveEl.style.top = ((currentIndex - 1) * slideHeight) + 'px';
                 const prevVid = bitesQueue[currentIndex - 1]?.videoId;
-                if (prevVid) {
+                if (prevVid && inactivePlayerObj && typeof inactivePlayerObj.cueVideoById === 'function') {
                     inactivePlayerObj.cueVideoById(prevVid);
                     if(activePlayer === 'A') currentLoadedB = prevVid; else currentLoadedA = prevVid;
                 }
@@ -1062,7 +1153,7 @@
                 lastScrollDir = 'down';
                 inactiveEl.style.top = ((currentIndex + 1) * slideHeight) + 'px';
                 const nextVid = bitesQueue[currentIndex + 1]?.videoId;
-                if (nextVid) {
+                if (nextVid && inactivePlayerObj && typeof inactivePlayerObj.cueVideoById === 'function') {
                     inactivePlayerObj.cueVideoById(nextVid);
                     if(activePlayer === 'A') currentLoadedB = nextVid; else currentLoadedA = nextVid;
                 }
@@ -1211,13 +1302,15 @@
         if (typeof playerB.pauseVideo === 'function') playerB.pauseVideo();
 
         stopProgressBar(); // Reset bar on swipe
+        clearTimeout(coverHideTimer);
 
         // Reset Cover opacity so the next video stays hidden while buffering
         const allCovers = document.querySelectorAll('.video-cover');
         allCovers.forEach(c => c.style.opacity = '1'); 
 
+        const viewport = document.getElementById('bites-viewport');
         const firstSlide = document.querySelector('.bite-slide');
-        const h = firstSlide ? firstSlide.clientHeight : 0;
+        const h = firstSlide ? firstSlide.clientHeight : (viewport ? viewport.clientHeight : window.innerHeight);
 
         if (isEven) {
             activePlayer = 'A';
@@ -1226,13 +1319,16 @@
             
             document.getElementById('player-container-a').style.top = (currentIndex * h) + 'px';
             
-            if (currentVid) {
+            if (currentVid && typeof playerA.loadVideoById === 'function') {
                 if (currentLoadedA !== currentVid) {
                     hasStarted ? playerA.loadVideoById(currentVid) : playerA.cueVideoById(currentVid);
                     currentLoadedA = currentVid;
-                } else if (hasStarted && !isLongPress) playerA.playVideo();
+                } else if (hasStarted && !isLongPress) {
+                    playerA.seekTo(0);
+                    playerA.playVideo();
+                }
             }
-            if (nextVid && currentLoadedB !== nextVid) {
+            if (nextVid && currentLoadedB !== nextVid && typeof playerB.cueVideoById === 'function') {
                 document.getElementById('player-container-b').style.top = ((currentIndex + 1) * h) + 'px';
                 playerB.cueVideoById(nextVid);
                 currentLoadedB = nextVid;
@@ -1244,13 +1340,16 @@
             
             document.getElementById('player-container-b').style.top = (currentIndex * h) + 'px';
             
-            if (currentVid) {
+            if (currentVid && typeof playerB.loadVideoById === 'function') {
                 if (currentLoadedB !== currentVid) {
                     hasStarted ? playerB.loadVideoById(currentVid) : playerB.cueVideoById(currentVid);
                     currentLoadedB = currentVid;
-                } else if (hasStarted && !isLongPress) playerB.playVideo();
+                } else if (hasStarted && !isLongPress) {
+                    playerB.seekTo(0);
+                    playerB.playVideo();
+                }
             }
-            if (nextVid && currentLoadedA !== nextVid) {
+            if (nextVid && currentLoadedA !== nextVid && typeof playerA.cueVideoById === 'function') {
                 document.getElementById('player-container-a').style.top = ((currentIndex + 1) * h) + 'px';
                 playerA.cueVideoById(nextVid);
                 currentLoadedA = nextVid;
@@ -1285,10 +1384,22 @@
 
     // 🚀 THE EXACT MOMENT YT STARTS PLAYING, HIDE THE COVER & START BAR!
     function onPlayerStateChange(event) {
+        const activePlayerObj = activePlayer === 'A' ? playerA : playerB;
+        if (event.target !== activePlayerObj) return;
+
         if (event.data === YT.PlayerState.PLAYING) {
-            const cover = document.getElementById(`cover-${currentIndex}`);
-            if (cover) cover.style.opacity = '0'; // Disappear seamlessly!
+            clearTimeout(coverHideTimer);
+            // Delay hiding cover slightly so YouTube's internal red play button & title fade out completely behind the cover
+            coverHideTimer = setTimeout(() => {
+                const cover = document.getElementById(`cover-${currentIndex}`);
+                if (cover) cover.style.opacity = '0'; // Disappear seamlessly!
+            }, 220);
             startProgressBar(event.target);
+        } else if (event.data === YT.PlayerState.BUFFERING || event.data === YT.PlayerState.CUED || event.data === YT.PlayerState.UNSTARTED) {
+            clearTimeout(coverHideTimer);
+            const cover = document.getElementById(`cover-${currentIndex}`);
+            if (cover) cover.style.opacity = '1'; // Keep cover opaque to hide YT loading spinner & play icon
+            stopProgressBar();
         } else if (event.data !== YT.PlayerState.PLAYING) {
             stopProgressBar();
         }
@@ -1341,41 +1452,45 @@
 
                     evtSource.onmessage = (event) => {
                         clearTimeout(timeoutId); // We received data, don't timeout
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.success && data.bites && data.bites.length > 0) {
-                            const uniqueNewBites = [];
-                            data.bites.forEach(b => {
-                                // 🛡️ STRICT DEDUPLICATION: Check history directly before accepting
-                                if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
-                                
-                                viewedVideoIds.add(b.videoId);
-                                uniqueNewBites.push(b);
-                            });
-
-                            if (uniqueNewBites.length > 0) {
-                                let isInitialLoad = bitesQueue.length === 0;
-                                let staggerDelay = 0;
-                                uniqueNewBites.forEach((b, idx) => {
-                                    setTimeout(() => {
-                                        bitesQueue.push(b);
-                                        renderDOMSlides();
-                                        if (isInitialLoad && idx === 0) {
-                                            syncPlayersToScrollPosition(); 
-                                            if (hasStarted && !isLongPress) playActivePlayer(); 
-                                        }
-                                        if (idx === uniqueNewBites.length - 1) {
-                                            cleanUpQueueAndCache(); 
-                                        }
-                                    }, staggerDelay);
-                                    staggerDelay += 150; 
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            if (data.success && data.bites && data.bites.length > 0) {
+                                const uniqueNewBites = [];
+                                data.bites.forEach(b => {
+                                    if (!b || !b.videoId) return;
+                                    // 🛡️ STRICT DEDUPLICATION: Check history directly before accepting
+                                    if (viewedVideoIds.has(b.videoId) || bitesHistory.includes(b.videoId) || bitesQueue.some(q => q.videoId === b.videoId)) return;
+                                    
+                                    viewedVideoIds.add(b.videoId);
+                                    uniqueNewBites.push(b);
                                 });
-                                success = true;
+
+                                if (uniqueNewBites.length > 0) {
+                                    let isInitialLoad = bitesQueue.length === 0;
+                                    let staggerDelay = 0;
+                                    uniqueNewBites.forEach((b, idx) => {
+                                        setTimeout(() => {
+                                            bitesQueue.push(b);
+                                            renderDOMSlides();
+                                            if (isInitialLoad && idx === 0) {
+                                                syncPlayersToScrollPosition(); 
+                                                if (hasStarted && !isLongPress) playActivePlayer(); 
+                                            }
+                                            if (idx === uniqueNewBites.length - 1) {
+                                                cleanUpQueueAndCache(); 
+                                            }
+                                        }, staggerDelay);
+                                        staggerDelay += 150; 
+                                    });
+                                    success = true;
+                                }
                             }
-                        }
+                        } catch (parseErr) {}
                     };
 
                     evtSource.onerror = () => {
+                        clearTimeout(timeoutId);
                         evtSource.close();
                         resolve(); // Stream finished successfully from the server side
                     };
@@ -1391,6 +1506,7 @@
     window.shareBite = function(event, index) {
         event.stopPropagation();
         const bite = bitesQueue[index];
+        if (!bite) return;
 
         trackExplicitAction(bite.category || "trending", 'shared', bite.title, bite.author);
 
@@ -1433,21 +1549,88 @@
     }
 
     function formatNumber(num) {
+        if (!num) return '0';
         if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
         if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
         return num;
     }
 
     // ==========================================================================
-    // INSTAGRAM-STYLE DISCOVER MODAL
+    // INSTAGRAM-STYLE DISCOVER MODAL & RECOMMENDATION SUGGESTION GRID
     // ==========================================================================
+    const defaultSuggestions = ["For You", "Trending", "Tamil", "Comedy", "Music", "Tech", "Gaming", "Cinema", "Cricket", "Food", "Travel"];
+    let activeSuggestionTopic = "For You";
+
+    function renderSuggestionPills() {
+        const bar = document.getElementById('suggestion-pills-bar');
+        if (!bar) return;
+
+        // Combine personalized user interests with default discovery categories
+        const dynamicTopics = ["For You", ...myInterests.map(i => i.charAt(0).toUpperCase() + i.slice(1)), ...defaultSuggestions];
+        const uniqueTopics = [];
+        const seenLower = new Set();
+
+        dynamicTopics.forEach(t => {
+            const low = t.toLowerCase();
+            if (!seenLower.has(low)) {
+                seenLower.add(low);
+                uniqueTopics.push(t);
+            }
+        });
+
+        bar.innerHTML = '';
+        uniqueTopics.slice(0, 12).forEach(topic => {
+            const pill = document.createElement('div');
+            pill.className = 'suggestion-pill' + (activeSuggestionTopic.toLowerCase() === topic.toLowerCase() ? ' active' : '');
+            const iconHtml = topic === "For You" ? `<span class="material-icons-round" style="font-size:15px;">auto_awesome</span>` : '';
+            pill.innerHTML = `${iconHtml}<span>${topic}</span>`;
+            pill.onclick = () => selectSuggestionTopic(topic);
+            bar.appendChild(pill);
+        });
+    }
+
+    window.selectSuggestionTopic = function(topic) {
+        activeSuggestionTopic = topic;
+        renderSuggestionPills();
+        const searchInput = document.getElementById('search-input');
+        const clearBtn = document.getElementById('clear-search-btn');
+
+        if (topic === "For You") {
+            if (searchInput) searchInput.value = '';
+            if (clearBtn) clearBtn.style.display = 'none';
+            const combinedQuery = myInterests.length > 0 ? myInterests.slice(0, 3).join(' ') : 'tamil trending';
+            executeSearch(combinedQuery, "Recommended For You");
+        } else {
+            if (searchInput) searchInput.value = topic;
+            if (clearBtn) clearBtn.style.display = 'flex';
+            executeSearch(topic, `Top in ${topic}`);
+        }
+    };
+
+    window.clearSearchInput = function() {
+        const searchInput = document.getElementById('search-input');
+        const clearBtn = document.getElementById('clear-search-btn');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        if (clearBtn) clearBtn.style.display = 'none';
+        selectSuggestionTopic("For You");
+    };
+
+    renderSuggestionPills();
+
     window.openDiscoverModal = function() {
         document.getElementById('discover-modal').classList.add('active');
         document.getElementById('bites-viewport').classList.add('no-scroll'); // NEW ADDITION: Prevents background scroll
         history.pushState({ modal: 'discover' }, "", "#discover");
         
+        renderSuggestionPills();
         const grid = document.getElementById('search-grid');
-        if(grid.children.length <= 1) executeSearch("tamil");
+        if(grid.children.length <= 1) {
+            const initialTopic = myInterests.length > 0 ? myInterests.slice(0, 3).join(' ') : "tamil";
+            executeSearch(initialTopic, "Recommended For You");
+        }
         
         // NEW: Pause video when search modal is opened
         const p = activePlayer === 'A' ? playerA : playerB;
@@ -1515,18 +1698,47 @@
     };
 
     let searchTimeout;
+    let activeSearchEventSource = null;
     document.getElementById('search-input').addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         const val = e.target.value.trim();
+        const clearBtn = document.getElementById('clear-search-btn');
+        if (clearBtn) clearBtn.style.display = val.length > 0 ? 'flex' : 'none';
+
         searchTimeout = setTimeout(() => {
-            if(val.length > 1) executeSearch(val);
+            if(val.length > 1) {
+                activeSuggestionTopic = "";
+                renderSuggestionPills();
+                executeSearch(val, `Results for "${val}"`);
+            } else if (val.length === 0) {
+                selectSuggestionTopic("For You");
+            }
         }, 600);
     });
 
-    async function executeSearch(query) {
+    function createGridCardElement(bite, listContext) {
+        const el = document.createElement('div');
+        el.className = 'grid-item';
+        const fallbackThumb = `https://img.youtube.com/vi/${bite.videoId}/hqdefault.jpg`;
+        const safeTitle = (bite.title || "Trending Bite").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        el.onclick = () => launchSearchResultFeed(bite, listContext);
+        el.innerHTML = `
+            <img src="${bite.imgUrl || fallbackThumb}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackThumb}';">
+            <div class="grid-item-gradient"></div>
+            <div class="title-overlay">${safeTitle}</div>
+            <div class="views-overlay"><span class="material-icons-round" style="font-size:14px; color:var(--accent);">play_arrow</span> ${formatNumber(bite.views || bite.likes)}</div>
+        `;
+        return el;
+    }
+
+    async function executeSearch(query, sectionLabel = "Trending Suggestions") {
         const grid = document.getElementById('search-grid');
+        if (activeSearchEventSource) {
+            activeSearchEventSource.close();
+            activeSearchEventSource = null;
+        }
         
-        let skelHtml = '';
+        let skelHtml = `<div class="grid-section-header"><span>${sectionLabel}</span><span style="color:var(--accent); font-size:0.75rem;">LIVE AI</span></div>`;
         // NEW: Added inline styles to guarantee skeleton rendering
         for(let i=0; i<12; i++) { skelHtml += `<div class="skel-grid-item skel-shimmer" style="width:100%; min-height:150px; aspect-ratio:9/16; background:#1a1a1a; border-radius:4px;"></div>`; }
         grid.innerHTML = skelHtml;
@@ -1534,48 +1746,65 @@
         let totalSearchBites = []; // Keep track of all chunks together
         let firstChunk = true;
 
+        // Pre-populate instant suggestions from local queue if matching or on "For You"
+        if (bitesQueue.length > 0 && sectionLabel === "Recommended For You") {
+            grid.innerHTML = `<div class="grid-section-header"><span>${sectionLabel}</span><span style="color:var(--accent); font-size:0.75rem;">PERSONALIZED</span></div>`;
+            firstChunk = false;
+            bitesQueue.slice(0, 9).forEach(bite => {
+                if (!bite || !bite.videoId || totalSearchBites.some(b => b.videoId === bite.videoId)) return;
+                totalSearchBites.push(bite);
+                grid.appendChild(createGridCardElement(bite, totalSearchBites));
+            });
+        }
+
         try {
             const fetchUrl = `https://corporationgoorac-quantumbackend.hf.space/api/reels?topic=${encodeURIComponent(query)}&search=true&t=${Date.now()}`;
             
             // NEW: SSE Streaming replacement for Search Modal
             await new Promise((resolve) => {
                 const evtSource = new EventSource(fetchUrl);
+                activeSearchEventSource = evtSource;
                 
-                evtSource.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.success && data.bites && data.bites.length > 0) {
-                        if (firstChunk) {
-                            grid.innerHTML = ''; // Clear skeletons instantly when real data streams in
-                            firstChunk = false;
-                        }
-                        
-                        data.bites.forEach(bite => {
-                            if(totalSearchBites.some(b => b.videoId === bite.videoId)) return; 
-                            totalSearchBites.push(bite);
+                let searchTimeoutId = setTimeout(() => {
+                    evtSource.close();
+                    resolve();
+                }, 15000);
 
-                            const el = document.createElement('div');
-                            el.className = 'grid-item';
-                            el.onclick = () => launchSearchResultFeed(bite, totalSearchBites);
-                            el.innerHTML = `
-                                <img src="${bite.imgUrl}">
-                                <div class="views-overlay"><span class="material-icons-round" style="font-size:14px;">play_arrow</span> ${formatNumber(bite.likes)}</div>
-                            `;
-                            grid.appendChild(el);
-                        });
-                    }
+                evtSource.onmessage = (event) => {
+                    clearTimeout(searchTimeoutId);
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.success && data.bites && data.bites.length > 0) {
+                            if (firstChunk) {
+                                grid.innerHTML = `<div class="grid-section-header"><span>${sectionLabel}</span><span style="color:var(--accent); font-size:0.75rem;">${data.bites.length}+ BITES</span></div>`; // Clear skeletons instantly when real data streams in
+                                firstChunk = false;
+                            }
+                            
+                            data.bites.forEach(bite => {
+                                if(!bite || !bite.videoId || totalSearchBites.some(b => b.videoId === bite.videoId)) return; 
+                                totalSearchBites.push(bite);
+
+                                const el = createGridCardElement(bite, totalSearchBites);
+                                grid.appendChild(el);
+                            });
+                        }
+                    } catch (err) {}
                 };
 
                 evtSource.onerror = () => {
+                    clearTimeout(searchTimeoutId);
                     evtSource.close();
-                    if (firstChunk) {
-                        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found.</div>`;
+                    if (firstChunk && totalSearchBites.length === 0) {
+                        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #666;">No results found. Tap another suggestion above.</div>`;
                     }
                     resolve();
                 };
             });
             
         } catch (error) {
-            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
+            if (totalSearchBites.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 50px 20px; color: #ff4444;">Connection failed.</div>`;
+            }
         }
     }
 
@@ -1585,11 +1814,13 @@
             trackExplicitAction(searchInputBox.value.trim(), 'searched');
         }
 
-        backupQueue = [...bitesQueue];
-        backupIndex = currentIndex;
-        isSearchPlaying = true;
+        if (!isSearchPlaying) {
+            backupQueue = [...bitesQueue];
+            backupIndex = currentIndex;
+            isSearchPlaying = true;
+            history.pushState({ modal: 'search-playing' }, "", "#search-playing");
+        }
 
-        history.pushState({ modal: 'search-playing' }, "", "#search-playing");
         document.getElementById('discover-modal').classList.remove('active');
         document.getElementById('bites-viewport').classList.remove('no-scroll'); // NEW ADDITION: Restore scroll explicitly when entering search feed
         
@@ -1619,6 +1850,7 @@
         
         // FIX: Explicitly call swapPlayers so the hardware frames correctly map to their new DOM visual position
         swapPlayers();
+        playActivePlayer();
 
         // Restore smooth behavior after the jump completes
         setTimeout(() => {
