@@ -1622,6 +1622,658 @@ box-shadow: var(--received-shadow);
         }
     </style>
 </head>
+    <!-- =========================================================================
+     GOORAC QUANTUM CHAT - PRO STABILITY, ROTATING WAVE & REACTION ENGINE PATCH
+     (Zero lines removed — drop in right before </body>)
+     ========================================================================= -->
+<style id="goorac-pro-upgrade-styles">
+    /* 1. Register CSS Houdini Angle Property for Smooth Conic Border Rotation */
+    @property --typing-wave-angle {
+        syntax: "<angle>";
+        inherits: false;
+        initial-value: 0deg;
+    }
+
+    @keyframes rotateTypingWaveBorder {
+        0% { --typing-wave-angle: 0deg; }
+        100% { --typing-wave-angle: 360deg; }
+    }
+
+    /* 2. Missing Heart Pop Keyframe Fix for Double-Tap Like Overlay */
+    @keyframes heartPop {
+        0% { transform: translate(-50%, -50%) scale(0) rotate(-12deg); opacity: 0; }
+        35% { transform: translate(-50%, -50%) scale(1.25) rotate(6deg); opacity: 1; }
+        60% { transform: translate(-50%, -50%) scale(0.95) rotate(-3deg); opacity: 1; }
+        80% { transform: translate(-50%, -50%) scale(1.04) rotate(0deg); opacity: 0.95; }
+        100% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+    }
+
+    /* 3. Smooth Layout-Stable Typing Row Container */
+    #typing-row {
+        display: flex !important;
+        max-height: 0px;
+        opacity: 0;
+        margin-bottom: 0px !important;
+        padding-top: 0px;
+        padding-bottom: 0px;
+        overflow: visible;
+        pointer-events: none;
+        transform: translateY(6px) scale(0.98);
+        transform-origin: left bottom;
+        transition:
+            max-height 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.22s ease,
+            transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+            margin-bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: max-height, opacity, transform;
+    }
+
+    #typing-row.typing-visible {
+        max-height: 360px;
+        opacity: 1;
+        margin-bottom: 12px !important;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    /* Instant synchronous hide when morphing directly into a received message bubble */
+    #typing-row.typing-instant-morph {
+        transition: none !important;
+        max-height: 0px !important;
+        opacity: 0 !important;
+        margin-bottom: 0px !important;
+        transform: translateY(0) scale(1) !important;
+    }
+
+    /* 4. Professional Rotating Wave Border for Both Typing Dots & Live Preview Bubble */
+    .typing-bubble,
+    .live-sync-bubble {
+        position: relative;
+        border: 1.8px solid transparent !important;
+        background:
+            linear-gradient(135deg, #1f1f24 0%, #28282f 100%) padding-box,
+            conic-gradient(
+                from var(--typing-wave-angle, 0deg),
+                rgba(255, 255, 255, 0.05) 0deg,
+                transparent 65deg,
+                var(--accent-dim) 165deg,
+                var(--accent) 245deg,
+                rgba(255, 255, 255, 0.9) 285deg,
+                var(--accent) 325deg,
+                rgba(255, 255, 255, 0.05) 360deg
+            ) border-box !important;
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.45),
+            0 0 14px var(--accent-dim) !important;
+        animation: rotateTypingWaveBorder 2.4s linear infinite !important;
+        /* Prevent width/height transition jitter when words wrap */
+        transition:
+            box-shadow 0.25s ease,
+            transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+            filter 0.25s ease !important;
+    }
+
+    /* Keystroke-reactive pulse when new characters arrive */
+    .typing-bubble.typing-wave-boost,
+    .live-sync-bubble.typing-wave-boost {
+        box-shadow:
+            0 6px 22px rgba(0, 0, 0, 0.5),
+            0 0 22px var(--accent-dim),
+            inset 0 0 10px rgba(255, 255, 255, 0.04) !important;
+        filter: brightness(1.06);
+    }
+
+    /* Stable vs Newly Typed Word Spans (Prevents whole-bubble flash on each word) */
+    .live-text-stable {
+        display: inline;
+        opacity: 1;
+    }
+
+    .live-word-span {
+        display: inline;
+        animation: wordPopIn 0.16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* 5. Seamless Morph Transition When Typing Bubble Becomes Real Message Bubble */
+    @keyframes morphTypingToReceived {
+        0% {
+            background:
+                linear-gradient(135deg, #1f1f24 0%, #28282f 100%) padding-box,
+                conic-gradient(
+                    from var(--typing-wave-angle, 0deg),
+                    rgba(255, 255, 255, 0.08) 0deg,
+                    var(--accent) 180deg,
+                    rgba(255, 255, 255, 0.08) 360deg
+                ) border-box;
+            box-shadow: 0 6px 20px var(--accent-dim);
+        }
+        100% {
+            background: var(--received-bg);
+            box-shadow: var(--received-shadow);
+        }
+    }
+
+    .received .bubble.bubble-morphed-in {
+        animation: morphTypingToReceived 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    }
+</style>
+
+<script id="goorac-pro-upgrade-engine">
+(function initGooracProFixes() {
+    // =========================================================================
+    // 1. FALLBACK CONIC WAVE ROTATOR (For WebViews without CSS @property support)
+    // =========================================================================
+    let waveAngle = 0;
+    let waveSpeed = 2.5; // Degrees per frame
+    let waveBoostTimeout = null;
+
+    function tickTypingWave() {
+        if (typingRow && typingRow.classList.contains('typing-visible')) {
+            waveAngle = (waveAngle + waveSpeed) % 360;
+            const bubble = document.getElementById('typing-bubble-content');
+            if (bubble) {
+                bubble.style.setProperty('--typing-wave-angle', waveAngle + 'deg');
+            }
+        }
+        requestAnimationFrame(tickTypingWave);
+    }
+    requestAnimationFrame(tickTypingWave);
+
+    window.triggerTypingWavePulse = function() {
+        const bubble = document.getElementById('typing-bubble-content');
+        if (!bubble) return;
+        waveSpeed = 5.2; // Speed up rotation smoothly on keystroke
+        bubble.classList.add('typing-wave-boost');
+        clearTimeout(waveBoostTimeout);
+        waveBoostTimeout = setTimeout(() => {
+            waveSpeed = 2.5;
+            bubble.classList.remove('typing-wave-boost');
+        }, 260);
+    };
+
+    // =========================================================================
+    // 2. HEADER & UI HAPTIC VIBRATIONS (Back, Profile, Pulse, Call, Video, Controls)
+    // =========================================================================
+    const originalSmartBack = window.smartBack;
+    window.smartBack = function() {
+        vibrate(30);
+        if (typeof originalSmartBack === 'function') originalSmartBack();
+    };
+
+    const originalGoToProfile = window.goToProfile;
+    window.goToProfile = function() {
+        vibrate(30);
+        if (typeof originalGoToProfile === 'function') originalGoToProfile();
+    };
+
+    const originalGoToPulse = window.goToPulse;
+    window.goToPulse = function() {
+        vibrate(35);
+        if (typeof originalGoToPulse === 'function') originalGoToPulse();
+    };
+
+    const originalDismissPulse = window.dismissPulseInvite;
+    window.dismissPulseInvite = function() {
+        vibrate(25);
+        if (typeof originalDismissPulse === 'function') originalDismissPulse();
+    };
+
+    const originalJoinPulse = window.joinPulseSession;
+    window.joinPulseSession = function() {
+        vibrate(40);
+        if (typeof originalJoinPulse === 'function') originalJoinPulse();
+    };
+
+    const originalDismissVision = window.dismissVisionInvite;
+    window.dismissVisionInvite = function() {
+        vibrate(25);
+        if (typeof originalDismissVision === 'function') originalDismissVision();
+    };
+
+    const originalJoinVision = window.joinVisionSession;
+    window.joinVisionSession = function() {
+        vibrate(40);
+        if (typeof originalJoinVision === 'function') originalJoinVision();
+    };
+
+    // Attach immediate touch/click haptics to all header icons (Call, Video, Pulse, Back, Profile)
+    const headerEl = document.getElementById('chat-header');
+    if (headerEl) {
+        headerEl.addEventListener('touchstart', (e) => {
+            const interactive = e.target.closest('.back-btn, .h-profile-group, .header-icon, .pulse-icon');
+            if (interactive) {
+                vibrate(30);
+            }
+        }, { passive: true });
+
+        headerEl.addEventListener('mousedown', (e) => {
+            if ('ontouchstart' in window) return;
+            const interactive = e.target.closest('.back-btn, .h-profile-group, .header-icon, .pulse-icon');
+            if (interactive) {
+                vibrate(30);
+            }
+        });
+    }
+
+    // Add subtle haptics to bottom bar action buttons (+, Emoji, GIF, Scroll-Down)
+    document.querySelectorAll('.plus-btn, .emoji-toggle-btn, #scroll-down-btn').forEach(btn => {
+        btn.addEventListener('touchstart', () => vibrate(20), { passive: true });
+    });
+
+    // =========================================================================
+    // 3. UNIFIED ANTI-JITTER SCROLL SCHEDULER
+    // =========================================================================
+    let scrollRafId = null;
+    let pendingSmoothScroll = false;
+
+    window.scrollToBottom = function(smooth = false) {
+        if (!chatFlow) return;
+        if (smooth) pendingSmoothScroll = true;
+
+        if (scrollRafId) cancelAnimationFrame(scrollRafId);
+        scrollRafId = requestAnimationFrame(() => {
+            scrollRafId = null;
+            const useSmooth = pendingSmoothScroll;
+            pendingSmoothScroll = false;
+
+            const distanceFromBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
+            if (distanceFromBottom <= 1) return;
+
+            // If already very close to the bottom (< 140px), pin directly to avoid competing smooth-scroll bounce
+            if (distanceFromBottom < 140 || !useSmooth) {
+                chatFlow.scrollTop = chatFlow.scrollHeight;
+            } else {
+                chatFlow.scrollTo({
+                    top: chatFlow.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    };
+
+    // =========================================================================
+    // 4. FIX THE 5-MESSAGE REACTION & LONG-PRESS MENU BUG
+    // =========================================================================
+    // Override attachMessageListeners so innerHTML cloning never blocks event binding
+    // and reactions/edits always read fresh data from messagesMap.
+    window.attachMessageListeners = function(element, id, m) {
+        if (!element) return;
+        // CRITICAL FIX: If innerHTML was copied, dataset.listenersAttached is 'true' in HTML
+        // but element._gooracListenersBound is undefined on the new DOM node!
+        if (element._gooracListenersBound === true) return;
+        element._gooracListenersBound = true;
+        element.dataset.listenersAttached = 'true';
+
+        // Double Tap logic (reads live reaction state from messagesMap)
+        let lastTap = 0;
+        element.addEventListener('touchend', (e) => {
+            const currentTime = Date.now();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                window.cancelBiteClick(id);
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (document.activeElement === mInput || mInput.matches(':focus')) {
+                    mInput.focus({ preventScroll: true });
+                    setTimeout(() => { mInput.click(); }, 10);
+                }
+
+                const liveMsg = messagesMap.get(id) || m;
+                const liveMyReaction = (liveMsg.reactions && liveMsg.reactions[myUid]) ? liveMsg.reactions[myUid].emoji : null;
+
+                if (liveMsg.sender === myUid) {
+                    vibrate(40);
+                    activeMenuId = id;
+                    initEdit();
+                } else {
+                    vibrate(50);
+                    triggerHeartAnimation();
+                    applyReactionToId(id, liveMyReaction === '❤️' ? '' : '❤️');
+                }
+            }
+            lastTap = currentTime;
+        }, { passive: false });
+
+        // Long Press Menu & Elastic Swipe-to-Reply Logic
+        let startX = 0, startY = 0, currentX = 0, currentY = 0, menuTimer = null, isScrolling = false;
+        let swipeBubbleBox = element.closest('.msg-bubble-box');
+        if (!swipeBubbleBox) return;
+        let swipeIcon = swipeBubbleBox.querySelector('.swipe-reply-icon');
+        let side = (m && m.sender === myUid) ? 'sent' : 'received';
+
+        element.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn') || e.target.tagName === 'AUDIO') return;
+
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            currentX = startX;
+            currentY = startY;
+            isScrolling = false;
+            window.isScrollingNow = false;
+
+            swipeBubbleBox.style.transition = 'none';
+            if (swipeIcon) swipeIcon.style.transition = 'none';
+
+            menuTimer = setTimeout(() => {
+                if (!isScrolling && Math.abs(currentX - startX) < 12 && Math.abs(currentY - startY) < 12) {
+                    vibrate(70);
+                    const liveMsg = messagesMap.get(id) || m;
+                    openMenu(id, liveMsg.sender, liveMsg.text || '');
+                }
+            }, 480);
+        }, { passive: true });
+
+        let hasTriggeredHaptic = false;
+        element.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
+
+            currentX = e.touches[0].clientX;
+            currentY = e.touches[0].clientY;
+            let diffX = currentX - startX;
+            let diffY = currentY - startY;
+
+            if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+                clearTimeout(menuTimer);
+                isScrolling = true;
+                window.isScrollingNow = true;
+            }
+
+            // If mostly vertical scroll, don't horizontal-swipe the bubble
+            if (Math.abs(diffY) > Math.abs(diffX) * 1.2) return;
+
+            swipeBubbleBox.style.transition = 'none';
+            if (swipeIcon) swipeIcon.style.transition = 'none';
+
+            const maxTravel = 64;
+            const triggerTravel = 42;
+            let resistedDiff = diffX * 0.38;
+
+            if (side === 'received' && diffX > 0) {
+                let travel = Math.min(resistedDiff, maxTravel);
+                swipeBubbleBox.style.transform = `translateX(${travel}px)`;
+                if (travel >= triggerTravel && !hasTriggeredHaptic) {
+                    hasTriggeredHaptic = true;
+                    vibrate(15);
+                } else if (travel < triggerTravel) {
+                    hasTriggeredHaptic = false;
+                }
+                if (swipeIcon) {
+                    let scale = Math.min(1, travel / triggerTravel);
+                    swipeIcon.style.transform = `translate(${-travel}px, -50%) scale(${scale})`;
+                }
+            } else if (side === 'sent' && diffX < 0) {
+                let travel = Math.max(resistedDiff, -maxTravel);
+                swipeBubbleBox.style.transform = `translateX(${travel}px)`;
+                if (Math.abs(travel) >= triggerTravel && !hasTriggeredHaptic) {
+                    hasTriggeredHaptic = true;
+                    vibrate(15);
+                } else if (Math.abs(travel) < triggerTravel) {
+                    hasTriggeredHaptic = false;
+                }
+                if (swipeIcon) {
+                    let scale = Math.min(1, Math.abs(travel) / triggerTravel);
+                    swipeIcon.style.transform = `translate(${-travel}px, -50%) scale(${scale})`;
+                }
+            }
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            clearTimeout(menuTimer);
+            hasTriggeredHaptic = false;
+            setTimeout(() => { window.isScrollingNow = false; }, 50);
+            if (e.target.closest('.audio-control-btn') || e.target.closest('.audio-speed-btn')) return;
+
+            let diff = currentX - startX;
+            let resistedDiff = diff * 0.38;
+            let triggerTravel = 42;
+            let triggered = false;
+
+            if (side === 'received' && resistedDiff >= triggerTravel) triggered = true;
+            if (side === 'sent' && resistedDiff <= -triggerTravel) triggered = true;
+
+            if (triggered && isScrolling) {
+                vibrate(40);
+                const liveMsg = messagesMap.get(id) || m;
+                let replyText = liveMsg.text;
+                if (!replyText) {
+                    if (liveMsg.isBite) replyText = "🎬 Bite";
+                    else if (liveMsg.isGif) replyText = "🎞️ GIF";
+                    else if (liveMsg.imageUrl) replyText = "📷 Photo";
+                    else if (liveMsg.fileMeta && liveMsg.fileMeta.type.includes('audio')) replyText = "🎵 Audio";
+                    else replyText = "Attachment";
+                }
+                mInput.focus({ preventScroll: true });
+                setTimeout(() => { mInput.click(); }, 10);
+                triggerReply(replyText);
+            }
+
+            swipeBubbleBox.style.transition = "transform 0.3s var(--ease-spring)";
+            swipeBubbleBox.style.transform = `translateX(0px)`;
+            if (swipeIcon) {
+                swipeIcon.style.transition = "transform 0.3s";
+                swipeIcon.style.transform = `translateY(-50%) scale(0)`;
+            }
+
+            setTimeout(() => {
+                swipeBubbleBox.style.transition = "";
+                if (swipeIcon) swipeIcon.style.transition = "";
+            }, 300);
+
+            startX = 0; currentX = 0; startY = 0; currentY = 0; isScrolling = false;
+        });
+
+        element.addEventListener('touchcancel', () => {
+            clearTimeout(menuTimer);
+            hasTriggeredHaptic = false;
+            swipeBubbleBox.style.transition = "transform 0.3s var(--ease-spring)";
+            swipeBubbleBox.style.transform = `translateX(0px)`;
+            if (swipeIcon) swipeIcon.style.transform = `translateY(-50%) scale(0)`;
+        }, { passive: true });
+    };
+
+    // Helper to guarantee every message row in #messages-container has active listeners
+    window.ensureAllMessageListeners = function() {
+        if (!container) return;
+        const rows = container.querySelectorAll('.msg-row');
+        rows.forEach(row => {
+            const msgId = row.id;
+            if (!msgId) return;
+            const msgData = messagesMap.get(msgId);
+            if (!msgData) return;
+
+            const bubbleEl = row.querySelector(`#bubble-${msgId}`);
+            if (bubbleEl && bubbleEl.style.display !== 'none') {
+                window.attachMessageListeners(bubbleEl, msgId, msgData);
+            }
+            const mediaEl = row.querySelector('.msg-media-wrapper') || row.querySelector('.msg-video-container');
+            if (mediaEl) {
+                window.attachMessageListeners(mediaEl, msgId, msgData);
+            }
+            const pill = row.querySelector('.msg-audio-pill') || row.querySelector('.msg-file-pill');
+            if (pill) {
+                window.attachMessageListeners(pill, msgId, msgData);
+            }
+        });
+    };
+
+    // =========================================================================
+    // 5. SEAMLESS TYPING-TO-MESSAGE MORPH & ANTI-JITTER RENDER ENGINE
+    // =========================================================================
+    window._lastLiveTypingString = "";
+    window._typingBridgeTimer = null;
+    window._wasLiveTypingRecently = false;
+
+    window.showTypingRowSmooth = function() {
+        clearTimeout(window._typingBridgeTimer);
+        window._wasLiveTypingRecently = true;
+        typingRow.classList.remove('typing-instant-morph');
+        typingRow.style.display = 'flex';
+        // Force reflow so transition engages cleanly if it was hidden
+        void typingRow.offsetHeight;
+        typingRow.classList.add('typing-visible');
+    };
+
+    window.hideTypingRowSmooth = function(instantMorph = false) {
+        clearTimeout(window._typingBridgeTimer);
+        if (instantMorph) {
+            // Instant synchronous swap on the exact frame the real message bubble renders
+            typingRow.classList.add('typing-instant-morph');
+            typingRow.classList.remove('typing-visible');
+            window._lastLiveTypingString = "";
+            window._wasLiveTypingRecently = false;
+            return;
+        }
+        // Bridge delay: Hold typing bubble for 380ms in case RTDB 'false' arrived right before Firestore 'added'
+        window._typingBridgeTimer = setTimeout(() => {
+            typingRow.classList.remove('typing-visible');
+            window._lastLiveTypingString = "";
+            window._wasLiveTypingRecently = false;
+        }, 380);
+    };
+
+    // Wrap renderAll() so it:
+    // 1. Synchronously morphs the typing bubble into any newly arrived received message
+    // 2. Ensures every single message row has bound touch/reaction listeners
+    const originalRenderAll = window.renderAll;
+    let previousLastReceivedId = null;
+
+    window.renderAll = function() {
+        // Detect if a brand-new received message was added while typing indicator was active
+        let newestReceivedId = null;
+        const sortedEntries = Array.from(messagesMap.entries())
+            .filter(([id, data]) => data.timestamp)
+            .sort((a, b) => {
+                const tA = a[1].timestamp.toMillis ? a[1].timestamp.toMillis() : new Date(a[1].timestampIso).getTime();
+                const tB = b[1].timestamp.toMillis ? b[1].timestamp.toMillis() : new Date(b[1].timestampIso).getTime();
+                return tA - tB;
+            });
+
+        if (sortedEntries.length > 0) {
+            const [lastId, lastData] = sortedEntries[sortedEntries.length - 1];
+            if (lastData.sender !== myUid) {
+                newestReceivedId = lastId;
+            }
+        }
+
+        const shouldMorphFromTyping =
+            newestReceivedId &&
+            newestReceivedId !== previousLastReceivedId &&
+            (typingRow.classList.contains('typing-visible') || window._wasLiveTypingRecently);
+
+        if (shouldMorphFromTyping) {
+            // Collapse typing row in the EXACT same synchronous frame that the message is inserted
+            window.hideTypingRowSmooth(true);
+        }
+
+        if (typeof originalRenderAll === 'function') {
+            originalRenderAll();
+        }
+
+        // Guarantee all message bubbles (1st, 2nd, 3rd, 4th, 5th+) have active listeners
+        window.ensureAllMessageListeners();
+
+        // Apply seamless morph-in animation to the newly arrived received bubble
+        if (shouldMorphFromTyping && newestReceivedId) {
+            const newBubble = document.getElementById(`bubble-${newestReceivedId}`);
+            if (newBubble) {
+                newBubble.classList.add('bubble-morphed-in');
+                setTimeout(() => newBubble.classList.remove('bubble-morphed-in'), 450);
+            }
+        }
+
+        previousLastReceivedId = newestReceivedId;
+    };
+
+    // Run once immediately for any cached messages already on screen
+    window.ensureAllMessageListeners();
+
+    // =========================================================================
+    // 6. UPGRADE LIVE TYPING LISTENER (Word-Diff Rendering & Rotating Wave Sync)
+    // =========================================================================
+    function escapeHtmlSafe(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    let attachedTypingPath = null;
+    function attachSmoothTypingInterceptor() {
+        if (!chatId || !targetUid || !rdb) return;
+        const path = `typing/${chatId}/${targetUid}`;
+        if (attachedTypingPath === path) return;
+        attachedTypingPath = path;
+
+        // Replace default typing listener with the smooth morphing & word-diffing listener
+        const ref = rdb.ref(path);
+        ref.off('value');
+        ref.on('value', (s) => {
+            const val = s.val();
+            const bubble = document.getElementById('typing-bubble-content');
+            if (!bubble) return;
+
+            if (lastStatusData && lastStatusData.state === 'offline') {
+                window.hideTypingRowSmooth(true);
+                return;
+            }
+
+            const isNearBottom = (chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight) < 280;
+
+            if (val === 'recording') {
+                window.showTypingRowSmooth();
+                bubble.className = "rec-ind-bubble";
+                bubble.innerHTML = `
+                    <div class="rec-wave-icon"><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div><div class="rec-wave-bar"></div></div>
+                    Recording...
+                `;
+                inputBox.style.boxShadow = "0 0 15px rgba(255, 69, 58, 0.3)";
+                if (isNearBottom) window.scrollToBottom(false);
+            } else if (typeof val === 'string' && val.trim().length > 0) {
+                window.showTypingRowSmooth();
+                bubble.className = "typing-bubble live-sync-bubble";
+                window.triggerTypingWavePulse();
+
+                const prevText = window._lastLiveTypingString || "";
+                const curText = val;
+                window._lastLiveTypingString = curText;
+
+                // Only animate the newly added characters/words so existing text never flickers or jumps
+                if (prevText && curText.startsWith(prevText) && curText.length > prevText.length) {
+                    const stablePart = escapeHtmlSafe(prevText);
+                    const newPart = escapeHtmlSafe(curText.slice(prevText.length));
+                    bubble.innerHTML = `<span class="live-text-stable">${stablePart}</span><span class="live-word-span">${newPart}</span><span class="live-cursor"></span>`;
+                } else {
+                    const safeLiveText = escapeHtmlSafe(curText);
+                    bubble.innerHTML = `<span class="live-text-stable">${safeLiveText}</span><span class="live-cursor"></span>`;
+                }
+
+                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)";
+                if (isNearBottom) window.scrollToBottom(false);
+            } else if (val === true) {
+                window.showTypingRowSmooth();
+                bubble.className = "typing-bubble";
+                window.triggerTypingWavePulse();
+                bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+                inputBox.style.boxShadow = "0 0 15px var(--accent-dim)";
+                if (isNearBottom) window.scrollToBottom(false);
+            } else {
+                window.hideTypingRowSmooth(false);
+                inputBox.style.boxShadow = "none";
+            }
+        });
+    }
+
+    // Poll briefly until initChat populates chatId and targetUid, then lock in the interceptor
+    const typingHookInterval = setInterval(() => {
+        if (typeof chatId !== 'undefined' && chatId && typeof targetUid !== 'undefined' && targetUid) {
+            attachSmoothTypingInterceptor();
+            clearInterval(typingHookInterval);
+        }
+    }, 100);
+})();
+</script>
+
 <body>
 <script>
     // Prevent Chrome/Android from jumping the page on app resume
