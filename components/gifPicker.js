@@ -9,8 +9,8 @@ class GifPicker extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         
         // --- 1. CORE API CONFIGURATION ---
-        // GIPHY Public Beta Key
-        this.apiKey = 'dc6zaTOxFJmzC'; 
+        // GIPHY API Key
+        this.apiKey = 'IrW5aWWnFqbARZTrxM83eWW1RpMSj1WE'; 
         
         // Local Storage State
         let savedRecents = JSON.parse(localStorage.getItem('goorac_gif_recents')) || [];
