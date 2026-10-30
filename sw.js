@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goorac-quantum-v59'; // Bumped version to force cache update (Fixed Const to const)
+const CACHE_NAME = 'goorac-quantum-v60'; // Bumped version to force cache update (Fixed Const to const)
 const ASSETS = [
     '/',
     '/aboutGroup.html',
