@@ -7223,5 +7223,185 @@ box-shadow: var(--received-shadow);
     })();
 </script>
 
+
+<!-- =========================================================================
+     28. QUANTUM IMAGE/FILE UPLOAD ANTI-EXIT FIX & TRUE PORTRAIT LOCK ENGINE
+     ========================================================================= -->
+<style id="quantum-true-portrait-and-upload-guard-styles">
+    /* 1. PERMANENTLY HIDE THE "PORTRAIT MODE LOCKED" BLOCKING OVERLAY SCREEN */
+    #quantum-orientation-guard {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* 2. TRUE PORTRAIT LOCK: Counter-rotate & lock UI into Portrait when phone is turned sideways
+          so the user NEVER sees landscape and NEVER gets blocked from chatting! */
+    @media screen and (orientation: landscape) and (max-width: 960px) and (max-height: 540px) and (hover: none) and (pointer: coarse) {
+        body:not(.quantum-keyboard-active) {
+            width: 100vh !important;
+            height: 100vw !important;
+            max-width: 100vh !important;
+            max-height: 100vw !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(-90deg) !important;
+            transform-origin: center center !important;
+            overflow: hidden !important;
+        }
+        body:not(.quantum-keyboard-active) #main-app,
+        body:not(.quantum-keyboard-active) .app-container {
+            width: 100vh !important;
+            height: 100vw !important;
+            max-width: 100vh !important;
+            max-height: 100vw !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        body:not(.quantum-keyboard-active) #quantum-bg-layer {
+            width: 100vh !important;
+            height: 100vw !important;
+        }
+    }
+</style>
+
+<script id="quantum-upload-anti-kickout-and-portrait-engine">
+    // =========================================================================
+    //  28. QUANTUM UPLOAD ANTI-KICKOUT FIX & TRUE PORTRAIT ORIENTATION ENGINE
+    // =========================================================================
+    (function initQuantumUploadAntiKickoutAndPortraitEngine() {
+        const imgPickerEl = document.getElementById('img-picker');
+        const filePickerEl = document.getElementById('file-picker');
+        const guardEl = document.getElementById('quantum-orientation-guard');
+
+        // 1. Ensure the blocking "Portrait Mode Locked" screen is permanently disabled
+        if (guardEl) {
+            guardEl.style.setProperty('display', 'none', 'important');
+            guardEl.setAttribute('aria-hidden', 'true');
+        }
+
+        // 2. Get raw History API references
+        const rawReplaceState = (window.__quantumNativeHistory && window.__quantumNativeHistory.replaceState)
+            ? window.__quantumNativeHistory.replaceState
+            : History.prototype.replaceState.bind(history);
+
+        // 3. FIX WHY SENDING AN IMAGE/FILE KICKS YOU OUT OF THE PAGE:
+        // Previously, when an image finished uploading:
+        //   a) `image-uploaded` event fired -> called `popModalStateIfActive('imagePicker')` -> called `history.back()` (Back #1)
+        //   b) `<image-picker>` closed its modal -> called `closePicker()` -> Section 27 wrapper called `history.back()` (Back #2)
+        //   c) MutationObserver in Section 27 saw the picker DOM hide -> called `history.back()` (Back #3)
+        // Calling `history.back()` 2-3 times in a row when only 1 modal state was pushed kicked the browser out to the previous page!
+        //
+        // SOLUTION: Clear modal state IN-PLACE via `history.replaceState(null, "", location.href)` whenever a picker closes
+        // or finishes uploading, and NEVER call `history.back()` during programmatic modal cleanup!
+        window.__isUploadingMediaSafeLock = false;
+
+        window.clearModalStateInPlace = function() {
+            window.__activeModalType = null;
+            window.__historyPopLock = false;
+            if (window.__quantumCustomModalOpen) {
+                window.__quantumCustomModalOpen.imagePicker = false;
+                window.__quantumCustomModalOpen.filePicker = false;
+                window.__quantumCustomModalOpen.mediaViewer = false;
+            }
+            try {
+                if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                    rawReplaceState(null, "", location.href);
+                }
+            } catch (e) {}
+        };
+
+        // Override popModalStateIfActive so programmatic modal closes (like image upload completion)
+        // clean the history state in-place instead of triggering `history.back()` page navigation!
+        window.popModalStateIfActive = function(expectedModal, callbackAfterPop) {
+            window.__historyPopLock = false;
+            if (expectedModal && window.__quantumCustomModalOpen && (expectedModal in window.__quantumCustomModalOpen)) {
+                window.__quantumCustomModalOpen[expectedModal] = false;
+            }
+            window.clearModalStateInPlace();
+            if (typeof callbackAfterPop === 'function') {
+                callbackAfterPop();
+            }
+        };
+
+        // 4. Intercept `image-uploaded`, `file-uploaded`, and `picker-closed` in the CAPTURE phase
+        // so the duplicate bubbling listeners in Section 26 & 27 never trigger `history.back()`.
+        if (imgPickerEl) {
+            imgPickerEl.addEventListener('image-uploaded', function(e) {
+                e.stopImmediatePropagation();
+                window.__isUploadingMediaSafeLock = true;
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.imagePicker = false;
+                window.clearModalStateInPlace();
+
+                const url = e.detail && e.detail.url;
+                if (url && typeof sendImageMessage === 'function') {
+                    sendImageMessage(url);
+                }
+                setTimeout(() => { window.__isUploadingMediaSafeLock = false; }, 800);
+            }, true);
+
+            imgPickerEl.addEventListener('picker-closed', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.imagePicker = false;
+                window.clearModalStateInPlace();
+            }, true);
+        }
+
+        if (filePickerEl) {
+            filePickerEl.addEventListener('file-uploaded', function(e) {
+                e.stopImmediatePropagation();
+                window.__isUploadingMediaSafeLock = true;
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.filePicker = false;
+                window.clearModalStateInPlace();
+
+                const detail = e.detail || {};
+                if (detail.url && typeof sendFileMessage === 'function') {
+                    sendFileMessage(detail.url, detail.metadata || {});
+                }
+                setTimeout(() => { window.__isUploadingMediaSafeLock = false; }, 800);
+            }, true);
+
+            filePickerEl.addEventListener('picker-closed', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.filePicker = false;
+                window.clearModalStateInPlace();
+            }, true);
+        }
+
+        // 5. Also neutralize any internal `history.back()` calls that might be hardcoded inside external
+        // component scripts (`components/imagePicker.js` or `components/filePicker.js`) during upload/close!
+        const origHistoryBack = history.back.bind(history);
+        history.back = function() {
+            if (window.__isUploadingMediaSafeLock) {
+                window.clearModalStateInPlace();
+                return;
+            }
+            return origHistoryBack();
+        };
+
+        // 6. Keep attempting native Screen Orientation API Portrait Lock whenever supported
+        function lockPortraitNative() {
+            try {
+                if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('portrait-primary').catch(() => {
+                        screen.orientation.lock('portrait').catch(() => {});
+                    });
+                }
+            } catch (e) {}
+        }
+        lockPortraitNative();
+        window.addEventListener('orientationchange', lockPortraitNative);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') lockPortraitNative();
+        });
+    })();
+</script>
+
 </body>
 </html>
