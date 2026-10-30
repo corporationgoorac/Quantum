@@ -5964,4 +5964,200 @@ box-shadow: var(--received-shadow);
 <call-notifier></call-notifier>
 
 </body>
+    <!-- =========================================================================
+     25. MASTER ATOMIC SCROLLBAR LOCK & ZERO-JITTER BOOT ENGINE (NON-DESTRUCTIVE)
+     ========================================================================= -->
+<style id="master-atomic-scrollbar-and-boot-lock">
+    /* 1. ATOMIC WHOLE-PAGE & ELEMENT SCROLLBAR REMOVAL */
+    *, *::before, *::after, html, body, .app-container, #chat-flow, #messages-container, .msg-input, #emoji-tray, #gif-tray {
+        -ms-overflow-style: none !important;  /* IE and Edge */
+        scrollbar-width: none !important;     /* Firefox */
+    }
+    *::-webkit-scrollbar,
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .app-container::-webkit-scrollbar,
+    #chat-flow::-webkit-scrollbar,
+    #messages-container::-webkit-scrollbar,
+    .msg-input::-webkit-scrollbar {
+        display: none !important;
+        width: 0px !important;
+        height: 0px !important;
+        background: transparent !important;
+        -webkit-appearance: none !important;
+    }
+
+    /* 2. FIX 100vw HORIZONTAL OVERFLOW TRIGGERING SIDE SCROLLBAR */
+    html, body, .app-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: hidden !important;
+         left: 0 !important;
+        right: 0 !important;
+    }
+
+    /* 3. LOCK MATERIAL ICONS DIMENSIONS TO PREVENT LIGATURE TEXT REFLOW JITTER ON RELOAD */
+    .material-icons-round {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 1em !important;
+        height: 1em !important;
+        max-width: 1em !important;
+        max-height: 1em !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        word-wrap: normal !important;
+        direction: ltr !important;
+        line-height: 1 !important;
+        flex-shrink: 0 !important;
+        vertical-align: middle !important;
+        font-feature-settings: 'liga' !important;
+        -webkit-font-feature-settings: 'liga' !important;
+        -webkit-font-smoothing: antialiased !important;
+    }
+
+    /* 4. FREEZE ALL BUBBLE, TEXT & INPUT TRANSITIONS DURING INITIAL RELOAD BOOT (0ms - 650ms) */
+    html.quantum-boot-freeze *,
+    html.quantum-boot-freeze *::before,
+    html.quantum-boot-freeze *::after {
+        transition: none !important;
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Keep chat container GPU-stable without content-containment reflow jumps */
+    #messages-container {
+        contain: layout style !important;
+        will-change: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    #chat-flow {
+        scroll-behavior: auto !important;
+        overflow-anchor: none !important; /* Prevent browser anchor fighting JS bottom-pin */
+        overflow-x: hidden !important;
+    }
+
+    /* Prevent bubble and text vertical subpixel shifting */
+    .msg-row, .msg-bubble-box, .bubble {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: translateZ(0);
+    }
+</style>
+
+<script>
+    (function initMasterZeroJitterBootEngine() {
+        // 1. Immediately engage boot freeze class on <html>
+        document.documentElement.classList.add('quantum-boot-freeze');
+
+        const chatFlowEl = document.getElementById('chat-flow');
+        const containerEl = document.getElementById('messages-container');
+        const mInputEl = document.getElementById('m-input');
+        const mainAppEl = document.getElementById('main-app');
+
+        // 2. Prevent autofocus on #m-input from firing smooth-scroll cascades during page reload
+        window.isBootingChat = true;
+        if (mInputEl && document.activeElement === mInputEl && window.innerWidth < 1024) {
+            mInputEl.blur();
+        }
+
+        // 3. Guard loadMoreMessages during initial boot so IntersectionObserver cannot double-load on reload
+        const origLoadMore = window.loadMoreMessages;
+        if (typeof origLoadMore === 'function') {
+            window.loadMoreMessages = async function() {
+                if (window.isBootingChat) return;
+                return origLoadMore.apply(this, arguments);
+            };
+        }
+
+        // 4. Unify timestamp helper on messagesMap so cached & live Firestore messages sort identically
+        function normalizeMessagesMapTimestamps() {
+            if (typeof messagesMap === 'undefined' || !messagesMap) return;
+            messagesMap.forEach((m, id) => {
+                if (!m) return;
+                let ms = 0;
+                if (m.timestamp && typeof m.timestamp.toMillis === 'function') {
+                    ms = m.timestamp.toMillis();
+                } else if (m.timestamp && typeof m.timestamp.toDate === 'function') {
+                    ms = m.timestamp.toDate().getTime();
+                } else if (m.timestampIso) {
+                    ms = new Date(m.timestampIso).getTime();
+                } else if (typeof m.timestamp === 'number') {
+                    ms = m.timestamp;
+                }
+                if (ms > 0) {
+                    if (!m.timestampIso) m.timestampIso = new Date(ms).toISOString();
+                    if (!m.timestamp || typeof m.timestamp.toMillis !== 'function') {
+                        const d = new Date(ms);
+                        m.timestamp = {
+                            toDate: () => d,
+                            toMillis: () => ms
+                        };
+                    }
+                }
+            });
+        }
+
+        // 5. Wrap renderAll so timestamps are always normalized and scrollTop stays locked to bottom during boot
+        const origRenderAll = window.renderAll;
+        if (typeof origRenderAll === 'function') {
+            window.renderAll = function() {
+                normalizeMessagesMapTimestamps();
+                const wasAtBottom = window.isBootingChat ||
+                    (chatFlowEl && (chatFlowEl.scrollHeight - chatFlowEl.scrollTop - chatFlowEl.clientHeight <= 250));
+                const savedScrollTop = chatFlowEl ? chatFlowEl.scrollTop : 0;
+
+                origRenderAll.apply(this, arguments);
+
+                if (chatFlowEl) {
+                    if (wasAtBottom) {
+                        chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+                    } else {
+                        chatFlowEl.scrollTop = savedScrollTop;
+                    }
+                }
+            };
+        }
+
+        // 6. Single authoritative, zero-RAF synchronous scrollToBottom during boot & active layout shifts
+        window.snapToBottomInstant = function() {
+            if (!chatFlowEl) return;
+            chatFlowEl.style.scrollBehavior = 'auto';
+            chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+        };
+
+        window.scrollToBottom = function(smooth = false) {
+            if (!chatFlowEl) return;
+            if (window.isBootingChat || !smooth || (document.activeElement === mInputEl) || window.isEmojiTrayOpen || window.isGifTrayOpen || window.isInitialLoadScroll) {
+                window.snapToBottomInstant();
+            } else {
+                chatFlowEl.scrollTo({
+                    top: chatFlowEl.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        };
+
+        // 7. Pin scroll position immediately and after fonts/DOM settle, then release boot freeze cleanly
+        window.snapToBottomInstant();
+
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                window.snapToBottomInstant();
+            }).catch(() => {});
+        }
+
+        setTimeout(() => {
+            window.snapToBottomInstant();
+            document.documentElement.classList.remove('quantum-boot-freeze');
+            window.isBootingChat = false;
+            if (chatFlowEl) chatFlowEl.style.overflowAnchor = 'auto';
+        }, 650);
+    })();
+</script>
+
 </html>
