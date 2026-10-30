@@ -7403,5 +7403,370 @@ box-shadow: var(--received-shadow);
     })();
 </script>
 
+
+<!-- =========================================================================
+     29. QUANTUM EXACT 1-DEPTH HISTORY STACK & NATURAL LANDSCAPE UI ENGINE
+     ========================================================================= -->
+<style id="quantum-natural-landscape-and-portrait-styles">
+    /* 1. Keep the "Portrait Mode Locked" blocking overlay permanently hidden */
+    #quantum-orientation-guard {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* 2. Remove the clunky -90deg CSS viewport rotation workaround!
+          Keep the chat UI natural, responsive, upright, and 100% usable in both Portrait & Landscape */
+    @media screen and (orientation: landscape) and (max-width: 960px) and (max-height: 540px) and (hover: none) and (pointer: coarse) {
+        body:not(.quantum-keyboard-active) {
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            transform: none !important;
+            overflow: hidden !important;
+        }
+        body:not(.quantum-keyboard-active) #main-app,
+        body:not(.quantum-keyboard-active) .app-container {
+            width: 100% !important;
+            height: 100dvh !important;
+            max-width: 100vw !important;
+            max-height: 100dvh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            transform: none !important;
+        }
+        body:not(.quantum-keyboard-active) #quantum-bg-layer {
+            width: 100vw !important;
+            height: 100vh !important;
+            transform: none !important;
+        }
+    }
+</style>
+
+<script id="quantum-exact-history-stack-and-orientation-fix">
+    // =========================================================================
+    //  29. QUANTUM EXACT 1-DEPTH HISTORY STACK ENGINE (ZERO DUPLICATE STUCK STATES)
+    // =========================================================================
+    (function initQuantumExactHistoryStackEngine() {
+        const attachmentMenuEl = document.getElementById('attachment-menu');
+        const emojiTrayEl = document.getElementById('emoji-tray');
+        const gifTrayEl = document.getElementById('gif-tray');
+        const reactionModalEl = document.getElementById('reaction-picker-modal');
+        const menuOverlayEl = document.getElementById('menu-overlay');
+        const reactionDetailsEl = document.getElementById('reaction-details-overlay');
+        const imgPickerEl = document.getElementById('img-picker');
+        const filePickerEl = document.getElementById('file-picker');
+        const mediaViewerEl = document.getElementById('media-viewer');
+        const mInputEl = document.getElementById('m-input');
+        const inputAreaEl = document.querySelector('.input-area');
+
+        // 1. Clean Native History Bindings
+        const rawPushState = (window.__quantumNativeHistory && window.__quantumNativeHistory.pushState)
+            ? window.__quantumNativeHistory.pushState
+            : History.prototype.pushState.bind(history);
+        const rawReplaceState = (window.__quantumNativeHistory && window.__quantumNativeHistory.replaceState)
+            ? window.__quantumNativeHistory.replaceState
+            : History.prototype.replaceState.bind(history);
+        const rawHistoryBack = (window.__quantumNativeHistory && window.__quantumNativeHistory.back)
+            ? window.__quantumNativeHistory.back
+            : History.prototype.back.bind(history);
+
+        // 2. WHY THE PAGE WAS GETTING STUCK ON A DUPLICATE HISTORY ENTRY:
+        // Previously in Section 28, `popModalStateIfActive` was changed to use `replaceState(null)` instead of `history.back()`.
+        // That meant when you opened the `+` Attachment Menu (`pushState` added 1 entry to browser history) and then:
+        //   - Case A: You touched outside on the screen (or clicked `+` again) -> `closeAttachmentMenu()` ran `replaceState(null)`
+        //     instead of popping the history entry! So the extra history entry STAYED in the browser stack, and pressing
+        //     the mobile Back button afterwards only popped that leftover entry instead of leaving the page!
+        //   - Case B: You pressed the mobile Back button while the menu was open -> `popstate` closed the menu, or if a
+        //     modal state was pushed/replaced out of sync, an extra history entry remained.
+        //
+        // THE EXACT MATHEMATICAL SOLUTION:
+        // Track `window.__modalHistoryDepth` (0 or 1):
+        //   - Opening ANY modal/menu/drawer when depth is 0 calls `rawPushState` ONCE and sets `__modalHistoryDepth = 1`.
+        //   - Switching directly from one modal to another (e.g. `+` Attachment Menu -> Camera Picker or Emoji Tray)
+        //     when depth is already 1 calls `rawReplaceState` and keeps `__modalHistoryDepth = 1`.
+        //   - Closing a modal by touching the screen / clicking X / clicking `+` when `__modalHistoryDepth === 1`
+        //     calls `rawHistoryBack()` ONCE (with `__silentPopInProgress = true`) so the browser history stack is
+        //     immediately restored to depth 0! Then the next mobile Back button press leaves the page immediately!
+        //   - Pressing the hardware mobile Back button when `__modalHistoryDepth === 1` naturally pops that 1 entry
+        //     (browser moves back 1 step), sets `__modalHistoryDepth = 0`, and closes the modal! Then the very next
+        //     mobile Back button press immediately leaves the page!
+        //   - Completing an image/file upload when `__modalHistoryDepth === 1` also pops that 1 modal entry cleanly
+        //     exactly once (`__silentPopInProgress = true`) and blocks any 2nd/3rd duplicate `history.back()` calls
+        //     so it NEVER kicks you out of the page AND NEVER leaves a stuck duplicate entry!
+
+        window.__modalHistoryDepth = (history.state && (history.state.modal || history.state.__quantumModal)) ? 1 : 0;
+        window.__silentPopInProgress = false;
+        window.__uploadBackGuardUntil = 0;
+
+        // If the page loaded with a leftover modal state but no modal is open, clean it
+        if (window.__modalHistoryDepth === 1 && (!window.hasAnyOpenChatModal || !window.hasAnyOpenChatModal())) {
+            try { rawReplaceState(null, "", location.href); } catch (e) {}
+            window.__modalHistoryDepth = 0;
+        }
+
+        // Push or replace modal history state with strict max depth = 1
+        window.pushModalState = function(modalName) {
+            window.__activeModalType = modalName;
+            if (window.__modalHistoryDepth === 1 || (history.state && (history.state.modal || history.state.__quantumModal))) {
+                window.__modalHistoryDepth = 1;
+                try {
+                    rawReplaceState({ modal: modalName, __quantumModal: true }, "", location.href);
+                } catch (e) {}
+            } else {
+                window.__modalHistoryDepth = 1;
+                try {
+                    rawPushState({ modal: modalName, __quantumModal: true }, "", location.href);
+                } catch (e) {}
+            }
+        };
+
+        // Pop the single modal history entry when closed via UI (touching outside, clicking +, clicking X, or finishing upload)
+        window.popModalStateIfActive = function(expectedModal, callbackAfterPop) {
+            if (expectedModal && window.__quantumCustomModalOpen && (expectedModal in window.__quantumCustomModalOpen)) {
+                window.__quantumCustomModalOpen[expectedModal] = false;
+            }
+            window.__activeModalType = null;
+
+            // If a hardware popstate is currently executing, the browser already popped the entry!
+            if (window.__inPopStateHandler) {
+                window.__modalHistoryDepth = 0;
+                if (typeof callbackAfterPop === 'function') callbackAfterPop();
+                return;
+            }
+
+            // If we have 1 modal history entry on the stack, pop it via rawHistoryBack() ONCE so no ghost entry remains!
+            if (window.__modalHistoryDepth === 1 || (history.state && (history.state.modal || history.state.__quantumModal))) {
+                window.__modalHistoryDepth = 0;
+                window.__silentPopInProgress = true;
+                try {
+                    rawHistoryBack();
+                } catch (e) {
+                    window.__silentPopInProgress = false;
+                }
+                setTimeout(() => {
+                    window.__silentPopInProgress = false;
+                    if (typeof callbackAfterPop === 'function') callbackAfterPop();
+                }, 60);
+            } else {
+                window.__modalHistoryDepth = 0;
+                if (typeof callbackAfterPop === 'function') callbackAfterPop();
+            }
+        };
+
+        // Override history.pushState & history.back globally to prevent external components from corrupting the stack
+        history.pushState = function(state, title, url) {
+            const isModalState = state && (state.modal || state.picker || state.viewer || state.gif || state.emoji || state.isModal);
+            if (isModalState || (typeof window.hasAnyOpenChatModal === 'function' && window.hasAnyOpenChatModal())) {
+                const modalName = (state && state.modal) ? state.modal : (window.hasAnyOpenChatModal() || 'componentModal');
+                window.pushModalState(modalName);
+                return;
+            }
+            return rawPushState(state, title, url);
+        };
+
+        history.replaceState = function(state, title, url) {
+            if (state && state.modal) {
+                window.__activeModalType = state.modal;
+                window.__modalHistoryDepth = 1;
+                return rawReplaceState({ ...state, __quantumModal: true }, title || "", url || location.href);
+            }
+            return rawReplaceState(state, title, url);
+        };
+
+        history.back = function() {
+            // If an upload just finished and already popped the 1 modal entry, block any extra back() calls for 600ms
+            if (Date.now() < window.__uploadBackGuardUntil) {
+                return;
+            }
+            // If a silent UI pop is already in flight, don't double-call back()
+            if (window.__silentPopInProgress) {
+                return;
+            }
+            return rawHistoryBack();
+        };
+
+        // 3. CAPTURE-PHASE POPSTATE HANDLER (HANDLES HARDWARE BACK BUTTON CLEANLY)
+        window.addEventListener('popstate', function(e) {
+            e.stopImmediatePropagation();
+
+            // Case 1: This popstate was triggered by `popModalStateIfActive` when user tapped outside / closed via UI
+            if (window.__silentPopInProgress) {
+                window.__silentPopInProgress = false;
+                window.__modalHistoryDepth = 0;
+                return;
+            }
+
+            // Case 2: User pressed the physical/mobile Back button!
+            window.__inPopStateHandler = true;
+            window.__modalHistoryDepth = 0;
+
+            try {
+                const openModal = (typeof window.hasAnyOpenChatModal === 'function') ? window.hasAnyOpenChatModal() : null;
+                if (openModal) {
+                    // Close the open attachment menu / tray / modal immediately
+                    if (typeof window.closeAllModalsDOMOnly === 'function') {
+                        window.closeAllModalsDOMOnly();
+                    }
+                    // Ensure current history state has no leftover modal tag
+                    if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                        try { rawReplaceState(null, "", location.href); } catch (err) {}
+                    }
+                    return;
+                }
+
+                // Case 3: No modal was open when user pressed Back, but if the browser landed on a stale modal state,
+                // step back immediately so the user leaves the page on the first press!
+                if (e.state && (e.state.modal || e.state.__quantumModal)) {
+                    try { rawReplaceState(null, "", location.href); } catch (err) {}
+                    rawHistoryBack();
+                }
+            } finally {
+                setTimeout(() => {
+                    window.__inPopStateHandler = false;
+                }, 40);
+            }
+        }, true);
+
+        // 4. TOUCH-ANYWHERE-OUTSIDE TO CLOSE ATTACHMENT MENU (INSTANT & CLEAN)
+        // Uses pointerdown/touchstart so touching anywhere on the chat messages or header immediately closes
+        // the attachment menu AND pops its 1 history state, so pressing Back next exits the page!
+        function handleOutsideAttachmentTouch(e) {
+            if (!attachmentMenuEl || attachmentMenuEl.style.display !== 'flex') return;
+            if (e.target.closest('#attachment-menu') || e.target.closest('.plus-btn')) return;
+            window.closeAttachmentMenu();
+        }
+        document.addEventListener('touchstart', handleOutsideAttachmentTouch, { passive: true, capture: true });
+        document.addEventListener('mousedown', handleOutsideAttachmentTouch, { passive: true, capture: true });
+
+        // 5. ATTACHMENT MENU -> CAMERA / FILE / EMOJI SEAMLESS HANDOFF
+        window.toggleAttachmentMenu = function() {
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') {
+                window.closeAttachmentMenu();
+            } else {
+                if (emojiTrayEl) emojiTrayEl.style.display = 'none';
+                if (gifTrayEl) gifTrayEl.style.display = 'none';
+                window.isEmojiTrayOpen = false;
+                window.isGifTrayOpen = false;
+                const eRight = document.getElementById('emoji-toggle-right');
+                const eLeft = document.getElementById('emoji-toggle-left');
+                const gRight = document.getElementById('gif-toggle-right');
+                if (eRight) eRight.innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                if (eLeft) eLeft.innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                if (gRight) gRight.innerHTML = '<span class="material-icons-round">gif_box</span>';
+
+                if (attachmentMenuEl) attachmentMenuEl.style.display = 'flex';
+                window.pushModalState('attachment');
+            }
+        };
+
+        window.closeAttachmentMenu = function(onClosedCallback) {
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') {
+                attachmentMenuEl.style.display = 'none';
+                window.popModalStateIfActive('attachment', onClosedCallback);
+            } else if (typeof onClosedCallback === 'function') {
+                onClosedCallback();
+            }
+        };
+
+        // When user clicks Camera or File inside the Attachment Menu, hide Attachment Menu and
+        // replace the history state in-place (`__modalHistoryDepth` stays 1, not 2!)
+        window.openCameraPicker = function() {
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.imagePicker = true;
+            window.pushModalState('imagePicker');
+            if (imgPickerEl && typeof imgPickerEl.openPicker === 'function') {
+                imgPickerEl.openPicker();
+            }
+        };
+
+        window.openFilePicker = function() {
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.filePicker = true;
+            window.pushModalState('filePicker');
+            if (filePickerEl && typeof filePickerEl.openPicker === 'function') {
+                filePickerEl.openPicker();
+            }
+        };
+
+        // 6. IMAGE & FILE UPLOAD COMPLETION (POPS THE 1 MODAL ENTRY ONCE, BLOCKS DUPLICATE BACKS)
+        if (imgPickerEl) {
+            imgPickerEl.addEventListener('image-uploaded', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.imagePicker = false;
+                // Pop the single modal entry so history stack is clean, then guard against any 2nd/3rd back() calls
+                window.popModalStateIfActive('imagePicker');
+                window.__uploadBackGuardUntil = Date.now() + 700;
+
+                const url = e.detail && e.detail.url;
+                if (url && typeof sendImageMessage === 'function') {
+                    sendImageMessage(url);
+                }
+            }, true);
+
+            imgPickerEl.addEventListener('picker-closed', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.imagePicker = false;
+                if (Date.now() < window.__uploadBackGuardUntil) return;
+                window.popModalStateIfActive('imagePicker');
+            }, true);
+        }
+
+        if (filePickerEl) {
+            filePickerEl.addEventListener('file-uploaded', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.filePicker = false;
+                window.popModalStateIfActive('filePicker');
+                window.__uploadBackGuardUntil = Date.now() + 700;
+
+                const detail = e.detail || {};
+                if (detail.url && typeof sendFileMessage === 'function') {
+                    sendFileMessage(detail.url, detail.metadata || {});
+                }
+            }, true);
+
+            filePickerEl.addEventListener('picker-closed', function(e) {
+                e.stopImmediatePropagation();
+                if (window.__quantumCustomModalOpen) window.__quantumCustomModalOpen.filePicker = false;
+                if (Date.now() < window.__uploadBackGuardUntil) return;
+                window.popModalStateIfActive('filePicker');
+            }, true);
+        }
+
+        // 7. TOP-LEFT BACK BUTTON (`smartBack`) SYNCED WITH 1-DEPTH ENGINE
+        window.smartBack = function() {
+            if (typeof vibrate === 'function') vibrate(30);
+            if (typeof window.hasAnyOpenChatModal === 'function' && window.hasAnyOpenChatModal()) {
+                window.closeAllModalsDOMOnly();
+                window.popModalStateIfActive();
+                return;
+            }
+            if (window !== window.parent && typeof window.parent.closeChatModal === 'function') {
+                window.parent.closeChatModal();
+                return;
+            }
+            if (window.__modalHistoryDepth === 1 || (history.state && (history.state.modal || history.state.__quantumModal))) {
+                window.__modalHistoryDepth = 0;
+                try { rawReplaceState(null, "", location.href); } catch (e) {}
+            }
+            if (history.length > 1) {
+                rawHistoryBack();
+            } else {
+                window.location.replace(document.referrer || 'index.html');
+            }
+        };
+    })();
+</script>
+
 </body>
 </html>
