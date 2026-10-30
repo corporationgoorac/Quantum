@@ -6135,5 +6135,564 @@ box-shadow: var(--received-shadow);
     })();
 </script>
 
+
+<script id="quantum-history-and-race-stabilizer">
+    // =========================================================================
+    //  26. QUANTUM HISTORY STACK MANAGER, COMPONENT BRIDGE & RACE CONDITION FIX
+    // =========================================================================
+    (function initQuantumHistoryAndRaceStabilizer() {
+        const mInputEl = document.getElementById('m-input');
+        const emojiTrayEl = document.getElementById('emoji-tray');
+        const gifTrayEl = document.getElementById('gif-tray');
+        const attachmentMenuEl = document.getElementById('attachment-menu');
+        const reactionModalEl = document.getElementById('reaction-picker-modal');
+        const menuOverlayEl = document.getElementById('menu-overlay');
+        const reactionDetailsEl = document.getElementById('reaction-details-overlay');
+        const inputAreaEl = document.querySelector('.input-area');
+        const imgPickerEl = document.getElementById('img-picker');
+        const filePickerEl = document.getElementById('file-picker');
+        const mediaViewerEl = document.getElementById('media-viewer');
+
+        // ---------------------------------------------------------------------
+        // A. SINGLE-DEPTH ATOMIC MODAL HISTORY ENGINE (ZERO GHOST STATES)
+        // ---------------------------------------------------------------------
+        window.__activeModalType = null;
+        window.__historyPopLock = false;
+        window.__pendingComponentCallback = null;
+        window.__traySwitchTimer = null;
+
+        // Check if any internal overlay inside web components (<image-picker>, <file-picker>, <view-media>, <gif-picker>) is open
+        function getOpenExternalComponent() {
+            const comps = [
+                { id: 'mediaViewer', el: mediaViewerEl },
+                { id: 'imagePicker', el: imgPickerEl },
+                { id: 'filePicker', el: filePickerEl }
+            ];
+            for (const c of comps) {
+                if (!c.el) continue;
+                const sr = c.el.shadowRoot || c.el;
+                // Check common modal/overlay patterns inside custom elements
+                const visibleOverlay = sr.querySelector('.modal.active, .overlay.active, .picker-modal.active, .viewer-overlay.active, [style*="display: flex"], [style*="display: block"]');
+                if (visibleOverlay || c.el.hasAttribute('open') || c.el.classList.contains('open') || c.el.classList.contains('active') || c.el.isOpen === true) {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        function closeExternalComponentUI(compEl) {
+            if (!compEl) return false;
+            let closed = false;
+            try {
+                if (typeof compEl.close === 'function') { compEl.close(); closed = true; }
+                else if (typeof compEl.closePicker === 'function') { compEl.closePicker(); closed = true; }
+                else if (typeof compEl.hide === 'function') { compEl.hide(); closed = true; }
+                const sr = compEl.shadowRoot || compEl;
+                const closeBtn = sr.querySelector('.close-btn, .close, [data-close], #close-btn, .cancel-btn');
+                if (closeBtn && !closed) { closeBtn.click(); closed = true; }
+                const overlays = sr.querySelectorAll('[style*="display: flex"], [style*="display: block"], .active, .open');
+                overlays.forEach(ov => {
+                    if (ov !== compEl && (ov.classList.contains('modal') || ov.classList.contains('overlay') || ov.id.includes('modal') || ov.id.includes('overlay') || ov.id.includes('viewer') || ov.id.includes('picker'))) {
+                        ov.style.display = 'none';
+                        ov.classList.remove('active', 'open');
+                        closed = true;
+                    }
+                });
+                compEl.removeAttribute('open');
+                compEl.classList.remove('open', 'active');
+                if ('isOpen' in compEl) compEl.isOpen = false;
+            } catch (err) {}
+            return closed;
+        }
+
+        // Check if ANY chat modal/tray/picker is currently visible in the DOM
+        window.hasAnyOpenChatModal = function() {
+            if (window.isEmojiTrayOpen || (emojiTrayEl && emojiTrayEl.style.display === 'block')) return 'emoji';
+            if (window.isGifTrayOpen || (gifTrayEl && gifTrayEl.style.display === 'block')) return 'gif';
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') return 'attachment';
+            if (reactionModalEl && reactionModalEl.style.display === 'flex') return 'reactionPicker';
+            if (menuOverlayEl && menuOverlayEl.style.display === 'flex') return 'menu';
+            if (reactionDetailsEl && reactionDetailsEl.style.display === 'flex') return 'reactions';
+            const ext = getOpenExternalComponent();
+            if (ext) return ext.id;
+            return null;
+        };
+
+        // Close all UI modals purely in the DOM without touching history
+        window.closeAllModalsDOMOnly = function() {
+            if (window.__traySwitchTimer) {
+                clearTimeout(window.__traySwitchTimer);
+                window.__traySwitchTimer = null;
+            }
+            window.isTrayHandingOff = false;
+
+            if (emojiTrayEl && emojiTrayEl.style.display !== 'none') {
+                emojiTrayEl.style.display = 'none';
+            }
+            if (gifTrayEl && gifTrayEl.style.display !== 'none') {
+                gifTrayEl.style.display = 'none';
+            }
+            window.isEmojiTrayOpen = false;
+            window.isGifTrayOpen = false;
+
+            const eRight = document.getElementById('emoji-toggle-right');
+            const eLeft = document.getElementById('emoji-toggle-left');
+            const gRight = document.getElementById('gif-toggle-right');
+            if (eRight) eRight.innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+            if (eLeft) eLeft.innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+            if (gRight) gRight.innerHTML = '<span class="material-icons-round">gif_box</span>';
+
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            if (reactionModalEl) reactionModalEl.style.display = 'none';
+            if (menuOverlayEl) menuOverlayEl.style.display = 'none';
+            if (reactionDetailsEl) reactionDetailsEl.style.display = 'none';
+
+            closeExternalComponentUI(imgPickerEl);
+            closeExternalComponentUI(filePickerEl);
+            closeExternalComponentUI(mediaViewerEl);
+
+            if (inputAreaEl && document.activeElement !== mInputEl) {
+                inputAreaEl.classList.remove('force-expand');
+            }
+            window.__activeModalType = null;
+        };
+
+        // Intercept history.pushState and history.replaceState globally so child components
+        // (gifPicker.js, emojiPicker.js, imagePicker.js, filePicker.js, viewMedia.js)
+        // NEVER push duplicate history states on top of our modal state!
+        const nativePushState = history.pushState.bind(history);
+        const nativeReplaceState = history.replaceState.bind(history);
+        const nativeHistoryBack = history.back.bind(history);
+
+        history.pushState = function(state, title, url) {
+            const isModalState = state && (state.modal || state.picker || state.viewer || state.gif || state.emoji || state.isModal);
+            if (isModalState || window.hasAnyOpenChatModal()) {
+                const modalName = (state && state.modal) ? state.modal : (window.hasAnyOpenChatModal() || 'componentModal');
+                window.__activeModalType = modalName;
+                if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                    // Already at modal depth 1 -> replace in place instead of stacking ghost entries!
+                    return nativeReplaceState({ ...state, modal: modalName, __quantumModal: true }, title || "", url || location.href);
+                } else {
+                    return nativePushState({ ...state, modal: modalName, __quantumModal: true }, title || "", url || location.href);
+                }
+            }
+            return nativePushState(state, title, url);
+        };
+
+        history.replaceState = function(state, title, url) {
+            if (state && state.modal) {
+                window.__activeModalType = state.modal;
+                return nativeReplaceState({ ...state, __quantumModal: true }, title || "", url || location.href);
+            }
+            return nativeReplaceState(state, title, url);
+        };
+
+        // Safe single-entry modal state pusher
+        window.pushModalState = function(modalName) {
+            window.__activeModalType = modalName;
+            if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                nativeReplaceState({ modal: modalName, __quantumModal: true }, "", location.href);
+            } else {
+                nativePushState({ modal: modalName, __quantumModal: true }, "", location.href);
+            }
+        };
+
+        // Safe programmatic modal history popper (pops ONLY if a quantum modal state is currently on top)
+        window.popModalStateIfActive = function(expectedModal, callbackAfterPop) {
+            if (window.__historyPopLock) {
+                if (callbackAfterPop) callbackAfterPop();
+                return;
+            }
+            if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                window.__historyPopLock = true;
+                if (callbackAfterPop) window.__pendingComponentCallback = callbackAfterPop;
+                nativeHistoryBack();
+                setTimeout(() => {
+                    window.__historyPopLock = false;
+                    if (window.__pendingComponentCallback) {
+                        const cb = window.__pendingComponentCallback;
+                        window.__pendingComponentCallback = null;
+                        cb();
+                    }
+                }, 120);
+            } else {
+                if (callbackAfterPop) callbackAfterPop();
+            }
+        };
+
+        // Startup Ghost State Sanitizer: if page reloaded while a modal state was in history, clean it immediately
+        if (history.state && (history.state.modal || history.state.__quantumModal) && !window.hasAnyOpenChatModal()) {
+            nativeReplaceState(null, "", location.href);
+        }
+
+        // ---------------------------------------------------------------------
+        // B. UNIFIED POPSTATE INTERCEPTOR (CAPTURE PHASE - STOPS OLD DUPLICATES)
+        // ---------------------------------------------------------------------
+        window.addEventListener('popstate', function(e) {
+            // Stop older duplicate popstate handlers from running out of sync
+            e.stopImmediatePropagation();
+
+            window.__historyPopLock = false;
+
+            // If we triggered a programmatic pop before opening a child picker (e.g. Attachment -> Camera/File)
+            if (window.__pendingComponentCallback) {
+                const cb = window.__pendingComponentCallback;
+                window.__pendingComponentCallback = null;
+                cb();
+                return;
+            }
+
+            // If any modal/tray/picker is currently open, close it cleanly on hardware Back press
+            const currentlyOpen = window.hasAnyOpenChatModal();
+            if (currentlyOpen) {
+                window.closeAllModalsDOMOnly();
+                // If somehow another ghost modal state is still in history.state after back, strip it in-place
+                if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                    nativeReplaceState(null, "", location.href);
+                }
+                return;
+            }
+
+            // If no modal is open, but a leftover ghost modal state was just landed on, step back once more to exit page cleanly
+            if (e.state && (e.state.modal || e.state.__quantumModal)) {
+                nativeReplaceState(null, "", location.href);
+                window.smartBack();
+            }
+        }, true);
+
+        // ---------------------------------------------------------------------
+        // C. BULLETPROOF SMART BACK BUTTON (TOP-LEFT & HARDWARE EXIT)
+        // ---------------------------------------------------------------------
+        window.smartBack = function() {
+            vibrate(30);
+            // 1. If any picker/tray/modal is open, close it first and pop its state
+            if (window.hasAnyOpenChatModal()) {
+                window.closeAllModalsDOMOnly();
+                if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                    nativeHistoryBack();
+                }
+                return;
+            }
+
+            // 2. If inside SPA iframe modal shell
+            if (window !== window.parent && typeof window.parent.closeChatModal === 'function') {
+                window.parent.closeChatModal();
+                return;
+            }
+
+            // 3. If sitting on a ghost modal history state with no modal open, strip it and go back
+            if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                nativeReplaceState(null, "", location.href);
+                if (history.length > 2) {
+                    nativeHistoryBack();
+                    setTimeout(() => {
+                        // Fallback if browser didn't navigate away
+                        if (document.visibilityState === 'visible') {
+                            window.location.replace(document.referrer || 'index.html');
+                        }
+                    }, 180);
+                    return;
+                }
+            }
+
+            // 4. Normal page exit with guaranteed fallback if history stack is at root
+            if (history.length > 1 && document.referrer) {
+                nativeHistoryBack();
+                setTimeout(() => {
+                    if (document.visibilityState === 'visible' && (history.state?.modal || history.state?.__quantumModal)) {
+                        window.location.replace(document.referrer || 'index.html');
+                    }
+                }, 220);
+            } else if (history.length > 1) {
+                nativeHistoryBack();
+            } else {
+                window.location.replace('index.html');
+            }
+        };
+
+        // ---------------------------------------------------------------------
+        // D. STABILIZED EMOJI, GIF, ATTACHMENT, CAMERA, FILE & MENU CONTROLLERS
+        // ---------------------------------------------------------------------
+        window.toggleEmojiKeyboard = function() {
+            if (window.__traySwitchTimer) {
+                clearTimeout(window.__traySwitchTimer);
+                window.__traySwitchTimer = null;
+            }
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+
+            if (window.isEmojiTrayOpen) {
+                // Closing Emoji Tray -> Switch to Native Keyboard
+                window.isEmojiTrayOpen = false;
+                window.isTrayHandingOff = true;
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                // Pop modal history state IMMEDIATELY while window.isEmojiTrayOpen is false so focus listener won't race
+                window.popModalStateIfActive('emoji');
+
+                mInputEl.focus({ preventScroll: true });
+                if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+
+                window.__traySwitchTimer = setTimeout(() => {
+                    window.isTrayHandingOff = false;
+                    if (!window.isEmojiTrayOpen && emojiTrayEl) emojiTrayEl.style.display = 'none';
+                    if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+                }, 220);
+            } else {
+                // Opening Emoji Tray (either from closed or directly from GIF tray)
+                const wasFocused = (document.activeElement === mInputEl);
+                window.isEmojiTrayOpen = true;
+                window.isGifTrayOpen = false;
+                window.isTrayHandingOff = false;
+
+                if (gifTrayEl) gifTrayEl.style.display = 'none';
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">keyboard</span>';
+
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+                if (emojiTrayEl) emojiTrayEl.style.display = 'block';
+                if (wasFocused) mInputEl.blur();
+
+                if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+                window.pushModalState('emoji');
+            }
+        };
+
+        window.toggleGifKeyboard = function() {
+            if (window.__traySwitchTimer) {
+                clearTimeout(window.__traySwitchTimer);
+                window.__traySwitchTimer = null;
+            }
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+
+            if (window.isGifTrayOpen) {
+                // Closing GIF Tray -> Switch to Native Keyboard
+                window.isGifTrayOpen = false;
+                window.isTrayHandingOff = true;
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+
+                // Pop modal history state IMMEDIATELY so focus listener doesn't double-close
+                window.popModalStateIfActive('gif');
+
+                mInputEl.focus({ preventScroll: true });
+                if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+
+                window.__traySwitchTimer = setTimeout(() => {
+                    window.isTrayHandingOff = false;
+                    if (!window.isGifTrayOpen && gifTrayEl) gifTrayEl.style.display = 'none';
+                    if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+                }, 220);
+            } else {
+                // Opening GIF Tray (either from closed or directly from Emoji tray)
+                const wasFocused = (document.activeElement === mInputEl);
+                window.isGifTrayOpen = true;
+                window.isEmojiTrayOpen = false;
+                window.isTrayHandingOff = false;
+
+                if (emojiTrayEl) emojiTrayEl.style.display = 'none';
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">keyboard</span>';
+
+                if (inputAreaEl) inputAreaEl.classList.add('force-expand');
+                if (gifTrayEl) gifTrayEl.style.display = 'block';
+                if (wasFocused) mInputEl.blur();
+
+                if (typeof window.snapToBottomInstant === 'function') window.snapToBottomInstant();
+                window.pushModalState('gif');
+            }
+        };
+
+        // Attachment Menu -> Emoji Tray (Replaces modal state in-place instead of leaving ghost 'attachment' state!)
+        window.toggleEmojiTray = function() {
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            if (window.isEmojiTrayOpen) {
+                window.closeEmojiTray();
+            } else {
+                window.toggleEmojiKeyboard();
+            }
+        };
+
+        window.closeEmojiTray = function() {
+            if (window.isEmojiTrayOpen || (emojiTrayEl && emojiTrayEl.style.display === 'block')) {
+                window.isEmojiTrayOpen = false;
+                if (emojiTrayEl) emojiTrayEl.style.display = 'none';
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                if (inputAreaEl && document.activeElement !== mInputEl) inputAreaEl.classList.remove('force-expand');
+                window.popModalStateIfActive('emoji');
+            }
+        };
+
+        window.closeGifTray = function() {
+            if (window.isGifTrayOpen || (gifTrayEl && gifTrayEl.style.display === 'block')) {
+                window.isGifTrayOpen = false;
+                if (gifTrayEl) gifTrayEl.style.display = 'none';
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                if (inputAreaEl && document.activeElement !== mInputEl) inputAreaEl.classList.remove('force-expand');
+                window.popModalStateIfActive('gif');
+            }
+        };
+
+        window.toggleAttachmentMenu = function() {
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') {
+                window.closeAttachmentMenu();
+            } else {
+                if (emojiTrayEl) emojiTrayEl.style.display = 'none';
+                if (gifTrayEl) gifTrayEl.style.display = 'none';
+                window.isEmojiTrayOpen = false;
+                window.isGifTrayOpen = false;
+                document.getElementById('emoji-toggle-right').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('emoji-toggle-left').innerHTML = '<span class="material-icons-round">emoji_emotions</span>';
+                document.getElementById('gif-toggle-right').innerHTML = '<span class="material-icons-round">gif_box</span>';
+                if (attachmentMenuEl) attachmentMenuEl.style.display = 'flex';
+                window.pushModalState('attachment');
+            }
+        };
+
+        window.closeAttachmentMenu = function(onClosedCallback) {
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') {
+                attachmentMenuEl.style.display = 'none';
+                window.popModalStateIfActive('attachment', onClosedCallback);
+            } else if (onClosedCallback) {
+                onClosedCallback();
+            }
+        };
+
+        // Camera / Gallery & File / Video Pickers:
+        // Wait for attachment menu's history.back() to settle (or replace state cleanly) before opening picker!
+        window.openCameraPicker = function() {
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            window.pushModalState('imagePicker');
+            if (imgPickerEl && typeof imgPickerEl.openPicker === 'function') {
+                imgPickerEl.openPicker();
+            }
+        };
+
+        window.openFilePicker = function() {
+            if (attachmentMenuEl) attachmentMenuEl.style.display = 'none';
+            window.pushModalState('filePicker');
+            if (filePickerEl && typeof filePickerEl.openPicker === 'function') {
+                filePickerEl.openPicker();
+            }
+        };
+
+        // Wrap Media Viewer open() so viewing an image/video also integrates cleanly with mobile back button
+        function hookMediaViewer() {
+            if (mediaViewerEl && typeof mediaViewerEl.open === 'function' && !mediaViewerEl.__quantumHooked) {
+                mediaViewerEl.__quantumHooked = true;
+                const origOpen = mediaViewerEl.open.bind(mediaViewerEl);
+                mediaViewerEl.open = function(...args) {
+                    window.pushModalState('mediaViewer');
+                    return origOpen(...args);
+                };
+            }
+        }
+        hookMediaViewer();
+        window.addEventListener('load', hookMediaViewer);
+
+        // Clean up modal history state if image/file picker completes upload or closes internally
+        if (imgPickerEl) {
+            imgPickerEl.addEventListener('image-uploaded', () => {
+                window.popModalStateIfActive('imagePicker');
+            });
+            imgPickerEl.addEventListener('picker-closed', () => {
+                window.popModalStateIfActive('imagePicker');
+            });
+        }
+        if (filePickerEl) {
+            filePickerEl.addEventListener('file-uploaded', () => {
+                window.popModalStateIfActive('filePicker');
+            });
+            filePickerEl.addEventListener('picker-closed', () => {
+                window.popModalStateIfActive('filePicker');
+            });
+        }
+
+        // Fix duplicate GIF selection race: capture-phase handler on main-gif-picker
+        const mainGifPickerEl = document.getElementById('main-gif-picker');
+        if (mainGifPickerEl) {
+            mainGifPickerEl.addEventListener('gif-selected', function(e) {
+                e.stopImmediatePropagation();
+                const url = e.detail && e.detail.url;
+                if (url) {
+                    window.sendGifMessage(url);
+                }
+            }, true);
+        }
+
+        // Menu, Reaction Picker & Reaction Details Overrides
+        window.openMenu = function(id, sender, text) {
+            activeMenuId = id;
+            vibrate(30);
+            const isMine = sender === myUid;
+            const menuCard = document.getElementById('main-menu-card');
+            if (menuCard) menuCard.style.alignItems = isMine ? 'flex-end' : 'flex-start';
+
+            const editBtn = document.getElementById('edit-btn');
+            const unsendBtn = document.getElementById('unsend-btn');
+            const emojiGrid = document.getElementById('menu-emoji-grid');
+            if (editBtn) editBtn.style.display = (isMine && text) ? 'flex' : 'none';
+            if (unsendBtn) unsendBtn.style.display = isMine ? 'flex' : 'none';
+            if (emojiGrid) emojiGrid.style.display = 'none';
+            if (menuOverlayEl) menuOverlayEl.style.display = 'flex';
+            window.pushModalState('menu');
+        };
+
+        window.closeMenu = function() {
+            if (menuOverlayEl && menuOverlayEl.style.display === 'flex') {
+                menuOverlayEl.style.display = 'none';
+                window.popModalStateIfActive('menu');
+            }
+        };
+
+        window.expandEmojiMenu = function() {
+            vibrate(30);
+            if (menuOverlayEl && menuOverlayEl.style.display === 'flex') {
+                menuOverlayEl.style.display = 'none';
+            }
+            window.pushModalState('reactionPicker');
+
+            const containerEl = document.getElementById('reaction-picker-container');
+            if (containerEl) {
+                containerEl.innerHTML = '';
+                const reactionPicker = document.createElement('emoji-picker');
+                reactionPicker.style.width = "100%";
+                reactionPicker.style.height = "100%";
+                reactionPicker.addEventListener('emoji-click', event => {
+                    const emoji = event.detail.emoji || event.detail.unicode;
+                    if (activeMenuId) {
+                        const targetId = activeMenuId;
+                        window.closeReactionPicker();
+                        vibrate(30);
+                        applyReactionToId(targetId, emoji);
+                    } else {
+                        window.closeReactionPicker();
+                    }
+                });
+                containerEl.appendChild(reactionPicker);
+            }
+            if (reactionModalEl) reactionModalEl.style.display = 'flex';
+        };
+
+        window.closeReactionPicker = function() {
+            if (reactionModalEl && reactionModalEl.style.display === 'flex') {
+                reactionModalEl.style.display = 'none';
+                window.popModalStateIfActive('reactionPicker');
+            }
+        };
+
+        window.closeReactionDetails = function() {
+            if (reactionDetailsEl && reactionDetailsEl.style.display === 'flex') {
+                reactionDetailsEl.style.display = 'none';
+                window.popModalStateIfActive('reactions');
+            }
+        };
+    })();
+</script>
+
 </body>
 </html>
