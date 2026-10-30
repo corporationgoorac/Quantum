@@ -3214,6 +3214,203 @@
             document.getElementById('error-msg').innerText = msg;
             showScreen('screen-error');
         }
+
+        // =================================================================
+        // GUARANTEED INSTANT EXIT & HARDWARE BACK BUTTON OVERRIDE ENGINE
+        // =================================================================
+        // 1. Prevent modal history stack pollution from trapping the user on this page
+        function closeIgReactionPanel() {
+            const panel = document.getElementById('ig-reaction-panel');
+            if (panel && panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                if (history.state && history.state.modal === 'ig-reaction') {
+                    try { history.replaceState(null, ""); } catch (e) {}
+                }
+            }
+        }
+
+        function closeReactionDrawer() {
+            const drawer = document.getElementById('reaction-drawer');
+            if (drawer && drawer.classList.contains('active')) {
+                drawer.classList.remove('active');
+                if (history.state && history.state.modal === 'reaction-drawer') {
+                    try { history.replaceState(null, ""); } catch (e) {}
+                }
+            }
+        }
+
+        // Override modal openers/closers so they never accumulate multiple history entries
+        openEmojiModal = function() {
+            if (currentSongType === 'full') return;
+            const modal = document.getElementById('emoji-modal');
+            const alreadyActive = modal.classList.contains('active');
+            modal.classList.add('active');
+            if (!alreadyActive) {
+                if (history.state && history.state.modal) {
+                    try { history.replaceState({ modal: 'emoji' }, ""); } catch (e) {}
+                } else {
+                    try { history.pushState({ modal: 'emoji' }, ""); } catch (e) {}
+                }
+            }
+            clearTimeout(emojiCloseTimer);
+            emojiCloseTimer = setTimeout(closeEmojiModal, 20000);
+        };
+
+        closeEmojiModal = function() {
+            const modal = document.getElementById('emoji-modal');
+            if (modal && modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                if (history.state && history.state.modal === 'emoji') {
+                    try { history.replaceState(null, ""); } catch (e) {}
+                }
+            }
+        };
+
+        openIgReactionPanel = function(msgId) {
+            activeReactionMsgId = msgId;
+            const panel = document.getElementById('ig-reaction-panel');
+            const alreadyActive = panel.classList.contains('active');
+            panel.classList.add('active');
+            if (!alreadyActive) {
+                if (history.state && history.state.modal) {
+                    try { history.replaceState({ modal: 'ig-reaction' }, ""); } catch (e) {}
+                } else {
+                    try { history.pushState({ modal: 'ig-reaction' }, ""); } catch (e) {}
+                }
+            }
+        };
+
+        submitReaction = function(emoji) {
+            if (!activeReactionMsgId) return;
+            submitReactionForMsg(activeReactionMsgId, emoji);
+            closeIgReactionPanel();
+        };
+
+        openReactionDrawer = function(reactsJson) {
+            try {
+                const reacts = JSON.parse(reactsJson || "{}");
+                const content = document.getElementById('drawer-content');
+                content.innerHTML = '';
+                if (Object.keys(reacts).length === 0) return;
+
+                Object.values(reacts).forEach(r => {
+                    const d = new Date(r.ts || getServerNow());
+                    const timeString = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const imgUrl = r.photo || 'https://via.placeholder.com/40';
+                    content.innerHTML += `
+                        <div class="drawer-row">
+                            <img src="${imgUrl}">
+                            <div class="drawer-info">
+                                <div class="drawer-name">${escapeHtmlText(r.name)}</div>
+                                <div class="drawer-time">${timeString}</div>
+                            </div>
+                            <div class="drawer-emoji">${r.emoji}</div>
+                        </div>
+                    `;
+                });
+
+                const drawer = document.getElementById('reaction-drawer');
+                const alreadyActive = drawer.classList.contains('active');
+                drawer.classList.add('active');
+                if (!alreadyActive) {
+                    if (history.state && history.state.modal) {
+                        try { history.replaceState({ modal: 'reaction-drawer' }, ""); } catch (e) {}
+                    } else {
+                        try { history.pushState({ modal: 'reaction-drawer' }, ""); } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+        };
+
+        // 2. Hardware Back Button Guard: Push a session guard state so pressing the phone's back button
+        //    either closes an open modal/picker OR cleanly exits straight to pulseLobby.html!
+        try {
+            if (!history.state || !history.state.pulseGuard) {
+                history.replaceState({ pulseGuard: 'root' }, "");
+                history.pushState({ pulseGuard: 'active' }, "");
+            }
+        } catch (e) {}
+
+        window.addEventListener('popstate', (event) => {
+            if (isLeaving) return;
+
+            const igModal = document.getElementById('ig-reaction-panel');
+            const emojiModal = document.getElementById('emoji-modal');
+            const reactionDrawer = document.getElementById('reaction-drawer');
+            const songPickerEl = document.getElementById('song-picker');
+            const fullSongPickerEl = document.getElementById('full-song-picker');
+
+            const anyModalActive = (
+                (igModal && igModal.classList.contains('active')) ||
+                (emojiModal && emojiModal.classList.contains('active')) ||
+                (reactionDrawer && reactionDrawer.classList.contains('active'))
+            );
+
+            if (anyModalActive) {
+                if (igModal) igModal.classList.remove('active');
+                if (emojiModal) emojiModal.classList.remove('active');
+                if (reactionDrawer) reactionDrawer.classList.remove('active');
+                try { history.pushState({ pulseGuard: 'active' }, ""); } catch (e) {}
+                return;
+            }
+
+            // If a song picker web-component wasn't open, or user pressed back from the main session screen -> Exit to Lobby!
+            if (event.state && event.state.pulseGuard === 'root') {
+                handleExit('lobby');
+            }
+        });
+
+        // 3. Non-Blocking Instant Exit Engine:
+        //    After a long session, Firebase Firestore/RTDB promises can hang or take several seconds while flushing queues,
+        //    and window.history.back() gets trapped in pushState entries.
+        //    We race cleanup against a hard 350ms timeout and force navigation directly to pulseLobby.html!
+        handleExit = async function(mode) {
+            if (isLeaving) {
+                window.location.replace("pulseLobby.html");
+                return;
+            }
+            isLeaving = true;
+
+            // Immediately stop all local media, timers, and animations
+            try {
+                clearTimeout(emojiTimer);
+                clearTimeout(emojiCloseTimer);
+                clearTimeout(turnTimer);
+                clearTimeout(bufferSafetyTimer);
+                if (visualizerAnimation) cancelAnimationFrame(visualizerAnimation);
+                if (audio) {
+                    audio.pause();
+                    audio.src = "";
+                }
+                if (audioCtx && audioCtx.state !== 'closed') {
+                    audioCtx.close().catch(() => {});
+                }
+            } catch (e) {}
+
+            // Hard fallback timer guarantees redirect to pulseLobby.html even if network/Firebase hangs
+            const forceRedirectTimer = setTimeout(() => {
+                window.location.replace("pulseLobby.html");
+            }, 400);
+
+            try {
+                await Promise.race([
+                    cleanupSessionData(),
+                    new Promise(resolve => setTimeout(resolve, 350))
+                ]);
+            } catch (e) {}
+
+            clearTimeout(forceRedirectTimer);
+            window.location.replace("pulseLobby.html");
+        };
+
+        // Ensure cleanup also fires if the tab/webview is closed or navigated away
+        window.addEventListener('pagehide', () => {
+            if (!isLeaving) {
+                isLeaving = true;
+                cleanupSessionData();
+            }
+        });
+
     </script>
 </body>
 </html>
