@@ -6694,5 +6694,534 @@ box-shadow: var(--received-shadow);
     })();
 </script>
 
+
+<!-- =========================================================================
+     27. QUANTUM FULLSCREEN MEDIA BACK-BUTTON FIX & MOBILE LANDSCAPE GUARD
+     ========================================================================= -->
+<style id="quantum-orientation-and-viewer-guard-styles">
+    /* Prevent layout corruption if browser physically enters landscape on mobile/tablet */
+    #quantum-orientation-guard {
+        display: none;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        background: #060606;
+        background-image: radial-gradient(circle at 50% 40%, rgba(255, 109, 0, 0.16) 0%, #050505 70%);
+        z-index: 2147483647;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+        color: #ffffff;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+    }
+
+    #quantum-orientation-guard .guard-icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 109, 0, 0.14);
+        border: 1.5px solid rgba(255, 109, 0, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        box-shadow: 0 0 28px rgba(255, 109, 0, 0.3);
+        animation: quantumRotatePhonePulse 2.2s ease-in-out infinite;
+    }
+
+    #quantum-orientation-guard .guard-icon-wrap span {
+        font-size: 36px;
+        color: var(--accent, #FF6D00);
+    }
+
+    #quantum-orientation-guard h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: 0.4px;
+        color: #ffffff;
+    }
+
+    #quantum-orientation-guard p {
+        font-size: 0.88rem;
+        color: #a1a1a1;
+        max-width: 320px;
+        line-height: 1.45;
+    }
+
+    @keyframes quantumRotatePhonePulse {
+        0%, 100% { transform: rotate(0deg) scale(1); }
+        40% { transform: rotate(-90deg) scale(1.06); }
+        60% { transform: rotate(-90deg) scale(1.06); }
+    }
+
+    /* Trigger ONLY on physical mobile devices in landscape (when virtual keyboard is NOT open) */
+    @media screen and (orientation: landscape) and (max-width: 960px) and (max-height: 540px) and (hover: none) and (pointer: coarse) {
+        body:not(.quantum-keyboard-active) #quantum-orientation-guard {
+            display: flex !important;
+        }
+    }
+</style>
+
+<div id="quantum-orientation-guard" aria-live="polite">
+    <div class="guard-icon-wrap">
+        <span class="material-icons-round">screen_lock_portrait</span>
+    </div>
+    <h3>Portrait Mode Locked</h3>
+    <p>Please keep your phone upright in portrait orientation for the Quantum Chat experience.</p>
+</div>
+
+<script id="quantum-fullscreen-media-and-orientation-engine">
+    // =========================================================================
+    //  27. QUANTUM DEEP WEB-COMPONENT FULLSCREEN MEDIA & ORIENTATION ENGINE
+    // =========================================================================
+    (function initQuantumFullscreenMediaAndOrientationEngine() {
+        const mInputEl = document.getElementById('m-input');
+        const emojiTrayEl = document.getElementById('emoji-tray');
+        const gifTrayEl = document.getElementById('gif-tray');
+        const attachmentMenuEl = document.getElementById('attachment-menu');
+        const reactionModalEl = document.getElementById('reaction-picker-modal');
+        const menuOverlayEl = document.getElementById('menu-overlay');
+        const reactionDetailsEl = document.getElementById('reaction-details-overlay');
+        const inputAreaEl = document.querySelector('.input-area');
+
+        const mediaViewerEl = document.getElementById('media-viewer');
+        const imgPickerEl = document.getElementById('img-picker');
+        const filePickerEl = document.getElementById('file-picker');
+
+        // Track native history bindings safely without double-wrapping
+        if (!window.__quantumNativeHistory) {
+            window.__quantumNativeHistory = {
+                pushState: History.prototype.pushState.bind(history),
+                replaceState: History.prototype.replaceState.bind(history),
+                back: History.prototype.back.bind(history)
+            };
+        }
+        const rawPushState = window.__quantumNativeHistory.pushState;
+        const rawReplaceState = window.__quantumNativeHistory.replaceState;
+        const rawHistoryBack = window.__quantumNativeHistory.back;
+
+        // Track explicit open states for custom elements (<view-media>, <image-picker>, <file-picker>)
+        window.__quantumCustomModalOpen = {
+            mediaViewer: false,
+            imagePicker: false,
+            filePicker: false
+        };
+
+        // ---------------------------------------------------------------------
+        // 1. MOBILE PORTRAIT ORIENTATION LOCK & KEYBOARD-LANDSCAPE DISAMBIGUATION
+        // ---------------------------------------------------------------------
+        function attemptPortraitLock() {
+            try {
+                if (window.innerWidth < 1024 && screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('portrait-primary').catch(() => {
+                        screen.orientation.lock('portrait').catch(() => {});
+                    });
+                }
+            } catch (e) {}
+        }
+        attemptPortraitLock();
+        document.addEventListener('touchstart', attemptPortraitLock, { once: true, passive: true });
+        document.addEventListener('click', attemptPortraitLock, { once: true, passive: true });
+
+        // Prevent false-positive landscape detection when mobile keyboard shrinks viewport height in portrait
+        function updateKeyboardActiveClass() {
+            const isInputFocused = (document.activeElement === mInputEl) ||
+                                   (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'));
+            const screenPortrait = (window.screen && window.screen.height >= window.screen.width) ||
+                                   (window.matchMedia && window.matchMedia('(orientation: portrait)').matches);
+            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            const sh = window.screen ? window.screen.height : window.innerHeight;
+
+            if (isInputFocused || (screenPortrait && vh < sh * 0.72)) {
+                document.body.classList.add('quantum-keyboard-active');
+            } else {
+                document.body.classList.remove('quantum-keyboard-active');
+            }
+        }
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', updateKeyboardActiveClass);
+        }
+        window.addEventListener('resize', updateKeyboardActiveClass);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateKeyboardActiveClass, 100);
+            attemptPortraitLock();
+        });
+        if (mInputEl) {
+            mInputEl.addEventListener('focus', updateKeyboardActiveClass);
+            mInputEl.addEventListener('blur', () => setTimeout(updateKeyboardActiveClass, 120));
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. DEEP SHADOW-DOM / LIGHT-DOM FULLSCREEN MEDIA & PICKER INSPECTOR
+        // ---------------------------------------------------------------------
+        function isElementVisiblyOpen(node, hostEl) {
+            if (!node || node === hostEl) return false;
+            if (node.tagName === 'STYLE' || node.tagName === 'SCRIPT' || node.tagName === 'LINK' || node.tagName === 'TEMPLATE') return false;
+            try {
+                const cs = window.getComputedStyle(node);
+                if (!cs) return false;
+                if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
+                const rect = node.getBoundingClientRect();
+                if (rect.width > 40 && rect.height > 40) {
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        function isWebComponentModalOpen(compEl, stateKey) {
+            if (!compEl) return false;
+
+            // 1. Check explicit state flag if verified against DOM
+            try {
+                if (compEl.hasAttribute('open') || compEl.hasAttribute('active') || compEl.classList.contains('open') || compEl.classList.contains('active') || compEl.isOpen === true || compEl.isVisible === true) {
+                    return true;
+                }
+                const hostCs = window.getComputedStyle(compEl);
+                if (hostCs && (hostCs.position === 'fixed' || hostCs.position === 'absolute') && hostCs.display !== 'none' && hostCs.visibility !== 'hidden' && parseFloat(hostCs.opacity) > 0) {
+                    const hostRect = compEl.getBoundingClientRect();
+                    if (hostRect.width > 100 && hostRect.height > 100) return true;
+                }
+            } catch (e) {}
+
+            // 2. Deep inspect shadowRoot & light DOM children via computed styles (catches CSS class-based modals)
+            const roots = [];
+            if (compEl.shadowRoot) roots.push(compEl.shadowRoot);
+            roots.push(compEl);
+
+            for (const root of roots) {
+                try {
+                    const candidates = root.querySelectorAll('.modal, .overlay, .viewer, .lightbox, .backdrop, .container, .wrapper, .popup, .dialog, [id*="modal"], [id*="overlay"], [id*="viewer"], [id*="picker"], [class*="modal"], [class*="overlay"], [class*="viewer"], [class*="lightbox"], img, video');
+                    for (const el of candidates) {
+                        if (isElementVisiblyOpen(el, compEl)) {
+                            return true;
+                        }
+                    }
+                    // Also check direct element children of shadowRoot
+                    if (root === compEl.shadowRoot && root.children) {
+                        for (const child of root.children) {
+                            if (isElementVisiblyOpen(child, compEl)) {
+                                return true;
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            return Boolean(window.__quantumCustomModalOpen[stateKey]);
+        }
+
+        // Force-close a custom web component (<view-media>, <image-picker>, <file-picker>) completely
+        function forceCloseWebComponent(compEl, stateKey) {
+            if (!compEl) return false;
+            window.__quantumCustomModalOpen[stateKey] = false;
+            let didClose = false;
+
+            // Exit native browser fullscreen if active
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    didClose = true;
+                }
+            } catch (e) {}
+
+            // 1. Call any standard close methods on the custom element prototype/instance
+            const methodNames = ['close', 'closeViewer', 'closeMedia', 'closePicker', 'closeModal', 'hide', 'dismiss', 'cancel'];
+            for (const fnName of methodNames) {
+                if (typeof compEl[fnName] === 'function') {
+                    try {
+                        compEl[fnName]();
+                        didClose = true;
+                    } catch (e) {}
+                }
+            }
+
+            // 2. Inspect both Shadow DOM and Light DOM to pause videos, click close buttons, and hide overlays
+            const roots = [];
+            if (compEl.shadowRoot) roots.push(compEl.shadowRoot);
+            roots.push(compEl);
+
+            for (const root of roots) {
+                try {
+                    // Pause and reset any playing video/audio inside the viewer
+                    const mediaNodes = root.querySelectorAll('video, audio');
+                    mediaNodes.forEach(m => {
+                        try {
+                            m.pause();
+                            m.removeAttribute('src');
+                            m.load();
+                        } catch (e) {}
+                    });
+
+                    // Click internal close button if component relies on internal state listeners
+                    const closeBtn = root.querySelector('.close-btn, .close, .btn-close, #close-btn, #close, [data-close], [aria-label*="Close" i], .cancel-btn, .back-btn');
+                    if (closeBtn) {
+                        try {
+                            closeBtn.click();
+                            didClose = true;
+                        } catch (e) {}
+                    }
+
+                    // Force-hide any visible overlay/wrapper inside Shadow DOM or Light DOM
+                    const allEls = root.querySelectorAll('*');
+                    allEls.forEach(el => {
+                        if (el.tagName === 'STYLE' || el.tagName === 'SCRIPT') return;
+                        try {
+                            el.classList.remove('open', 'active', 'visible', 'show', 'showing', 'is-open', 'is-active');
+                            const cs = window.getComputedStyle(el);
+                            if (cs && (cs.position === 'fixed' || cs.position === 'absolute') && cs.display !== 'none') {
+                                const r = el.getBoundingClientRect();
+                                if (r.width >= window.innerWidth * 0.5 && r.height >= window.innerHeight * 0.5) {
+                                    el.style.display = 'none';
+                                    didClose = true;
+                                }
+                            }
+                        } catch (e) {}
+                    });
+                } catch (e) {}
+            }
+
+            // 3. Clean host attributes & classes
+            try {
+                compEl.removeAttribute('open');
+                compEl.removeAttribute('active');
+                compEl.removeAttribute('visible');
+                compEl.classList.remove('open', 'active', 'visible', 'show');
+                if ('isOpen' in compEl) compEl.isOpen = false;
+                if ('isVisible' in compEl) compEl.isVisible = false;
+                const hostCs = window.getComputedStyle(compEl);
+                if (hostCs && (hostCs.position === 'fixed' || hostCs.position === 'absolute') && hostCs.display !== 'none') {
+                    compEl.style.display = 'none';
+                    didClose = true;
+                }
+            } catch (e) {}
+
+            return didClose;
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. OVERRIDE GLOBAL MODAL DETECTION & DOM CLOSER WITH DEEP SUPPORT
+        // ---------------------------------------------------------------------
+        window.hasAnyOpenChatModal = function() {
+            if (document.fullscreenElement || document.webkitFullscreenElement) return 'nativeFullscreen';
+            if (isWebComponentModalOpen(mediaViewerEl, 'mediaViewer')) return 'mediaViewer';
+            if (isWebComponentModalOpen(imgPickerEl, 'imagePicker')) return 'imagePicker';
+            if (isWebComponentModalOpen(filePickerEl, 'filePicker')) return 'filePicker';
+            if (window.isEmojiTrayOpen || (emojiTrayEl && emojiTrayEl.style.display === 'block')) return 'emoji';
+            if (window.isGifTrayOpen || (gifTrayEl && gifTrayEl.style.display === 'block')) return 'gif';
+            if (attachmentMenuEl && attachmentMenuEl.style.display === 'flex') return 'attachment';
+            if (reactionModalEl && reactionModalEl.style.display === 'flex') return 'reactionPicker';
+            if (menuOverlayEl && menuOverlayEl.style.display === 'flex') return 'menu';
+            if (reactionDetailsEl && reactionDetailsEl.style.display === 'flex') return 'reactions';
+            return null;
+        };
+
+        const prevCloseAllModalsDOMOnly = window.closeAllModalsDOMOnly;
+        window.closeAllModalsDOMOnly = function() {
+            // Close fullscreen media & custom pickers first
+            forceCloseWebComponent(mediaViewerEl, 'mediaViewer');
+            forceCloseWebComponent(imgPickerEl, 'imagePicker');
+            forceCloseWebComponent(filePickerEl, 'filePicker');
+
+            if (typeof prevCloseAllModalsDOMOnly === 'function') {
+                prevCloseAllModalsDOMOnly();
+            }
+
+            if (inputAreaEl && document.activeElement !== mInputEl) {
+                inputAreaEl.classList.remove('force-expand');
+            }
+            window.__activeModalType = null;
+        };
+
+        // ---------------------------------------------------------------------
+        // 4. INTERCEPT ALL MEDIA VIEWER & PICKER OPEN/CLOSE LIFECYCLES
+        // ---------------------------------------------------------------------
+        function bindComponentLifecycle(compEl, stateKey, openMethodNames, closeMethodNames) {
+            if (!compEl || compEl.__quantumDeepBound) return;
+
+            const hasAnyOpenMethod = openMethodNames.some(fn => typeof compEl[fn] === 'function');
+            if (!hasAnyOpenMethod && window.customElements && compEl.tagName) {
+                // Wait for custom element definition if deferred script hasn't upgraded yet
+                customElements.whenDefined(compEl.tagName.toLowerCase()).then(() => {
+                    bindComponentLifecycle(compEl, stateKey, openMethodNames, closeMethodNames);
+                }).catch(() => {});
+                return;
+            }
+
+            compEl.__quantumDeepBound = true;
+
+            // Wrap open methods
+            openMethodNames.forEach(fnName => {
+                if (typeof compEl[fnName] === 'function') {
+                    const origOpen = compEl[fnName].bind(compEl);
+                    compEl[fnName] = function(...args) {
+                        window.__quantumCustomModalOpen[stateKey] = true;
+                        // Ensure host is allowed to display if previously hidden by forceClose
+                        if (compEl.style.display === 'none') compEl.style.display = '';
+                        window.pushModalState(stateKey);
+                        const result = origOpen(...args);
+                        // Also bind internal close buttons inside shadowRoot after open renders
+                        setTimeout(() => bindInternalShadowCloseTriggers(compEl, stateKey), 30);
+                        return result;
+                    };
+                }
+            });
+
+            // Wrap close methods so clicking the X button inside the viewer ALSO pops the history state!
+            // (Fixes the bug where closing media via X left a ghost history entry so the next Back press did nothing!)
+            closeMethodNames.forEach(fnName => {
+                if (typeof compEl[fnName] === 'function') {
+                    const origClose = compEl[fnName].bind(compEl);
+                    compEl[fnName] = function(...args) {
+                        const wasOpen = window.__quantumCustomModalOpen[stateKey] || isWebComponentModalOpen(compEl, stateKey);
+                        window.__quantumCustomModalOpen[stateKey] = false;
+                        const result = origClose(...args);
+                        if (wasOpen && !window.__inPopStateHandler) {
+                            window.popModalStateIfActive(stateKey);
+                        }
+                        return result;
+                    };
+                }
+            });
+
+            // Observe attribute/child changes on host and shadowRoot to detect internal close (backdrop click / swipe down / X button)
+            const checkClosedCallback = () => {
+                if (window.__quantumCustomModalOpen[stateKey] && !window.__inPopStateHandler) {
+                    setTimeout(() => {
+                        if (window.__quantumCustomModalOpen[stateKey] && !isWebComponentModalOpen(compEl, stateKey)) {
+                            window.__quantumCustomModalOpen[stateKey] = false;
+                            if (!window.__inPopStateHandler && !window.hasAnyOpenChatModal()) {
+                                window.popModalStateIfActive(stateKey);
+                            }
+                        }
+                    }, 40);
+                }
+            };
+
+            try {
+                const hostObs = new MutationObserver(checkClosedCallback);
+                hostObs.observe(compEl, { attributes: true, childList: true, subtree: true });
+                if (compEl.shadowRoot) {
+                    const shadowObs = new MutationObserver(checkClosedCallback);
+                    shadowObs.observe(compEl.shadowRoot, { attributes: true, childList: true, subtree: true });
+                }
+            } catch (e) {}
+        }
+
+        function bindInternalShadowCloseTriggers(compEl, stateKey) {
+            if (!compEl) return;
+            const roots = [];
+            if (compEl.shadowRoot) roots.push(compEl.shadowRoot);
+            roots.push(compEl);
+
+            roots.forEach(root => {
+                try {
+                    const closeBtns = root.querySelectorAll('.close-btn, .close, .btn-close, #close-btn, #close, [data-close], [aria-label*="Close" i], .cancel-btn');
+                    closeBtns.forEach(btn => {
+                        if (btn.__quantumCloseHooked) return;
+                        btn.__quantumCloseHooked = true;
+                        btn.addEventListener('click', () => {
+                            window.__quantumCustomModalOpen[stateKey] = false;
+                            setTimeout(() => {
+                                if (!window.__inPopStateHandler && !window.hasAnyOpenChatModal()) {
+                                    window.popModalStateIfActive(stateKey);
+                                }
+                            }, 50);
+                        });
+                    });
+                } catch (e) {}
+            });
+        }
+
+        function setupAllComponentBridges() {
+            bindComponentLifecycle(mediaViewerEl, 'mediaViewer', ['open', 'show', 'view', 'openMedia'], ['close', 'hide', 'closeViewer', 'dismiss']);
+            bindComponentLifecycle(imgPickerEl, 'imagePicker', ['openPicker', 'open', 'show'], ['closePicker', 'close', 'hide', 'cancel']);
+            bindComponentLifecycle(filePickerEl, 'filePicker', ['openPicker', 'open', 'show'], ['closePicker', 'close', 'hide', 'cancel']);
+        }
+
+        setupAllComponentBridges();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupAllComponentBridges);
+        }
+        window.addEventListener('load', setupAllComponentBridges);
+
+        // Also intercept clicks on any chat image/video wrapper in capture phase so even if viewMedia.js
+        // upgraded late, we always mark mediaViewer as open and push the single modal state before it opens!
+        document.addEventListener('click', function(e) {
+            const mediaTrigger = e.target.closest('.msg-media-wrapper, .msg-video-container');
+            if (mediaTrigger && !e.target.closest('.reaction-badge')) {
+                const onclickAttr = mediaTrigger.getAttribute('onclick') || '';
+                if (onclickAttr.includes('media-viewer')) {
+                    setupAllComponentBridges();
+                    window.__quantumCustomModalOpen.mediaViewer = true;
+                    if (mediaViewerEl && mediaViewerEl.style.display === 'none') {
+                        mediaViewerEl.style.display = '';
+                    }
+                    window.pushModalState('mediaViewer');
+                    setTimeout(() => bindInternalShadowCloseTriggers(mediaViewerEl, 'mediaViewer'), 50);
+                }
+            }
+        }, true);
+
+        // Sync native HTML5 fullscreen (e.g. if video player enters fullscreen) with mobile back button
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                window.pushModalState('nativeFullscreen');
+            } else if (!window.__inPopStateHandler && !window.hasAnyOpenChatModal()) {
+                window.popModalStateIfActive('nativeFullscreen');
+            }
+        });
+
+        // ---------------------------------------------------------------------
+        // 5. BULLETPROOF CAPTURE-PHASE POPSTATE HANDLER (FIRST-CLICK MEDIA CLOSE)
+        // ---------------------------------------------------------------------
+        window.addEventListener('popstate', function(e) {
+            e.stopImmediatePropagation();
+            window.__inPopStateHandler = true;
+            window.__historyPopLock = false;
+
+            try {
+                if (window.__pendingComponentCallback) {
+                    const cb = window.__pendingComponentCallback;
+                    window.__pendingComponentCallback = null;
+                    cb();
+                    return;
+                }
+
+                const openModal = window.hasAnyOpenChatModal();
+                if (openModal) {
+                    // Close the fullscreen media / picker / tray immediately on the FIRST Back press!
+                    window.closeAllModalsDOMOnly();
+                    // Clean any residual modal state on the current entry so the NEXT Back press exits cleanly
+                    if (history.state && (history.state.modal || history.state.__quantumModal)) {
+                        rawReplaceState(null, "", location.href);
+                    }
+                    return;
+                }
+
+                // If no modal is open, but history landed on a stale ghost modal entry, strip it and navigate back
+                if (e.state && (e.state.modal || e.state.__quantumModal)) {
+                    rawReplaceState(null, "", location.href);
+                    rawHistoryBack();
+                }
+            } finally {
+                setTimeout(() => {
+                    window.__inPopStateHandler = false;
+                }, 50);
+            }
+        }, true);
+    })();
+</script>
+
 </body>
 </html>
