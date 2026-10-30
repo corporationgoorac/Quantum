@@ -120,7 +120,7 @@
         
         html, body {
             height: 100vh !important; /* STRICT LOCK FOR BACKGROUND RESIZING */
-            width: 100vw !important;
+            width: 100% !important; /* FIXED 100vw SIDE SCROLLBAR BUG */
             overflow: hidden !important; /* FORCED NO SCROLL TO PREVENT HEADER HIDING */
             background-color: var(--bg);
             background-image: var(--bg-gradient); 
@@ -1680,7 +1680,7 @@ box-shadow: var(--received-shadow);
 
         html, body, .app-container {
           overflow-x: hidden !important;
-          max-width: 100vw !important;
+          max-width: 100% !important; /* FIXED 100vw SIDE SCROLLBAR BUG */
         }
 
     </style>
@@ -2663,9 +2663,9 @@ box-shadow: var(--received-shadow);
         let distanceToBottom = chatFlow.scrollHeight - chatFlow.scrollTop - chatFlow.clientHeight;
         if(distanceToBottom < 800) { 
             window.scrollToBottom(true);
-            setTimeout(() => window.scrollToBottom(true), 100);
-            setTimeout(() => window.scrollToBottom(true), 300);
-            setTimeout(() => window.scrollToBottom(true), 500);
+            setTimeout(() => window.scrollToBottom(false), 100);
+            setTimeout(() => window.scrollToBottom(false), 300);
+            setTimeout(() => window.scrollToBottom(false), 500);
         }
     });
     
@@ -3165,7 +3165,7 @@ box-shadow: var(--received-shadow);
                             renderAll();
                             
                             if (isNearBottom) {
-                                requestAnimationFrame(() => window.scrollToBottom(false));
+                                window.scrollToBottom(false); /* SYNCHRONOUS PIN TO PREVENT RELOAD JITTER */
                             } else {
                                 // Maintain scroll position if up high
                                 chatFlow.style.overflowAnchor = 'auto'; 
@@ -3610,7 +3610,7 @@ box-shadow: var(--received-shadow);
             mediaHtml = `
             <div class="msg-media-wrapper ${groupClass}" onclick="handleBiteClick(event, '${m.biteId}', '${id}')">
                 <div style="position:relative; width:220px; border-radius:18px; overflow:hidden; background:#111; aspect-ratio: 9/16;">
-                    <img src="${m.biteImgUrl || 'https://via.placeholder.com/220x390?text=Bite'}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)" style="width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; pointer-events:none;">
+                    <img src="${m.biteImgUrl || 'https://via.placeholder.com/220x390?text=Bite'}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(false)" style="width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; pointer-events:none;">
                     <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); pointer-events:none;"></div>
                     
                     <div class="play-overlay" style="border-color: var(--accent); background: rgba(0,0,0,0.6); pointer-events:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid var(--accent);"><span class="material-icons-round" style="font-size:36px; color:white;">play_arrow</span></div>
@@ -3631,7 +3631,7 @@ box-shadow: var(--received-shadow);
         else if (renderImageUrl) {
             mediaHtml = `
             <div class="msg-media-wrapper ${groupClass}" onclick="document.getElementById('media-viewer').open('${renderImageUrl}')">
-                <img src="${renderImageUrl}" class="chat-media-img" style="${dynamicStyle}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)">
+                <img src="${renderImageUrl}" class="chat-media-img" style="${dynamicStyle}" onload="if(this.naturalWidth && this.naturalHeight){ localStorage.setItem('media_ratio_${id}', this.naturalWidth + '/' + this.naturalHeight); this.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(false)">
                 <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
             </div>`;
             bubbleClass = `bubble has-media ${groupClass}`;
@@ -3640,7 +3640,7 @@ box-shadow: var(--received-shadow);
         else if (renderFileUrl && renderFileMeta && renderFileMeta.type.includes('video')) {
             mediaHtml = `
             <div class="msg-video-container" onclick="document.getElementById('media-viewer').open('${renderFileUrl}', 'video')">
-                <video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:auto; max-height:380px; background:#000; ${dynamicStyle}" preload="metadata" onloadeddata="if(this.videoWidth && this.videoHeight){ localStorage.setItem('media_ratio_${id}', this.videoWidth + '/' + this.videoHeight); this.style.aspectRatio = this.videoWidth + '/' + this.videoHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(true)"></video>
+                <video src="${renderFileUrl}#t=0.5" class="chat-media-img" style="object-fit:cover; width:100%; height:auto; max-height:380px; background:#000; ${dynamicStyle}" preload="metadata" onloadeddata="if(this.videoWidth && this.videoHeight){ localStorage.setItem('media_ratio_${id}', this.videoWidth + '/' + this.videoHeight); this.style.aspectRatio = this.videoWidth + '/' + this.videoHeight; this.style.minHeight='auto'; } var cf = document.getElementById('chat-flow'); if(!window.isLoadingMore && (cf.scrollHeight - cf.scrollTop - cf.clientHeight < 450 || window.isInitialLoadScroll)) window.scrollToBottom(false)"></video>
                 <div class="play-overlay"><span class="material-icons-round" style="font-size:32px; color:white;">play_arrow</span></div>
                 <div id="react-${id}" class="reaction-badge" onclick="showReactionDetails('${id}', event)" style="${reactionDisplay ? 'display:block' : ''}">${reactionDisplay}</div>
             </div>`;
@@ -5963,15 +5963,15 @@ box-shadow: var(--received-shadow);
 <script src="components/call-notifier.js" defer></script>
 <call-notifier></call-notifier>
 
-</body>
-    <!-- =========================================================================
-     25. MASTER ATOMIC SCROLLBAR LOCK & ZERO-JITTER BOOT ENGINE (NON-DESTRUCTIVE)
-     ========================================================================= -->
-<style id="master-atomic-scrollbar-and-boot-lock">
-    /* 1. ATOMIC WHOLE-PAGE & ELEMENT SCROLLBAR REMOVAL */
+
+<style id="quantum-atomic-scrollbar-and-jitter-lock">
+    /* =========================================================================
+       25. ATOMIC SCROLLBAR REMOVAL & ZERO-JITTER RELOAD STABILIZER (V3 PRO)
+       ========================================================================= */
+    /* 1. Atomic Global Scrollbar Removal across all browsers & elements */
     *, *::before, *::after, html, body, .app-container, #chat-flow, #messages-container, .msg-input, #emoji-tray, #gif-tray {
-        -ms-overflow-style: none !important;  /* IE and Edge */
-        scrollbar-width: none !important;     /* Firefox */
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
     }
     *::-webkit-scrollbar,
     html::-webkit-scrollbar,
@@ -5979,151 +5979,68 @@ box-shadow: var(--received-shadow);
     .app-container::-webkit-scrollbar,
     #chat-flow::-webkit-scrollbar,
     #messages-container::-webkit-scrollbar,
-    .msg-input::-webkit-scrollbar {
+    .msg-input::-webkit-scrollbar,
+    #emoji-tray::-webkit-scrollbar,
+    #gif-tray::-webkit-scrollbar {
         display: none !important;
-        width: 0px !important;
-        height: 0px !important;
+        width: 0 !important;
+        height: 0 !important;
         background: transparent !important;
-        -webkit-appearance: none !important;
     }
 
-    /* 2. FIX 100vw HORIZONTAL OVERFLOW TRIGGERING SIDE SCROLLBAR */
+    /* 2. Fix 100vw Horizontal Overflow & Side Scrollbar Bug */
     html, body, .app-container {
         width: 100% !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
-        overflow-y: hidden !important;
-         left: 0 !important;
-        right: 0 !important;
+        overscroll-behavior-x: none !important;
     }
 
-    /* 3. LOCK MATERIAL ICONS DIMENSIONS TO PREVENT LIGATURE TEXT REFLOW JITTER ON RELOAD */
-    .material-icons-round {
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 1em !important;
-        height: 1em !important;
-        max-width: 1em !important;
-        max-height: 1em !important;
-        overflow: hidden !important;
-        white-space: nowrap !important;
-        word-wrap: normal !important;
-        direction: ltr !important;
-        line-height: 1 !important;
-        flex-shrink: 0 !important;
-        vertical-align: middle !important;
-        font-feature-settings: 'liga' !important;
-        -webkit-font-feature-settings: 'liga' !important;
-        -webkit-font-smoothing: antialiased !important;
-    }
-
-    /* 4. FREEZE ALL BUBBLE, TEXT & INPUT TRANSITIONS DURING INITIAL RELOAD BOOT (0ms - 650ms) */
-    html.quantum-boot-freeze *,
-    html.quantum-boot-freeze *::before,
-    html.quantum-boot-freeze *::after {
-        transition: none !important;
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
+    /* 3. Stop CSS Layout Thrashing & Anchor Fighting on Reload */
+    #chat-flow {
+        overflow-anchor: none !important;
         scroll-behavior: auto !important;
     }
-
-    /* Keep chat container GPU-stable without content-containment reflow jumps */
     #messages-container {
         contain: layout style !important;
         will-change: auto !important;
-        overflow-x: hidden !important;
     }
-
-    #chat-flow {
-        scroll-behavior: auto !important;
-        overflow-anchor: none !important; /* Prevent browser anchor fighting JS bottom-pin */
-        overflow-x: hidden !important;
-    }
-
-    /* Prevent bubble and text vertical subpixel shifting */
     .msg-row, .msg-bubble-box, .bubble {
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-        transform: translateZ(0);
+        overflow-anchor: none !important;
+    }
+
+    /* 4. Lock Initial Boot Transitions so Bubbles & Text Never Bounce on Reload */
+    body.quantum-boot-lock *,
+    body.quantum-boot-lock .msg-row,
+    body.quantum-boot-lock .msg-bubble-box,
+    body.quantum-boot-lock .bubble,
+    body.quantum-boot-lock .typing-row,
+    body.quantum-boot-lock .input-area,
+    body.quantum-boot-lock .msg-input {
+        transition: none !important;
     }
 </style>
 
-<script>
-    (function initMasterZeroJitterBootEngine() {
-        // 1. Immediately engage boot freeze class on <html>
-        document.documentElement.classList.add('quantum-boot-freeze');
+<script id="quantum-reload-jitter-killer-v3">
+    // =========================================================================
+    //  25. QUANTUM RELOAD JITTER KILLER & UNIFIED SCROLL ENGINE (V3 PRO)
+    // =========================================================================
+    (function initQuantumReloadStabilizerV3() {
+        document.body.classList.add('quantum-boot-lock');
 
         const chatFlowEl = document.getElementById('chat-flow');
         const containerEl = document.getElementById('messages-container');
         const mInputEl = document.getElementById('m-input');
         const mainAppEl = document.getElementById('main-app');
 
-        // 2. Prevent autofocus on #m-input from firing smooth-scroll cascades during page reload
-        window.isBootingChat = true;
-        if (mInputEl && document.activeElement === mInputEl && window.innerWidth < 1024) {
-            mInputEl.blur();
-        }
+        // 1. Disconnect conflicting ResizeObservers that fight during initial page load
+        try {
+            if (typeof msgResizeObserver !== 'undefined' && msgResizeObserver && msgResizeObserver.disconnect) {
+                msgResizeObserver.disconnect();
+            }
+        } catch (e) {}
 
-        // 3. Guard loadMoreMessages during initial boot so IntersectionObserver cannot double-load on reload
-        const origLoadMore = window.loadMoreMessages;
-        if (typeof origLoadMore === 'function') {
-            window.loadMoreMessages = async function() {
-                if (window.isBootingChat) return;
-                return origLoadMore.apply(this, arguments);
-            };
-        }
-
-        // 4. Unify timestamp helper on messagesMap so cached & live Firestore messages sort identically
-        function normalizeMessagesMapTimestamps() {
-            if (typeof messagesMap === 'undefined' || !messagesMap) return;
-            messagesMap.forEach((m, id) => {
-                if (!m) return;
-                let ms = 0;
-                if (m.timestamp && typeof m.timestamp.toMillis === 'function') {
-                    ms = m.timestamp.toMillis();
-                } else if (m.timestamp && typeof m.timestamp.toDate === 'function') {
-                    ms = m.timestamp.toDate().getTime();
-                } else if (m.timestampIso) {
-                    ms = new Date(m.timestampIso).getTime();
-                } else if (typeof m.timestamp === 'number') {
-                    ms = m.timestamp;
-                }
-                if (ms > 0) {
-                    if (!m.timestampIso) m.timestampIso = new Date(ms).toISOString();
-                    if (!m.timestamp || typeof m.timestamp.toMillis !== 'function') {
-                        const d = new Date(ms);
-                        m.timestamp = {
-                            toDate: () => d,
-                            toMillis: () => ms
-                        };
-                    }
-                }
-            });
-        }
-
-        // 5. Wrap renderAll so timestamps are always normalized and scrollTop stays locked to bottom during boot
-        const origRenderAll = window.renderAll;
-        if (typeof origRenderAll === 'function') {
-            window.renderAll = function() {
-                normalizeMessagesMapTimestamps();
-                const wasAtBottom = window.isBootingChat ||
-                    (chatFlowEl && (chatFlowEl.scrollHeight - chatFlowEl.scrollTop - chatFlowEl.clientHeight <= 250));
-                const savedScrollTop = chatFlowEl ? chatFlowEl.scrollTop : 0;
-
-                origRenderAll.apply(this, arguments);
-
-                if (chatFlowEl) {
-                    if (wasAtBottom) {
-                        chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
-                    } else {
-                        chatFlowEl.scrollTop = savedScrollTop;
-                    }
-                }
-            };
-        }
-
-        // 6. Single authoritative, zero-RAF synchronous scrollToBottom during boot & active layout shifts
+        // 2. Single Authoritative Synchronous Scroll Controller (Zero RAF Bounce)
         window.snapToBottomInstant = function() {
             if (!chatFlowEl) return;
             chatFlowEl.style.scrollBehavior = 'auto';
@@ -6132,8 +6049,12 @@ box-shadow: var(--received-shadow);
 
         window.scrollToBottom = function(smooth = false) {
             if (!chatFlowEl) return;
-            if (window.isBootingChat || !smooth || (document.activeElement === mInputEl) || window.isEmojiTrayOpen || window.isGifTrayOpen || window.isInitialLoadScroll) {
-                window.snapToBottomInstant();
+            const isBooting = document.body.classList.contains('quantum-boot-lock') || window.isInitialLoadScroll;
+            const isInteractive = (document.activeElement === mInputEl) || window.isEmojiTrayOpen || window.isGifTrayOpen || window.isTrayHandingOff;
+
+            if (!smooth || isBooting || isInteractive) {
+                chatFlowEl.style.scrollBehavior = 'auto';
+                chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
             } else {
                 chatFlowEl.scrollTo({
                     top: chatFlowEl.scrollHeight,
@@ -6142,22 +6063,35 @@ box-shadow: var(--received-shadow);
             }
         };
 
-        // 7. Pin scroll position immediately and after fonts/DOM settle, then release boot freeze cleanly
-        window.snapToBottomInstant();
+        // 3. Stabilize Initial Load & Prevent Autofocus / Font-Load Bouncing
+        if (chatFlowEl) {
+            chatFlowEl.style.overflowAnchor = 'none';
+            chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+        }
 
+        // Pin scroll cleanly when web fonts finish rendering so text inside bubbles never shifts
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(() => {
-                window.snapToBottomInstant();
+                if (chatFlowEl && (window.isInitialLoadScroll || (chatFlowEl.scrollHeight - chatFlowEl.scrollTop - chatFlowEl.clientHeight < 300))) {
+                    chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+                }
             }).catch(() => {});
         }
 
+        // Release boot transition lock smoothly after initial cache + Firebase snapshot settle
+        window.addEventListener('load', () => {
+            if (chatFlowEl) chatFlowEl.scrollTop = chatFlowEl.scrollHeight;
+            setTimeout(() => {
+                document.body.classList.remove('quantum-boot-lock');
+                window.isInitialLoadScroll = false;
+            }, 650);
+        });
+
         setTimeout(() => {
-            window.snapToBottomInstant();
-            document.documentElement.classList.remove('quantum-boot-freeze');
-            window.isBootingChat = false;
-            if (chatFlowEl) chatFlowEl.style.overflowAnchor = 'auto';
-        }, 650);
+            document.body.classList.remove('quantum-boot-lock');
+        }, 1200);
     })();
 </script>
 
+</body>
 </html>
